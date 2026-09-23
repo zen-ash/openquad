@@ -2,13 +2,15 @@ import type { PlayerInfo } from '@quad/shared'
 import { create } from 'zustand'
 import type { Snapshot } from '../game/interpolation'
 
-type Status = 'idle' | 'connecting' | 'connected' | 'disconnected'
+type Status = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'disconnected'
+
+export type Person = { name: string; avatar: string }
 
 type GameState = {
   status: Status
   me: PlayerInfo | null
-  // just id -> name. positions change way too often to live in react state
-  players: Record<string, string>
+  // positions change way too often to live in react state, see snapshots
+  players: Record<string, Person>
 }
 
 export const useGame = create<GameState>(() => ({

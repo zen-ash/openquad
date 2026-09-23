@@ -5,12 +5,22 @@ import { useRef, useState } from 'react'
 import * as THREE from 'three'
 import { cutout } from '../campus/cutout'
 import type { Controls } from '../game/controls'
-import { avatarFor } from '../game/avatars'
+import { avatarById } from '../game/avatars'
 import { localPlayer } from '../game/localPlayer'
-import { headingFor, moveDirection, RUN_SPEED, walk, WALK_SPEED } from '../game/movement'
+import {
+  headingFor,
+  moveDirection,
+  RUN_SPEED,
+  STICK_RUN,
+  stickDirection,
+  walk,
+  WALK_SPEED,
+} from '../game/movement'
+import { touch } from '../game/touch'
 import { world } from '../game/world'
 import { send } from '../net/connection'
 import Character, { type Anim } from './Character'
+import ChatBubble from './ChatBubble'
 
 // behind and a bit above. lower than the pokemon games since downtown has real
 // buildings and you want to see them, not just the sidewalk
@@ -20,12 +30,23 @@ const CAMERA_TURN_SPEED = 2 // radians/sec
 const PLAYER_RADIUS = 0.4
 const SEND_INTERVAL = 1 / TICK_RATE
 
+const NO_KEYS: Record<Controls, boolean> = {
+  forward: false,
+  back: false,
+  left: false,
+  right: false,
+  run: false,
+  turnLeft: false,
+  turnRight: false,
+}
+
 const UP = new THREE.Vector3(0, 1, 0)
 const camTarget = new THREE.Vector3()
 
 export default function Player({ spawn }: { spawn: PlayerInfo }) {
   const body = useRef<THREE.Group>(null)
-  const cameraYaw = useRef(0)
+  // carried over from before a reconnect, so the camera doesn't jump
+  const cameraYaw = useRef(localPlayer.cameraYaw)
   const currentAnim = useRef<Anim>('Idle')
   const [anim, setAnim] = useState<Anim>('Idle')
   const [, getKeys] = useKeyboardControls<Controls>()
@@ -38,7 +59,9 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
     if (!player) return
     // for turning/smoothing. walking handles long frames itself (see walk)
     const dt = Math.min(delta, 0.1)
-    const keys = getKeys()
+    // typing in the chat box shouldn't walk you around
+    const typing = document.activeElement instanceof HTMLInputElement
+    const keys = typing ? NO_KEYS : getKeys()
 
     if (localPlayer.teleport) {
       player.position.set(localPlayer.teleport.x, 0, localPlayer.teleport.z)
@@ -49,17 +72,24 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
 
     if (keys.turnLeft) cameraYaw.current -= CAMERA_TURN_SPEED * dt
     if (keys.turnRight) cameraYaw.current += CAMERA_TURN_SPEED * dt
+    cameraYaw.current += touch.turn
+    touch.turn = 0
 
-    const dir = moveDirection(keys, cameraYaw.current)
+    let dir = moveDirection(keys, cameraYaw.current)
+    let running = keys.run
+    if (!dir) {
+      dir = stickDirection(touch.x, touch.y, cameraYaw.current)
+      running = Math.hypot(touch.x, touch.y) > STICK_RUN
+    }
     let next: Anim = 'Idle'
 
     if (dir) {
-      const speed = keys.run ? RUN_SPEED : WALK_SPEED
+      const speed = running ? RUN_SPEED : WALK_SPEED
       const pos = walk(player.position, dir, speed, delta, PLAYER_RADIUS, world)
       player.position.x = pos.x
       player.position.z = pos.z
       player.rotation.y = lerpAngle(player.rotation.y, headingFor(dir), 1 - Math.exp(-12 * dt))
-      next = keys.run ? 'Run' : 'Walk'
+      next = running ? 'Run' : 'Walk'
     }
 
     // only re-render when the animation actually changes, not every frame
@@ -71,6 +101,7 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
     localPlayer.x = player.position.x
     localPlayer.z = player.position.z
     localPlayer.cameraYaw = cameraYaw.current
+    localPlayer.heading = player.rotation.y
 
     // send at the server's tick rate, and only if something changed
     sendTimer.current += dt
@@ -96,7 +127,8 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
 
   return (
     <group ref={body} position={[spawn.position.x, 0, spawn.position.z]} rotation-y={spawn.heading}>
-      <Character avatar={avatarFor(spawn.id)} anim={anim} />
+      <Character avatar={avatarById(spawn.avatar)} anim={anim} />
+      <ChatBubble id={spawn.id} />
     </group>
   )
 }

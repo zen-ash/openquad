@@ -1,15 +1,14 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { AVATARS, avatarFor } from './avatars'
+import { AVATARS, avatarById } from './avatars'
 
-describe('avatarFor', () => {
-  it('always gives the same person the same avatar', () => {
-    expect(avatarFor('abc-123')).toBe(avatarFor('abc-123'))
+describe('avatarById', () => {
+  it('finds the avatar', () => {
+    expect(avatarById('female_17')).toEqual({ id: 'female_17', body: 'female' })
   })
 
-  it('spreads people across the avatars', () => {
-    const used = new Set(Array.from({ length: 60 }, (_, i) => avatarFor(`player-${i}`).id))
-    expect(used.size).toBe(AVATARS.length)
+  it('falls back to the first one for anything unknown', () => {
+    expect(avatarById('nope')).toBe(AVATARS[0])
   })
 })
 

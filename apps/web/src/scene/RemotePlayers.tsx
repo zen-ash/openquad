@@ -3,13 +3,14 @@ import { useFrame } from '@react-three/fiber'
 import { useRef, useState } from 'react'
 import type { Group } from 'three'
 import { INTERP_DELAY, sample } from '../game/interpolation'
-import { avatarFor } from '../game/avatars'
+import { avatarById } from '../game/avatars'
 import { animForSpeed } from '../game/movement'
-import { snapshots, useGame } from '../net/store'
+import { snapshots, useGame, type Person } from '../net/store'
 import { useVoice } from '../voice/store'
 import Character, { type Anim } from './Character'
+import ChatBubble from './ChatBubble'
 
-function RemotePlayer({ id, name }: { id: string; name: string }) {
+function RemotePlayer({ id, person }: { id: string; person: Person }) {
   const body = useRef<Group>(null)
   const speed = useRef(0)
   const currentAnim = useRef<Anim>('Idle')
@@ -41,7 +42,8 @@ function RemotePlayer({ id, name }: { id: string; name: string }) {
 
   return (
     <group ref={body}>
-      <Character avatar={avatarFor(id)} anim={anim} />
+      <Character avatar={avatarById(person.avatar)} anim={anim} />
+      <ChatBubble id={id} />
       <Billboard position-y={2.2}>
         <Text
           fontSize={0.35}
@@ -49,7 +51,7 @@ function RemotePlayer({ id, name }: { id: string; name: string }) {
           outlineWidth={0.03}
           outlineColor="black"
         >
-          {name}
+          {person.name}
         </Text>
       </Billboard>
     </group>
@@ -60,8 +62,8 @@ export default function RemotePlayers() {
   const players = useGame((s) => s.players)
   return (
     <>
-      {Object.entries(players).map(([id, name]) => (
-        <RemotePlayer key={id} id={id} name={name} />
+      {Object.entries(players).map(([id, person]) => (
+        <RemotePlayer key={id} id={id} person={person} />
       ))}
     </>
   )

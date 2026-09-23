@@ -23,6 +23,22 @@ export function moveDirection(input: MoveInput, cameraYaw: number) {
   const z = Number(input.back) - Number(input.forward)
   if (x === 0 && z === 0) return null
 
+  return rotate(x, z, cameraYaw)
+}
+
+// deadzone so a thumb resting on the joystick doesn't make you drift
+const STICK_DEADZONE = 0.15
+// push the stick most of the way out to run
+export const STICK_RUN = 0.85
+
+/** Same as moveDirection but for the touch joystick. x is right, y is forward (-1 to 1). */
+export function stickDirection(x: number, y: number, cameraYaw: number) {
+  if (Math.hypot(x, y) < STICK_DEADZONE) return null
+  return rotate(x, -y, cameraYaw)
+}
+
+// camera-relative -> world direction, unit length
+function rotate(x: number, z: number, cameraYaw: number) {
   const len = Math.hypot(x, z)
   const cos = Math.cos(cameraYaw)
   const sin = Math.sin(cameraYaw)

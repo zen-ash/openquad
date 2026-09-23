@@ -5,6 +5,7 @@ import {
   headingFor,
   moveDirection,
   RUN_SPEED,
+  stickDirection,
   WALK_SPEED,
   walk,
   type MoveInput,
@@ -90,5 +91,23 @@ describe('walk', () => {
 
   it('stops after half a second instead of replaying a long pause', () => {
     expect(walk({ x: 0, z: 0 }, east, 4, 10, 0.4, open).x).toBeCloseTo(2)
+  })
+})
+
+describe('stickDirection', () => {
+  it('ignores a thumb just resting on the stick', () => {
+    expect(stickDirection(0.05, 0.05, 0)).toBeNull()
+  })
+
+  it('pushing up moves away from the camera, same as W', () => {
+    const dir = stickDirection(0, 1, 0)!
+    expect(dir.x).toBeCloseTo(0)
+    expect(dir.z).toBeCloseTo(-1)
+  })
+
+  it('works at any angle, always unit length', () => {
+    const dir = stickDirection(0.3, 0.3, 0)!
+    expect(Math.hypot(dir.x, dir.z)).toBeCloseTo(1)
+    expect(dir.x).toBeCloseTo(Math.SQRT1_2)
   })
 })
