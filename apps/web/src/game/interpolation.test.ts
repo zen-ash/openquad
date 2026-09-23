@@ -47,4 +47,11 @@ describe('pushSnapshot', () => {
     expect(buf.length).toBeLessThanOrEqual(30)
     expect(buf[buf.length - 1]?.x).toBe(99)
   })
+
+  it('jumps straight to the new spot after a teleport', () => {
+    const buf: Snapshot[] = []
+    pushSnapshot(buf, snap(0, 0))
+    pushSnapshot(buf, snap(50, 200))
+    expect(sample(buf, 25)?.x).toBe(200)
+  })
 })

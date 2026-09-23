@@ -8,9 +8,16 @@ export const INTERP_DELAY = (2 * 1000) / TICK_RATE
 
 const TICK_MS = 1000 / TICK_RATE
 const MAX_SNAPSHOTS = 30
+// nobody runs this far in one update, so it has to be a teleport
+const TELEPORT_DISTANCE = 10
 
 export function pushSnapshot(buffer: Snapshot[], snap: Snapshot) {
   const last = buffer[buffer.length - 1]
+
+  // teleported, just show them at the new spot instead of blending across the map
+  if (last && Math.hypot(snap.x - last.x, snap.z - last.z) > TELEPORT_DISTANCE) {
+    buffer.length = 0
+  }
 
   // server only sends people who moved. if someone stood still for a while and
   // starts walking again, the previous snapshot is really old and they'd slide
