@@ -2,6 +2,7 @@ import { MAX_NAME_LENGTH } from '@quad/shared'
 import { useState, type FormEvent } from 'react'
 import { connect } from './net/connection'
 import { useGame } from './net/store'
+import { startMic } from './voice/voice'
 
 function savedName() {
   try {
@@ -24,6 +25,7 @@ export default function JoinScreen() {
     } catch {
       // private mode etc, not a big deal
     }
+    startMic()
     connect(trimmed)
   }
 

@@ -5,6 +5,7 @@ import { useRef, useState } from 'react'
 import * as THREE from 'three'
 import { resolveCollisions } from '../game/collision'
 import type { Controls } from '../game/controls'
+import { localPlayer } from '../game/localPlayer'
 import { headingFor, moveDirection, RUN_SPEED, WALK_SPEED } from '../game/movement'
 import { world } from '../game/world'
 import { send } from '../net/connection'
@@ -59,6 +60,10 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
       currentAnim.current = next
       setAnim(next)
     }
+
+    localPlayer.x = player.position.x
+    localPlayer.z = player.position.z
+    localPlayer.cameraYaw = cameraYaw.current
 
     // send at the server's tick rate, and only if something changed
     sendTimer.current += dt

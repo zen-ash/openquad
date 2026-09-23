@@ -1,5 +1,6 @@
 import { SERVER_PORT, type ClientMessage, type ServerMessage } from '@quad/shared'
 import { pushSnapshot } from '../game/interpolation'
+import { closeAll, closePeer, handleSignal } from '../voice/voice'
 import { snapshots, useGame } from './store'
 
 const SERVER_URL =
@@ -9,6 +10,7 @@ let socket: WebSocket | null = null
 
 export function connect(name: string) {
   socket?.close()
+  closeAll()
   snapshots.clear()
   useGame.setState({ status: 'connecting', me: null, players: {} })
 
@@ -18,7 +20,9 @@ export function connect(name: string) {
   ws.onmessage = (e) => handle(JSON.parse(e.data))
   ws.onclose = () => {
     // ignore old sockets closing after a reconnect
-    if (socket === ws) useGame.setState({ status: 'disconnected' })
+    if (socket !== ws) return
+    closeAll()
+    useGame.setState({ status: 'disconnected' })
   }
 }
 
@@ -47,6 +51,7 @@ function handle(msg: ServerMessage) {
     }
     case 'player-left': {
       snapshots.delete(msg.id)
+      closePeer(msg.id)
       useGame.setState((s) => {
         const players = { ...s.players }
         delete players[msg.id]
@@ -62,7 +67,7 @@ function handle(msg: ServerMessage) {
       }
       break
     case 'signal':
-      // voice chat, next milestone
+      handleSignal(msg.from, msg.data)
       break
   }
 }
