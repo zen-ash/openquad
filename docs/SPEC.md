@@ -31,9 +31,13 @@ though, no actual Pokemon characters or assets (all models are CC0).
  Web Audio PannerNode                          /health
 ```
 
-- **Position sync** - clients send their position when they move, server batches
-  everything that changed and broadcasts 20 times a second. Clients interpolate between
-  updates so other players don't look jittery.
+- **Position sync** - clients send their position (at most 20 times a second, only if it
+  changed), server batches everything that changed and broadcasts 20 times a second.
+- **Interpolation** - other players are drawn 100ms (2 ticks) in the past, blending between
+  the two snapshots around that time, so they move smoothly instead of jumping every tick.
+  When someone starts moving after standing still, a fake "still here" snapshot is added
+  first so they don't slide over in slow motion (`apps/web/src/game/interpolation.ts`).
+  Their walk/run animation is picked from how fast they're moving.
 - **Voice** - WebRTC peer to peer. The server is only used for signaling (passing the
   offer/answer/ICE messages between two players), audio never goes through it.
 - **Proximity** - each remote voice goes through a Web Audio `PannerNode` placed at that
@@ -54,13 +58,13 @@ Everything is JSON over one websocket. Types live in `packages/shared/src/protoc
 | `move`           | position + heading                  |
 | `signal`         | WebRTC data for one specific player |
 
-| server -> client |                                 |
-| ---------------- | ------------------------------- |
-| `welcome`        | your id + everyone already here |
-| `player-joined`  | new player                      |
-| `player-left`    | id                              |
-| `state`          | positions of players who moved  |
-| `signal`         | WebRTC data from another player |
+| server -> client |                                          |
+| ---------------- | ---------------------------------------- |
+| `welcome`        | you (id + spawn) + everyone already here |
+| `player-joined`  | new player                               |
+| `player-left`    | id                                       |
+| `state`          | positions of players who moved           |
+| `signal`         | WebRTC data from another player          |
 
 The server validates every message (`apps/server/src/messages.ts`) and drops anything
 malformed.
@@ -82,5 +86,7 @@ malformed.
 
 - unit tests for the math and room logic (vitest)
 - integration tests that start the real server and connect sockets to it
-- e2e with Playwright once multiplayer works (two browser contexts, check A sees B move)
+- e2e with Playwright (`e2e/`): two browser contexts join, one walks, check the other sees
+  it. Runs with 1 worker since all tests share the same server. The page exposes
+  `window.quad` in dev builds so tests can read positions (it's all a canvas otherwise)
 - CI runs format, lint, typecheck, tests and build on every push

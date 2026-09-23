@@ -19,12 +19,14 @@ pnpm install
 pnpm dev
 ```
 
-Web runs on http://localhost:5173 and the server on port 2567.
+Web runs on http://localhost:5173 and the server on port 2567. Open it in two tabs to see
+multiplayer working.
 
 Other scripts:
 
 ```sh
 pnpm test        # unit + integration tests
+pnpm e2e         # playwright, opens two browsers and checks they see each other
 pnpm typecheck
 pnpm lint
 pnpm build
