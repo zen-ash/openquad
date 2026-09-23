@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clamp, distance, voiceVolume } from './math'
+import { clamp, distance, lerpAngle, voiceVolume } from './math'
 
 describe('distance', () => {
   it('is 0 for the same point', () => {
@@ -30,5 +30,18 @@ describe('voiceVolume', () => {
 
   it('fades in between', () => {
     expect(voiceVolume(8.5, 2, 15)).toBeCloseTo(0.5)
+  })
+})
+
+describe('lerpAngle', () => {
+  it('goes halfway', () => {
+    expect(lerpAngle(0, 1, 0.5)).toBeCloseTo(0.5)
+  })
+
+  it('takes the short way around', () => {
+    const from = Math.PI - 0.1
+    const to = -Math.PI + 0.1
+    // should step forward past PI, not all the way back through 0
+    expect(lerpAngle(from, to, 0.5)).toBeCloseTo(Math.PI)
   })
 })

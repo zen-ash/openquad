@@ -20,3 +20,11 @@ export function voiceVolume(dist: number, min: number, max: number) {
   if (dist >= max) return 0
   return 1 - (dist - min) / (max - min)
 }
+
+// shortest way around the circle, so turning from 350deg to 10deg goes +20 not -340
+export function lerpAngle(from: number, to: number, t: number) {
+  let diff = (to - from) % (Math.PI * 2)
+  if (diff > Math.PI) diff -= Math.PI * 2
+  if (diff < -Math.PI) diff += Math.PI * 2
+  return from + diff * t
+}
