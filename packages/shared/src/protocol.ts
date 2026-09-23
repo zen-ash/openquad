@@ -5,6 +5,7 @@ import type { PlayerInfo, Vec3 } from './types'
 export type SignalData =
   | { kind: 'description'; description: { type: string; sdp?: string } }
   | { kind: 'candidate'; candidate: unknown }
+  | { kind: 'bye' }
 
 export type ClientMessage =
   | { type: 'join'; name: string }

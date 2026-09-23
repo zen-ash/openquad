@@ -1,5 +1,7 @@
 import { MAX_NAME_LENGTH, type ClientMessage, type Vec3 } from '@quad/shared'
 
+const SIGNAL_KINDS = ['description', 'candidate', 'bye']
+
 const isNum = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n)
 
 function isVec3(v: unknown): v is Vec3 {
@@ -27,11 +29,12 @@ export function parseMessage(raw: string): ClientMessage | null {
     case 'move':
       if (!isVec3(msg.position) || !isNum(msg.heading)) return null
       return { type: 'move', position: msg.position, heading: msg.heading }
-    case 'signal':
-      if (typeof msg.to !== 'string' || typeof msg.data !== 'object' || msg.data === null) {
-        return null
-      }
+    case 'signal': {
+      const data = msg.data as { kind?: unknown } | null
+      if (typeof msg.to !== 'string' || typeof data !== 'object' || data === null) return null
+      if (!SIGNAL_KINDS.includes(data.kind as string)) return null
       return msg as ClientMessage
+    }
     default:
       return null
   }
