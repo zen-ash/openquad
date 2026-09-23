@@ -1,7 +1,7 @@
 import { lerpAngle, TICK_RATE, type PlayerInfo } from '@quad/shared'
 import { useKeyboardControls } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { cutout } from '../campus/cutout'
 import type { Controls } from '../game/controls'
@@ -19,6 +19,7 @@ import {
 import { touch } from '../game/touch'
 import { world } from '../game/world'
 import { send } from '../net/connection'
+import { stopEmote, useEmotes } from '../net/emotes'
 import Character, { type Anim } from './Character'
 import ChatBubble from './ChatBubble'
 
@@ -49,9 +50,15 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
   const cameraYaw = useRef(localPlayer.cameraYaw)
   const currentAnim = useRef<Anim>('Idle')
   const [anim, setAnim] = useState<Anim>('Idle')
+  const emote = useEmotes((s) => s.playing[spawn.id])
   const [, getKeys] = useKeyboardControls<Controls>()
   const sendTimer = useRef(0)
   const snapCamera = useRef(true)
+
+  // walking off cancels an emote
+  useEffect(() => {
+    if (anim !== 'Idle' && emote) stopEmote(spawn.id, emote.key)
+  }, [anim, emote, spawn.id])
   const lastSent = useRef({ x: spawn.position.x, z: spawn.position.z, heading: spawn.heading })
 
   useFrame(({ camera }, delta) => {
@@ -127,7 +134,11 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
 
   return (
     <group ref={body} position={[spawn.position.x, 0, spawn.position.z]} rotation-y={spawn.heading}>
-      <Character avatar={avatarById(spawn.avatar)} anim={anim} />
+      <Character
+        avatar={avatarById(spawn.avatar)}
+        anim={emote && anim === 'Idle' ? emote.name : anim}
+        onEmoteDone={() => emote && stopEmote(spawn.id, emote.key)}
+      />
       <ChatBubble id={spawn.id} />
     </group>
   )

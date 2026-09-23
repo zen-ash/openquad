@@ -5,14 +5,23 @@ import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js'
 import { AVATARS, MOCAP_SPEED, type Avatar } from '../game/avatars'
 import { RUN_SPEED, WALK_SPEED } from '../game/movement'
 
-export type Anim = 'Idle' | 'Walk' | 'Run' | 'Wave'
+export type Anim = 'Idle' | 'Walk' | 'Run'
 
 const HEIGHT = 1.8 // meters
 
 const modelUrl = (a: Avatar) => `/models/people/${a.id}.glb`
 const animsUrl = (a: Avatar) => `/models/people/anims_${a.body}.glb`
 
-export default function Character({ avatar, anim }: { avatar: Avatar; anim: Anim }) {
+type Props = {
+  avatar: Avatar
+  // Idle/Walk/Run loop, anything else (an emote) plays once
+  anim: string
+  onEmoteDone?: () => void
+}
+
+const LOOPING = ['Idle', 'Walk', 'Run']
+
+export default function Character({ avatar, anim, onEmoteDone }: Props) {
   const { scene } = useGLTF(modelUrl(avatar))
   const { animations } = useGLTF(animsUrl(avatar))
   const group = useRef<THREE.Group>(null)
@@ -37,7 +46,18 @@ export default function Character({ avatar, anim }: { avatar: Avatar; anim: Anim
     return copy
   }, [scene])
 
-  const { actions } = useAnimations(animations, group)
+  const { actions, mixer } = useAnimations(animations, group)
+
+  // tell whoever's showing the emote that it's over, so they go back to standing
+  const done = useRef(onEmoteDone)
+  useEffect(() => {
+    done.current = onEmoteDone
+  })
+  useEffect(() => {
+    const finished = () => done.current?.()
+    mixer.addEventListener('finished', finished)
+    return () => mixer.removeEventListener('finished', finished)
+  }, [mixer])
 
   useEffect(() => {
     const action = actions[anim]
@@ -46,6 +66,12 @@ export default function Character({ avatar, anim }: { avatar: Avatar; anim: Anim
     const rate =
       anim === 'Walk' ? WALK_SPEED / mocap.Walk : anim === 'Run' ? RUN_SPEED / mocap.Run : 1
     action?.reset().setEffectiveTimeScale(rate)
+    const once = !LOOPING.includes(anim)
+    action?.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, Infinity)
+    // hold the last pose of an emote instead of snapping to a t-pose before idle fades in.
+    // three's animation objects are meant to be changed like this
+    // eslint-disable-next-line react-hooks/immutability
+    if (action) action.clampWhenFinished = once
     action?.fadeIn(0.25).play()
     return () => {
       action?.fadeOut(0.25)
