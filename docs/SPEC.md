@@ -29,7 +29,21 @@ Realistic downtown Atlanta, as close as a browser on a school laptop can do.
 - **Quality** - drei's `PerformanceMonitor` drops to low quality if the framerate stays bad:
   no shadows, no effects, 1x resolution. `?quality=low` forces it (the e2e tests use this).
 - Textures are CC0 from Poly Haven, shrunk to 512px webp (700kb for all of them instead of
-  ~12mb). Characters are still the low poly Quaternius ones (CC0).
+  ~12mb).
+- **People** - Microsoft's Rocketbox avatars (MIT): realistic, textured, and all on the same
+  80 bone skeleton, so one animation file per body type (idle/walk/run/wave, from Rocketbox's
+  own mocap) works for every avatar. Converted from FBX with FBX2glTF, textures attached and
+  shrunk to webp with gltf-transform, ~500kb per avatar. Each one is scaled to 1.8m when it
+  loads. Everyone gets an avatar picked from their id for now.
+- **Scale** - 1 unit = 1 meter. The map started out at half size so walking across was
+  faster, but with realistic people that made everyone as tall as a floor of a building.
+  Walking is 1.6 m/s and running 4.2 m/s, close to the mocap speeds.
+- **Animations** - Rocketbox's "in place" walk and run still move the hips forward about
+  1.5m per loop and then snap back, which looked like a moonwalk glitch on top of our own
+  movement. The build step flattens that out (keeps the up/down bob) and measures how fast
+  the actor was going, so walk/run play at `our speed / mocap speed` and feet don't slide.
+  The four clips also have to share one skeleton in the file: three renames duplicate bone
+  names, and then walk/run silently didn't play at all. `avatars.test.ts` checks both files.
 
 ## How it works
 
@@ -77,8 +91,7 @@ footpaths and parks, in a 1km square around Hurt Park.
 
 - `scripts/build-campus.mjs` downloads it once from the Overpass API and writes
   `apps/web/src/campus/campus.json` (~40kb gzipped). The game never calls a map service.
-- Scaled to half size. At 1:1 it takes ~5 minutes to walk across, which is boring.
-  Hurt Park is (0, 0) and where everyone spawns. North is -z.
+- Real size (1 unit = 1 meter). Hurt Park is (0, 0) and where everyone spawns. North is -z.
 - Heights come from the `height` tag, else `building:levels` x 3.5m, else 14m (only about a
   third of buildings have either tag).
 - OSM has almost no trees mapped, so the script plants them in parks on a jittered grid,

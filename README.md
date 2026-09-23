@@ -89,4 +89,4 @@ See [docs/SPEC.md](docs/SPEC.md) for the plan.
 
 - Map data (c) [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, available under the Open Database License. `apps/web/src/campus/campus.json` is built from it with `pnpm campus`
 - Textures from [Poly Haven](https://polyhaven.com) (CC0)
-- Character models from the [Ultimate Modular Men Pack](https://poly.pizza/bundle/Ultimate-Modular-Men-Pack-ZiH8muWqwQ) by Quaternius (CC0)
+- People from Microsoft's [Rocketbox Avatar Library](https://github.com/microsoft/Microsoft-Rocketbox) (MIT, license in `apps/web/public/models/people/LICENSE.txt`)
