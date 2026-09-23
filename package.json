@@ -15,7 +15,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "e2e": "playwright test",
-    "campus": "node scripts/build-campus.mjs"
+    "campus": "node scripts/build-campus.mjs",
+    "bots": "pnpm --filter @quad/server bots"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
