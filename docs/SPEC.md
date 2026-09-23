@@ -115,6 +115,24 @@ footpaths and parks, in a 1km square around Hurt Park.
   middle for open ground. Other players' interpolation treats any jump over 10m as a
   teleport instead of sliding them across the map.
 
+## Polish (part 7)
+
+- **Avatar picker** - pick one of the six people on the join screen, everyone sees it
+  (`avatar` in `join` and `PlayerInfo`, server falls back to the default for unknown ids).
+  The picker is real radio buttons and join reads the choice from the form, not React
+  state. While the city loads the page is busy and React can be a second behind, so
+  "pick then click join" used to join as the default avatar. There's a test for exactly that.
+- **Chat** - Enter to type, Enter to send, Esc to cancel. Shows in a log and as a bubble over
+  the person's head for 6 seconds. 200 characters max, and the server drops anything past
+  5 messages in 5 seconds per person. Movement keys are ignored while typing.
+- **Minimap** - the campus is drawn once to an offscreen canvas at 1px per meter, then the
+  minimap shows 260m around you, rotated so up is the way W walks. Others are dots.
+- **Touch** - on touch screens: joystick bottom left (push it all the way to run), drag
+  anywhere else to turn the camera.
+- **Reconnect** - if the connection drops while you're in, the game stays on screen with a
+  "Reconnecting..." banner and tries again after 0.5s, 1s, 2s, 4s, then every 8s. It rejoins
+  with the same name and avatar at the spot you were standing (`position` in `join`).
+
 ## Deployment
 
 - One Docker image: build the web app and bundle the server into a single file with esbuild
@@ -137,10 +155,11 @@ Everything is JSON over one websocket. Types live in `packages/shared/src/protoc
 
 | client -> server |                                                  |
 | ---------------- | ------------------------------------------------ |
-| `join`           | name                                             |
+| `join`           | name, avatar, position (only when reconnecting)  |
 | `move`           | position + heading                               |
 | `signal`         | WebRTC offer/answer/candidate/bye for one player |
 | `ping`           | keepalive, ignored                               |
+| `chat`           | text (server rate limits it)                     |
 
 | server -> client |                                          |
 | ---------------- | ---------------------------------------- |
@@ -149,6 +168,7 @@ Everything is JSON over one websocket. Types live in `packages/shared/src/protoc
 | `player-left`    | id                                       |
 | `state`          | positions of players who moved           |
 | `signal`         | WebRTC data from another player          |
+| `chat`           | from, name, text                         |
 
 The server validates every message (`apps/server/src/messages.ts`) and drops anything
 malformed.

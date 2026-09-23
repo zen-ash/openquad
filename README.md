@@ -84,6 +84,8 @@ See [docs/SPEC.md](docs/SPEC.md) for the plan.
 - Q / E to turn the camera
 - M to mute / unmute
 - "Go to..." in the top right to jump to a building
+- Enter to chat
+- On a phone or tablet: joystick in the bottom left, drag anywhere else to turn
 
 ## Credits
 
