@@ -7,6 +7,7 @@ interface Window {
     myPosition: () => { x: number; z: number }
     person: (id: string) => { name: string; avatar: string } | undefined
     dropConnection: () => void
+    emoteOf: (id: string) => string | undefined
     voice: () => Record<string, { state: string; heardAgo: number | null }>
   }
 }

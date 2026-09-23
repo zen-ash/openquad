@@ -67,3 +67,12 @@ test('reconnects on its own after the connection drops', async ({ join }) => {
   const seenAt = await bob.evaluate((id) => window.quad!.positionOf(id), newId)
   expect(Math.hypot(seenAt!.x - spot.x, seenAt!.z - spot.z)).toBeLessThan(1)
 })
+
+test('emotes show up for other people', async ({ join }) => {
+  const alice = await join('Alice')
+  const bob = await join('Bob')
+  const aliceId = await myId(alice)
+
+  await alice.keyboard.press('2')
+  await expect.poll(() => bob.evaluate((id) => window.quad!.emoteOf(id), aliceId)).toBe('Clap')
+})

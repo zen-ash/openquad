@@ -2,6 +2,7 @@ import { localPlayer } from '../game/localPlayer'
 import { peers } from '../voice/voice'
 import { lastSound } from '../voice/VoiceUpdater'
 import { dropConnection } from './connection'
+import { useEmotes } from './emotes'
 import { snapshots, useGame, type Person } from './store'
 
 // everything is drawn in a canvas so the e2e tests can't just look at the DOM.
@@ -15,6 +16,7 @@ declare global {
       myPosition: () => { x: number; z: number }
       person: (id: string) => Person | undefined
       dropConnection: () => void
+      emoteOf: (id: string) => string | undefined
       // per person we're in a call with: connection state, and how many ms ago we
       // last heard anything from them (null = never)
       voice: () => Record<string, { state: string; heardAgo: number | null }>
@@ -30,6 +32,7 @@ if (import.meta.env.DEV) {
     myPosition: () => ({ x: localPlayer.x, z: localPlayer.z }),
     person: (id) => useGame.getState().players[id],
     dropConnection,
+    emoteOf: (id) => useEmotes.getState().playing[id]?.name,
     voice: () => {
       const out: Record<string, { state: string; heardAgo: number | null }> = {}
       for (const [id, peer] of peers) {
