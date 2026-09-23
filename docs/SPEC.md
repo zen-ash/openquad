@@ -60,6 +60,40 @@ server so the client code is the same either way.
 - Chrome quirk: audio from a remote WebRTC stream is silent in Web Audio unless the stream is
   also attached to an `<audio>` element, so there's a muted one per call.
 
+## The campus
+
+The real GSU campus from OpenStreetMap: 242 buildings (55 of them GSU's), streets,
+footpaths and parks, in a 1km square around Hurt Park.
+
+- `scripts/build-campus.mjs` downloads it once from the Overpass API and writes
+  `apps/web/src/campus/campus.json` (~40kb gzipped). The game never calls a map service.
+- Scaled to half size. At 1:1 it takes ~5 minutes to walk across, which is boring.
+  Hurt Park is (0, 0) and where everyone spawns. North is -z.
+- Heights come from the `height` tag, else `building:levels` x 3.5m, else 14m (only about a
+  third of buildings have either tag).
+- OSM has almost no trees mapped, so the script plants them in parks on a jittered grid,
+  staying off paths. Same result every run.
+- GSU buildings get GSU blue roofs, light blue walls and name labels (only shown within 70m).
+- **Rendering** - all buildings are merged into one mesh with vertex colors (1 draw call
+  instead of 242), roads/paths/parks the same, trees are two instanced meshes. Edge lines
+  instead of outlines on buildings (see below).
+- **Collision** - buildings are polygons now, not boxes. Circle vs polygon: find the closest
+  point on the outline, push out from there (or through it if you ended up inside).
+  Bounding boxes skip most buildings. Two passes, since being pushed out of one building
+  can push you into the next one on packed blocks.
+- **See-through buildings** - downtown buildings are tall enough to hide you from the
+  camera. Instead of pulling the camera in (tried it, you end up with your face filling
+  the screen), buildings get a hole cut in them anywhere between the camera and the player,
+  like the pokemon games. It's a few lines added to the toon shader with `onBeforeCompile`:
+  discard pixels near the camera -> player line, with a dithered edge.
+  drei's `<Outlines>` doesn't work with this (it's a black shell behind the mesh that shows
+  through the hole), so buildings use `EdgesGeometry` lines, which get the same cut.
+- **Sun follows you** - the shadow map can't cover the whole map, so the light and its
+  shadow area move with the player.
+- **Go to menu** - teleport spots are found by searching outward from each building's
+  middle for open ground. Other players' interpolation treats any jump over 10m as a
+  teleport instead of sliding them across the map.
+
 ## Deployment
 
 - One Docker image: build the web app and bundle the server into a single file with esbuild
@@ -107,7 +141,8 @@ malformed.
    Playwright test with two browsers
 4. **Voice** - mic permission, WebRTC between nearby players, distance falloff,
    speaking indicator, mute button
-5. **Real campus** - buildings from OpenStreetMap footprints around GSU instead of boxes
+5. **Real campus** - buildings from OpenStreetMap footprints around GSU instead of boxes,
+   see-through buildings, go-to menu
 6. **Polish** - join screen with avatar picker, mobile controls, chat, minimap
 7. **Stretch** - emotes, day/night from real Atlanta time, load test with bots
 

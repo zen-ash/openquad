@@ -69,6 +69,7 @@ apps/
 packages/
   shared/    shared types and helpers
 docs/        design notes
+scripts/     build-campus.mjs pulls the campus from OpenStreetMap
 ```
 
 See [docs/SPEC.md](docs/SPEC.md) for the plan.
@@ -79,7 +80,9 @@ See [docs/SPEC.md](docs/SPEC.md) for the plan.
 - Shift to run
 - Q / E to turn the camera
 - M to mute / unmute
+- "Go to..." in the top right to jump to a building
 
 ## Credits
 
+- Map data (c) [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, available under the Open Database License. `apps/web/src/campus/campus.json` is built from it with `pnpm campus`
 - Character models from the [Ultimate Modular Men Pack](https://poly.pizza/bundle/Ultimate-Modular-Men-Pack-ZiH8muWqwQ) by Quaternius (CC0)
