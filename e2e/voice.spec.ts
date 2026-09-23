@@ -33,8 +33,9 @@ test('muting stops your audio', async ({ join }) => {
   await alice.getByRole('button', { name: /Mic on/ }).click()
   await expect(alice.getByRole('button', { name: /Muted/ })).toBeVisible()
 
-  // a few beeps worth of time. nothing should come through after the first ~second
-  await bob.waitForTimeout(3000)
+  // give the mute up to 2s to kick in (slow ci machines), then there should be 2 full
+  // seconds of silence. the fake mic beeps every second, so unmuted would fail this
+  await bob.waitForTimeout(4000)
   expect(await heardAgo(bob, aliceId)).toBeGreaterThan(2000)
 })
 

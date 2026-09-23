@@ -2,7 +2,8 @@ import { test as base, expect, type BrowserContext, type Page } from '@playwrigh
 
 type Fixtures = {
   // joins the game as a new person (own browser context, so no shared storage)
-  join: (name: string) => Promise<Page>
+  // avatar is the description on the picker, like 'green top'
+  join: (name: string, avatar?: string) => Promise<Page>
 }
 
 // closes everyone at the end of each test. this has to be a fixture, a plain
@@ -11,13 +12,14 @@ export const test = base.extend<Fixtures>({
   join: async ({ browser }, use) => {
     const contexts: BrowserContext[] = []
 
-    await use(async (name) => {
+    await use(async (name, avatar) => {
       const context = await browser.newContext()
       contexts.push(context)
       const page = await context.newPage()
       // no gpu in ci, so skip drawing the city. these tests are about networking and voice
       await page.goto('/?quality=low&nocity')
       await page.getByLabel("What's your name?").fill(name)
+      if (avatar) await page.getByRole('radio', { name: avatar }).click()
       await page.getByRole('button', { name: 'Join' }).click()
       // the player count only shows once you're actually in (just /online/ also matches
       // the join screen's tagline)

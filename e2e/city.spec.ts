@@ -16,3 +16,15 @@ test('the city renders without errors', async ({ page }) => {
 
   expect(errors).toEqual([])
 })
+
+// the full city keeps the page busy while it loads. picking an avatar and hitting join
+// right away used to send the default avatar, because react hadn't caught up yet
+test('picking an avatar works even while the city is still loading', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel("What's your name?").fill('Quick')
+  await page.getByRole('radio', { name: 'green top' }).click()
+  await page.getByRole('button', { name: 'Join' }).click()
+
+  await expect(page.getByText(/^\d+ online$/)).toBeVisible({ timeout: 30_000 })
+  expect(await page.evaluate(() => window.quad!.myAvatar())).toBe('female_17')
+})
