@@ -10,6 +10,17 @@ and fade out as you walk away, like real life.
 Demo goal: the whole class joins from their laptops, and I walk my avatar over to the
 professor's and start talking.
 
+## Look and feel
+
+Going for the style of the 3D Pokemon games - low poly, bright colors, toon shading with
+outlines, and a camera that sits up and behind the player looking down. Only the style
+though, no actual Pokemon characters or assets (all models are CC0).
+
+- toon shading: `MeshToonMaterial` with a 3 step gradient, drei `<Outlines>` on buildings/trees
+- characters: Quaternius modular men pack, trimmed down to Idle/Walk/Run/Wave to keep the
+  file small (~600kb instead of 2mb)
+- later: a "!" over someone's head when they come into voice range
+
 ## How it works
 
 ```
@@ -57,7 +68,8 @@ malformed.
 ## Milestones
 
 1. **Setup** - monorepo, CI, basic scene deployed somewhere
-2. **Walking** - third person avatar, WASD, camera follows, can't walk through buildings
+2. **Walking** - third person avatar, WASD, camera follows (Q/E to rotate), can't walk
+   through buildings or trees
 3. **Multiplayer** - see other people move, name tags, smooth interpolation.
    Playwright test with two browsers
 4. **Voice** - mic permission, WebRTC between nearby players, distance falloff,

@@ -42,3 +42,13 @@ docs/        design notes
 ```
 
 See [docs/SPEC.md](docs/SPEC.md) for the plan.
+
+## Controls
+
+- WASD / arrow keys to walk
+- Shift to run
+- Q / E to turn the camera
+
+## Credits
+
+- Character models from the [Ultimate Modular Men Pack](https://poly.pizza/bundle/Ultimate-Modular-Men-Pack-ZiH8muWqwQ) by Quaternius (CC0)
