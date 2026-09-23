@@ -33,6 +33,7 @@ export default function JoinScreen() {
     <div className="overlay">
       <form className="card" onSubmit={join}>
         <h1>OpenQuad</h1>
+        <p className="tagline">Georgia State's campus, online. Walk up to people to talk.</p>
         {status === 'disconnected' && <p className="error">Lost connection to the server.</p>}
         <label htmlFor="name">What's your name?</label>
         <input
