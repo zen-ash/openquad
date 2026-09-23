@@ -5,6 +5,7 @@ import type { Group } from 'three'
 import { INTERP_DELAY, sample } from '../game/interpolation'
 import { animForSpeed } from '../game/movement'
 import { snapshots, useGame } from '../net/store'
+import { useVoice } from '../voice/store'
 import Character, { type Anim } from './Character'
 
 function RemotePlayer({ id, name }: { id: string; name: string }) {
@@ -12,6 +13,7 @@ function RemotePlayer({ id, name }: { id: string; name: string }) {
   const speed = useRef(0)
   const currentAnim = useRef<Anim>('Idle')
   const [anim, setAnim] = useState<Anim>('Idle')
+  const speaking = useVoice((s) => s.speaking[id] ?? false)
 
   useFrame((_, delta) => {
     const group = body.current
@@ -40,7 +42,12 @@ function RemotePlayer({ id, name }: { id: string; name: string }) {
     <group ref={body}>
       <Character anim={anim} />
       <Billboard position-y={2.4}>
-        <Text fontSize={0.35} color="white" outlineWidth={0.03} outlineColor="black">
+        <Text
+          fontSize={0.35}
+          color={speaking ? '#7dff6a' : 'white'}
+          outlineWidth={0.03}
+          outlineColor="black"
+        >
           {name}
         </Text>
       </Billboard>
