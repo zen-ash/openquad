@@ -21,7 +21,9 @@ function canopyGeometry() {
     [0.2, 0.6, -0.7, 1.1],
     [-0.3, 0.9, 0.3, 1],
   ].map(([x, y, z, r]) => {
-    const geo = new THREE.IcosahedronGeometry(r, 2)
+    // detail 1 is a quarter of the triangles of 2 and looks the same from the camera.
+    // 250 trees at detail 2 was over a million vertices
+    const geo = new THREE.IcosahedronGeometry(r, 1)
     const pos = geo.getAttribute('position')
     for (let i = 0; i < pos.count; i++) {
       const bump = 1 + (rand(pos.getX(i), pos.getZ(i), pos.getY(i)) - 0.5) * 0.25
