@@ -4,6 +4,8 @@ A multiplayer 3D campus in the browser with proximity voice chat. Walk up to som
 
 Final project for CSC 4370 (Web Programming) at Georgia State.
 
+**Try it: https://openquad.onrender.com** (open it in two windows, or send it to a friend)
+
 ## Stack
 
 - **web** - React, React Three Fiber, Vite
