@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber'
 import { Suspense } from 'react'
 import { AgXToneMapping } from 'three'
 import ChatPanel from './ChatPanel'
+import EmoteBar from './EmoteBar'
 import { keyMap } from './game/controls'
 import JoinScreen from './JoinScreen'
 import Minimap from './Minimap'
@@ -14,6 +15,7 @@ import Player from './scene/Player'
 import RemotePlayers from './scene/RemotePlayers'
 import { hideCity, useSettings } from './settings'
 import TeleportMenu from './TeleportMenu'
+import TimePicker from './TimePicker'
 import TouchControls, { isTouchScreen } from './TouchControls'
 import MicButton from './voice/MicButton'
 import VoiceUpdater from './voice/VoiceUpdater'
@@ -64,8 +66,10 @@ export default function App() {
           </div>
           <ChatPanel />
           <Minimap />
+          <EmoteBar />
           <MicButton />
           <TeleportMenu />
+          <TimePicker />
         </>
       ) : (
         <JoinScreen />

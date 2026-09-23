@@ -1,27 +1,57 @@
-import { Environment, Sky } from '@react-three/drei'
+import { Environment, Sky, Stars } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
-import { useMemo, useRef } from 'react'
-import { PlaneGeometry, type DirectionalLight } from 'three'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Color, PlaneGeometry, type DirectionalLight } from 'three'
 import campus from '../campus/campus.json'
 import { areasGeometry, linesGeometry, planarUv } from '../campus/geometry'
+import { night } from '../campus/facade'
 import { grassMaterial, roadMaterial, sidewalkMaterial } from '../campus/ground'
 import { localPlayer } from '../game/localPlayer'
+import { daylight, sunDirection, sunPosition, timeFor } from '../game/sun'
+import { useSettings } from '../settings'
 import Buildings from './Buildings'
 import Trees from './Trees'
 
-// late afternoon, sun in the southwest-ish. used for the sky, the light and reflections
-const SUN: [number, number, number] = [-90, 70, 60]
-const HAZE = '#c9d6e0'
+const DAY_HAZE = new Color('#c9d6e0')
+const NIGHT_HAZE = new Color('#0b1322')
+const SUNLIGHT = new Color('#fff0dc')
+const SUNSET_LIGHT = new Color('#ffb070')
+const MOONLIGHT = new Color('#8fa6d6')
+
+// the real sun over atlanta (or a picked time of day). checked every 30 seconds, it
+// doesn't move fast enough to need more
+function useSky() {
+  const setting = useSettings((s) => s.time)
+  const [now, setNow] = useState(() => new Date())
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 30_000)
+    return () => clearInterval(timer)
+  }, [])
+
+  return useMemo(() => {
+    const when = timeFor(setting, now)
+    const dir = sunDirection(when)
+    const day = daylight(sunPosition(when).altitude)
+    // at night the "sun" light is moonlight from high up in the east
+    const light: [number, number, number] = day > 0 ? dir : [0.3, 0.8, -0.5]
+    return { dir, day, light, key: `${setting}-${Math.round(when.getTime() / 600_000)}` }
+  }, [setting, now])
+}
 
 // the map is way bigger than one shadow map can cover nicely, so the sun (and the
 // area it casts shadows in) follows you around
-function Sun() {
+function Sun({ dir, day }: { dir: [number, number, number]; day: number }) {
   const light = useRef<DirectionalLight>(null)
+  const color = useMemo(() => {
+    const low = 1 - Math.min(1, dir[1] * 4) // warmer when the sun is near the horizon
+    return day > 0 ? SUNLIGHT.clone().lerp(SUNSET_LIGHT, low) : MOONLIGHT
+  }, [dir, day])
 
   useFrame(() => {
     const l = light.current
     if (!l) return
-    l.position.set(localPlayer.x + SUN[0], SUN[1], localPlayer.z + SUN[2])
+    l.position.set(localPlayer.x + dir[0] * 150, dir[1] * 150, localPlayer.z + dir[2] * 150)
     l.target.position.set(localPlayer.x, 0, localPlayer.z)
     l.target.updateMatrixWorld()
   })
@@ -29,15 +59,15 @@ function Sun() {
   return (
     <directionalLight
       ref={light}
-      color="#fff0dc"
-      intensity={3}
+      color={color}
+      intensity={day > 0 ? 3 * day : 0.35}
       castShadow
       shadow-mapSize={[2048, 2048]}
       shadow-camera-left={-60}
       shadow-camera-right={60}
       shadow-camera-top={60}
       shadow-camera-bottom={-60}
-      shadow-camera-far={300}
+      shadow-camera-far={400}
       // without these you get fine stripes all over the walls and grass (shadow acne)
       shadow-bias={-0.001}
       shadow-normalBias={0.2}
@@ -70,16 +100,32 @@ function Ground() {
 }
 
 export default function Campus() {
+  const sky = useSky()
+  const sunAt = sky.dir.map((v) => v * 100) as [number, number, number]
+  const haze = useMemo(() => NIGHT_HAZE.clone().lerp(DAY_HAZE, sky.day), [sky.day])
+
+  // lit windows fade in as it gets dark
+  useEffect(() => {
+    night.value = 1 - sky.day
+  }, [sky.day])
+
   return (
     <>
-      <Sky sunPosition={SUN} turbidity={5} rayleigh={1.2} mieCoefficient={0.004} />
-      {/* same sky rendered once into a cube map, for reflections and soft light */}
-      <Environment frames={1} resolution={128} environmentIntensity={0.7}>
-        <Sky sunPosition={SUN} turbidity={5} rayleigh={1.2} mieCoefficient={0.004} />
+      <Sky sunPosition={sunAt} turbidity={5} rayleigh={1.2} mieCoefficient={0.004} />
+      {sky.day < 0.3 && <Stars radius={600} depth={100} count={3000} factor={12} fade />}
+      {/* same sky rendered into a cube map, for reflections and soft light. the key
+          makes it re-render when the sun has moved */}
+      <Environment
+        key={sky.key}
+        frames={1}
+        resolution={128}
+        environmentIntensity={0.15 + 0.55 * sky.day}
+      >
+        <Sky sunPosition={sunAt} turbidity={5} rayleigh={1.2} mieCoefficient={0.004} />
       </Environment>
-      <fog attach="fog" args={[HAZE, 300, 1000]} />
-      <hemisphereLight args={['#dcecff', '#6d6452', 0.5]} />
-      <Sun />
+      <fog attach="fog" args={[haze, 300, 1000]} />
+      <hemisphereLight args={['#dcecff', '#6d6452', 0.12 + 0.38 * sky.day]} />
+      <Sun dir={sky.light} day={sky.day} />
       <Ground />
       <Buildings />
       <Trees />

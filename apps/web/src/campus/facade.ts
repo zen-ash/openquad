@@ -16,6 +16,9 @@ const FLOOR_HEIGHT = 3.5
  * along the wall. Glass is shiny and reflects the sky, walls get brick/concrete
  * textures. Roofs (anything facing up) get gravel.
  */
+// 0 in the day, 1 at night. set by the sky every so often
+export const night = { value: 0 }
+
 export function facadeMaterial() {
   const material = new THREE.MeshStandardMaterial({ vertexColors: true })
   const uniforms = {
@@ -24,6 +27,7 @@ export function facadeMaterial() {
     uConcrete: { value: texture('concrete', 'color') },
     uConcreteNormal: { value: texture('concrete', 'normal') },
     uRoof: { value: texture('roof', 'color') },
+    uNight: night,
   }
 
   material.onBeforeCompile = (shader) => {
@@ -60,6 +64,7 @@ export function facadeMaterial() {
         uniform sampler2D uConcrete;
         uniform sampler2D uConcreteNormal;
         uniform sampler2D uRoof;
+        uniform float uNight;
         varying float vStyle;
         varying float vHeight;
         varying float vSeed;
@@ -75,6 +80,8 @@ export function facadeMaterial() {
         vec3 wn = normalize(vWorldNormal);
         bool isRoof = wn.y > 0.5;
         bool isGlass = false;
+        // some windows have the lights on at night
+        bool lit = false;
         // along the wall (left to right when you face it) and up
         vec2 along = vec2(wn.z, -wn.x);
         float u = dot(vWorldPos.xz, along);
@@ -108,6 +115,7 @@ export function facadeMaterial() {
             float edge = min(min(cell.x - rect.x, rect.z - cell.x), min(cell.y - rect.y, rect.w - cell.y));
             // some windows darker/lighter, like blinds half down
             float h = hash(vec3(floor(u / colWidth), floorNum, vSeed));
+            lit = hash(vec3(floorNum, floor(u / colWidth), vSeed + 7.0)) > 0.55;
             vec3 glass = mix(vec3(0.03, 0.05, 0.07), vec3(0.18, 0.22, 0.26), h * 0.7);
             // windows sit back in the wall, so the top of the glass is in shadow
             if (rect.w - cell.y < 0.12 && vStyle > 0.5) glass *= 0.5;
@@ -126,6 +134,11 @@ export function facadeMaterial() {
             if (sill) diffuseColor.rgb = vec3(0.78, 0.76, 0.72);
           }
         }`,
+      )
+      .replace(
+        '#include <emissivemap_fragment>',
+        `#include <emissivemap_fragment>
+        if (isGlass && lit) totalEmissiveRadiance += vec3(1.0, 0.78, 0.48) * 1.6 * uNight;`,
       )
       .replace(
         '#include <roughnessmap_fragment>',

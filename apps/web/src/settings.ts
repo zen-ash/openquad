@@ -12,4 +12,17 @@ function startingQuality(): Quality {
 // and everything the tests check (joining, moving, voice) works the same
 export const hideCity = new URLSearchParams(location.search).has('nocity')
 
-export const useSettings = create<{ quality: Quality }>(() => ({ quality: startingQuality() }))
+export const TIMES = ['live', 'morning', 'noon', 'sunset', 'night'] as const
+export type TimeOfDay = (typeof TIMES)[number]
+
+// live follows the real time in atlanta. the others are handy for showing night in a
+// daytime class. ?time=night works too
+function startingTime(): TimeOfDay {
+  const t = new URLSearchParams(location.search).get('time')
+  return TIMES.includes(t as TimeOfDay) ? (t as TimeOfDay) : 'live'
+}
+
+export const useSettings = create<{ quality: Quality; time: TimeOfDay }>(() => ({
+  quality: startingQuality(),
+  time: startingTime(),
+}))
