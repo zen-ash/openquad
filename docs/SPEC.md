@@ -12,14 +12,24 @@ professor's and start talking.
 
 ## Look and feel
 
-Going for the style of the 3D Pokemon games - low poly, bright colors, toon shading with
-outlines, and a camera that sits up and behind the player looking down. Only the style
-though, no actual Pokemon characters or assets (all models are CC0).
+Realistic downtown Atlanta, as close as a browser on a school laptop can do.
+(First version was pokemon-style toon shading. Didn't like it next to real buildings.)
 
-- toon shading: `MeshToonMaterial` with a 3 step gradient, drei `<Outlines>` on buildings/trees
-- characters: Quaternius modular men pack, trimmed down to Idle/Walk/Run/Wave to keep the
-  file small (~600kb instead of 2mb)
-- later: a "!" over someone's head when they come into voice range
+- **Buildings** - windows aren't modeled, a shader draws them from the world position: a
+  row every floor (3.5m), a column every meter and a half, bigger shop windows on the ground
+  floor, frames, a shadow under the top of each window (they sit back in the wall) and a sill
+  under it. Anything taller than ~14 floors becomes a glass tower. Walls are brick or
+  concrete photo textures with normal maps, roofs are gravel. (`apps/web/src/campus/facade.ts`)
+- **Glass** is shiny and metallic so it reflects the sky. The sky is drei's physical `<Sky>`,
+  rendered once into a cube map with `<Environment>` for the reflections and ambient light.
+- **Ground** - asphalt with lane lines drawn in the shader (dashed yellow down the middle,
+  white near the edges, only on wider roads), concrete sidewalks, grass.
+- **Effects** - ambient occlusion (N8AO, soft shadows in corners and where walls meet the
+  ground), SMAA, a light vignette, AgX tone mapping.
+- **Quality** - drei's `PerformanceMonitor` drops to low quality if the framerate stays bad:
+  no shadows, no effects, 1x resolution. `?quality=low` forces it (the e2e tests use this).
+- Textures are CC0 from Poly Haven, shrunk to 512px webp (700kb for all of them instead of
+  ~12mb). Characters are still the low poly Quaternius ones (CC0).
 
 ## How it works
 
@@ -73,10 +83,10 @@ footpaths and parks, in a 1km square around Hurt Park.
   third of buildings have either tag).
 - OSM has almost no trees mapped, so the script plants them in parks on a jittered grid,
   staying off paths. Same result every run.
-- GSU buildings get GSU blue roofs, light blue walls and name labels (only shown within 70m).
-- **Rendering** - all buildings are merged into one mesh with vertex colors (1 draw call
-  instead of 242), roads/paths/parks the same, trees are two instanced meshes. Edge lines
-  instead of outlines on buildings (see below).
+- GSU buildings get name labels (only shown within 70m).
+- **Rendering** - all buildings are merged into one mesh (1 draw call instead of 242), with
+  per-vertex style/height/seed for the facade shader. roads/paths/parks the same, trees are
+  two instanced meshes.
 - **Collision** - buildings are polygons now, not boxes. Circle vs polygon: find the closest
   point on the outline, push out from there (or through it if you ended up inside).
   Bounding boxes skip most buildings. Two passes, since being pushed out of one building
@@ -84,10 +94,8 @@ footpaths and parks, in a 1km square around Hurt Park.
 - **See-through buildings** - downtown buildings are tall enough to hide you from the
   camera. Instead of pulling the camera in (tried it, you end up with your face filling
   the screen), buildings get a hole cut in them anywhere between the camera and the player,
-  like the pokemon games. It's a few lines added to the toon shader with `onBeforeCompile`:
+  like a lot of top down games do. It's a few lines added to the building shader with `onBeforeCompile`:
   discard pixels near the camera -> player line, with a dithered edge.
-  drei's `<Outlines>` doesn't work with this (it's a black shell behind the mesh that shows
-  through the hole), so buildings use `EdgesGeometry` lines, which get the same cut.
 - **Sun follows you** - the shadow map can't cover the whole map, so the light and its
   shadow area move with the player.
 - **Go to menu** - teleport spots are found by searching outward from each building's

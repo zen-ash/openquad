@@ -25,6 +25,9 @@ Web runs on http://localhost:5173 and the server on port 2567. Open it in two br
 windows side by side to see multiplayer working. Walk them close together and you can hear
 yourself through the other one (use headphones or it'll feed back).
 
+Add `?quality=low` to the url to turn off shadows and effects on a slow laptop. It also does
+this on its own if the framerate stays bad.
+
 The mic only works on localhost or https. Opening it from another device on your wifi
 (http://your-ip:5173) works, but that device can only listen.
 
@@ -85,4 +88,5 @@ See [docs/SPEC.md](docs/SPEC.md) for the plan.
 ## Credits
 
 - Map data (c) [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, available under the Open Database License. `apps/web/src/campus/campus.json` is built from it with `pnpm campus`
+- Textures from [Poly Haven](https://polyhaven.com) (CC0)
 - Character models from the [Ultimate Modular Men Pack](https://poly.pizza/bundle/Ultimate-Modular-Men-Pack-ZiH8muWqwQ) by Quaternius (CC0)
