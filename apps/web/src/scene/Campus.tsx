@@ -1,23 +1,17 @@
-import { Sky } from '@react-three/drei'
+import { Environment, Sky } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
-import { DoubleSide, type DirectionalLight } from 'three'
+import { PlaneGeometry, type DirectionalLight } from 'three'
 import campus from '../campus/campus.json'
-import { areasGeometry, linesGeometry } from '../campus/geometry'
+import { areasGeometry, linesGeometry, planarUv } from '../campus/geometry'
+import { grassMaterial, roadMaterial, sidewalkMaterial } from '../campus/ground'
 import { localPlayer } from '../game/localPlayer'
 import Buildings from './Buildings'
-import { toonMaterial } from './toon'
 import Trees from './Trees'
 
-const SKY = '#bcd9ee'
-
-const grass = toonMaterial('#7cc36b')
-const park = toonMaterial('#62b456')
-const road = toonMaterial('#8d9096')
-const path = toonMaterial('#e8dcbc')
-// flat strips, depending on which way the road was drawn they can end up facing down
-road.side = DoubleSide
-path.side = DoubleSide
+// late afternoon, sun in the southwest-ish. used for the sky, the light and reflections
+const SUN: [number, number, number] = [-60, 45, 40]
+const HAZE = '#c9d6e0'
 
 // the map is way bigger than one shadow map can cover nicely, so the sun (and the
 // area it casts shadows in) follows you around
@@ -27,7 +21,7 @@ function Sun() {
   useFrame(() => {
     const l = light.current
     if (!l) return
-    l.position.set(localPlayer.x + 30, 50, localPlayer.z + 20)
+    l.position.set(localPlayer.x + SUN[0], SUN[1], localPlayer.z + SUN[2])
     l.target.position.set(localPlayer.x, 0, localPlayer.z)
     l.target.updateMatrixWorld()
   })
@@ -35,14 +29,15 @@ function Sun() {
   return (
     <directionalLight
       ref={light}
-      intensity={2}
+      color="#fff0dc"
+      intensity={3}
       castShadow
       shadow-mapSize={[2048, 2048]}
-      shadow-camera-left={-45}
-      shadow-camera-right={45}
-      shadow-camera-top={45}
-      shadow-camera-bottom={-45}
-      shadow-camera-far={150}
+      shadow-camera-left={-50}
+      shadow-camera-right={50}
+      shadow-camera-top={50}
+      shadow-camera-bottom={-50}
+      shadow-camera-far={200}
       // without these you get fine stripes all over the walls and grass (shadow acne)
       shadow-bias={-0.001}
       shadow-normalBias={0.2}
@@ -51,26 +46,25 @@ function Sun() {
 }
 
 function Ground() {
-  const geos = useMemo(
-    () => ({
+  const geos = useMemo(() => {
+    const size = campus.halfSize * 6
+    return {
+      // goes well past the edge of the map so you don't see where it ends
+      lawn: planarUv(new PlaneGeometry(size, size).rotateX(-Math.PI / 2)),
       parks: areasGeometry(campus.parks, 0.02),
       plazas: areasGeometry(campus.plazas, 0.03),
       roads: linesGeometry(campus.roads, 0.04),
       paths: linesGeometry(campus.paths, 0.05),
-    }),
-    [],
-  )
+    }
+  }, [])
 
   return (
     <>
-      {/* goes well past the edge of the map so you don't see where it ends */}
-      <mesh rotation-x={-Math.PI / 2} material={grass} receiveShadow>
-        <planeGeometry args={[campus.halfSize * 6, campus.halfSize * 6]} />
-      </mesh>
-      <mesh geometry={geos.parks} material={park} receiveShadow />
-      <mesh geometry={geos.plazas} material={path} receiveShadow />
-      <mesh geometry={geos.roads} material={road} receiveShadow />
-      <mesh geometry={geos.paths} material={path} receiveShadow />
+      <mesh geometry={geos.lawn} material={grassMaterial} receiveShadow />
+      <mesh geometry={geos.parks} material={grassMaterial} receiveShadow />
+      <mesh geometry={geos.plazas} material={sidewalkMaterial} receiveShadow />
+      <mesh geometry={geos.roads} material={roadMaterial} receiveShadow />
+      <mesh geometry={geos.paths} material={sidewalkMaterial} receiveShadow />
     </>
   )
 }
@@ -78,9 +72,13 @@ function Ground() {
 export default function Campus() {
   return (
     <>
-      <Sky sunPosition={[40, 30, 20]} />
-      <fog attach="fog" args={[SKY, 90, 220]} />
-      <ambientLight intensity={1.2} />
+      <Sky sunPosition={SUN} turbidity={5} rayleigh={1.2} mieCoefficient={0.004} />
+      {/* same sky rendered once into a cube map, for reflections and soft light */}
+      <Environment frames={1} resolution={128} environmentIntensity={0.7}>
+        <Sky sunPosition={SUN} turbidity={5} rayleigh={1.2} mieCoefficient={0.004} />
+      </Environment>
+      <fog attach="fog" args={[HAZE, 200, 600]} />
+      <hemisphereLight args={['#dcecff', '#6d6452', 0.5]} />
       <Sun />
       <Ground />
       <Buildings />

@@ -2,7 +2,6 @@ import { useAnimations, useGLTF } from '@react-three/drei'
 import { useEffect, useMemo, useRef } from 'react'
 import type { Group } from 'three'
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js'
-import { toonify } from './toon'
 
 export type Anim = 'Idle' | 'Walk' | 'Run' | 'Wave'
 
@@ -15,7 +14,9 @@ export default function Character({ anim }: { anim: Anim }) {
   // SkeletonUtils.clone so more than one person can use the same model
   const model = useMemo(() => {
     const copy = clone(scene)
-    toonify(copy)
+    copy.traverse((obj) => {
+      obj.castShadow = true
+    })
     return copy
   }, [scene])
 
