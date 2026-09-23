@@ -7,6 +7,7 @@ import { useGame } from './net/store'
 import Campus from './scene/Campus'
 import Player from './scene/Player'
 import RemotePlayers from './scene/RemotePlayers'
+import TeleportMenu from './TeleportMenu'
 import MicButton from './voice/MicButton'
 import VoiceUpdater from './voice/VoiceUpdater'
 
@@ -37,10 +38,21 @@ export default function App() {
             <p>WASD to walk, shift to run, Q/E to turn the camera</p>
           </div>
           <MicButton />
+          <TeleportMenu />
         </>
       ) : (
         <JoinScreen />
       )}
+
+      {/* the map data license (ODbL) asks for this */}
+      <a
+        className="credit"
+        href="https://www.openstreetmap.org/copyright"
+        target="_blank"
+        rel="noreferrer"
+      >
+        Map data &copy; OpenStreetMap contributors
+      </a>
     </KeyboardControls>
   )
 }
