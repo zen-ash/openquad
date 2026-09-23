@@ -10,7 +10,7 @@ import Effects from './scene/Effects'
 import JoinCamera from './scene/JoinCamera'
 import Player from './scene/Player'
 import RemotePlayers from './scene/RemotePlayers'
-import { useSettings } from './settings'
+import { hideCity, useSettings } from './settings'
 import TeleportMenu from './TeleportMenu'
 import MicButton from './voice/MicButton'
 import VoiceUpdater from './voice/VoiceUpdater'
@@ -34,7 +34,7 @@ export default function App() {
       >
         {/* drops to low quality if the framerate stays bad */}
         <PerformanceMonitor onDecline={() => useSettings.setState({ quality: 'low' })} />
-        <Campus />
+        {!hideCity && <Campus />}
         {inGame ? (
           <Suspense fallback={null}>
             <Player key={me.id} spawn={me} />

@@ -11,7 +11,7 @@ export default defineConfig({
     baseURL: 'http://localhost:5173',
     // small window on purpose, every page shares one software-emulated gpu so
     // fewer pixels = much faster tests
-    viewport: { width: 640, height: 360 },
+    viewport: { width: 480, height: 270 },
     permissions: ['microphone'],
     launchOptions: {
       args: [

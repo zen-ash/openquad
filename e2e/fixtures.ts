@@ -15,8 +15,8 @@ export const test = base.extend<Fixtures>({
       const context = await browser.newContext()
       contexts.push(context)
       const page = await context.newPage()
-      // no real gpu in ci, so skip the expensive effects
-      await page.goto('/?quality=low')
+      // no gpu in ci, so skip drawing the city. these tests are about networking and voice
+      await page.goto('/?quality=low&nocity')
       await page.getByLabel("What's your name?").fill(name)
       await page.getByRole('button', { name: 'Join' }).click()
       // the player count only shows once you're actually in (just /online/ also matches
