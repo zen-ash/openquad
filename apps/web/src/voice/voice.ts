@@ -10,26 +10,33 @@ type Peer = {
   queue: Promise<void>
 }
 
-// TODO: add a TURN server when this gets deployed, STUN alone fails on some networks
-const ICE_SERVERS: RTCIceServer[] = [{ urls: 'stun:stun.l.google.com:19302' }]
+// replaced with the server's list (which has TURN in production) once it loads
+let iceServers: RTCIceServer[] = [{ urls: 'stun:stun.cloudflare.com:3478' }]
 
 export const peers = new Map<string, Peer>()
 
 let mic: MediaStream | null = null
-let micReady: Promise<void> = Promise.resolve()
+// calls wait for this: mic permission answered + ice servers loaded
+let ready: Promise<unknown> = Promise.resolve()
 export let micAnalyser: AnalyserNode | null = null
 
 export function startMic() {
   audioContext() // we're inside the join click here, so audio is allowed to start
 
+  const ice = fetch('/ice')
+    .then((res) => res.json())
+    .then((servers: RTCIceServer[]) => (iceServers = servers))
+    .catch(() => {}) // keep the default stun server
+
   if (mic) return
   if (!navigator.mediaDevices) {
     // mic needs https (or localhost). you can still listen
     useVoice.setState({ mic: 'blocked' })
+    ready = ice
     return
   }
 
-  micReady = navigator.mediaDevices
+  const micAnswered = navigator.mediaDevices
     .getUserMedia({
       audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
     })
@@ -41,6 +48,7 @@ export function startMic() {
     .catch(() => {
       useVoice.setState({ mic: 'blocked' })
     })
+  ready = Promise.all([micAnswered, ice])
 }
 
 export function setMuted(muted: boolean) {
@@ -49,8 +57,14 @@ export function setMuted(muted: boolean) {
 }
 
 function createPeer(id: string) {
-  const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS })
-  const peer: Peer = { pc, audio: null, queue: micReady }
+  const pc = new RTCPeerConnection({ iceServers })
+  // ice servers might have loaded after the peer was made, and they have to be set
+  // before anything starts connecting
+  const peer: Peer = {
+    pc,
+    audio: null,
+    queue: ready.then(() => pc.setConfiguration({ iceServers })),
+  }
   peers.set(id, peer)
 
   pc.onicecandidate = (e) => {

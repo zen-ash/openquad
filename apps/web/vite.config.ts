@@ -10,5 +10,10 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true, // so phones on the same wifi can join
+    // in production the game server serves everything from one place, so do the same in dev
+    proxy: {
+      '/ws': { target: 'ws://localhost:2567', ws: true },
+      '/ice': 'http://localhost:2567',
+    },
   },
 })

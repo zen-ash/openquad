@@ -1,12 +1,17 @@
-import { SERVER_PORT, type ClientMessage, type ServerMessage } from '@quad/shared'
+import type { ClientMessage, ServerMessage } from '@quad/shared'
 import { pushSnapshot } from '../game/interpolation'
 import { closeAll, closePeer, handleSignal } from '../voice/voice'
 import { snapshots, useGame } from './store'
 
-const SERVER_URL =
-  import.meta.env.VITE_SERVER_URL ?? `ws://${window.location.hostname}:${SERVER_PORT}`
+// same host the page came from. in dev vite passes /ws through to the game server
+const SERVER_URL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`
+
+// free hosting puts the server to sleep if nothing comes in for a while. standing
+// still and talking doesn't send anything, so poke it now and then
+const KEEPALIVE_MS = 60_000
 
 let socket: WebSocket | null = null
+let keepalive: ReturnType<typeof setInterval> | undefined
 
 export function connect(name: string) {
   socket?.close()
@@ -16,11 +21,16 @@ export function connect(name: string) {
 
   const ws = new WebSocket(SERVER_URL)
   socket = ws
-  ws.onopen = () => send({ type: 'join', name })
+  ws.onopen = () => {
+    send({ type: 'join', name })
+    clearInterval(keepalive)
+    keepalive = setInterval(() => send({ type: 'ping' }), KEEPALIVE_MS)
+  }
   ws.onmessage = (e) => handle(JSON.parse(e.data))
   ws.onclose = () => {
     // ignore old sockets closing after a reconnect
     if (socket !== ws) return
+    clearInterval(keepalive)
     closeAll()
     useGame.setState({ status: 'disconnected' })
   }
