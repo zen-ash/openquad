@@ -10,7 +10,7 @@ import Buildings from './Buildings'
 import Trees from './Trees'
 
 // late afternoon, sun in the southwest-ish. used for the sky, the light and reflections
-const SUN: [number, number, number] = [-60, 45, 40]
+const SUN: [number, number, number] = [-90, 70, 60]
 const HAZE = '#c9d6e0'
 
 // the map is way bigger than one shadow map can cover nicely, so the sun (and the
@@ -33,11 +33,11 @@ function Sun() {
       intensity={3}
       castShadow
       shadow-mapSize={[2048, 2048]}
-      shadow-camera-left={-50}
-      shadow-camera-right={50}
-      shadow-camera-top={50}
-      shadow-camera-bottom={-50}
-      shadow-camera-far={200}
+      shadow-camera-left={-60}
+      shadow-camera-right={60}
+      shadow-camera-top={60}
+      shadow-camera-bottom={-60}
+      shadow-camera-far={300}
       // without these you get fine stripes all over the walls and grass (shadow acne)
       shadow-bias={-0.001}
       shadow-normalBias={0.2}
@@ -77,7 +77,7 @@ export default function Campus() {
       <Environment frames={1} resolution={128} environmentIntensity={0.7}>
         <Sky sunPosition={SUN} turbidity={5} rayleigh={1.2} mieCoefficient={0.004} />
       </Environment>
-      <fog attach="fog" args={[HAZE, 200, 600]} />
+      <fog attach="fog" args={[HAZE, 300, 1000]} />
       <hemisphereLight args={['#dcecff', '#6d6452', 0.5]} />
       <Sun />
       <Ground />

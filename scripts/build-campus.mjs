@@ -9,8 +9,9 @@ import { fileURLToPath } from 'node:url'
 const CENTER = { lat: 33.75419, lon: -84.3854 }
 // meters from the center to the edge of the map
 const RADIUS = 500
-// the real campus at 1:1 takes forever to walk across, so shrink everything
-const SCALE = 0.5
+// 1 unit = 1 meter. tried half size at first to make walking across faster, but then
+// people were as tall as a whole floor of a building
+const SCALE = 1
 const OUT = new URL('../apps/web/src/campus/campus.json', import.meta.url)
 
 const METERS_PER_DEG_LAT = 110_540
@@ -147,15 +148,15 @@ function jitter(x, z) {
 // staying off the paths and away from where people spawn
 function plantParkTrees(parks, lines) {
   const trees = []
-  const spacing = 7
+  const spacing = 14
   for (const park of parks) {
     const xs = park.map((p) => p[0])
     const zs = park.map((p) => p[1])
     for (let x = Math.min(...xs); x < Math.max(...xs); x += spacing) {
       for (let z = Math.min(...zs); z < Math.max(...zs); z += spacing) {
         const p = [round(x + jitter(x, z) * spacing * 0.6), round(z + jitter(z, x) * spacing * 0.6)]
-        if (!pointInPolygon(p, park) || Math.hypot(...p) < 12) continue
-        if (lines.some((l) => distToLine(p, l.points) < l.width / 2 + 1.5)) continue
+        if (!pointInPolygon(p, park) || Math.hypot(...p) < 24) continue
+        if (lines.some((l) => distToLine(p, l.points) < l.width / 2 + 3)) continue
         trees.push(p)
       }
     }

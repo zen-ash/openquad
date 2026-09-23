@@ -21,7 +21,7 @@ const SPOTS: [string, string][] = [
 // some room around it. just pushing out of the building can land you inside the one
 // next door on packed blocks
 function openSpotNear(p: Point) {
-  for (let r = 0; r < 80; r += 2) {
+  for (let r = 0; r < 160; r += 2) {
     const steps = Math.max(1, Math.round(r * 1.5))
     for (let i = 0; i < steps; i++) {
       const angle = (i / steps) * Math.PI * 2

@@ -19,16 +19,16 @@ describe('buildingsGeometry', () => {
   })
 
   it('makes tall buildings glass towers', () => {
-    expect(styleOf(40, 0.9)).toBe(GLASS)
+    expect(styleOf(80, 0.9)).toBe(GLASS)
     expect(styleOf(8, 0.1)).toBe(BRICK)
     expect(styleOf(8, 0.9)).toBe(CONCRETE)
   })
 
   it('stores the facade info the shader needs on every vertex', () => {
-    const geo = buildingsGeometry([{ points: square, height: 40 }])
+    const geo = buildingsGeometry([{ points: square, height: 80 }])
     const count = geo.getAttribute('position').count
     expect(geo.getAttribute('aStyle').count).toBe(count)
-    expect(geo.getAttribute('aHeight').getX(0)).toBe(40)
+    expect(geo.getAttribute('aHeight').getX(0)).toBe(80)
     expect(geo.getAttribute('aStyle').getX(0)).toBe(GLASS)
   })
 })

@@ -7,13 +7,13 @@ export const GLASS = 0
 export const CONCRETE = 1
 export const BRICK = 2
 
-// real floors are ~3.5m, the map is half size
-const FLOOR_HEIGHT = 1.75
+// real floors are ~3.5m
+const FLOOR_HEIGHT = 3.5
 
 /**
  * Building material. Windows aren't modeled, they're drawn by the shader from the
- * world position: every FLOOR_HEIGHT up there's a row, and a column every meter or
- * so along the wall. Glass is shiny and reflects the sky, walls get brick/concrete
+ * world position: every FLOOR_HEIGHT up there's a row, and a column every few meters
+ * along the wall. Glass is shiny and reflects the sky, walls get brick/concrete
  * textures. Roofs (anything facing up) get gravel.
  */
 export function facadeMaterial() {
@@ -79,11 +79,11 @@ export function facadeMaterial() {
         vec2 along = vec2(wn.z, -wn.x);
         float u = dot(vWorldPos.xz, along);
         float v = vWorldPos.y;
-        vec2 wallUv = vec2(u, v) / 2.0;
+        vec2 wallUv = vec2(u, v) / 4.0;
 
         if (isRoof) {
           // flat roofs are anything from white membrane to dark gravel
-          diffuseColor.rgb = texture2D(uRoof, vWorldPos.xz / 6.0).rgb * mix(vec3(1.25), vec3(0.55), vSeed);
+          diffuseColor.rgb = texture2D(uRoof, vWorldPos.xz / 12.0).rgb * mix(vec3(1.25), vec3(0.55), vSeed);
         } else {
           bool brick = vStyle > 1.5;
           vec3 wall = brick
@@ -91,7 +91,7 @@ export function facadeMaterial() {
             : texture2D(uConcrete, wallUv * 0.5).rgb * diffuseColor.rgb * 1.6;
           if (vStyle < 0.5) wall = diffuseColor.rgb; // glass towers: color is the metal frame
 
-          float colWidth = vStyle < 0.5 ? 1.2 : 1.5;
+          float colWidth = vStyle < 0.5 ? 2.4 : 3.0;
           vec2 cell = fract(vec2(u / colWidth, v / ${FLOOR_HEIGHT}));
           float floorNum = floor(v / ${FLOOR_HEIGHT});
 
@@ -102,7 +102,7 @@ export function facadeMaterial() {
 
           bool win = cell.x > rect.x && cell.x < rect.z && cell.y > rect.y && cell.y < rect.w;
           // solid strip along the top
-          if (v > vHeight - 0.5) win = false;
+          if (v > vHeight - 1.0) win = false;
 
           if (win) {
             float edge = min(min(cell.x - rect.x, rect.z - cell.x), min(cell.y - rect.y, rect.w - cell.y));

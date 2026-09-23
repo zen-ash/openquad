@@ -28,7 +28,7 @@ export default function App() {
         // shadows are an extra render of the whole scene, first thing to go on slow laptops
         shadows={quality === 'high' ? 'percentage' : false}
         dpr={quality === 'high' ? [1, 1.5] : 1}
-        camera={{ fov: 50, far: 800 }}
+        camera={{ fov: 50, far: 1500 }}
         // same tone mapping as the effects use, so low quality (no effects) looks the same
         gl={{ toneMapping: AgXToneMapping }}
       >

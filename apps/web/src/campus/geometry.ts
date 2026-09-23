@@ -7,7 +7,7 @@ export type BuildingData = { points: Pt[]; height: number; name?: string; gsu?: 
 export type LineData = { width: number; points: Pt[] }
 
 // anything taller than ~14 floors (in real life) is a glass tower
-const TOWER_HEIGHT = 25
+const TOWER_HEIGHT = 50
 // concrete comes out of the texture pretty gray, these warm it up a bit per building
 const CONCRETE_TINTS = ['#d8d2c4', '#c9c6be', '#e2dccd', '#bfc3c6', '#d6c8b0']
 const FRAME_TINTS = ['#8e98a3', '#5f6873', '#b8bfc6', '#7d7466']
@@ -56,8 +56,8 @@ export function buildingsGeometry(buildings: BuildingData[]) {
   return mergeGeometries(parts)
 }
 
-// ground textures are mapped straight from world x/z, one repeat every 4m or so
-export function planarUv(geo: THREE.BufferGeometry, scale = 0.25) {
+// ground textures are mapped straight from world x/z, one repeat every 5m
+export function planarUv(geo: THREE.BufferGeometry, scale = 0.2) {
   const pos = geo.getAttribute('position')
   const uv = new Float32Array(pos.count * 2)
   for (let i = 0; i < pos.count; i++) {

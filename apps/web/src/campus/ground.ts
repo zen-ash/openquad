@@ -32,9 +32,9 @@ roadMaterial.onBeforeCompile = (shader) => {
       float along = vRoad.x;
       float width = vRoad.z;
       float fromCenter = abs(vRoad.y - 0.5) * width;
-      if (width > 4.0) {
-        if (fromCenter < 0.06 && fract(along / 3.0) < 0.5) diffuseColor.rgb = vec3(0.85, 0.68, 0.18);
-        if (abs(fromCenter - (width / 2.0 - 0.35)) < 0.05) diffuseColor.rgb = vec3(0.82);
+      if (width > 8.0) {
+        if (fromCenter < 0.1 && fract(along / 6.0) < 0.5) diffuseColor.rgb = vec3(0.85, 0.68, 0.18);
+        if (abs(fromCenter - (width / 2.0 - 0.6)) < 0.08) diffuseColor.rgb = vec3(0.82);
       }`,
     )
 }

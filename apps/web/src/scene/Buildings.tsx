@@ -7,7 +7,7 @@ import { buildingsGeometry, centroid } from '../campus/geometry'
 import { facadeMaterial } from '../campus/facade'
 import { localPlayer } from '../game/localPlayer'
 
-const LABEL_DISTANCE = 70
+const LABEL_DISTANCE = 120
 
 const material = facadeMaterial()
 
@@ -35,12 +35,12 @@ function Labels() {
           ref={(g) => {
             refs.current[i] = g
           }}
-          position={[l.x, l.height + 2, l.z]}
+          position={[l.x, l.height + 4, l.z]}
         >
           <Text
-            fontSize={1.2}
+            fontSize={2.4}
             color="white"
-            outlineWidth={0.08}
+            outlineWidth={0.14}
             outlineColor="#111"
             fillOpacity={0.95}
           >

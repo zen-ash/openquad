@@ -50,7 +50,7 @@ export default function Trees() {
     const up = new THREE.Vector3(0, 1, 0)
 
     campus.trees.forEach(([x, z], i) => {
-      const s = 0.8 + rand(x!, z!, 1) * 0.6
+      const s = 1.6 + rand(x!, z!, 1) * 1.2
       const turn = q.setFromAxisAngle(up, rand(x!, z!, 2) * Math.PI * 2)
 
       m.compose(new THREE.Vector3(x!, 1.2 * s, z!), turn, new THREE.Vector3(s, s, s))
