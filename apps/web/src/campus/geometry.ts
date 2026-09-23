@@ -1,78 +1,111 @@
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+import { BRICK, CONCRETE, GLASS } from './facade'
 
 type Pt = number[] // [x, z]
 export type BuildingData = { points: Pt[]; height: number; name?: string; gsu?: boolean }
 export type LineData = { width: number; points: Pt[] }
 
-const GSU_BLUE = '#2a5bd7'
-const GSU_WALL = '#b9cdee'
-// from the street you mostly see walls, so they need real color, not just cream
-const WALLS = ['#e8b98f', '#c98a6b', '#a9c4de', '#b7dcc0', '#f0d9a4', '#c9b8e3', '#f2c4b4']
-const ROOFS = ['#c8604c', '#6f8196', '#7f9a5d', '#b08a52', '#8a76a8', '#4f9a94']
+// anything taller than ~14 floors (in real life) is a glass tower
+const TOWER_HEIGHT = 25
+// concrete comes out of the texture pretty gray, these warm it up a bit per building
+const CONCRETE_TINTS = ['#d8d2c4', '#c9c6be', '#e2dccd', '#bfc3c6', '#d6c8b0']
+const FRAME_TINTS = ['#8e98a3', '#5f6873', '#b8bfc6', '#7d7466']
 
 // shapes are drawn on x/y, then laid flat. y has to be -z so it doesn't come out mirrored
 function shape(points: Pt[]) {
   return new THREE.Shape(points.map(([x, z]) => new THREE.Vector2(x!, -z!)))
 }
 
-function paint(geo: THREE.BufferGeometry, from: number, count: number, color: THREE.Color) {
-  const colors = geo.getAttribute('color') as THREE.BufferAttribute
-  for (let i = from; i < from + count; i++) colors.setXYZ(i, color.r, color.g, color.b)
+// same "random" 0-1 number for a building every time
+const seedOf = (i: number) => {
+  const n = Math.sin(i * 12.9898) * 43758.5453
+  return n - Math.floor(n)
+}
+
+export function styleOf(height: number, seed: number) {
+  if (height >= TOWER_HEIGHT) return GLASS
+  return seed < 0.4 ? BRICK : CONCRETE
+}
+
+function fill(count: number, value: number) {
+  return new THREE.BufferAttribute(new Float32Array(count).fill(value), 1)
 }
 
 export function buildingsGeometry(buildings: BuildingData[]) {
   const parts = buildings.map((b, i) => {
     const geo = new THREE.ExtrudeGeometry(shape(b.points), { depth: b.height, bevelEnabled: false })
     geo.rotateX(-Math.PI / 2)
-    geo.setAttribute(
-      'color',
-      new THREE.BufferAttribute(new Float32Array(geo.attributes.position!.count * 3), 3),
-    )
-
-    // extrude puts the top/bottom in group 0 and the walls in group 1
-    const roof = new THREE.Color(b.gsu ? GSU_BLUE : ROOFS[i % ROOFS.length])
-    const wall = new THREE.Color(b.gsu ? GSU_WALL : WALLS[i % WALLS.length])
-    for (const g of geo.groups) paint(geo, g.start, g.count, g.materialIndex === 0 ? roof : wall)
-
     geo.clearGroups()
+
+    const count = geo.attributes.position!.count
+    const seed = seedOf(i)
+    const style = styleOf(b.height, seed)
+    const tints = style === GLASS ? FRAME_TINTS : CONCRETE_TINTS
+    const tint = new THREE.Color(tints[Math.floor(seed * tints.length)])
+
+    const colors = new Float32Array(count * 3)
+    for (let v = 0; v < count; v++) tint.toArray(colors, v * 3)
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+    // the facade shader uses these to draw windows (see facade.ts)
+    geo.setAttribute('aStyle', fill(count, style))
+    geo.setAttribute('aHeight', fill(count, b.height))
+    geo.setAttribute('aSeed', fill(count, seed))
     return geo
   })
   return mergeGeometries(parts)
 }
 
+// ground textures are mapped straight from world x/z, one repeat every 4m or so
+export function planarUv(geo: THREE.BufferGeometry, scale = 0.25) {
+  const pos = geo.getAttribute('position')
+  const uv = new Float32Array(pos.count * 2)
+  for (let i = 0; i < pos.count; i++) {
+    uv[i * 2] = pos.getX(i) * scale
+    uv[i * 2 + 1] = pos.getZ(i) * scale
+  }
+  geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
+  return geo
+}
+
 // flat strips for roads and paths. a quad per segment plus a little disc at every
-// corner so there are no gaps where two segments meet
+// corner so there are no gaps where two segments meet. aRoad is (distance along the
+// road, 0-1 across it, width) for drawing lane lines. the discs get width 0 = no lines
 export function linesGeometry(lines: LineData[], y: number) {
   const pos: number[] = []
+  const road: number[] = []
 
-  const tri = (ax: number, az: number, bx: number, bz: number, cx: number, cz: number) =>
-    pos.push(ax, y, az, bx, y, bz, cx, y, cz)
+  const vert = (x: number, z: number, along: number, across: number, width: number) => {
+    pos.push(x, y, z)
+    road.push(along, across, width)
+  }
 
   for (const { width, points } of lines) {
     const half = width / 2
+    let along = 0
     for (let i = 0; i < points.length - 1; i++) {
       const [ax, az] = points[i] as [number, number]
       const [bx, bz] = points[i + 1] as [number, number]
       const len = Math.hypot(bx - ax, bz - az) || 1
       const nx = (-(bz - az) / len) * half
       const nz = ((bx - ax) / len) * half
-      tri(ax + nx, az + nz, ax - nx, az - nz, bx + nx, bz + nz)
-      tri(bx + nx, bz + nz, ax - nx, az - nz, bx - nx, bz - nz)
+      const next = along + len
+      vert(ax + nx, az + nz, along, 0, width)
+      vert(ax - nx, az - nz, along, 1, width)
+      vert(bx + nx, bz + nz, next, 0, width)
+      vert(bx + nx, bz + nz, next, 0, width)
+      vert(ax - nx, az - nz, along, 1, width)
+      vert(bx - nx, bz - nz, next, 1, width)
+      along = next
     }
     for (const [x, z] of points.slice(1, -1) as [number, number][]) {
       const steps = 8
       for (let s = 0; s < steps; s++) {
         const a = (s / steps) * Math.PI * 2
         const b = ((s + 1) / steps) * Math.PI * 2
-        tri(
-          x,
-          z,
-          x + Math.cos(a) * half,
-          z + Math.sin(a) * half,
-          x + Math.cos(b) * half,
-          z + Math.sin(b) * half,
-        )
+        vert(x, z, 0, 0.5, 0)
+        vert(x + Math.cos(a) * half, z + Math.sin(a) * half, 0, 0.5, 0)
+        vert(x + Math.cos(b) * half, z + Math.sin(b) * half, 0, 0.5, 0)
       }
     }
   }
@@ -87,7 +120,8 @@ export function linesGeometry(lines: LineData[], y: number) {
       3,
     ),
   )
-  return geo
+  geo.setAttribute('aRoad', new THREE.Float32BufferAttribute(road, 3))
+  return planarUv(geo)
 }
 
 export function areasGeometry(areas: Pt[][], y: number) {
@@ -95,7 +129,7 @@ export function areasGeometry(areas: Pt[][], y: number) {
     const geo = new THREE.ShapeGeometry(shape(points))
     geo.rotateX(-Math.PI / 2)
     geo.translate(0, y, 0)
-    return geo
+    return planarUv(geo)
   })
   return mergeGeometries(parts)
 }

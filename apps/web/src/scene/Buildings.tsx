@@ -4,20 +4,12 @@ import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import campus from '../campus/campus.json'
 import { buildingsGeometry, centroid } from '../campus/geometry'
-import { addCutout } from '../campus/cutout'
+import { facadeMaterial } from '../campus/facade'
 import { localPlayer } from '../game/localPlayer'
-import { toonMaterial } from './toon'
 
 const LABEL_DISTANCE = 70
 
-const material = toonMaterial('white')
-material.vertexColors = true
-addCutout(material)
-
-// thin edge lines instead of drei's <Outlines>. those draw a black shell behind the
-// mesh, which would show through the see-through hole as a big black blob
-const edgeMaterial = new THREE.LineBasicMaterial({ color: '#2b2b2b' })
-addCutout(edgeMaterial)
+const material = facadeMaterial()
 
 const labels = campus.buildings
   .filter((b) => b.gsu && b.name)
@@ -45,7 +37,13 @@ function Labels() {
           }}
           position={[l.x, l.height + 2, l.z]}
         >
-          <Text fontSize={2} color="white" outlineWidth={0.12} outlineColor="#1b2a4a">
+          <Text
+            fontSize={1.2}
+            color="white"
+            outlineWidth={0.08}
+            outlineColor="#111"
+            fillOpacity={0.95}
+          >
             {l.name}
           </Text>
         </Billboard>
@@ -55,15 +53,11 @@ function Labels() {
 }
 
 export default function Buildings() {
-  const { geometry, edges } = useMemo(() => {
-    const geometry = buildingsGeometry(campus.buildings)
-    return { geometry, edges: new THREE.EdgesGeometry(geometry, 30) }
-  }, [])
+  const geometry = useMemo(() => buildingsGeometry(campus.buildings), [])
 
   return (
     <>
       <mesh geometry={geometry} material={material} castShadow receiveShadow />
-      <lineSegments geometry={edges} material={edgeMaterial} />
       <Labels />
     </>
   )

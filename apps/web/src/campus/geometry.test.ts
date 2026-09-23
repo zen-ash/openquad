@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { areasGeometry, buildingsGeometry, linesGeometry } from './geometry'
+import { BRICK, CONCRETE, GLASS } from './facade'
+import { areasGeometry, buildingsGeometry, linesGeometry, styleOf } from './geometry'
 
 const square = [
   [0, 0],
@@ -17,14 +18,18 @@ describe('buildingsGeometry', () => {
     ;[0, 0, 0, 4, 10, 4].forEach((v, i) => expect(box[i]).toBeCloseTo(v))
   })
 
-  it('gives gsu buildings a blue roof', () => {
-    const geo = buildingsGeometry([{ points: square, height: 10, gsu: true }])
-    const pos = geo.getAttribute('position')
-    const color = geo.getAttribute('color')
-    // find a vertex on the roof
-    let i = 0
-    while (pos.getY(i) !== 10 || Math.abs(geo.getAttribute('normal').getY(i)) < 0.9) i++
-    expect(color.getZ(i)).toBeGreaterThan(color.getX(i)) // more blue than red
+  it('makes tall buildings glass towers', () => {
+    expect(styleOf(40, 0.9)).toBe(GLASS)
+    expect(styleOf(8, 0.1)).toBe(BRICK)
+    expect(styleOf(8, 0.9)).toBe(CONCRETE)
+  })
+
+  it('stores the facade info the shader needs on every vertex', () => {
+    const geo = buildingsGeometry([{ points: square, height: 40 }])
+    const count = geo.getAttribute('position').count
+    expect(geo.getAttribute('aStyle').count).toBe(count)
+    expect(geo.getAttribute('aHeight').getX(0)).toBe(40)
+    expect(geo.getAttribute('aStyle').getX(0)).toBe(GLASS)
   })
 })
 
@@ -47,6 +52,26 @@ describe('linesGeometry', () => {
     expect(min.z).toBeCloseTo(-1)
     expect(max.z).toBeCloseTo(1)
     expect(min.y).toBeCloseTo(0.1)
+  })
+
+  it('knows how far along the road each vertex is, for lane lines', () => {
+    const geo = linesGeometry(
+      [
+        {
+          width: 2,
+          points: [
+            [0, 0],
+            [10, 0],
+            [10, 5],
+          ],
+        },
+      ],
+      0,
+    )
+    const road = geo.getAttribute('aRoad')
+    let max = 0
+    for (let i = 0; i < road.count; i++) max = Math.max(max, road.getX(i))
+    expect(max).toBeCloseTo(15)
   })
 })
 
