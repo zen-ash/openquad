@@ -43,7 +43,7 @@ describe('server', () => {
 
   it('syncs movement between two players', async () => {
     const alice = await connect('Alice')
-    const { id: aliceId } = await alice.waitFor('welcome')
+    const aliceId = (await alice.waitFor('welcome')).you.id
 
     const bob = await connect('Bob')
     const welcome = await bob.waitFor('welcome')
@@ -65,7 +65,7 @@ describe('server', () => {
     const alice = await connect('Alice')
     await alice.waitFor('welcome')
     const bob = await connect('Bob')
-    const { id: bobId } = await bob.waitFor('welcome')
+    const bobId = (await bob.waitFor('welcome')).you.id
 
     bob.socket.close()
     const left = await alice.waitFor('player-left')

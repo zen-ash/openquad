@@ -29,7 +29,7 @@ export class Room {
   join(id: string, name: string, send: Send) {
     const info: PlayerInfo = { id, name, position: spawnPoint(), heading: 0 }
 
-    send({ type: 'welcome', id, players: [...this.members.values()].map((m) => m.info) })
+    send({ type: 'welcome', you: info, players: [...this.members.values()].map((m) => m.info) })
     this.broadcast({ type: 'player-joined', player: info })
 
     this.members.set(id, { info, send, moved: false })

@@ -19,7 +19,8 @@ describe('Room', () => {
     const welcome = b.inbox[0]
     expect(welcome?.type).toBe('welcome')
     if (welcome?.type !== 'welcome') return
-    expect(welcome.id).toBe('b')
+    expect(welcome.you.id).toBe('b')
+    expect(welcome.you.name).toBe('Bob')
     expect(welcome.players.map((p) => p.name)).toEqual(['Alice'])
   })
 

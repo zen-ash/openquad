@@ -14,7 +14,7 @@ export type ClientMessage =
 export type PlayerUpdate = Pick<PlayerInfo, 'id' | 'position' | 'heading'>
 
 export type ServerMessage =
-  | { type: 'welcome'; id: string; players: PlayerInfo[] }
+  | { type: 'welcome'; you: PlayerInfo; players: PlayerInfo[] }
   | { type: 'player-joined'; player: PlayerInfo }
   | { type: 'player-left'; id: string }
   | { type: 'state'; players: PlayerUpdate[] }
