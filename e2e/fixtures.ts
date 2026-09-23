@@ -15,10 +15,14 @@ export const test = base.extend<Fixtures>({
       const context = await browser.newContext()
       contexts.push(context)
       const page = await context.newPage()
-      await page.goto('/')
+      // no real gpu in ci, so skip the expensive effects
+      await page.goto('/?quality=low')
       await page.getByLabel("What's your name?").fill(name)
       await page.getByRole('button', { name: 'Join' }).click()
-      await expect(page.getByText(/online/)).toBeVisible()
+      // the player count only shows once you're actually in (just /online/ also matches
+      // the join screen's tagline)
+      // loading the city on a machine with no gpu (ci) can take a while
+      await expect(page.getByText(/^\d+ online$/)).toBeVisible({ timeout: 30_000 })
       return page
     })
 
