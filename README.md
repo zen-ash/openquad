@@ -19,8 +19,12 @@ pnpm install
 pnpm dev
 ```
 
-Web runs on http://localhost:5173 and the server on port 2567. Open it in two tabs to see
-multiplayer working.
+Web runs on http://localhost:5173 and the server on port 2567. Open it in two browser
+windows side by side to see multiplayer working. Walk them close together and you can hear
+yourself through the other one (use headphones or it'll feed back).
+
+The mic only works on localhost or https. Opening it from another device on your wifi
+(http://your-ip:5173) works, but that device can only listen.
 
 Other scripts:
 
@@ -50,6 +54,7 @@ See [docs/SPEC.md](docs/SPEC.md) for the plan.
 - WASD / arrow keys to walk
 - Shift to run
 - Q / E to turn the camera
+- M to mute / unmute
 
 ## Credits
 

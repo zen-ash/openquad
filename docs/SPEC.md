@@ -40,13 +40,21 @@ though, no actual Pokemon characters or assets (all models are CC0).
   Their walk/run animation is picked from how fast they're moving.
 - **Voice** - WebRTC peer to peer. The server is only used for signaling (passing the
   offer/answer/ICE messages between two players), audio never goes through it.
-- **Proximity** - each remote voice goes through a Web Audio `PannerNode` placed at that
-  player's position, so it gets quieter with distance and comes from the right direction.
 - **Only connect to people nearby.** Full mesh with 30 people is 435 connections, which
-  won't work. Instead a client only opens a voice connection to players within
-  `VOICE_MAX_DISTANCE` (with a little buffer so it doesn't flap on the edge), and closes it
-  when they walk away. Plus a hard cap on connections. If this still isn't enough for a
+  won't work. A client calls players within 18m (a bit before you can hear them, so the call
+  is ready) and hangs up past 25m. The gap stops it reconnecting over and over if someone
+  walks along the edge. Max 8 calls at once, closest first. If this still isn't enough for a
   full class, fallback is an SFU like LiveKit.
+- **Who calls who** - for each pair, only the player with the smaller id makes the call, so
+  both sides don't call each other at the same time. The other side answers any offer. Hanging
+  up sends a `bye` so the other side closes too. (`apps/web/src/voice/peers.ts`)
+- **Proximity audio** - each remote voice goes mic stream -> gain -> `PannerNode` -> speakers.
+  The gain comes from `voiceVolume()` (full volume under 2m, silent past 15m), the panner
+  only does direction (HRTF, so it sounds like it comes from the left/right).
+- **Speaking indicator** - an `AnalyserNode` on every stream, checked every frame. Name tag
+  goes green while someone talks.
+- Chrome quirk: audio from a remote WebRTC stream is silent in Web Audio unless the stream is
+  also attached to an `<audio>` element, so there's a muted one per call.
 
 ## Message protocol
 
@@ -89,4 +97,7 @@ malformed.
 - e2e with Playwright (`e2e/`): two browser contexts join, one walks, check the other sees
   it. Runs with 1 worker since all tests share the same server. The page exposes
   `window.quad` in dev builds so tests can read positions (it's all a canvas otherwise)
+- voice e2e uses Chromium's fake mic, which beeps about once a second. Tests check "did Bob
+  hear anything from Alice in the last second" instead of reading the level at one instant,
+  since that can keep landing between beeps
 - CI runs format, lint, typecheck, tests and build on every push
