@@ -1,4 +1,11 @@
-import type { PlayerInfo, ServerMessage, SignalData, Vec3 } from '@quad/shared'
+import {
+  VIEW_DISTANCE,
+  type PlayerInfo,
+  type PlayerUpdate,
+  type ServerMessage,
+  type SignalData,
+  type Vec3,
+} from '@quad/shared'
 
 type Send = (msg: ServerMessage) => void
 
@@ -8,12 +15,26 @@ type Member = {
   moved: boolean
   // when their recent chat messages were sent, for the rate limit
   chatTimes: number[]
+  lastEmote: number
+  // who this person currently gets updates about
+  sees: Set<string>
 }
 
 const SPAWN_RADIUS = 3
+
+const cm = (n: number) => Math.round(n * 100) / 100
+const distance = (a: Vec3, b: Vec3) => Math.hypot(a.x - b.x, a.z - b.z)
+const update = ({ id, position, heading }: PlayerInfo): PlayerUpdate => [
+  id,
+  cm(position.x),
+  cm(position.z),
+  cm(heading),
+]
 // at most this many chat messages per window, anything past that is dropped
 const CHAT_LIMIT = 5
 const CHAT_WINDOW = 5000
+// one emote at a time is plenty, stops people spamming the animation
+const EMOTE_COOLDOWN = 1500
 
 function spawnPoint(): Vec3 {
   const angle = Math.random() * Math.PI * 2
@@ -37,12 +58,17 @@ export class Room {
     send({ type: 'welcome', you: info, players: [...this.members.values()].map((m) => m.info) })
     this.broadcast({ type: 'player-joined', player: info })
 
-    this.members.set(id, { info, send, moved: false, chatTimes: [] })
+    // they got everyone's position in the welcome, so start out "seeing" everyone. the next
+    // tick sorts out who's actually in range and tells them to hide the rest
+    const sees = new Set(this.members.keys())
+    for (const m of this.members.values()) m.sees.add(id)
+    this.members.set(id, { info, send, moved: false, chatTimes: [], lastEmote: -Infinity, sees })
     return info
   }
 
   leave(id: string) {
     if (!this.members.delete(id)) return
+    for (const m of this.members.values()) m.sees.delete(id)
     this.broadcast({ type: 'player-left', id })
   }
 
@@ -70,15 +96,46 @@ export class Room {
     return true
   }
 
-  // called every tick - only sends people who actually moved
+  emote(id: string, name: string, now = Date.now()) {
+    const member = this.members.get(id)
+    if (!member || now - member.lastEmote < EMOTE_COOLDOWN) return false
+    member.lastEmote = now
+    this.broadcast({ type: 'emote', from: id, name })
+    return true
+  }
+
+  // called every tick. you get updates about people near you who moved, plus anyone who
+  // just came into range. people who went out of range get an 'out-of-view' so they
+  // don't stay frozen on your screen where you last saw them
   tick() {
-    const updates = []
+    const moved = new Map<string, PlayerUpdate>()
     for (const m of this.members.values()) {
       if (!m.moved) continue
       m.moved = false
-      updates.push({ id: m.info.id, position: m.info.position, heading: m.info.heading })
+      moved.set(m.info.id, update(m.info))
     }
-    if (updates.length > 0) this.broadcast({ type: 'state', players: updates })
+
+    for (const viewer of this.members.values()) {
+      const players: PlayerUpdate[] = []
+      const gone: string[] = []
+      for (const other of this.members.values()) {
+        if (other === viewer) continue
+        const id = other.info.id
+        const close = distance(other.info.position, viewer.info.position) <= VIEW_DISTANCE
+        const saw = viewer.sees.has(id)
+        if (close && !saw) {
+          viewer.sees.add(id)
+          players.push(moved.get(id) ?? update(other.info))
+        } else if (close && moved.has(id)) {
+          players.push(moved.get(id)!)
+        } else if (!close && saw) {
+          viewer.sees.delete(id)
+          gone.push(id)
+        }
+      }
+      if (players.length > 0) viewer.send({ type: 'state', players })
+      if (gone.length > 0) viewer.send({ type: 'out-of-view', ids: gone })
+    }
   }
 
   private broadcast(msg: ServerMessage) {

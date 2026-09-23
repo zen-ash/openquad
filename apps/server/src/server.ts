@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { createServer, type Server } from 'node:http'
 import { TICK_RATE } from '@quad/shared'
@@ -7,6 +6,7 @@ import { WebSocketServer, WebSocket } from 'ws'
 import { getIceServers } from './ice'
 import { parseMessage } from './messages'
 import { Room } from './room'
+import { Stats } from './stats'
 
 type Options = {
   // built web app to serve. in dev vite serves it instead
@@ -15,14 +15,24 @@ type Options = {
   heartbeatMs?: number
 }
 
+// short ids instead of uuids, they're in every position update (a uuid alone was 36
+// of the ~110 bytes). only need to be unique while the server's running
+let nextId = 0
+
 export function startServer(port: number, { webDir, heartbeatMs = 30_000 }: Options = {}) {
   const room = new Room()
+  const stats = new Stats()
   const serveWeb = webDir && existsSync(webDir) ? sirv(webDir, { single: true }) : null
 
   const http = createServer((req, res) => {
     if (req.url === '/health') {
       res.writeHead(200, { 'content-type': 'application/json' })
       res.end(JSON.stringify({ ok: true, players: room.size }))
+      return
+    }
+    if (req.url === '/stats') {
+      res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' })
+      res.end(JSON.stringify(stats.report(room.size)))
       return
     }
     if (req.url === '/ice') {
@@ -40,14 +50,17 @@ export function startServer(port: number, { webDir, heartbeatMs = 30_000 }: Opti
   const alive = new WeakMap<WebSocket, boolean>()
 
   wss.on('connection', (socket) => {
-    const id = randomUUID()
+    const id = (nextId++).toString(36)
     let joined = false
 
     alive.set(socket, true)
     socket.on('pong', () => alive.set(socket, true))
 
     const send = (msg: unknown) => {
-      if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(msg))
+      if (socket.readyState !== WebSocket.OPEN) return
+      const json = JSON.stringify(msg)
+      socket.send(json)
+      stats.sent(json.length)
     }
 
     socket.on('message', (raw) => {
@@ -65,12 +78,17 @@ export function startServer(port: number, { webDir, heartbeatMs = 30_000 }: Opti
       if (msg.type === 'move') room.move(id, msg.position, msg.heading)
       else if (msg.type === 'signal') room.relaySignal(id, msg.to, msg.data)
       else if (msg.type === 'chat') room.chat(id, msg.text)
+      else if (msg.type === 'emote') room.emote(id, msg.name)
     })
 
     socket.on('close', () => room.leave(id))
   })
 
-  const tick = setInterval(() => room.tick(), 1000 / TICK_RATE)
+  const tick = setInterval(() => {
+    const start = performance.now()
+    room.tick()
+    stats.tick(performance.now() - start)
+  }, 1000 / TICK_RATE)
 
   // browsers answer pings on their own, even in background tabs. no answer since
   // the last ping = gone, so kick them instead of leaving a frozen player around

@@ -51,11 +51,7 @@ describe('server', () => {
 
     alice.socket.send(JSON.stringify({ type: 'move', position: { x: 5, y: 0, z: 5 }, heading: 0 }))
     const state = await bob.waitFor('state')
-    expect(state.players).toContainEqual({
-      id: aliceId,
-      position: { x: 5, y: 0, z: 5 },
-      heading: 0,
-    })
+    expect(state.players).toContainEqual([aliceId, 5, 5, 0])
 
     alice.socket.close()
     bob.socket.close()

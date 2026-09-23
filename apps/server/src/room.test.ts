@@ -45,9 +45,7 @@ describe('Room', () => {
     room.tick()
     room.tick() // nothing moved this time, shouldn't send anything
 
-    expect(a.inbox).toEqual([
-      { type: 'state', players: [{ id: 'b', position: { x: 1, y: 0, z: 2 }, heading: 0.5 }] },
-    ])
+    expect(a.inbox).toEqual([{ type: 'state', players: [['b', 1, 2, 0.5]] }])
   })
 
   it('relays signals only to the target player', () => {
@@ -96,5 +94,86 @@ describe('Room', () => {
     expect(sent.filter(Boolean)).toHaveLength(5)
     // fine again once the window has passed
     expect(room.chat('a', 'later', 7000)).toBe(true)
+  })
+
+  it('sends emotes to everyone but not too often', () => {
+    const room = new Room()
+    const a = fakeClient()
+    room.join('a', 'Alice', 'male_09', a.send)
+
+    expect(room.emote('a', 'Wave', 1000)).toBe(true)
+    expect(room.emote('a', 'Clap', 1500)).toBe(false) // still in cooldown
+    expect(room.emote('a', 'Clap', 3000)).toBe(true)
+    expect(a.inbox.filter((m) => m.type === 'emote')).toEqual([
+      { type: 'emote', from: 'a', name: 'Wave' },
+      { type: 'emote', from: 'a', name: 'Clap' },
+    ])
+  })
+
+  it('rounds positions to centimeters to keep updates small', () => {
+    const room = new Room()
+    const a = fakeClient()
+    room.join('a', 'Alice', 'male_09', a.send, { x: 0, y: 0, z: 0 })
+    room.join('b', 'Bob', 'male_09', () => {}, { x: 0, y: 0, z: 0 })
+    room.move('b', { x: 1.234567, y: 0, z: -2.345678 }, 0.123456)
+    room.tick()
+    expect(a.inbox.at(-1)).toEqual({ type: 'state', players: [['b', 1.23, -2.35, 0.12]] })
+  })
+
+  it('only sends updates about people nearby', () => {
+    const room = new Room()
+    const near = fakeClient()
+    const far = fakeClient()
+    room.join('near', 'Near', 'male_09', near.send, { x: 0, y: 0, z: 0 })
+    room.join('far', 'Far', 'male_09', far.send, { x: 400, y: 0, z: 0 })
+    room.join('c', 'Cara', 'male_09', () => {}, { x: 0, y: 0, z: 0 })
+    room.tick() // sorts out who can see who
+    near.inbox.length = far.inbox.length = 0
+
+    room.move('c', { x: 5, y: 0, z: 0 }, 0)
+    room.tick()
+
+    expect(near.inbox).toEqual([{ type: 'state', players: [['c', 5, 0, 0]] }])
+    expect(far.inbox).toEqual([])
+  })
+
+  it('tells you when someone goes out of range, and when they come back', () => {
+    const room = new Room()
+    const a = fakeClient()
+    room.join('a', 'Alice', 'male_09', a.send, { x: 0, y: 0, z: 0 })
+    room.join('b', 'Bob', 'male_09', () => {}, { x: 0, y: 0, z: 0 })
+    room.tick()
+    a.inbox.length = 0
+
+    room.move('b', { x: 300, y: 0, z: 0 }, 0)
+    room.tick()
+    expect(a.inbox).toEqual([{ type: 'out-of-view', ids: ['b'] }])
+
+    // standing still out there, nothing more to say
+    room.tick()
+    expect(a.inbox).toHaveLength(1)
+
+    room.move('b', { x: 10, y: 0, z: 0 }, 0)
+    room.tick()
+    expect(a.inbox.at(-1)).toEqual({ type: 'state', players: [['b', 10, 0, 0]] })
+  })
+
+  it('hides people who were already far away when you joined', () => {
+    const room = new Room()
+    room.join('far', 'Far', 'male_09', () => {}, { x: 400, y: 0, z: 0 })
+    const a = fakeClient()
+    room.join('a', 'Alice', 'male_09', a.send, { x: 0, y: 0, z: 0 })
+    room.tick()
+    expect(a.inbox).toContainEqual({ type: 'out-of-view', ids: ['far'] })
+  })
+
+  it('does not send you your own position', () => {
+    const room = new Room()
+    const a = fakeClient()
+    room.join('a', 'Alice', 'male_09', a.send)
+    a.inbox.length = 0
+    room.move('a', { x: 1, y: 0, z: 1 }, 0)
+    room.tick()
+    expect(a.inbox).toEqual([])
   })
 })

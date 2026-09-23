@@ -13,10 +13,13 @@ export type ClientMessage =
   | { type: 'move'; position: Vec3; heading: number }
   | { type: 'signal'; to: string; data: SignalData }
   | { type: 'chat'; text: string }
+  | { type: 'emote'; name: string }
   // does nothing, just keeps the connection busy so the host doesn't think we're idle
   | { type: 'ping' }
 
-export type PlayerUpdate = Pick<PlayerInfo, 'id' | 'position' | 'heading'>
+// [id, x, z, heading], rounded to centimeters. sent 20 times a second to everyone, so
+// it's worth keeping small (a full object with long decimals was ~5x bigger)
+export type PlayerUpdate = [id: string, x: number, z: number, heading: number]
 
 export type ServerMessage =
   | { type: 'welcome'; you: PlayerInfo; players: PlayerInfo[] }
@@ -25,3 +28,6 @@ export type ServerMessage =
   | { type: 'state'; players: PlayerUpdate[] }
   | { type: 'signal'; from: string; data: SignalData }
   | { type: 'chat'; from: string; name: string; text: string }
+  | { type: 'emote'; from: string; name: string }
+  // these people went further than VIEW_DISTANCE, stop drawing them until they're back
+  | { type: 'out-of-view'; ids: string[] }

@@ -34,6 +34,13 @@ describe('parseMessage', () => {
     expect(msg).toEqual({ type: 'join', name: 'A', avatar: 'male_09', position })
   })
 
+  it('parses an emote', () => {
+    expect(parseMessage(JSON.stringify({ type: 'emote', name: 'Wave' }))).toEqual({
+      type: 'emote',
+      name: 'Wave',
+    })
+  })
+
   it('trims and caps chat', () => {
     const msg = parseMessage(JSON.stringify({ type: 'chat', text: ' ' + 'y'.repeat(300) }))
     expect(msg).toEqual({ type: 'chat', text: 'y'.repeat(200) })
@@ -47,6 +54,7 @@ describe('parseMessage', () => {
     ['missing heading', JSON.stringify({ type: 'move', position: { x: 0, y: 0, z: 0 } })],
     ['signal without target', JSON.stringify({ type: 'signal', data: { kind: 'bye' } })],
     ['empty chat', JSON.stringify({ type: 'chat', text: '   ' })],
+    ['unknown emote', JSON.stringify({ type: 'emote', name: 'Backflip' })],
     ['signal with unknown kind', JSON.stringify({ type: 'signal', to: 'a', data: { kind: 'x' } })],
   ])('rejects %s', (_, raw) => {
     expect(parseMessage(raw)).toBeNull()

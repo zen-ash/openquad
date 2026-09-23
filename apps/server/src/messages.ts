@@ -1,5 +1,6 @@
 import {
   AVATAR_IDS,
+  EMOTES,
   MAX_CHAT_LENGTH,
   MAX_NAME_LENGTH,
   type ClientMessage,
@@ -39,6 +40,10 @@ export function parseMessage(raw: string): ClientMessage | null {
       if (isVec3(msg.position)) join.position = msg.position
       return join
     }
+    case 'emote':
+      return EMOTES.includes(msg.name as string)
+        ? { type: 'emote', name: msg.name as string }
+        : null
     case 'chat': {
       if (typeof msg.text !== 'string') return null
       const text = msg.text.trim().slice(0, MAX_CHAT_LENGTH)

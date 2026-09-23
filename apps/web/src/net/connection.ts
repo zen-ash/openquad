@@ -3,6 +3,7 @@ import { pushSnapshot } from '../game/interpolation'
 import { localPlayer } from '../game/localPlayer'
 import { closeAll, closePeer, handleSignal } from '../voice/voice'
 import { addChat } from './chat'
+import { startEmote } from './emotes'
 import { snapshots, useGame, type Person } from './store'
 
 // same host the page came from. in dev vite passes /ws through to the game server
@@ -105,17 +106,25 @@ function handle(msg: ServerMessage) {
       break
     }
     case 'state':
-      for (const p of msg.players) {
-        const buffer = snapshots.get(p.id)
-        if (!buffer) continue // this includes ourselves
-        pushSnapshot(buffer, { t: now, x: p.position.x, z: p.position.z, heading: p.heading })
+      for (const [id, x, z, heading] of msg.players) {
+        const buffer = snapshots.get(id)
+        // no buffer = they were out of view and just came back
+        if (buffer) pushSnapshot(buffer, { t: now, x, z, heading })
+        else snapshots.set(id, [{ t: now, x, z, heading }])
       }
+      break
+    case 'out-of-view':
+      for (const id of msg.ids) snapshots.delete(id)
       break
     case 'signal':
       handleSignal(msg.from, msg.data)
       break
     case 'chat':
       addChat(msg.from, msg.name, msg.text)
+      break
+    case 'emote':
+      // this includes our own, so you only wave if the server let it through
+      startEmote(msg.from, msg.name)
       break
   }
 }
