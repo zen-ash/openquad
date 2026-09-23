@@ -35,6 +35,8 @@ export function parseMessage(raw: string): ClientMessage | null {
       if (!SIGNAL_KINDS.includes(data.kind as string)) return null
       return msg as ClientMessage
     }
+    case 'ping':
+      return { type: 'ping' }
     default:
       return null
   }

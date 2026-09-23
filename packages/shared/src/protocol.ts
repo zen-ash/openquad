@@ -11,6 +11,8 @@ export type ClientMessage =
   | { type: 'join'; name: string }
   | { type: 'move'; position: Vec3; heading: number }
   | { type: 'signal'; to: string; data: SignalData }
+  // does nothing, just keeps the connection busy so the host doesn't think we're idle
+  | { type: 'ping' }
 
 export type PlayerUpdate = Pick<PlayerInfo, 'id' | 'position' | 'heading'>
 

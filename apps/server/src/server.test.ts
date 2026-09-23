@@ -10,14 +10,14 @@ let url: string
 beforeEach(async () => {
   server = await startServer(0) // 0 = any free port
   const { port } = server.http.address() as AddressInfo
-  url = `ws://localhost:${port}`
+  url = `ws://localhost:${port}/ws`
 })
 
 afterEach(() => server.close())
 
 // connects and joins, collecting every message that comes back
-async function connect(name: string) {
-  const socket = new WebSocket(url)
+async function connect(name: string, options?: { autoPong: boolean }) {
+  const socket = new WebSocket(url, options)
   const inbox: ServerMessage[] = []
   socket.on('message', (raw) => inbox.push(JSON.parse(raw.toString())))
   await new Promise((resolve) => socket.once('open', resolve))
@@ -37,7 +37,7 @@ async function connect(name: string) {
 
 describe('server', () => {
   it('responds to health checks', async () => {
-    const res = await fetch(url.replace('ws', 'http') + '/health')
+    const res = await fetch(url.replace('ws', 'http').replace('/ws', '/health'))
     expect(await res.json()).toEqual({ ok: true, players: 0 })
   })
 
@@ -71,6 +71,31 @@ describe('server', () => {
     const left = await alice.waitFor('player-left')
     expect(left.id).toBe(bobId)
 
+    alice.socket.close()
+  })
+
+  it('hands out ice servers', async () => {
+    const res = await fetch(url.replace('ws', 'http').replace('/ws', '/ice'))
+    const servers = await res.json()
+    expect(servers[0].urls).toContain('stun:')
+  })
+})
+
+describe('heartbeat', () => {
+  it('kicks players whose connection died', async () => {
+    await server.close()
+    server = await startServer(0, { heartbeatMs: 50 })
+    const { port } = server.http.address() as AddressInfo
+    url = `ws://localhost:${port}/ws`
+
+    const alice = await connect('Alice')
+    await alice.waitFor('welcome')
+    // bob stops answering pings, like a laptop that got closed
+    const bob = await connect('Bob', { autoPong: false })
+    const bobId = (await bob.waitFor('welcome')).you.id
+
+    const left = await alice.waitFor('player-left')
+    expect(left.id).toBe(bobId)
     alice.socket.close()
   })
 })
