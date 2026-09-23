@@ -1,0 +1,15 @@
+services:
+  - name: openquad
+    type: web
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    # only deploy once CI passes on github
+    autoDeployTrigger: checksPass
+    envVars:
+      # cloudflare turn, for people on networks that block direct connections.
+      # without these it still works, just stun only
+      - key: CF_TURN_KEY_ID
+        sync: false
+      - key: CF_TURN_API_TOKEN
+        sync: false
