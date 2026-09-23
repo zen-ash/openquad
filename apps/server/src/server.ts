@@ -57,13 +57,14 @@ export function startServer(port: number, { webDir, heartbeatMs = 30_000 }: Opti
       if (msg.type === 'join') {
         if (joined) return
         joined = true
-        room.join(id, msg.name, send)
+        room.join(id, msg.name, msg.avatar, send, msg.position)
         return
       }
       if (!joined) return
 
       if (msg.type === 'move') room.move(id, msg.position, msg.heading)
       else if (msg.type === 'signal') room.relaySignal(id, msg.to, msg.data)
+      else if (msg.type === 'chat') room.chat(id, msg.text)
     })
 
     socket.on('close', () => room.leave(id))

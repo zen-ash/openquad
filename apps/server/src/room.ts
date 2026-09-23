@@ -6,9 +6,14 @@ type Member = {
   info: PlayerInfo
   send: Send
   moved: boolean
+  // when their recent chat messages were sent, for the rate limit
+  chatTimes: number[]
 }
 
 const SPAWN_RADIUS = 3
+// at most this many chat messages per window, anything past that is dropped
+const CHAT_LIMIT = 5
+const CHAT_WINDOW = 5000
 
 function spawnPoint(): Vec3 {
   const angle = Math.random() * Math.PI * 2
@@ -26,13 +31,13 @@ export class Room {
     return this.members.size
   }
 
-  join(id: string, name: string, send: Send) {
-    const info: PlayerInfo = { id, name, position: spawnPoint(), heading: 0 }
+  join(id: string, name: string, avatar: string, send: Send, position = spawnPoint()) {
+    const info: PlayerInfo = { id, name, avatar, position, heading: 0 }
 
     send({ type: 'welcome', you: info, players: [...this.members.values()].map((m) => m.info) })
     this.broadcast({ type: 'player-joined', player: info })
 
-    this.members.set(id, { info, send, moved: false })
+    this.members.set(id, { info, send, moved: false, chatTimes: [] })
     return info
   }
 
@@ -52,6 +57,17 @@ export class Room {
   relaySignal(from: string, to: string, data: SignalData) {
     if (!this.members.has(from)) return
     this.members.get(to)?.send({ type: 'signal', from, data })
+  }
+
+  // returns false if it got dropped for spam
+  chat(id: string, text: string, now = Date.now()) {
+    const member = this.members.get(id)
+    if (!member) return false
+    member.chatTimes = member.chatTimes.filter((t) => now - t < CHAT_WINDOW)
+    if (member.chatTimes.length >= CHAT_LIMIT) return false
+    member.chatTimes.push(now)
+    this.broadcast({ type: 'chat', from: id, name: member.info.name, text })
+    return true
   }
 
   // called every tick - only sends people who actually moved

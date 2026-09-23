@@ -1,4 +1,10 @@
-import { MAX_NAME_LENGTH, type ClientMessage, type Vec3 } from '@quad/shared'
+import {
+  AVATAR_IDS,
+  MAX_CHAT_LENGTH,
+  MAX_NAME_LENGTH,
+  type ClientMessage,
+  type Vec3,
+} from '@quad/shared'
 
 const SIGNAL_KINDS = ['description', 'candidate', 'bye']
 
@@ -24,7 +30,19 @@ export function parseMessage(raw: string): ClientMessage | null {
     case 'join': {
       if (typeof msg.name !== 'string') return null
       const name = msg.name.trim().slice(0, MAX_NAME_LENGTH)
-      return name ? { type: 'join', name } : null
+      if (!name) return null
+      // unknown avatar (old client, typo) just gets the first one instead of failing
+      const avatar = AVATAR_IDS.includes(msg.avatar as string)
+        ? (msg.avatar as string)
+        : AVATAR_IDS[0]!
+      const join: ClientMessage = { type: 'join', name, avatar }
+      if (isVec3(msg.position)) join.position = msg.position
+      return join
+    }
+    case 'chat': {
+      if (typeof msg.text !== 'string') return null
+      const text = msg.text.trim().slice(0, MAX_CHAT_LENGTH)
+      return text ? { type: 'chat', text } : null
     }
     case 'move':
       if (!isVec3(msg.position) || !isNum(msg.heading)) return null

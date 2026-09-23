@@ -21,7 +21,7 @@ async function connect(name: string, options?: { autoPong: boolean }) {
   const inbox: ServerMessage[] = []
   socket.on('message', (raw) => inbox.push(JSON.parse(raw.toString())))
   await new Promise((resolve) => socket.once('open', resolve))
-  socket.send(JSON.stringify({ type: 'join', name }))
+  socket.send(JSON.stringify({ type: 'join', name, avatar: 'male_09' }))
 
   const waitFor = async <T extends ServerMessage['type']>(type: T) => {
     for (let i = 0; i < 50; i++) {

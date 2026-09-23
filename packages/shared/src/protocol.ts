@@ -8,9 +8,11 @@ export type SignalData =
   | { kind: 'bye' }
 
 export type ClientMessage =
-  | { type: 'join'; name: string }
+  // position is only sent when reconnecting, so you come back where you were
+  | { type: 'join'; name: string; avatar: string; position?: Vec3 }
   | { type: 'move'; position: Vec3; heading: number }
   | { type: 'signal'; to: string; data: SignalData }
+  | { type: 'chat'; text: string }
   // does nothing, just keeps the connection busy so the host doesn't think we're idle
   | { type: 'ping' }
 
@@ -22,3 +24,4 @@ export type ServerMessage =
   | { type: 'player-left'; id: string }
   | { type: 'state'; players: PlayerUpdate[] }
   | { type: 'signal'; from: string; data: SignalData }
+  | { type: 'chat'; from: string; name: string; text: string }
