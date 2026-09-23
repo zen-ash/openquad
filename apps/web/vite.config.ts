@@ -11,13 +11,15 @@ export default defineConfig({
         // libraries in their own files. they change way less often than the game code,
         // so browsers can keep them cached between deploys
         codeSplitting: {
+          // react first: a group also pulls in what its modules import, so if 3d went
+          // first it would drag react-dom in with it (drei's Html uses it)
           groups: [
+            { name: 'react', test: /node_modules[\\/](react|react-dom|scheduler|zustand)[\\/]/ },
             { name: 'three', test: /node_modules[\\/]three[\\/]/ },
             {
               name: '3d',
               test: /node_modules[\\/](@react-three|postprocessing|n8ao|troika|three-)/,
             },
-            { name: 'react', test: /node_modules[\\/](react|react-dom|scheduler|zustand)[\\/]/ },
           ],
         },
       },
