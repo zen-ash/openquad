@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { localPlayer } from './game/localPlayer'
-import { places } from './game/places'
+import { arrivalSpot, places } from './game/places'
 
 export default function TeleportMenu() {
   const [open, setOpen] = useState(false)
@@ -16,7 +16,7 @@ export default function TeleportMenu() {
             <li key={p.label}>
               <button
                 onClick={(e) => {
-                  localPlayer.teleport = p.spot
+                  localPlayer.teleport = arrivalSpot(p.spot)
                   setOpen(false)
                   // otherwise space/enter would keep clicking it while you walk
                   e.currentTarget.blur()

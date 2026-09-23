@@ -42,3 +42,12 @@ export const places: Place[] = [
     return building ? [{ label, spot: openSpotNear(centroid(building.points)) }] : []
   }),
 ]
+
+// somewhere random within a couple of meters of the spot, so people teleporting to
+// the same place don't end up standing inside each other
+export function arrivalSpot(spot: Point, random = Math.random) {
+  const angle = random() * Math.PI * 2
+  const dist = 1 + random() * 1.5
+  const p = { x: spot.x + Math.cos(angle) * dist, z: spot.z + Math.sin(angle) * dist }
+  return resolveCollisions(p, 0.4, world)
+}
