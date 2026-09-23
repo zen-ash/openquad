@@ -36,6 +36,28 @@ pnpm lint
 pnpm build
 ```
 
+## Deploying
+
+The game server also serves the built site, so the whole thing is one service. It runs on
+Render's free tier from the `Dockerfile`, set up by `render.yaml`.
+
+1. On Render: **New > Blueprint**, pick this repo. It reads `render.yaml`.
+2. It asks for `CF_TURN_KEY_ID` and `CF_TURN_API_TOKEN`. These are for Cloudflare's TURN
+   server (free, Cloudflare dashboard > Realtime > TURN Server > Create). Without them voice
+   still works on most networks, but not on ones that block direct connections, which
+   includes a lot of school wifi.
+3. Deploy. After that it redeploys on its own whenever CI passes on `main`.
+
+The free tier sleeps after 15 minutes with nobody on it and takes about a minute to wake
+up, so open it a couple of minutes before showing it to anyone.
+
+To try the production build locally:
+
+```sh
+docker build -t openquad .
+docker run -p 8080:2567 openquad
+```
+
 ## Layout
 
 ```

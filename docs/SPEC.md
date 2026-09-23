@@ -26,10 +26,14 @@ though, no actual Pokemon characters or assets (all models are CC0).
 ```
  browser (each player)                     server (Node + ws)
  ---------------------                     ------------------
- React Three Fiber scene   <-- positions -->  room state, 20 ticks/sec
- WebRTC audio (p2p)        <-- signaling -->  relays offer/answer/ice
- Web Audio PannerNode                          /health
+ React Three Fiber scene   <-- /ws ------>  room state, 20 ticks/sec
+ WebRTC audio (p2p)        <-- /ws ------>  relays offer/answer/ice
+                           <-- /ice -----   stun/turn servers
+                           <-- /* -------   the built site
 ```
+
+Everything is on one host and port. In dev, Vite proxies `/ws` and `/ice` to the game
+server so the client code is the same either way.
 
 - **Position sync** - clients send their position (at most 20 times a second, only if it
   changed), server batches everything that changed and broadcasts 20 times a second.
@@ -56,15 +60,32 @@ though, no actual Pokemon characters or assets (all models are CC0).
 - Chrome quirk: audio from a remote WebRTC stream is silent in Web Audio unless the stream is
   also attached to an `<audio>` element, so there's a muted one per call.
 
+## Deployment
+
+- One Docker image: build the web app and bundle the server into a single file with esbuild
+  (no node_modules at runtime), then the server serves the site with `sirv`. Render free
+  tier, config in `render.yaml`, deploys after CI passes.
+- **TURN** - STUN only works when both people can reach each other directly. On strict
+  networks (a lot of school/work wifi) audio has to be relayed through a TURN server.
+  The server gets short-lived credentials from Cloudflare's TURN (free up to 1000GB/month)
+  and hands them to clients at `/ice`. The key stays on the server.
+- **Dead connections** - the server pings every client every 30s and kicks anyone who
+  didn't answer the last one (closed laptop, dropped wifi). Browsers answer pings on their
+  own, even in background tabs.
+- **Keepalive** - Render's free tier sleeps the server after 15 minutes without incoming
+  traffic. Someone standing still and talking sends nothing, so clients send a `ping`
+  message every minute.
+
 ## Message protocol
 
 Everything is JSON over one websocket. Types live in `packages/shared/src/protocol.ts`.
 
-| client -> server |                                     |
-| ---------------- | ----------------------------------- |
-| `join`           | name                                |
-| `move`           | position + heading                  |
-| `signal`         | WebRTC data for one specific player |
+| client -> server |                                                  |
+| ---------------- | ------------------------------------------------ |
+| `join`           | name                                             |
+| `move`           | position + heading                               |
+| `signal`         | WebRTC offer/answer/candidate/bye for one player |
+| `ping`           | keepalive, ignored                               |
 
 | server -> client |                                          |
 | ---------------- | ---------------------------------------- |
