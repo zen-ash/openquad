@@ -133,6 +133,23 @@ footpaths and parks, in a 1km square around Hurt Park.
   "Reconnecting..." banner and tries again after 0.5s, 1s, 2s, 4s, then every 8s. It rejoins
   with the same name and avatar at the spot you were standing (`position` in `join`).
 
+## Part 8
+
+- **Emotes** - 1-5 or the buttons: wave, clap, cheer, laugh, shrug. Rocketbox mocap, trimmed
+  to a few seconds each (some of the recordings were 25s long). Server sends them to everyone
+  including you, so you only emote if it got through, and ignores more than one per 1.5s.
+  Walking cancels an emote.
+- **Voice range** - a "!" pops over someone when they come close enough to hear you, and name
+  tags are faded for people who are too far away.
+- **Day and night** - the sun is where it really is over GSU right now (standard solar
+  position math, tested against the equinox, sunrise times and summer vs winter). At night the
+  sun turns into dim blue moonlight, stars come out and some of the windows light up (plus a
+  bit of bloom on high quality). There's a picker to force morning/noon/sunset/night for
+  showing it off in a daytime class.
+- **Load test** - see [LOAD_TEST.md](LOAD_TEST.md). It found that bandwidth, not CPU, was the
+  limit, which led to compact position updates, short ids and only sending updates about
+  people within 200m. 200 players spread over campus went from 538 KB/s to 17 KB/s each.
+
 ## Deployment
 
 - One Docker image: build the web app and bundle the server into a single file with esbuild
@@ -160,15 +177,18 @@ Everything is JSON over one websocket. Types live in `packages/shared/src/protoc
 | `signal`         | WebRTC offer/answer/candidate/bye for one player |
 | `ping`           | keepalive, ignored                               |
 | `chat`           | text (server rate limits it)                     |
+| `emote`          | name (one of 5, rate limited)                    |
 
-| server -> client |                                          |
-| ---------------- | ---------------------------------------- |
-| `welcome`        | you (id + spawn) + everyone already here |
-| `player-joined`  | new player                               |
-| `player-left`    | id                                       |
-| `state`          | positions of players who moved           |
-| `signal`         | WebRTC data from another player          |
-| `chat`           | from, name, text                         |
+| server -> client |                                                |
+| ---------------- | ---------------------------------------------- |
+| `welcome`        | you (id + spawn) + everyone already here       |
+| `player-joined`  | new player                                     |
+| `player-left`    | id                                             |
+| `state`          | [id, x, z, heading] of nearby people who moved |
+| `out-of-view`    | ids that went past 200m, stop drawing them     |
+| `signal`         | WebRTC data from another player                |
+| `chat`           | from, name, text                               |
+| `emote`          | from, name                                     |
 
 The server validates every message (`apps/server/src/messages.ts`) and drops anything
 malformed.

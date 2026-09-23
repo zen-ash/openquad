@@ -36,6 +36,7 @@ Other scripts:
 ```sh
 pnpm test        # unit + integration tests
 pnpm e2e         # playwright, opens two browsers and checks they see each other
+pnpm bots        # load test with fake players, see docs/LOAD_TEST.md
 pnpm typecheck
 pnpm lint
 pnpm build
@@ -85,6 +86,9 @@ See [docs/SPEC.md](docs/SPEC.md) for the plan.
 - M to mute / unmute
 - "Go to..." in the top right to jump to a building
 - Enter to chat
+- 1-5 for emotes (wave, clap, cheer, laugh, shrug)
+- Time of day in the top right: follows the real time in Atlanta, or pick morning, noon,
+  sunset or night. `?time=night` in the url works too
 - On a phone or tablet: joystick in the bottom left, drag anywhere else to turn
 
 ## Credits
