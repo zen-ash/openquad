@@ -5,6 +5,7 @@ import { useRef, useState } from 'react'
 import * as THREE from 'three'
 import { cutout } from '../campus/cutout'
 import type { Controls } from '../game/controls'
+import { avatarFor } from '../game/avatars'
 import { localPlayer } from '../game/localPlayer'
 import { headingFor, moveDirection, RUN_SPEED, walk, WALK_SPEED } from '../game/movement'
 import { world } from '../game/world'
@@ -95,7 +96,7 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
 
   return (
     <group ref={body} position={[spawn.position.x, 0, spawn.position.z]} rotation-y={spawn.heading}>
-      <Character anim={anim} />
+      <Character avatar={avatarFor(spawn.id)} anim={anim} />
     </group>
   )
 }

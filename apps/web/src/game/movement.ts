@@ -8,8 +8,10 @@ export type MoveInput = {
   run: boolean
 }
 
-export const WALK_SPEED = 3.5
-export const RUN_SPEED = 7
+// meters per second. a brisk walk and a jog. kept close to the mocap speeds (see
+// MOCAP_SPEED) so the animations don't have to be sped up much
+export const WALK_SPEED = 1.6
+export const RUN_SPEED = 4.2
 
 /**
  * Turns WASD into a world space direction (unit length), or null if not moving.

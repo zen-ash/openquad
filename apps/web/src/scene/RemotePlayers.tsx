@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { useRef, useState } from 'react'
 import type { Group } from 'three'
 import { INTERP_DELAY, sample } from '../game/interpolation'
+import { avatarFor } from '../game/avatars'
 import { animForSpeed } from '../game/movement'
 import { snapshots, useGame } from '../net/store'
 import { useVoice } from '../voice/store'
@@ -40,8 +41,8 @@ function RemotePlayer({ id, name }: { id: string; name: string }) {
 
   return (
     <group ref={body}>
-      <Character anim={anim} />
-      <Billboard position-y={2.4}>
+      <Character avatar={avatarFor(id)} anim={anim} />
+      <Billboard position-y={2.2}>
         <Text
           fontSize={0.35}
           color={speaking ? '#7dff6a' : 'white'}
