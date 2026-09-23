@@ -9,9 +9,20 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   use: {
     baseURL: 'http://localhost:5173',
-    viewport: { width: 1280, height: 720 },
-    // software webgl so it works on CI machines without a gpu
-    launchOptions: { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] },
+    // small window on purpose, every page shares one software-emulated gpu so
+    // fewer pixels = much faster tests
+    viewport: { width: 640, height: 360 },
+    permissions: ['microphone'],
+    launchOptions: {
+      args: [
+        // software webgl so it works on CI machines without a gpu
+        '--use-angle=swiftshader',
+        '--enable-unsafe-swiftshader',
+        // fake mic that plays a beep, and skip the permission popup
+        '--use-fake-device-for-media-stream',
+        '--use-fake-ui-for-media-stream',
+      ],
+    },
   },
   webServer: {
     command: 'pnpm dev',

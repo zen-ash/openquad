@@ -1,32 +1,12 @@
-import { expect, test, type Browser, type BrowserContext, type Page } from '@playwright/test'
-
-const contexts: BrowserContext[] = []
-
-// otherwise players from the last test are still standing around on the server
-test.afterEach(async () => {
-  await Promise.all(contexts.splice(0).map((c) => c.close()))
-})
-
-async function join(browser: Browser, name: string) {
-  // separate contexts = separate people (no shared storage)
-  const context = await browser.newContext()
-  contexts.push(context)
-  const page = await context.newPage()
-  await page.goto('/')
-  await page.getByLabel("What's your name?").fill(name)
-  await page.getByRole('button', { name: 'Join' }).click()
-  await expect(page.getByText(/online/)).toBeVisible()
-  return page
-}
-
-const myId = (page: Page) => page.evaluate(() => window.quad!.me()!)
+import type { Page } from '@playwright/test'
+import { expect, myId, test } from './fixtures'
 
 const positionOf = (page: Page, id: string) =>
   page.evaluate((id) => window.quad!.positionOf(id), id)
 
-test('two players can see each other move', async ({ browser }) => {
-  const alice = await join(browser, 'Alice')
-  const bob = await join(browser, 'Bob')
+test('two players can see each other move', async ({ join }) => {
+  const alice = await join('Alice')
+  const bob = await join('Bob')
 
   await expect(alice.getByText('2 online')).toBeVisible()
   await expect(bob.getByText('2 online')).toBeVisible()
@@ -44,9 +24,9 @@ test('two players can see each other move', async ({ browser }) => {
   await expect.poll(async () => (await positionOf(bob, aliceId))!.x).toBeGreaterThan(before!.x + 1)
 })
 
-test('player count goes down when someone leaves', async ({ browser }) => {
-  const alice = await join(browser, 'Alice')
-  const bob = await join(browser, 'Bob')
+test('player count goes down when someone leaves', async ({ join }) => {
+  const alice = await join('Alice')
+  const bob = await join('Bob')
   await expect(alice.getByText('2 online')).toBeVisible()
 
   await bob.context().close()
