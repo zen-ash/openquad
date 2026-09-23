@@ -4,10 +4,9 @@ import { useFrame } from '@react-three/fiber'
 import { useRef, useState } from 'react'
 import * as THREE from 'three'
 import { cutout } from '../campus/cutout'
-import { resolveCollisions } from '../game/collision'
 import type { Controls } from '../game/controls'
 import { localPlayer } from '../game/localPlayer'
-import { headingFor, moveDirection, RUN_SPEED, WALK_SPEED } from '../game/movement'
+import { headingFor, moveDirection, RUN_SPEED, walk, WALK_SPEED } from '../game/movement'
 import { world } from '../game/world'
 import { send } from '../net/connection'
 import Character, { type Anim } from './Character'
@@ -36,7 +35,7 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
   useFrame(({ camera }, delta) => {
     const player = body.current
     if (!player) return
-    // after switching tabs delta can be huge and you'd teleport through walls
+    // for turning/smoothing. walking handles long frames itself (see walk)
     const dt = Math.min(delta, 0.1)
     const keys = getKeys()
 
@@ -55,11 +54,7 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
 
     if (dir) {
       const speed = keys.run ? RUN_SPEED : WALK_SPEED
-      const pos = resolveCollisions(
-        { x: player.position.x + dir.x * speed * dt, z: player.position.z + dir.z * speed * dt },
-        PLAYER_RADIUS,
-        world,
-      )
+      const pos = walk(player.position, dir, speed, delta, PLAYER_RADIUS, world)
       player.position.x = pos.x
       player.position.z = pos.z
       player.rotation.y = lerpAngle(player.rotation.y, headingFor(dir), 1 - Math.exp(-12 * dt))

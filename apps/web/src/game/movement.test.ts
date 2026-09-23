@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
+import { polygon, type World } from './collision'
 import {
   animForSpeed,
   headingFor,
   moveDirection,
   RUN_SPEED,
   WALK_SPEED,
+  walk,
   type MoveInput,
 } from './movement'
 
@@ -53,5 +55,40 @@ describe('animForSpeed', () => {
     expect(animForSpeed(0)).toBe('Idle')
     expect(animForSpeed(WALK_SPEED)).toBe('Walk')
     expect(animForSpeed(RUN_SPEED)).toBe('Run')
+  })
+})
+
+describe('walk', () => {
+  const open: World = { buildings: [], circles: [], halfSize: 100 }
+  // a thin wall across x = 2
+  const walled: World = {
+    buildings: [
+      polygon([
+        [2, -10],
+        [2.2, -10],
+        [2.2, 10],
+        [2, 10],
+      ]),
+    ],
+    circles: [],
+    halfSize: 100,
+  }
+  const east = { x: 1, z: 0 }
+
+  it('goes the same distance at 2fps as at 60fps', () => {
+    let smooth = { x: 0, z: 0 }
+    for (let i = 0; i < 30; i++) smooth = walk(smooth, east, 4, 1 / 60, 0.4, open)
+    const choppy = walk({ x: 0, z: 0 }, east, 4, 0.5, 0.4, open)
+    expect(choppy.x).toBeCloseTo(smooth.x)
+    expect(choppy.x).toBeCloseTo(2)
+  })
+
+  it('does not skip through walls on a long frame', () => {
+    const p = walk({ x: 0, z: 0 }, east, 7, 0.5, 0.4, walled)
+    expect(p.x).toBeCloseTo(1.6)
+  })
+
+  it('stops after half a second instead of replaying a long pause', () => {
+    expect(walk({ x: 0, z: 0 }, east, 4, 10, 0.4, open).x).toBeCloseTo(2)
   })
 })

@@ -1,3 +1,5 @@
+import { resolveCollisions, type Point, type World } from './collision'
+
 export type MoveInput = {
   forward: boolean
   back: boolean
@@ -38,4 +40,36 @@ export function animForSpeed(speed: number) {
   if (speed > (WALK_SPEED + RUN_SPEED) / 2) return 'Run'
   if (speed > 0.5) return 'Walk'
   return 'Idle'
+}
+
+// longest single step. bigger frames get split up so you can't skip through a wall
+const MAX_STEP = 1 / 30
+// after a long pause (tab in the background) just stop instead of replaying it all
+const MAX_FRAME = 0.5
+
+/**
+ * Moves the player for one frame. On a slow computer frames are long, so this takes
+ * several small steps instead of one big one. Just capping the frame time (what this
+ * used to do) made people on slow laptops walk in slow motion.
+ */
+export function walk(
+  from: Point,
+  dir: { x: number; z: number },
+  speed: number,
+  delta: number,
+  radius: number,
+  world: World,
+): Point {
+  let pos = from
+  let left = Math.min(delta, MAX_FRAME)
+  while (left > 0) {
+    const dt = Math.min(left, MAX_STEP)
+    pos = resolveCollisions(
+      { x: pos.x + dir.x * speed * dt, z: pos.z + dir.z * speed * dt },
+      radius,
+      world,
+    )
+    left -= dt
+  }
+  return pos
 }
