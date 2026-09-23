@@ -161,6 +161,13 @@ malformed.
 - e2e with Playwright (`e2e/`): two browser contexts join, one walks, check the other sees
   it. Runs with 1 worker since all tests share the same server. The page exposes
   `window.quad` in dev builds so tests can read positions (it's all a canvas otherwise)
+- e2e pages load with `?quality=low&nocity`: the city isn't drawn (ci has no gpu and drawing it on
+  the cpu made every test time out), but the map is still loaded for collisions. A separate
+  test (`e2e/city.spec.ts`) loads the full city and fails on any page or shader error
+- walking takes small steps on long frames (`walk()` in movement.ts) instead of capping the
+  frame time, otherwise slow laptops (and ci) walk in slow motion
+- to reproduce ci locally: run the e2e tests in the `mcr.microsoft.com/playwright` docker image
+  with `--cpus=2`
 - voice e2e uses Chromium's fake mic, which beeps about once a second. Tests check "did Bob
   hear anything from Alice in the last second" instead of reading the level at one instant,
   since that can keep landing between beeps
