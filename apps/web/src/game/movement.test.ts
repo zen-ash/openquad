@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { headingFor, moveDirection, type MoveInput } from './movement'
+import {
+  animForSpeed,
+  headingFor,
+  moveDirection,
+  RUN_SPEED,
+  WALK_SPEED,
+  type MoveInput,
+} from './movement'
 
 const none: MoveInput = { forward: false, back: false, left: false, right: false, run: false }
 
@@ -38,5 +45,13 @@ describe('headingFor', () => {
 
   it('faces +x at 90deg', () => {
     expect(headingFor({ x: 1, z: 0 })).toBeCloseTo(Math.PI / 2)
+  })
+})
+
+describe('animForSpeed', () => {
+  it('picks the animation that matches how fast someone is going', () => {
+    expect(animForSpeed(0)).toBe('Idle')
+    expect(animForSpeed(WALK_SPEED)).toBe('Walk')
+    expect(animForSpeed(RUN_SPEED)).toBe('Run')
   })
 })

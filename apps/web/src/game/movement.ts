@@ -32,3 +32,10 @@ export function moveDirection(input: MoveInput, cameraYaw: number) {
 export function headingFor(dir: { x: number; z: number }) {
   return Math.atan2(dir.x, dir.z)
 }
+
+// for other players we only know how fast they're going, not what keys they hold
+export function animForSpeed(speed: number) {
+  if (speed > (WALK_SPEED + RUN_SPEED) / 2) return 'Run'
+  if (speed > 0.5) return 'Walk'
+  return 'Idle'
+}
