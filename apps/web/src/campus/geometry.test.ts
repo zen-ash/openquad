@@ -54,6 +54,44 @@ describe('linesGeometry', () => {
     expect(min.y).toBeCloseTo(0.1)
   })
 
+  it('has every triangle facing up, whichever way the road was drawn', () => {
+    const geo = linesGeometry(
+      [
+        {
+          width: 2,
+          points: [
+            [0, 0],
+            [10, 0],
+            [10, 5],
+          ],
+        },
+        {
+          width: 2,
+          points: [
+            [10, 5],
+            [10, 0],
+            [0, 0],
+          ],
+        },
+      ],
+      0,
+    )
+    const p = geo.getAttribute('position')
+    for (let i = 0; i < p.count; i += 3) {
+      const [ax, az, bx, bz, cx, cz] = [
+        p.getX(i),
+        p.getZ(i),
+        p.getX(i + 1),
+        p.getZ(i + 1),
+        p.getX(i + 2),
+        p.getZ(i + 2),
+      ]
+      // y part of the triangle's normal, three draws counter-clockwise as the front
+      const ny = (bz - az) * (cx - ax) - (bx - ax) * (cz - az)
+      expect(ny).toBeGreaterThanOrEqual(0)
+    }
+  })
+
   it('knows how far along the road each vertex is, for lane lines', () => {
     const geo = linesGeometry(
       [

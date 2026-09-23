@@ -13,10 +13,8 @@ function textured(name: string, color: THREE.ColorRepresentation, roughness: num
 // the texture is a bit dry looking for a campus lawn, so push it greener
 export const grassMaterial = textured('grass', '#bfe39a', 1)
 export const sidewalkMaterial = textured('sidewalk', '#ffffff', 0.85)
-sidewalkMaterial.side = THREE.DoubleSide
 
 export const roadMaterial = textured('asphalt', '#9a9a9a', 0.9)
-roadMaterial.side = THREE.DoubleSide
 // lane lines, from the aRoad attribute linesGeometry adds: dashed yellow down the middle
 // and solid white near the edges. skipped on narrow roads like alleys
 roadMaterial.onBeforeCompile = (shader) => {

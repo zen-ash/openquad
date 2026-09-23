@@ -75,9 +75,15 @@ export function linesGeometry(lines: LineData[], y: number) {
   const pos: number[] = []
   const road: number[] = []
 
-  const vert = (x: number, z: number, along: number, across: number, width: number) => {
-    pos.push(x, y, z)
-    road.push(along, across, width)
+  type V = [x: number, z: number, along: number, across: number, width: number]
+  // every triangle has to face up. which way round the points go depends on which way
+  // the road was drawn on osm, and a face pointing down gets lit like the underside
+  const tri = (a: V, b: V, c: V) => {
+    const up = (b[1] - a[1]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[1] - a[1])
+    for (const [x, z, along, across, width] of up >= 0 ? [a, b, c] : [a, c, b]) {
+      pos.push(x, y, z)
+      road.push(along, across, width)
+    }
   }
 
   for (const { width, points } of lines) {
@@ -90,12 +96,16 @@ export function linesGeometry(lines: LineData[], y: number) {
       const nx = (-(bz - az) / len) * half
       const nz = ((bx - ax) / len) * half
       const next = along + len
-      vert(ax + nx, az + nz, along, 0, width)
-      vert(ax - nx, az - nz, along, 1, width)
-      vert(bx + nx, bz + nz, next, 0, width)
-      vert(bx + nx, bz + nz, next, 0, width)
-      vert(ax - nx, az - nz, along, 1, width)
-      vert(bx - nx, bz - nz, next, 1, width)
+      tri(
+        [ax + nx, az + nz, along, 0, width],
+        [ax - nx, az - nz, along, 1, width],
+        [bx + nx, bz + nz, next, 0, width],
+      )
+      tri(
+        [bx + nx, bz + nz, next, 0, width],
+        [ax - nx, az - nz, along, 1, width],
+        [bx - nx, bz - nz, next, 1, width],
+      )
       along = next
     }
     for (const [x, z] of points.slice(1, -1) as [number, number][]) {
@@ -103,9 +113,11 @@ export function linesGeometry(lines: LineData[], y: number) {
       for (let s = 0; s < steps; s++) {
         const a = (s / steps) * Math.PI * 2
         const b = ((s + 1) / steps) * Math.PI * 2
-        vert(x, z, 0, 0.5, 0)
-        vert(x + Math.cos(a) * half, z + Math.sin(a) * half, 0, 0.5, 0)
-        vert(x + Math.cos(b) * half, z + Math.sin(b) * half, 0, 0.5, 0)
+        tri(
+          [x, z, 0, 0.5, 0],
+          [x + Math.cos(a) * half, z + Math.sin(a) * half, 0, 0.5, 0],
+          [x + Math.cos(b) * half, z + Math.sin(b) * half, 0, 0.5, 0],
+        )
       }
     }
   }
