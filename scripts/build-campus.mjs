@@ -286,6 +286,53 @@ const ROAD_WIDTH = {
 }
 const PATH_WIDTH = { footway: 2.5, pedestrian: 5, path: 2, steps: 2.5, cycleway: 2 }
 
+// osm's outline for library north is from before the 2022 renovation (it still has the old
+// plaza stairs), so it's redone here from photos: the brick box, plus the curved glass lobby
+// on the side facing the greenway. the web app draws it by hand too (scene/LibraryNorth.tsx)
+const LIBRARY_NORTH = {
+  // corners of the brick box, n e s w. these are osm's own nodes for them
+  box: [
+    { lat: 33.7531039, lon: -84.3866001 },
+    { lat: 33.7527932, lon: -84.3861696 },
+    { lat: 33.7524331, lon: -84.386548 },
+    { lat: 33.7527488, lon: -84.3869797 },
+  ],
+  // 5 floors, but library floors are tall. about 26m going by the photos
+  height: 26,
+  // where the lobby is along the northeast wall, in meters from the north corner
+  lobby: [3.5, 31],
+}
+
+function libraryNorth(b) {
+  const box = LIBRARY_NORTH.box.map(toLocal)
+  const [n, e] = box
+  const len = Math.hypot(e[0] - n[0], e[1] - n[1])
+  const along = [(e[0] - n[0]) / len, (e[1] - n[1]) / len]
+  // out of the northeast wall, away from the middle of the box
+  const out = [along[1], -along[0]]
+  const at = (a, d) => [
+    round(n[0] + along[0] * a + out[0] * d),
+    round(n[1] + along[1] * a + out[1] * d),
+  ]
+
+  // the glass front bulges out toward the north end, then runs straight past the entrance
+  const [start, end] = LIBRARY_NORTH.lobby
+  const bend = end - 6
+  const front = []
+  for (let i = 0; i <= 8; i++) {
+    const a = start + ((bend - start) * i) / 8
+    front.push(at(a, 6 + 3 * Math.cos(((a - start) / (bend - start)) * (Math.PI / 2))))
+  }
+  front.push(at(end, 6))
+
+  b.height = LIBRARY_NORTH.height
+  b.points = [n, at(start, 0), ...front, at(end, 0), ...box.slice(1)]
+  // front doors in the middle of the straight bit, facing the lawn
+  const [dx, dz] = at(end - 3, 6)
+  b.door = [dx, dz, Math.round(out[0] * 100) / 100, Math.round(out[1] * 100) / 100]
+  b.landmark = { box, front }
+}
+
 function main(elements) {
   const buildings = []
   const roads = []
@@ -358,6 +405,9 @@ function main(elements) {
     }
   }
 
+  const lib = buildings.find((b) => b.name === 'Library North')
+  if (lib) libraryNorth(lib)
+
   trees.push(...plantParkTrees(parks, [...roads, ...paths]))
   // osm has footpaths that go through buildings (covered passages, indoor corridors).
   // buildings are solid in the game, so cut those bits out
@@ -368,7 +418,7 @@ function main(elements) {
 
   // doors face the main connected walking network, not some path that doesn't lead anywhere
   const walkable = mainNetwork([...walkPaths, ...walkCrossings, ...walkRoads])
-  for (const b of buildings) if (b.gsu) b.door = findDoor(b, buildings, walkable)
+  for (const b of buildings) if (b.gsu && !b.door) b.door = findDoor(b, buildings, walkable)
 
   return {
     halfSize,
