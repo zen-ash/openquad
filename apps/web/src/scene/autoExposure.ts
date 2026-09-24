@@ -26,11 +26,13 @@ const TAPS = 8
 
 // log2 of the average brightness that needs no change: hurt park at noon, the look
 // everything was tuned to. darker or brighter than that gets evened out, like a phone
-// camera does, but only so far: past these it stays darker or brighter, so a lobby or
-// 9am are lifted (about all the way) but night is still night (1 stop up, not 3)
+// camera does, but only so far. a lobby or 9am get lifted about all the way, past
+// DARKEST it gives some of it back so night still looks like night (measured: noon -2.2,
+// 9am -3.6, library lobby -3.3, 11pm -5.5)
 const MIDDLE = -2.3
 const DARKEST = -3.3
 const BRIGHTEST = -1.3
+const NIGHT = 0.35
 // seconds: getting used to the sun is quick, to the dark slower
 const TO_BRIGHT = 0.5
 const TO_DARK = 2
@@ -88,7 +90,8 @@ let ev: number | null = null
 
 export function adapt(dt: number) {
   if (measured === null) return
-  const want = MIDDLE - Math.min(Math.max(measured, DARKEST), BRIGHTEST)
+  const dark = Math.max(DARKEST - measured, 0)
+  const want = MIDDLE - Math.min(Math.max(measured, DARKEST), BRIGHTEST) - dark * NIGHT
   // photos (?still) jump straight there so they come out the same every time
   if (ev === null || still) ev = want
   else ev += (want - ev) * (1 - Math.exp(-dt / (want < ev ? TO_BRIGHT : TO_DARK)))
