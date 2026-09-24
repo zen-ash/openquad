@@ -176,7 +176,8 @@ export function facadeMaterial() {
       .replace(
         '#include <emissivemap_fragment>',
         `#include <emissivemap_fragment>
-        if (isGlass && lit) totalEmissiveRadiance += vec3(1.0, 0.78, 0.48) * 1.6 * uNight;`,
+        // not every room is as bright, and too bright just blows out to white blocks
+        if (isGlass && lit) totalEmissiveRadiance += vec3(1.0, 0.78, 0.48) * (0.35 + 0.6 * hash(vec3(u, v, vSeed) * 0.01 + floor(vec3(u / 3.0, v / 3.5, vSeed)))) * uNight;`,
       )
       .replace(
         '#include <roughnessmap_fragment>',

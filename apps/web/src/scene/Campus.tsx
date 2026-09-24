@@ -79,7 +79,7 @@ function Sun({ dir, day }: { dir: [number, number, number]; day: number }) {
     <directionalLight
       ref={light}
       color={color}
-      intensity={day > 0 ? 3 * day : 0.35}
+      intensity={day > 0 ? 3.5 * day : 0.35}
       castShadow
       shadow-mapSize={[2048, 2048]}
       shadow-camera-left={-60}
@@ -149,7 +149,9 @@ function Ground() {
 export default function Campus() {
   const sky = useSky()
   const sunAt = sky.dir.map((v) => v * 100) as [number, number, number]
-  const environment = 0.15 + 0.55 * sky.day
+  // not too much light from the sky, or shade looks nearly as bright as sun and the
+  // whole city goes flat and hazy
+  const environment = 0.15 + 0.3 * sky.day
   const haze = useMemo(() => NIGHT_HAZE.clone().lerp(DAY_HAZE, sky.day), [sky.day])
 
   // lit windows fade in as it gets dark
@@ -167,7 +169,7 @@ export default function Campus() {
         <Sky sunPosition={sunAt} turbidity={5} rayleigh={1.2} mieCoefficient={0.004} />
       </Environment>
       <fog attach="fog" args={[haze, 300, 1000]} />
-      <SkyLight intensity={0.12 + 0.38 * sky.day} environment={environment} />
+      <SkyLight intensity={0.12 + 0.16 * sky.day} environment={environment} />
       <Sun dir={sky.light} day={sky.day} />
       <Ground />
       <Buildings />

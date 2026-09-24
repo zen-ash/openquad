@@ -20,7 +20,7 @@ export default function Effects() {
       <SMAA />
       <Vignette offset={0.3} darkness={0.35} />
       {/* the composer turns off three's own tone mapping, so it has to happen here */}
-      <ToneMapping mode={ToneMappingMode.AGX} />
+      <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
     </EffectComposer>
   )
 }

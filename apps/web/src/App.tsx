@@ -1,7 +1,7 @@
 import { KeyboardControls, PerformanceMonitor } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { Suspense, useEffect } from 'react'
-import { AgXToneMapping } from 'three'
+import { ACESFilmicToneMapping } from 'three'
 import ChatPanel from './ChatPanel'
 import EmoteBar from './EmoteBar'
 import { keyMap } from './game/controls'
@@ -50,7 +50,7 @@ export default function App() {
         // helps the depth buffer tell apart things that are close together far away
         camera={{ fov: 50, near: 0.3, far: 1500 }}
         // same tone mapping as the effects use, so low quality (no effects) looks the same
-        gl={{ toneMapping: AgXToneMapping }}
+        gl={{ toneMapping: ACESFilmicToneMapping }}
       >
         {/* drops to low quality if the framerate stays bad */}
         <PerformanceMonitor onDecline={() => useSettings.setState({ quality: 'low' })} />
