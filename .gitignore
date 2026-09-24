@@ -13,6 +13,8 @@ test-results
 playwright-report
 # screenshots from pnpm visual, they depend on the gpu
 visual
+# frame timings and traces from pnpm walk
+walk
 
 # editor / local tooling
 .vscode/*

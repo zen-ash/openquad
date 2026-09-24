@@ -3,15 +3,17 @@ import { interiors } from '../game/interiors'
 import { localPlayer } from '../game/localPlayer'
 import { exposureStats } from '../scene/autoExposure'
 import { tileHeightAt, tilesStats } from '../scene/Tiles'
-import { useSettings } from '../settings'
+import { showDebug, useSettings } from '../settings'
 import { peers } from '../voice/voice'
 import { lastSound } from '../voice/VoiceUpdater'
 import { dropConnection } from './connection'
+import { startRecording, stopRecording } from './perf'
 import { useEmotes } from './emotes'
 import { snapshots, useGame, type Person } from './store'
 
 // everything is drawn in a canvas so the e2e tests can't just look at the DOM.
-// this lets them ask where everyone is. dev builds only
+// this lets them ask where everyone is. dev builds, or ?debug (scripts/walk.mjs times
+// the production build with it)
 declare global {
   interface Window {
     quad?: {
@@ -41,11 +43,15 @@ declare global {
       backend: () => 'webgpu' | 'webgl2' | null
       // auto exposure: log2 of the measured brightness, and the exposure in stops
       exposure: typeof exposureStats
+      // change settings (time of day, quality...) like the menus would
+      set: (patch: Partial<ReturnType<typeof useSettings.getState>>) => void
+      // per frame timings and what was compiled/uploaded in each (net/perf.ts)
+      perf: { start: typeof startRecording; stop: typeof stopRecording }
     }
   }
 }
 
-if (import.meta.env.DEV) {
+if (showDebug) {
   window.quad = {
     me: () => useGame.getState().me?.id,
     myAvatar: () => useGame.getState().me?.avatar,
@@ -79,5 +85,7 @@ if (import.meta.env.DEV) {
     tileHeightAt,
     backend: () => useSettings.getState().backend,
     exposure: exposureStats,
+    set: (patch) => useSettings.setState(patch),
+    perf: { start: startRecording, stop: stopRecording },
   }
 }

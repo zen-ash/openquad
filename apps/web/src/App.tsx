@@ -13,6 +13,7 @@ import PhotoMode from './hud/PhotoMode'
 import Minimap from './hud/Minimap'
 import NavBar from './hud/NavBar'
 import PlacesMenu from './hud/PlacesMenu'
+import { instrument } from './net/perf'
 import { useGame } from './net/store'
 import CameraInput from './scene/CameraInput'
 import Campus from './scene/Campus'
@@ -35,6 +36,7 @@ const Effects = lazy(() => import('./scene/Effects'))
 async function startRenderer(props: object) {
   const renderer = new WebGPURenderer({ ...(props as WebGPURendererParameters), forceWebGL })
   await renderer.init()
+  if (showDebug) instrument(renderer)
   // same tone mapping as the effects use, so low quality (no effects) looks the same
   renderer.toneMapping = ACESFilmicToneMapping
   const webgpu = (renderer.backend as { isWebGPUBackend?: boolean }).isWebGPUBackend === true
