@@ -7,6 +7,7 @@
 //   pnpm visual --update             new baseline. take it on main, before the change
 //   pnpm visual --mode low --only park-north,night
 //   pnpm visual --only park-north --times 09:00,12:00,17:00,23:00   same spot, other times
+//   BASE=http://localhost:5174 pnpm visual   another dev server (like main, for a baseline)
 //
 // Baselines depend on the gpu and browser, so they aren't committed (visual/ is ignored).
 import { chromium } from '@playwright/test'
@@ -14,7 +15,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import pixelmatch from 'pixelmatch'
 import { PNG } from 'pngjs'
 
-const URL = 'http://localhost:5173'
+const URL = process.env.BASE ?? 'http://localhost:5173'
 // same day every time so the sun is in the same place
 const DAY = '&date=2026-09-24&still&notiles'
 // share of pixels that can differ before a view counts as changed. a missing shader or
