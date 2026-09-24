@@ -33,9 +33,11 @@ function textured(
   })
 }
 
-// the texture is a bit dry looking for a campus lawn, so push it greener
-export const grassMaterial = textured('grass', '#bfe39a', 1, 2)
-export const sidewalkMaterial = textured('sidewalk', '#ffffff', 0.85, 4)
+// the texture is dry looking for a campus lawn, so push it green (in sun it measured
+// a* -2, yellow, where sunny lawn photos are about -10). the sidewalk texture is tan and
+// hurt park's paths are grey concrete, the slight blue takes the tan out
+export const grassMaterial = textured('grass', '#80bd70', 1, 2)
+export const sidewalkMaterial = textured('sidewalk', '#e8ebf0', 0.85, 4)
 // everything that isn't a road, a sidewalk or grass. downtown that's mostly concrete
 export const pavingMaterial = textured('sidewalk', '#c4c8d2', 0.9, 0)
 // the panther quad's tan pavers
