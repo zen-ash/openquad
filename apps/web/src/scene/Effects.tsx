@@ -13,7 +13,6 @@ import {
   builtinAOContext,
   builtinShadowContext,
   context,
-  convertToTexture,
   distance,
   float,
   int,
@@ -163,12 +162,15 @@ export default function Effects() {
     // taa softens everything a little, sharpening gets some of the detail back
     let image = lit as TextureNode
     if (taaOn) {
-      const full = taau(lit, depth, scenePass.getTextureNode('velocity'), camera)
+      const full = taau(lit, depth, scenePass.getTextureNode('velocity'), camera) as unknown as {
+        getTextureNode(): TextureNode
+      }
       const sharpness = mix(float(20), float(SHARPNESS), fx.sharpen)
-      const sharp = sharpen(
-        convertToTexture(full as unknown as Node<'vec4'>),
-        sharpness,
-      ) as unknown as { getTextureNode(): TextureNode }
+      // taau's own texture, not convertToTexture() of it: that drew it all again into
+      // another full size texture first
+      const sharp = sharpen(full.getTextureNode(), sharpness) as unknown as {
+        getTextureNode(): TextureNode
+      }
       image = sharp.getTextureNode()
     }
 
