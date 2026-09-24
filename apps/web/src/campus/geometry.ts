@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
-import { BRICK, CONCRETE, GLASS } from './facade'
+import { facadeOf, seedOf } from './facades'
 
 type Pt = number[] // [x, z]
 export type BuildingData = {
@@ -8,32 +8,16 @@ export type BuildingData = {
   height: number
   name?: string
   gsu?: boolean
+  deck?: boolean
   door?: Pt
   // drawn by hand instead (campus/landmarks.ts)
   landmark?: unknown
 }
 export type LineData = { width: number; points: Pt[] }
 
-// anything taller than ~14 floors (in real life) is a glass tower
-const TOWER_HEIGHT = 50
-// concrete comes out of the texture pretty gray, these warm it up a bit per building
-const CONCRETE_TINTS = ['#d8d2c4', '#c9c6be', '#e2dccd', '#bfc3c6', '#d6c8b0']
-const FRAME_TINTS = ['#8e98a3', '#5f6873', '#b8bfc6', '#7d7466']
-
 // shapes are drawn on x/y, then laid flat. y has to be -z so it doesn't come out mirrored
 function shape(points: Pt[]) {
   return new THREE.Shape(points.map(([x, z]) => new THREE.Vector2(x!, -z!)))
-}
-
-// same "random" 0-1 number for a building every time
-export const seedOf = (i: number) => {
-  const n = Math.sin(i * 12.9898) * 43758.5453
-  return n - Math.floor(n)
-}
-
-export function styleOf(height: number, seed: number) {
-  if (height >= TOWER_HEIGHT) return GLASS
-  return seed < 0.4 ? BRICK : CONCRETE
 }
 
 function fill(count: number, value: number) {
@@ -48,18 +32,24 @@ export function buildingsGeometry(buildings: BuildingData[]) {
     geo.clearGroups()
 
     const count = geo.attributes.position!.count
-    const seed = seedOf(i)
-    const style = styleOf(b.height, seed)
-    const tints = style === GLASS ? FRAME_TINTS : CONCRETE_TINTS
-    const tint = new THREE.Color(tints[Math.floor(seed * tints.length)])
-
+    // what the walls and windows look like, see facades.ts and the shader in facade.ts
+    const look = facadeOf(b, i)
+    const tint = new THREE.Color(look.color)
+    const frame = new THREE.Color(look.frame)
     const colors = new Float32Array(count * 3)
-    for (let v = 0; v < count; v++) tint.toArray(colors, v * 3)
+    const frames = new Float32Array(count * 3)
+    const windows = new Float32Array(count * 4)
+    for (let v = 0; v < count; v++) {
+      tint.toArray(colors, v * 3)
+      frame.toArray(frames, v * 3)
+      windows.set(look.window, v * 4)
+    }
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3))
-    // the facade shader uses these to draw windows (see facade.ts)
-    geo.setAttribute('aStyle', fill(count, style))
+    geo.setAttribute('aFrame', new THREE.BufferAttribute(frames, 3))
+    geo.setAttribute('aWindow', new THREE.BufferAttribute(windows, 4))
+    geo.setAttribute('aStyle', fill(count, look.style))
     geo.setAttribute('aHeight', fill(count, b.height))
-    geo.setAttribute('aSeed', fill(count, seed))
+    geo.setAttribute('aSeed', fill(count, seedOf(i)))
     // where the doorway is, for the shader to cut it out. zeros for buildings without one
     const door = new Float32Array(count * 4)
     if (b.door) for (let v = 0; v < count; v++) door.set(b.door.slice(0, 4), v * 4)

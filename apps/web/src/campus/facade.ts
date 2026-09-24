@@ -7,21 +7,18 @@ import { texture } from './textures'
 export const GLASS = 0
 export const CONCRETE = 1
 export const BRICK = 2
+// parking decks: open floors behind a concrete wall at waist height, no glass
+export const DECK = 4
 
-// real floors are ~3.5m
-export const FLOOR_HEIGHT = 3.5
-// window grid, shared with the inside walls (interiors.ts) so the holes line up
-export const COL_GLASS = 2.4
-export const COL_WALL = 3.0
-// ground floor window, as [left, bottom, right, top] inside each grid cell
-export const GROUND_WINDOW_GLASS = [0.04, 0.1, 0.96, 1.0]
+// ground floor shop windows, as [left, bottom, right, top] inside each grid cell. shared
+// with the inside walls (interiorMaterials.ts) so the holes line up
 export const GROUND_WINDOW_WALL = [0.08, 0.1, 0.92, 0.9]
 const vec4 = (r: number[]) => `vec4(${r.map((n) => n.toFixed(2)).join(', ')})`
 
 /**
  * Building material. Windows aren't modeled, they're drawn by the shader from the
- * world position: every FLOOR_HEIGHT up there's a row, and a column every few meters
- * along the wall. Glass is shiny and reflects the sky, walls get brick/concrete
+ * world position: a row every floor, and a column every few meters along the wall.
+ * Each building has its own grid and colors (facades.ts). Glass is shiny and reflects the sky, walls get brick/concrete
  * textures. Roofs (anything facing up) get gravel.
  */
 // 0 in the day, 1 at night. set by the sky every so often
@@ -50,7 +47,11 @@ export function facadeMaterial() {
         attribute float aHeight;
         attribute float aSeed;
         attribute vec4 aDoor;
+        attribute vec4 aWindow;
+        attribute vec3 aFrame;
         varying vec4 vDoor;
+        varying vec4 vWindow;
+        varying vec3 vFrame;
         varying float vStyle;
         varying float vHeight;
         varying float vSeed;
@@ -63,6 +64,8 @@ export function facadeMaterial() {
         vHeight = aHeight;
         vSeed = aSeed;
         vDoor = aDoor;
+        vWindow = aWindow;
+        vFrame = aFrame;
         vWorldNormal = normal;`,
       )
 
@@ -80,6 +83,8 @@ export function facadeMaterial() {
         varying float vHeight;
         varying float vSeed;
         varying vec4 vDoor;
+        varying vec4 vWindow;
+        varying vec3 vFrame;
         varying vec3 vWorldNormal;
 
         float hash(vec3 p) {
@@ -109,26 +114,42 @@ export function facadeMaterial() {
           // flat roofs are anything from white membrane to dark gravel
           diffuseColor.rgb = texture2D(uRoof, vWorldPos.xz / 12.0).rgb * mix(vec3(1.25), vec3(0.55), vSeed);
         } else {
-          bool brick = vStyle > 1.5;
+          bool brick = vStyle > 1.5 && vStyle < 2.5;
+          // the brick texture is red. it's tinted to whatever this building's bricks are
+          vec3 brickTex = texture2D(uBrick, wallUv).rgb;
           vec3 wall = brick
-            ? texture2D(uBrick, wallUv).rgb
-            : texture2D(uConcrete, wallUv * 0.5).rgb * diffuseColor.rgb * 1.6;
+            ? mix(vec3(dot(brickTex, vec3(0.3, 0.59, 0.11))), brickTex, 0.25) / 0.174 * diffuseColor.rgb
+            // and the concrete one is olive, divided by its average so the tint is the color
+            : texture2D(uConcrete, wallUv * 0.5).rgb / vec3(0.179, 0.172, 0.126) * diffuseColor.rgb * 0.6;
           if (vStyle < 0.5) wall = diffuseColor.rgb; // glass towers: color is the metal frame
+          bool deck = vStyle > 3.5;
 
-          float colWidth = vStyle < 0.5 ? ${COL_GLASS.toFixed(1)} : ${COL_WALL.toFixed(1)};
-          vec2 cell = fract(vec2(u / colWidth, v / ${FLOOR_HEIGHT}));
-          float floorNum = floor(v / ${FLOOR_HEIGHT});
+          // each building's own window grid (facades.ts): column, floor, window size
+          float colWidth = vWindow.x;
+          float floorHeight = vWindow.y;
+          vec2 cell = fract(vec2(u / colWidth, v / floorHeight));
+          float floorNum = floor(v / floorHeight);
 
-          // window rectangle inside each cell (0-1 on both axes)
-          vec4 rect = vStyle < 0.5 ? ${vec4(GROUND_WINDOW_GLASS)} : vec4(0.22, 0.3, 0.78, 0.85);
+          // window rectangle inside each cell (0-1 on both axes). full width is a strip
+          // of windows along the whole floor, with a mullion every column
+          vec4 rect = vec4(0.5 - vWindow.z / 2.0, max(0.02, 0.575 - vWindow.w / 2.0),
+            0.5 + vWindow.z / 2.0, min(1.0, 0.575 + vWindow.w / 2.0));
+          if (vWindow.z > 0.99) rect.xz = vec2(0.0, 1.0);
           // shop windows on the ground floor
           if (floorNum < 1.0 && vStyle > 0.5) rect = ${vec4(GROUND_WINDOW_WALL)};
 
+          // decks: a gap all along each floor between the wall and the next slab, dark
+          // inside with a column every bay
+          if (deck) rect = vec4(0.0, 0.34, 1.0, 0.9);
           bool win = cell.x > rect.x && cell.x < rect.z && cell.y > rect.y && cell.y < rect.w;
           // solid strip along the top
           if (v > vHeight - 1.0) win = false;
 
-          if (win) {
+          if (win && deck) {
+            // the dark inside, and the columns
+            float column = min(cell.x, 1.0 - cell.x) * colWidth;
+            diffuseColor.rgb = column < 0.25 ? wall * 0.8 : vec3(0.02, 0.02, 0.022) + wall * 0.02;
+          } else if (win) {
             float edge = min(min(cell.x - rect.x, rect.z - cell.x), min(cell.y - rect.y, rect.w - cell.y));
             // some windows darker/lighter, like blinds half down
             float h = hash(vec3(floor(u / colWidth), floorNum, vSeed));
@@ -138,7 +159,7 @@ export function facadeMaterial() {
             if (rect.w - cell.y < 0.12 && vStyle > 0.5) glass *= 0.5;
 
             if (edge < 0.025) {
-              diffuseColor.rgb = vStyle < 0.5 ? wall * 0.8 : vec3(0.72, 0.72, 0.7); // frame
+              diffuseColor.rgb = vStyle < 0.5 ? wall * 0.8 : vFrame; // frame
             } else {
               diffuseColor.rgb = glass;
               isGlass = true;
@@ -146,7 +167,7 @@ export function facadeMaterial() {
           } else {
             diffuseColor.rgb = wall;
             // stone sill under each window
-            bool sill = vStyle > 0.5 && floorNum >= 1.0 && cell.y < rect.y && cell.y > rect.y - 0.05
+            bool sill = vStyle > 0.5 && vStyle < 3.5 && floorNum >= 1.0 && cell.y < rect.y && cell.y > rect.y - 0.05
               && cell.x > rect.x - 0.03 && cell.x < rect.z + 0.03;
             if (sill) diffuseColor.rgb = vec3(0.78, 0.76, 0.72);
           }
@@ -173,7 +194,7 @@ export function facadeMaterial() {
         // bumps from the brick/concrete normal maps. the wall's own directions, moved
         // into view space since that's what normal is in here
         if (!isRoof && !isGlass && vStyle > 0.5) {
-          vec3 m = (vStyle > 1.5 ? texture2D(uBrickNormal, wallUv) : texture2D(uConcreteNormal, wallUv * 0.5)).xyz * 2.0 - 1.0;
+          vec3 m = (vStyle > 1.5 && vStyle < 2.5 ? texture2D(uBrickNormal, wallUv) : texture2D(uConcreteNormal, wallUv * 0.5)).xyz * 2.0 - 1.0;
           vec3 T = normalize((viewMatrix * vec4(along.x, 0.0, along.y, 0.0)).xyz);
           vec3 B = normalize((viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
           normal = normalize(mat3(T, B, normal) * m);

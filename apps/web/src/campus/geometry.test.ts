@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { BRICK, CONCRETE, GLASS } from './facade'
-import { areasGeometry, buildingsGeometry, linesGeometry, styleOf } from './geometry'
+import { facadeOf } from './facades'
+import { areasGeometry, buildingsGeometry, linesGeometry } from './geometry'
 
 const square = [
   [0, 0],
@@ -19,9 +20,16 @@ describe('buildingsGeometry', () => {
   })
 
   it('makes tall buildings glass towers', () => {
-    expect(styleOf(80, 0.9)).toBe(GLASS)
-    expect(styleOf(8, 0.1)).toBe(BRICK)
-    expect(styleOf(8, 0.9)).toBe(CONCRETE)
+    expect(facadeOf({ height: 80 }, 3).style).toBe(GLASS)
+    expect([BRICK, CONCRETE]).toContain(facadeOf({ height: 8 }, 3).style)
+  })
+
+  it('gives gsu buildings the look they have in photos', () => {
+    const aderhold = facadeOf({ name: 'Helen M. Aderhold Learning Center', height: 21.9 }, 0)
+    expect(aderhold.style).toBe(BRICK)
+    expect(aderhold.color).toBe('#dcc8a3')
+    // strips of windows all along each floor
+    expect(facadeOf({ name: 'Science Annex', height: 18 }, 0).window[2]).toBe(1)
   })
 
   it('stores the facade info the shader needs on every vertex', () => {

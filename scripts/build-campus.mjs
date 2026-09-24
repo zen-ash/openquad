@@ -636,6 +636,8 @@ function main(elements) {
         const b = { height: round(heightOf(tags) * SCALE), points }
         if (tags.name) b.name = GSU_NAMES[tags.name] ?? tags.name
         if (isGsu(tags)) b.gsu = true
+        // parking decks look different, open floors and no windows
+        if (tags.building === 'parking' || tags.amenity === 'parking') b.deck = true
         buildings.push(b)
       }
       continue

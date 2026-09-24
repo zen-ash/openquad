@@ -1,11 +1,5 @@
 import * as THREE from 'three'
-import {
-  COL_GLASS,
-  COL_WALL,
-  FLOOR_HEIGHT,
-  GROUND_WINDOW_GLASS,
-  GROUND_WINDOW_WALL,
-} from './facade'
+import { GROUND_WINDOW_WALL } from './facade'
 import { texture } from './textures'
 
 const vec4 = (r: number[]) => `vec4(${r.map((n) => n.toFixed(2)).join(', ')})`
@@ -68,16 +62,16 @@ function windows(keepGlass: boolean) {
     shader.vertexShader = shader.vertexShader
       .replace(
         '#include <common>',
-        '#include <common>\nattribute float aStyle;\nvarying float vStyle;\nvarying vec3 vPos;\nvarying vec3 vN;',
+        '#include <common>\nattribute float aStyle;\nattribute vec4 aWindow;\nvarying float vStyle;\nvarying vec4 vWindow;\nvarying vec3 vPos;\nvarying vec3 vN;',
       )
       .replace(
         '#include <project_vertex>',
-        '#include <project_vertex>\nvStyle = aStyle;\nvPos = (modelMatrix * vec4(transformed, 1.0)).xyz;\nvN = normal;',
+        '#include <project_vertex>\nvStyle = aStyle;\nvWindow = aWindow;\nvPos = (modelMatrix * vec4(transformed, 1.0)).xyz;\nvN = normal;',
       )
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
-        '#include <common>\nvarying float vStyle;\nvarying vec3 vPos;\nvarying vec3 vN;',
+        '#include <common>\nvarying float vStyle;\nvarying vec4 vWindow;\nvarying vec3 vPos;\nvarying vec3 vN;',
       )
       .replace(
         '#include <clipping_planes_fragment>',
@@ -88,12 +82,20 @@ function windows(keepGlass: boolean) {
           vec2 outward = -normalize(vN.xz);
           float u = dot(vPos.xz, vec2(outward.y, -outward.x));
           bool glass = vStyle < 0.5;
-          float col = glass ? ${COL_GLASS.toFixed(1)} : ${COL_WALL.toFixed(1)};
-          vec2 cell = fract(vec2(u / col, vPos.y / ${FLOOR_HEIGHT.toFixed(1)}));
-          vec4 rect = glass ? ${vec4(GROUND_WINDOW_GLASS)} : ${vec4(GROUND_WINDOW_WALL)};
+          vec2 cell = fract(vec2(u / vWindow.x, vPos.y / vWindow.y));
+          // same as the ground floor outside (facade.ts)
+          vec4 rect = glass
+            ? vec4(0.5 - vWindow.z / 2.0, max(0.02, 0.575 - vWindow.w / 2.0), 0.5 + vWindow.z / 2.0, min(1.0, 0.575 + vWindow.w / 2.0))
+            : ${vec4(GROUND_WINDOW_WALL)};
           isWindow = cell.x > rect.x && cell.x < rect.z && cell.y > rect.y && cell.y < rect.w;
           // a glass wall, just thin frames
-          if (vStyle > 2.5) isWindow = vPos.y > 0.3 && fract(u / 1.5) > 0.05;
+          if (vStyle > 2.5 && vStyle < 3.5) isWindow = vPos.y > 0.3 && fract(u / 1.5) > 0.05;
+          // parking decks are open above the wall, between the columns, and have no glass
+          if (vStyle > 3.5) {
+            float column = min(cell.x, 1.0 - cell.x) * vWindow.x;
+            isWindow = cell.y > 0.34 && cell.y < 0.9 && column > 0.25;
+            if (${keepGlass}) discard;
+          }
         }
         if (isWindow != ${keepGlass}) discard;`,
       )

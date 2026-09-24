@@ -1,4 +1,4 @@
-import { seedOf } from '../campus/geometry'
+import { seedOf } from '../campus/facades'
 import { closestOnSegment, pointInPolygon, type Point, type Segment } from './collision'
 import type { Interior } from './interiors'
 

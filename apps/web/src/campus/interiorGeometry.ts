@@ -3,7 +3,8 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import type { Point } from '../game/collision'
 import { CEILING, DOOR_HEIGHT, DOOR_WIDTH, type Interior } from '../game/interiors'
 import campus from './campus.json'
-import { planarUv, seedOf, styleOf } from './geometry'
+import { facadeOf } from './facades'
+import { planarUv } from './geometry'
 import { wallQuad } from './landmark'
 import { landmarkGeometry } from './landmarks'
 
@@ -17,9 +18,15 @@ function signedArea(points: Point[]) {
   return a / 2
 }
 
-function withStyle(geo: THREE.BufferGeometry, style: number) {
+// window grid [column, floor, width, height], the same one the outside uses
+const NO_GRID = [3, 3.5, 0.5, 0.5]
+
+function withStyle(geo: THREE.BufferGeometry, style: number, grid = NO_GRID) {
   const count = geo.getAttribute('position').count
   geo.setAttribute('aStyle', new THREE.BufferAttribute(new Float32Array(count).fill(style), 1))
+  const windows = new Float32Array(count * 4)
+  for (let v = 0; v < count; v++) windows.set(grid, v * 4)
+  geo.setAttribute('aWindow', new THREE.BufferAttribute(windows, 4))
   return geo
 }
 
@@ -38,7 +45,7 @@ export function interiorWallsGeometry(interiors: Interior[]) {
         ...landmark.inside.solid.map((g) => withStyle(g.clone(), NO_WINDOWS)),
         ...landmark.inside.glass.map((g) => withStyle(g.clone(), ALL_GLASS)),
       ]
-    const style = styleOf(b.height, seedOf(room.index))
+    const { style, window: grid } = facadeOf(b, room.index)
     const flip = signedArea(room.points) > 0 ? -1 : 1
 
     const walls = room.walls.map((w) => {
@@ -50,6 +57,7 @@ export function interiorWallsGeometry(interiors: Interior[]) {
       return withStyle(
         wallQuad({ x: w.ax, z: w.az }, { x: w.bx, z: w.bz }, 0, CEILING, into),
         style,
+        grid,
       )
     })
 
