@@ -7,6 +7,7 @@ import { cutout } from '../campus/cutout'
 import type { Controls } from '../game/controls'
 import { avatarById } from '../game/avatars'
 import { clampDistance, clampPitch, orbit } from '../game/camera'
+import { blocksView } from '../game/occlusion'
 import { localPlayer } from '../game/localPlayer'
 import {
   headingFor,
@@ -158,6 +159,10 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
 
     cutout.uCutoutPlayer.value.set(player.position.x, 1, player.position.z)
     cutout.uCutoutCamera.value.copy(camera.position)
+    // only cut a hole if a building is actually in the way
+    const blocked = blocksView({ x: camera.position.x, z: camera.position.z }, player.position)
+    const radius = cutout.uCutoutRadius
+    radius.value += ((blocked ? 3.5 : 0) - radius.value) * (1 - Math.exp(-10 * dt))
   })
 
   return (

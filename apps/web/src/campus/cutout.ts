@@ -5,7 +5,8 @@ import * as THREE from 'three'
 export const cutout = {
   uCutoutPlayer: { value: new THREE.Vector3() },
   uCutoutCamera: { value: new THREE.Vector3() },
-  uCutoutRadius: { value: 3.5 },
+  // Player turns this down to 0 when nothing's in the way
+  uCutoutRadius: { value: 0 },
 }
 
 // meant to be called from a material's onBeforeCompile. also gives the fragment
@@ -35,7 +36,7 @@ export function cutoutShader(shader: THREE.WebGLProgramParametersWithUniforms) {
       vec3 seg = uCutoutPlayer - uCutoutCamera;
       // how far along the camera -> player line this pixel is
       float t = dot(vWorldPos - uCutoutCamera, seg) / dot(seg, seg);
-      if (t > 0.0 && t < 0.97) {
+      if (uCutoutRadius > 0.05 && t > 0.0 && t < 0.97) {
         float d = distance(vWorldPos, uCutoutCamera + seg * t);
         if (d < uCutoutRadius) discard;
         // checkerboard fade at the edge so it's not a hard circle
