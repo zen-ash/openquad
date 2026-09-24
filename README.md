@@ -47,9 +47,15 @@ fallback to try it.
 
 High quality is the whole thing: the sky and the haze over far buildings from takram's
 three-atmosphere, cascaded sun shadows with soft edges, ambient occlusion, contact shadows,
-TAA drawn at 80% size and scaled up, glare, and auto exposure. It all fits in about 8ms a
-frame at 1920x1200 on an M4 MacBook Air. The frame rate shows in the top left box in dev
-(or with `?debug`).
+TAA, glare, and auto exposure. It all fits in about 8ms a frame at 1920x1200 on an M4
+MacBook Air. The scene is drawn at most 1920x1200 and TAA scales it up to the screen, since
+a retina screen has twice that many pixels ("Native resolution" next to the time picker
+draws all of them). The frame rate shows in the top left box in dev (or with `?debug`),
+along with a panel to switch each effect off.
+
+The join button waits until every shader is built, drawing the whole campus once in each
+quality, so nothing stutters the first time it comes into view. On a first visit that takes
+about 20 seconds (the GPU compiles them all), after that a few.
 
 The mic only works on localhost or https. Opening it from another device on your wifi
 (http://your-ip:5173) works, but that device can only listen.
@@ -61,6 +67,7 @@ pnpm test        # unit + integration tests
 pnpm e2e         # playwright, opens two browsers and checks they see each other
 pnpm visual      # screenshots from fixed spots vs a baseline, for any rendering change
 pnpm frametime   # how long a frame takes at 1920x1200
+pnpm walk        # 2 minute walk around campus in chrome: 1% lows, hitches and what caused them
 pnpm bots        # load test with fake players, see docs/LOAD_TEST.md
 pnpm terrain     # ground heights for flattening google's tiles (usgs lidar)
 pnpm typecheck

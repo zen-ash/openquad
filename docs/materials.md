@@ -128,9 +128,11 @@ it, like in a photo. Don't dim a light to stop it glowing, set it to how bright 
 is. Low quality has no glare and anything way over 1 comes out as a flat white shape there,
 so give it a low value on low (the lamps use 2.5).
 
-Brightness is judged at noon in Hurt Park, where auto exposure (scene/autoExposure.ts)
-leaves the picture alone. Everywhere else it evens things out, so a wall that looks too dark
-at 9am or indoors may be fine.
+Brightness is judged at noon in Hurt Park against a photo of a sunny day, with the pbr
+neutral tone mapping (Effects.tsx). Auto exposure (scene/autoExposure.ts) gives that spot a
+quarter stop more, which is what matched the photos. Everywhere else it evens things out, so
+a wall that looks too dark at 9am or indoors may be fine. The debug panel (`?debug`) can turn
+each effect off, to see if a color comes from the material or from the effects.
 
 ## Checking a change
 
