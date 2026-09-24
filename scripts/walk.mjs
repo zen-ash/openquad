@@ -8,6 +8,8 @@
 //   pnpm walk --label before                 walk/before.{json,png}
 //   pnpm walk --label before --trace         also a chrome trace (open it in devtools)
 //   pnpm walk --label x --params "&notiles"  extra url params
+//   pnpm walk --label x --viewport 1470x835  that page size instead of fullscreen
+//   pnpm walk --label x --chromium       playwright's chromium (own shader cache)
 //   BASE=http://localhost:5173 pnpm walk     another server
 //
 // Port 5173 because google's tile key only works there. Needs a real screen, it takes it
@@ -27,6 +29,12 @@ const params = flag('--params', '')
 const trace = args.includes('--trace')
 // quick checks without taking over the screen, same size page
 const headless = args.includes('--headless')
+// a page this size (css pixels, at 2x) instead of fullscreen, when the window can't go
+// fullscreen (the screen is asleep or locked). fullscreen on a 13" air is 1470x835
+const size = flag('--viewport', headless ? '1470x835' : null)
+// playwright's own chromium instead of chrome. its gpu shader cache is separate from your
+// chrome's, so it can be emptied to see a first visit
+const chromium_ = args.includes('--chromium')
 const BASE = process.env.BASE ?? 'http://localhost:5173'
 // a frame that missed a refresh of a 60hz screen, and one that's a visible hitch
 const SPIKE = 25
@@ -47,14 +55,15 @@ const ROUTE = [
 
 mkdirSync('walk', { recursive: true })
 const browser = await chromium.launch({
-  channel: 'chrome',
+  channel: chromium_ ? undefined : 'chrome',
   headless,
   // no "controlled by automated software" bar, it takes screen space
   ignoreDefaultArgs: ['--enable-automation'],
   args: ['--enable-precise-memory-info'],
 })
+const [vw, vh] = size ? size.split('x').map(Number) : []
 const context = await browser.newContext(
-  headless ? { viewport: { width: 1470, height: 835 }, deviceScaleFactor: 2 } : { viewport: null },
+  size ? { viewport: { width: vw, height: vh }, deviceScaleFactor: 2 } : { viewport: null },
 )
 const page = await context.newPage()
 // fullscreen the way the green button does it (chrome ignores it until the window is up).
@@ -63,7 +72,7 @@ const page = await context.newPage()
 await page.goto('about:blank')
 const cdp = await context.newCDPSession(page)
 const { windowId } = await cdp.send('Browser.getWindowForTarget')
-for (let i = 0; i < (headless ? 0 : 10); i++) {
+for (let i = 0; i < (size ? 0 : 10); i++) {
   await cdp.send('Browser.setWindowBounds', { windowId, bounds: { windowState: 'fullscreen' } })
   await page.waitForTimeout(1000)
   const { bounds } = await cdp.send('Browser.getWindowBounds', { windowId })

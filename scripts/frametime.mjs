@@ -6,6 +6,7 @@
 //   pnpm frametime                 median ms per frame at a few spots
 //   pnpm frametime "&quality=low"  extra url params
 //   BASE=http://localhost:5174 pnpm frametime   another dev server (like main, to compare)
+//   DPR=1.5 pnpm frametime          another pixel ratio (the window stays 1280x800)
 /* global document, requestAnimationFrame -- used inside page.evaluate, in the browser */
 import { chromium } from '@playwright/test'
 
@@ -28,14 +29,14 @@ const browser = await chromium.launch({
   ],
 })
 const page = await browser.newPage({
-  viewport: { width: 1280, height: 800 },
-  deviceScaleFactor: 2,
+  viewport: { width: Number(process.env.W ?? 1280), height: Number(process.env.H ?? 800) },
+  deviceScaleFactor: Number(process.env.DPR ?? 2),
 })
 const errors = []
 page.on('pageerror', (e) => errors.push(e.message))
 page.on('console', (m) => m.type() === 'error' && errors.push(m.text()))
 await page.goto(
-  `${process.env.BASE ?? 'http://localhost:5173'}/?time=09:00&date=2026-09-24&still&notiles${extra}`,
+  `${process.env.BASE ?? 'http://localhost:5173'}/?debug&time=09:00&date=2026-09-24&still&notiles${extra}`,
 )
 await page.getByLabel("What's your name?").fill('Timer')
 await page.getByRole('button', { name: 'Join' }).click({ timeout: 120_000 })
