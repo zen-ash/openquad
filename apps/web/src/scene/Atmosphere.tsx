@@ -40,6 +40,9 @@ const BRIGHTNESS = 5
 const parameters = new AtmosphereParameters()
 parameters.luminanceScale *= BRIGHTNESS
 export const atmosphere = new AtmosphereContext(parameters)
+// past the edge of the map the ground would be the model's bare earth, which came out
+// black. the horizon's haze goes down to it instead, like the city just carries on
+atmosphere.showGround = false
 {
   const at = new Geodetic(radians(HURT_PARK.lon), radians(HURT_PARK.lat), HURT_PARK.height)
   // x north, y up, z east there. ours is x east, y up, z south
