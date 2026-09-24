@@ -1,6 +1,8 @@
 // Screenshots from the same camera spots every time, compared pixel by pixel with a
 // baseline. Any change to how things are drawn (a shader, a material, the renderer) should
-// come out the same here unless it's meant to look different. Needs a real gpu and
+// come out the same here unless it's meant to look different. It also times every frame
+// on the way to each spot: the 1% low (average of the slowest 1%) and any hitch over
+// 50ms, which means something got built or uploaded on first sight (HITCH). Needs a real gpu and
 // `pnpm dev` running.
 //
 //   pnpm visual                      compare with visual/baseline
@@ -10,6 +12,7 @@
 //   BASE=http://localhost:5174 pnpm visual   another dev server (like main, for a baseline)
 //
 // Baselines depend on the gpu and browser, so they aren't committed (visual/ is ignored).
+/* global requestAnimationFrame -- used inside page.evaluate, in the browser */
 import { chromium } from '@playwright/test'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import pixelmatch from 'pixelmatch'
@@ -21,6 +24,9 @@ const DAY = '&date=2026-09-24&still&notiles'
 // share of pixels that can differ before a view counts as changed. a missing shader or
 // texture changes way more than this
 const LIMIT = 0.005
+// a frame this long (ms) while going to a view is a hitch: something was built or
+// uploaded on first sight that the warm-up (scene/WarmUp.tsx) should have done
+const HITCH = 50
 
 // from/at are camera positions (x east, y up, z south, hurt park is 0, 0). the player
 // stands behind the camera so it's not in the shot, and decides what's loaded around it
@@ -107,11 +113,33 @@ for (const mode of modes) {
       time = t
     }
     const { page } = me
+    // every frame of going to the spot and the first seconds there
+    await page.evaluate(() => {
+      const times = (globalThis.frameTimes = [])
+      let last = performance.now()
+      const tick = (now) => {
+        if (globalThis.frameTimes !== times) return
+        times.push(now - last)
+        last = now
+        requestAnimationFrame(tick)
+      }
+      requestAnimationFrame(tick)
+    })
     await page.evaluate((v) => {
       globalThis.quad.teleport(v.player[0], v.player[1])
       globalThis.quad.lookFrom(v.from, v.at)
     }, v)
     if (v.inside) await page.waitForFunction((n) => globalThis.quad.inside() === n, v.inside)
+
+    // timed until the second person (if any) joins: their page loading on the same machine
+    // slows this one down, which isn't something a player sees
+    const settle = v === views[0] ? 8000 : 4000
+    await page.waitForTimeout(settle / 2)
+    const frames = await page.evaluate(() => {
+      const times = globalThis.frameTimes
+      globalThis.frameTimes = null
+      return times.sort((a, b) => a - b)
+    })
 
     let other = null
     if (v.other) {
@@ -120,7 +148,7 @@ for (const mode of modes) {
       await other.page.evaluate(([x, z]) => globalThis.quad.teleport(x, z), v.other)
     }
     // textures, furniture and the shadow map settle in the first few seconds
-    await page.waitForTimeout(v === views[0] ? 8000 : 4000)
+    await page.waitForTimeout(settle / 2)
     if (other) {
       // the bubble only stays up for 6 seconds
       const chat = other.page.getByRole('textbox', { name: 'Chat message' })
@@ -131,11 +159,18 @@ for (const mode of modes) {
     const shot = await page.screenshot()
     await other?.page.context().close()
     writeFileSync(`${dir}/${v.name}.png`, shot)
+    // the average of the slowest 1% of frames, and how many were hitches
+    const worst = frames.slice(-Math.max(1, Math.round(frames.length / 100)))
+    const pacing = {
+      '1% low': `${(worst.reduce((a, b) => a + b) / worst.length).toFixed(1)}ms`,
+      hitches: frames.filter((f) => f >= HITCH).length,
+    }
     if (update) {
       results.push({
         mode,
         view: v.name,
         diff: '-',
+        ...pacing,
         renderer: me.backend,
         errors: me.errors.length,
       })
@@ -157,7 +192,8 @@ for (const mode of modes) {
       mode,
       view: v.name,
       diff: `${(share * 100).toFixed(2)}%`,
-      ok: share <= LIMIT ? 'ok' : 'CHANGED',
+      ...pacing,
+      ok: share > LIMIT ? 'CHANGED' : pacing.hitches > 0 ? 'HITCH' : 'ok',
       renderer: me.backend,
       errors: me.errors.length,
     })
@@ -170,4 +206,6 @@ await browser.close()
 
 console.table(results)
 if (!update) console.log('diff images (changed pixels in red) are in visual/latest/<mode>/')
-process.exit(results.some((r) => r.ok === 'CHANGED' || r.diff === 'no baseline') ? 1 : 0)
+process.exit(
+  results.some((r) => r.ok === 'CHANGED' || r.ok === 'HITCH' || r.diff === 'no baseline') ? 1 : 0,
+)
