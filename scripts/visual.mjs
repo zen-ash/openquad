@@ -69,7 +69,6 @@ const browser = await chromium.launch({
   headless: true,
   args: [
     '--enable-gpu',
-    '--enable-unsafe-webgpu',
     '--ignore-gpu-blocklist',
     // headless chrome on a mac otherwise ends up on the software renderer
     ...(process.platform === 'darwin' ? ['--use-angle=metal'] : []),

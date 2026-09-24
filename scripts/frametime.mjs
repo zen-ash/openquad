@@ -20,7 +20,6 @@ const browser = await chromium.launch({
   headless: true,
   args: [
     '--enable-gpu',
-    '--enable-unsafe-webgpu',
     '--ignore-gpu-blocklist',
     '--disable-gpu-vsync',
     '--disable-frame-rate-limit',
