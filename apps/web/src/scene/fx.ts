@@ -12,11 +12,12 @@ export const fx = {
   aberration: uniform(1),
   glare: uniform(1),
   vignette: uniform(1),
+  saturation: uniform(1),
   exposure: uniform(1),
 }
 
 export const TONE_MAPPINGS = ['none', 'aces', 'agx', 'neutral'] as const
-export const toneMapping = uniform(1)
+export const toneMapping = uniform(3)
 
 // set once the effects have drawn a frame. the warm-up (WarmUp.tsx) waits for it, or it
 // builds the shaders for drawing without them, which high quality never uses

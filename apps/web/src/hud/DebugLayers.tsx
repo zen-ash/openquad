@@ -20,6 +20,7 @@ const EFFECTS: [keyof typeof fx, string][] = [
   ['aberration', 'Color fringes'],
   ['glare', 'Glare'],
   ['vignette', 'Vignette'],
+  ['saturation', 'Camera saturation'],
   ['exposure', 'Auto exposure'],
 ]
 

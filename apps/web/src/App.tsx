@@ -1,7 +1,7 @@
 import { KeyboardControls, PerformanceMonitor } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { lazy, Suspense, useEffect } from 'react'
-import { ACESFilmicToneMapping, PCFShadowMap } from 'three'
+import { NeutralToneMapping, PCFShadowMap } from 'three'
 import { WebGPURenderer, type WebGPURendererParameters } from 'three/webgpu'
 import ChatPanel from './ChatPanel'
 import EmoteBar from './EmoteBar'
@@ -39,8 +39,10 @@ async function startRenderer(props: object) {
   const renderer = new WebGPURenderer({ ...(props as WebGPURendererParameters), forceWebGL })
   await renderer.init()
   if (showDebug) instrument(renderer)
-  // same tone mapping as the effects use, so low quality (no effects) looks the same
-  renderer.toneMapping = ACESFilmicToneMapping
+  // same tone mapping as the effects use, so low quality (no effects) looks the same. a bit
+  // brighter: unlike three's aces, neutral doesn't brighten what goes into it
+  renderer.toneMapping = NeutralToneMapping
+  renderer.toneMappingExposure = 2 ** 0.35
   const webgpu = (renderer.backend as { isWebGPUBackend?: boolean }).isWebGPUBackend === true
   useSettings.setState(webgpu ? { backend: 'webgpu' } : { backend: 'webgl2', quality: 'low' })
   // high quality's atmosphere and effects, loaded before the first frame (the atmosphere

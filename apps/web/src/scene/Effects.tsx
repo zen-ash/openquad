@@ -10,6 +10,7 @@ import { sharpen } from 'three/examples/jsm/tsl/display/SharpenNode.js'
 import { sss } from 'three/examples/jsm/tsl/display/SSSNode.js'
 import { boxBlur } from 'three/examples/jsm/tsl/display/boxBlur.js'
 import {
+  abs,
   acesFilmicToneMapping,
   agxToneMapping,
   builtinAOContext,
@@ -19,7 +20,9 @@ import {
   distance,
   float,
   int,
+  luminance,
   mix,
+  min,
   mrt,
   neutralToneMapping,
   normalView,
@@ -29,10 +32,10 @@ import {
   renderOutput,
   rtt,
   screenUV,
-  select,
   smoothstep,
   textureSize,
   vec2,
+  vec3,
   vec4,
   velocity,
 } from 'three/tsl'
@@ -65,6 +68,12 @@ const GLARE = 0.04
 const GLARE_SPREAD = 0.2
 // color fringes: how far the red and blue move per pixel away from the middle
 const ABERRATION = 0.001
+// a camera makes colors a bit stronger than they are. without it the sky and the grass
+// came out paler than in any photo of a sunny day (chroma 26 against 44 for the sky). and
+// it washes out things that are nearly too bright to white: without that the sky around
+// the sun came out lilac, where every photo has it white
+const SATURATION = 1.12
+const BRIGHT_SATURATION = 0.6
 
 const size = new Vector2()
 
@@ -185,21 +194,25 @@ export default function Effects() {
     // darker corners, same curve as the postprocessing library's vignette we had before
     const d = distance(screenUV, vec2(0.5))
     const vignette = mix(1, smoothstep(0.8, float(0.3 * 0.799), d.mul(0.35 + 0.3)), fx.vignette)
-    const color = out.rgb.mul(vignette).mul(exposure)
+    const exposed = out.rgb.mul(vignette).mul(exposure)
+    const lum = luminance(exposed)
+    const saturation = mix(float(SATURATION), float(BRIGHT_SATURATION), smoothstep(0.3, 0.8, lum))
+    const color = mix(vec3(lum), exposed, mix(1, saturation, fx.saturation))
 
-    // tone mapping here rather than in renderOutput, so the debug panel can switch it
-    const mapped = select(
-      toneMapping.equal(1),
-      acesFilmicToneMapping(color, float(1)),
-      select(
-        toneMapping.equal(2),
-        agxToneMapping(color, float(1)),
-        select(toneMapping.equal(3), neutralToneMapping(color, float(1)), color.clamp(0, 1)),
-      ),
-    )
+    // tone mapping here rather than in renderOutput, so the debug panel can switch it.
+    // pbr neutral: aces washed the sky out to white near the horizon (chroma 20 -> 8) and
+    // took the green out of the grass, neutral keeps colors and still rolls off the sun
+    // (weights, a chain of select()s came out black for the last two)
+    const pick = (i: number) => float(1).sub(min(abs(toneMapping.sub(i)), 1))
+    const mapped = color
+      .clamp(0, 1)
+      .mul(pick(0))
+      .add((acesFilmicToneMapping(color, float(1)) as Node<'vec3'>).mul(pick(1)))
+      .add((agxToneMapping(color, float(1)) as Node<'vec3'>).mul(pick(2)))
+      .add((neutralToneMapping(color, float(1)) as Node<'vec3'>).mul(pick(3)))
     const pipeline = new RenderPipeline(
       gl,
-      renderOutput(vec4(mapped as unknown as Node<'vec3'>, 1), NoToneMapping, SRGBColorSpace),
+      renderOutput(vec4(mapped, 1), NoToneMapping, SRGBColorSpace),
     )
     pipeline.outputColorTransform = false
 
