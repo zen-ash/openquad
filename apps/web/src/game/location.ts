@@ -13,6 +13,7 @@ const buildings = campus.buildings
   .map((b) => ({ name: b.name!, gsu: !!b.gsu, shape: polygon(b.points as [number, number][]) }))
 const parks = campus.areas.map((a) => ({
   name: a.name,
+  gsu: !!a.gsu,
   shape: polygon(a.points as [number, number][]),
 }))
 const streets = campus.roads.filter((r) => r.name) as {
@@ -45,6 +46,10 @@ export function whereIs(x: number, z: number): Place {
 
   const inside = buildings.find((b) => pointInPolygon(p, b.shape.points))
   if (inside) return { name: inside.name, sub: inside.gsu ? GSU : DOWNTOWN }
+
+  // gsu's own outdoor spaces (the quad) are named even though buildings are right there
+  const gsuPlace = parks.find((a) => a.gsu && pointInPolygon(p, a.shape.points))
+  if (gsuPlace) return { name: gsuPlace.name, sub: GSU }
 
   const near = buildings
     .filter((b) => b.gsu)

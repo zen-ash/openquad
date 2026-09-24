@@ -33,4 +33,9 @@ describe('whereIs', () => {
   it('falls back to downtown atlanta out in the middle of nowhere', () => {
     expect(whereIs(10_000, 10_000).name).toBe('Downtown Atlanta')
   })
+
+  it('names the panther quad even right next to a building', () => {
+    const [px, pz] = campus.quad.monument as [number, number]
+    expect(whereIs(px + 3, pz)).toEqual({ name: 'Panther Quad', sub: 'Georgia State University' })
+  })
 })

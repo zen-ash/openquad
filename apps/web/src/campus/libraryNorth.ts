@@ -251,7 +251,7 @@ export function libraryNorthGeometry(b: LibraryNorthData) {
       block('metal', a - 0.05, a + 0.05, d - 0.05, d + 0.05, LOBBY + 0.1, LOBBY + 0.8)
     }
   }
-  // red pavers out front, like the real entrance plaza
+  // pavers out front, the same as the panther quad next to it
   add('pavers', flat([at(end - 14, 6), at(end + 6, 6), at(end + 6, 16), at(end - 14, 16)], 0.075))
   // limestone block at the north end of the lobby
   block('limestone', start - 0.4, start + 4, 0, depthAt(start) + 0.4, 0, LOBBY + 1.7)

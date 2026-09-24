@@ -5,7 +5,7 @@ import { Color, PlaneGeometry, type DirectionalLight, type HemisphereLight } fro
 import campus from '../campus/campus.json'
 import { areasGeometry, linesGeometry, planarUv } from '../campus/geometry'
 import { night } from '../campus/facade'
-import { grassMaterial, roadMaterial, sidewalkMaterial } from '../campus/ground'
+import { grassMaterial, paversMaterial, roadMaterial, sidewalkMaterial } from '../campus/ground'
 import { localPlayer } from '../game/localPlayer'
 import { daylight, sunDirection, sunPosition, timeFor } from '../game/sun'
 import { useSettings } from '../settings'
@@ -14,6 +14,7 @@ import Doors from './Doors'
 import Furniture from './Furniture'
 import Interiors from './Interiors'
 import LibraryNorth from './LibraryNorth'
+import PantherQuad from './PantherQuad'
 import Trees from './Trees'
 
 const DAY_HAZE = new Color('#c9d6e0')
@@ -115,6 +116,8 @@ function Ground() {
       lawn: planarUv(new PlaneGeometry(size, size).rotateX(-Math.PI / 2)),
       parks: areasGeometry(campus.parks, 0.02),
       plazas: areasGeometry(campus.plazas, 0.03),
+      // under the lawns, which sit on top of it
+      pavers: areasGeometry(campus.quad.pavers, 0.015),
       roads: linesGeometry(campus.roads, 0.04),
       paths: linesGeometry(campus.paths, 0.05),
     }
@@ -125,6 +128,7 @@ function Ground() {
       <mesh geometry={geos.lawn} material={grassMaterial} receiveShadow />
       <mesh geometry={geos.parks} material={grassMaterial} receiveShadow />
       <mesh geometry={geos.plazas} material={sidewalkMaterial} receiveShadow />
+      <mesh geometry={geos.pavers} material={paversMaterial} receiveShadow />
       <mesh geometry={geos.roads} material={roadMaterial} receiveShadow />
       <mesh geometry={geos.paths} material={sidewalkMaterial} receiveShadow />
     </>
@@ -160,6 +164,7 @@ export default function Campus() {
       <Interiors />
       <Furniture />
       <Doors />
+      <PantherQuad />
       <Trees />
     </>
   )

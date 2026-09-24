@@ -149,7 +149,7 @@ export const libraryNorthMaterials: Record<Part, THREE.Material> = {
   metal: make('metal', { color: '#9ca2a8', roughness: 0.5, metalness: 0.5 }),
   pavers: make('pavers', {
     map: tiled('sidewalk', 'color', 1.2),
-    color: '#d99a80',
+    color: '#f4e6cc',
     roughness: 0.9,
   }),
 }

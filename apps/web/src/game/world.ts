@@ -4,14 +4,20 @@ import { footprint, furnish } from './furniture'
 import { enterable, interiors } from './interiors'
 
 const TREE_RADIUS = 0.8
+const { quad } = campus
 
 export const world: World = {
   // buildings you can walk into are just their walls (with a doorway), the rest are solid
-  buildings: campus.buildings
-    .filter((_, i) => !enterable.has(i))
-    .map((b) => polygon(b.points as [number, number][])),
+  buildings: [
+    ...campus.buildings.filter((_, i) => !enterable.has(i)).map((b) => b.points),
+    ...quad.planters.map((p) => p.points),
+  ].map((points) => polygon(points as [number, number][])),
   walls: interiors.flatMap((i) => i.walls),
-  circles: campus.trees.map(([x, z]) => ({ x: x!, z: z!, radius: TREE_RADIUS })),
+  circles: [
+    ...campus.trees.map(([x, z]) => ({ x: x!, z: z!, radius: TREE_RADIUS })),
+    { x: quad.monument[0]!, z: quad.monument[1]!, radius: 1 },
+    ...quad.flags.map(([x, z]) => ({ x: x!, z: z!, radius: 0.2 })),
+  ],
   halfSize: campus.halfSize,
 }
 

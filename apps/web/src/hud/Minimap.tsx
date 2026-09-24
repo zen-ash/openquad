@@ -35,6 +35,7 @@ function drawCampus() {
     ctx.stroke()
   }
 
+  campus.quad.pavers.forEach((p) => area(p, '#e2cfae'))
   campus.parks.forEach((p) => area(p, '#7f9c69'))
   campus.plazas.forEach((p) => area(p, '#d8d4cb'))
   campus.roads.forEach((r) => line(r.points, r.width, '#6b6e73'))
