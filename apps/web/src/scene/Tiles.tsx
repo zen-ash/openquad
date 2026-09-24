@@ -65,6 +65,56 @@ const allInside = (x0: number, z0: number, x1: number, z1: number) =>
   [x0, x1].every((x) => [z0, z1].every((z) => fenceDistance(x, z) > 1)) &&
   !FENCE.some(([x, z]) => x > x0 && x < x1 && z > z0 && z < z1)
 
+// the bits of a tile we need from its bounding box. it's an oriented box in the tileset's
+// own frame, points are its 8 corners
+type Tile = { engineData?: { boundingVolume?: { obb?: { points: THREE.Vector3[] } | null } } }
+const corner = new THREE.Vector3()
+
+// tiles whose box is all the way inside the fence would only get thrown away (see fenced),
+// so they're never asked for at all. you're always inside the fence, so near you that's
+// most of what used to get downloaded
+class SkipInsidePlugin {
+  tiles: TilesRendererImpl | null = null
+  // tiles and the fence don't move, so the answer never changes
+  inside = new WeakMap<object, boolean>()
+
+  init(tiles: TilesRendererImpl) {
+    this.tiles = tiles
+  }
+
+  isInside(tile: Tile) {
+    const points = tile.engineData?.boundingVolume?.obb?.points
+    if (!points) return false
+    const group = this.tiles!.group
+    group.updateWorldMatrix(true, false)
+    const m = group.matrixWorld
+    let [x0, z0, x1, z1] = [Infinity, Infinity, -Infinity, -Infinity]
+    for (const p of points) {
+      corner.copy(p).applyMatrix4(m)
+      if (fenceDistance(corner.x, corner.z) < 1) return false
+      x0 = Math.min(x0, corner.x)
+      z0 = Math.min(z0, corner.z)
+      x1 = Math.max(x1, corner.x)
+      z1 = Math.max(z1, corner.z)
+    }
+    // all the corners inside can still have a corner of the fence poking into it
+    return !FENCE.some(([x, z]) => x > x0 && x < x1 && z > z0 && z < z1)
+  }
+
+  // returning true with inView false keeps it from loading, false means "no opinion"
+  calculateTileViewError(tile: Tile, target: { inView: boolean }) {
+    if (fenceOn.value < 0.5) return false
+    let inside = this.inside.get(tile)
+    if (inside === undefined) {
+      inside = this.isInside(tile)
+      this.inside.set(tile, inside)
+    }
+    if (!inside) return false
+    target.inView = false
+    return true
+  }
+}
+
 // for shadows, or the tile buildings inside the fence would still cast them
 const depthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking })
 fenced(depthMaterial)
@@ -186,10 +236,12 @@ export default function Tiles() {
         errorTarget={quality === 'high' ? 6 : 12}
         errorFalloff={quality === 'high' ? 10 : 20}
         errorFalloffDensity={2e-3}
-        // keeps up to 430mb of tiles by default, a bit less here for weaker laptops. at
-        // 240mb the cache filled up and the far side of downtown stopped sharpening
-        lruCache-minBytesSize={(quality === 'high' ? 200 : 130) * 1e6}
-        lruCache-maxBytesSize={(quality === 'high' ? 300 : 200) * 1e6}
+        // keeps up to 430mb of tiles by default, 300 here. a whole view would want over 1gb,
+        // so it's always full and the far side of downtown is as sharp as what's left over
+        // allows. much less than that and it gets stuck: at 200mb a busy view never loaded
+        // past one blurry tile. low quality needs about as much, it's the same cap
+        lruCache-minBytesSize={200e6}
+        lruCache-maxBytesSize={300e6}
         onDisposeModel={({ scene }: { scene: THREE.Object3D }) => {
           scene.traverse((o) => {
             materials.delete((o as THREE.Mesh).material as THREE.MeshBasicMaterial)
@@ -207,6 +259,7 @@ export default function Tiles() {
         <TilesPlugin plugin={GoogleCloudAuthPlugin} args={AUTH} />
         <TilesPlugin plugin={ReorientationPlugin} args={FRAME} />
         <TilesPlugin plugin={FlattenPlugin} />
+        <TilesPlugin plugin={SkipInsidePlugin} />
         {/* google's terms: the data credits for whatever tiles are on screen */}
         <TilesAttributionOverlay
           // same look as the osm credit, bottom left under the chat box

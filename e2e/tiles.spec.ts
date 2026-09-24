@@ -14,6 +14,9 @@ const roadsNear = (x: number, z: number) =>
 const hide = (url: string) => url.replace(/(key|session)=[^&]+/g, '$1=...')
 
 async function settle(page: Page) {
+  // right after a teleport it still counts as settled from the last spot, give it a
+  // moment to start on the new one
+  await page.waitForTimeout(2000)
   await expect
     .poll(() => page.evaluate(() => window.quad!.tiles()), { timeout: 60_000 })
     .toMatchObject({ settled: true, visible: expect.any(Number) })
@@ -58,11 +61,13 @@ test('google 3d tiles load and line up with our streets, no errors', async ({ pa
   // their credits have to be on screen (google's terms). not the layers checkbox
   await expect(page.getByText(/Google(?! 3D)/)).toBeVisible({ timeout: 30_000 })
 
-  // hurt park, and a block west up the hill where the real ground is ~7m higher. the
-  // tiles are flattened (campus/terrain.ts) so their streets are just under ours at both
+  // out in the street past the fence (inside it the tiles aren't even downloaded): courtland
+  // st north of auburn ave, about as high as hurt park, and up peachtree st where the real
+  // ground is 10m higher. the tiles are flattened (campus/terrain.ts) so their streets are
+  // just under ours at both
   for (const [x, z] of [
-    [0, 0],
-    [-250, 0],
+    [105, -204],
+    [-381, -568],
   ] as const) {
     await teleport(page, x, z)
     await settle(page)
