@@ -1,0 +1,4 @@
+stars.bin is from @takram/three-atmosphere
+(https://github.com/takram-design-engineering/three-geospatial), MIT License,
+Copyright (c) 2024 Shota Matsuda. It holds the directions, magnitudes and colors of the
+9,096 stars in the Yale Bright Star Catalog, version 5.

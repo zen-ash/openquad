@@ -14,6 +14,7 @@ import Minimap from './hud/Minimap'
 import NavBar from './hud/NavBar'
 import PlacesMenu from './hud/PlacesMenu'
 import { useGame } from './net/store'
+import { addAtmosphere } from './scene/Atmosphere'
 import CameraInput from './scene/CameraInput'
 import Campus from './scene/Campus'
 import Effects from './scene/Effects'
@@ -33,6 +34,7 @@ import VoiceUpdater from './voice/VoiceUpdater'
 async function startRenderer(props: object) {
   const renderer = new WebGPURenderer({ ...(props as WebGPURendererParameters), forceWebGL })
   await renderer.init()
+  addAtmosphere(renderer)
   // same tone mapping as the effects use, so low quality (no effects) looks the same
   renderer.toneMapping = ACESFilmicToneMapping
   const webgpu = (renderer.backend as { isWebGPUBackend?: boolean }).isWebGPUBackend === true

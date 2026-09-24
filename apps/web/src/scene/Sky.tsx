@@ -145,6 +145,8 @@ const env = { pmrem: null as PMREMGenerator | null, target: null as RenderTarget
 export function SkyEnvironment({ sun }: { sun: Sun }) {
   const [x, y, z] = sun
   useFrame(({ gl, scene }) => {
+    // high quality's atmosphere (Atmosphere.tsx) sets its own, it'd win over this one
+    scene.environmentNode = null
     const at = envSky.sun.value
     if (env.target && at.x === x && at.y === y && at.z === z) return
     at.set(x, y, z)

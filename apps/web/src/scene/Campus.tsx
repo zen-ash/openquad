@@ -15,6 +15,7 @@ import {
 import { localPlayer } from '../game/localPlayer'
 import { daylight, sunDirection, sunPosition, timeFor } from '../game/sun'
 import { today, useSettings } from '../settings'
+import Atmosphere from './Atmosphere'
 import Buildings from './Buildings'
 import Doors from './Doors'
 import FenceHaze from './FenceHaze'
@@ -58,7 +59,7 @@ function useSky() {
     const day = daylight(sunPosition(when).altitude)
     // at night the "sun" light is moonlight from high up in the east
     const light: [number, number, number] = day > 0 ? dir : [0.3, 0.8, -0.5]
-    return { dir, day, light }
+    return { dir, day, light, when }
   }, [setting, now])
 }
 
@@ -157,6 +158,8 @@ function Ground({ tiles }: { tiles: boolean }) {
 export default function Campus() {
   const sky = useSky()
   const tiles = useSettings((s) => s.tiles)
+  // high quality has the real atmosphere, low the old sky (it's cheaper and runs on webgl2)
+  const high = useSettings((s) => s.quality === 'high')
   const outlines = useSettings((s) => s.outlines)
   const fenceLine = useSettings((s) => s.fenceLine)
   const sunAt = sky.dir.map((v) => v * 100) as [number, number, number]
@@ -172,12 +175,23 @@ export default function Campus() {
 
   return (
     <>
-      <SkyDome sun={sunAt} />
-      {sky.day < 0.3 && <Stars />}
-      <SkyEnvironment sun={sunAt} />
-      <fog attach="fog" args={[haze, 300, 1000]} />
-      <SkyLight intensity={0.12 + 0.16 * sky.day} environment={environment} />
-      <Sun dir={sky.light} day={sky.day} />
+      {high ? (
+        <Atmosphere sun={sky.dir} when={sky.when} day={sky.day} />
+      ) : (
+        <>
+          <SkyDome sun={sunAt} />
+          {sky.day < 0.3 && <Stars />}
+          <SkyEnvironment sun={sunAt} />
+          <fog attach="fog" args={[haze, 300, 1000]} />
+          <Sun dir={sky.light} day={sky.day} />
+        </>
+      )}
+      <SkyLight
+        // with the atmosphere, the sky's light is its environment map. at night the city's
+        // own glow stands in, as dim as the old night light
+        intensity={high ? 0.12 * (1 - sky.day) : 0.12 + 0.16 * sky.day}
+        environment={high ? 1 : environment}
+      />
       <Ground tiles={tiles} />
       <Buildings />
       <Landmarks />

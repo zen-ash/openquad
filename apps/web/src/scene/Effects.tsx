@@ -1,6 +1,7 @@
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo } from 'react'
 import { ACESFilmicToneMapping, SRGBColorSpace } from 'three'
+import { aerialPerspective } from '@takram/three-atmosphere/webgpu'
 import { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js'
 import { ao } from 'three/examples/jsm/tsl/display/GTAONode.js'
 import { depthAwareBlur } from 'three/examples/jsm/tsl/display/depthAwareBlur.js'
@@ -19,6 +20,7 @@ import {
   vec4,
 } from 'three/tsl'
 import { RenderPipeline, type Node, type WebGPURenderer } from 'three/webgpu'
+import { exposure } from './Atmosphere'
 
 // only mounted on high quality (see App). webgpu only, the webgl2 fallback is always low
 export default function Effects() {
@@ -49,6 +51,14 @@ export default function Effects() {
     const blurY = rtt(depthAwareBlur(blurX, depth, texel.mul(vec2(0, 1)), camera), null, null, half)
     let out = color.mul(blurY.r)
 
+    // the air between you and everything: far things fade toward the sky's color and turn
+    // bluer (Atmosphere.tsx, which also tells it the camera)
+    const air = aerialPerspective(out, depth)
+    // the sky itself is drawn in the scene already (Atmosphere.tsx)
+    air.skyNode = null
+    // drawn into a texture once, it's a lot of shader to repeat in every pass after it
+    out = rtt(air as unknown as Node<'vec4'>)
+
     // only really bright things glow, which in practice is lit windows at night. three's
     // bloom spreads a lot more than the postprocessing library's did, these numbers match
     // the old look (pnpm visual)
@@ -57,6 +67,8 @@ export default function Effects() {
     // darker corners, same curve as the postprocessing library's vignette we had before
     const d = distance(screenUV, vec2(0.5))
     out = vec4(out.rgb.mul(smoothstep(0.8, float(0.3 * 0.799), d.mul(0.35 + 0.3))), 1)
+
+    out = out.mul(exposure)
 
     // tone mapping, then smaa on the final colors (it looks for edges in what you see)
     const pipeline = new RenderPipeline(
