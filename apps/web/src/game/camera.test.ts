@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clampDistance, clampPitch, MAX_PITCH, MIN_DISTANCE, orbit } from './camera'
+import { clampDistance, clampPitch, clearView, MAX_PITCH, MIN_DISTANCE, orbit } from './camera'
 
 const origin = { x: 0, y: 0, z: 0 }
 
@@ -32,5 +32,21 @@ describe('limits', () => {
 
   it('stops you zooming into your own head', () => {
     expect(clampDistance(0)).toBe(MIN_DISTANCE)
+  })
+})
+
+describe('clearView', () => {
+  // a wall across the way, 3m in front
+  const wall = { ax: -1, az: 3, bx: 1, bz: 3 }
+
+  it('stops at the first wall in the way', () => {
+    const behind = { ax: -1, az: 6, bx: 1, bz: 6 }
+    expect(clearView({ x: 0, z: 0 }, { x: 0, z: 10 }, [behind, wall])).toBeCloseTo(0.3)
+  })
+
+  it('is 1 when nothing is in the way', () => {
+    expect(clearView({ x: 0, z: 0 }, { x: 0, z: 2 }, [wall])).toBe(1)
+    // passes beside the wall
+    expect(clearView({ x: 2, z: 0 }, { x: 2, z: 10 }, [wall])).toBe(1)
   })
 })

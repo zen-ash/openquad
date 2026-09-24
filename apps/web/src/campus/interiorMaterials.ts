@@ -116,3 +116,41 @@ export const glassMaterial = new THREE.MeshStandardMaterial({
   depthWrite: false,
 })
 glassMaterial.onBeforeCompile = windows(true)
+
+// a whole row of books on a shelf is one box. the shader splits it into books of random
+// colors and heights, way cheaper than a box per book (the big library has thousands)
+export const booksMaterial = new THREE.MeshStandardMaterial({ roughness: 0.8 })
+booksMaterial.onBeforeCompile = (shader) => {
+  shader.vertexShader = shader.vertexShader
+    .replace('#include <common>', '#include <common>\nvarying vec3 vLocal;\nvarying float vSeed;')
+    .replace(
+      '#include <project_vertex>',
+      `#include <project_vertex>
+      vLocal = position;
+      vSeed = dot(instanceMatrix[3].xyz, vec3(12.9898, 78.233, 37.719));`,
+    )
+  shader.fragmentShader = shader.fragmentShader
+    .replace(
+      '#include <common>',
+      `#include <common>
+      varying vec3 vLocal;
+      varying float vSeed;
+      float hash(float n) { return fract(sin(n) * 43758.5453); }`,
+    )
+    .replace(
+      '#include <color_fragment>',
+      `#include <color_fragment>
+      // 3.5cm books along the row
+      float book = floor(vLocal.x / 0.035);
+      float h = hash(book + vSeed);
+      // some gaps, and not every book is as tall
+      if (hash(book * 1.7 + vSeed) < 0.08 || vLocal.y > 0.65 + 0.35 * h) discard;
+      vec3 palette[6] = vec3[](
+        vec3(0.35, 0.07, 0.06), vec3(0.08, 0.13, 0.3), vec3(0.1, 0.22, 0.12),
+        vec3(0.4, 0.28, 0.14), vec3(0.75, 0.7, 0.58), vec3(0.08, 0.08, 0.08)
+      );
+      diffuseColor.rgb = palette[int(hash(book * 3.1 + vSeed) * 5.99)];
+      // darker line between books
+      if (fract(vLocal.x / 0.035) < 0.12) diffuseColor.rgb *= 0.5;`,
+    )
+}

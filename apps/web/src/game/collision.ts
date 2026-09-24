@@ -34,7 +34,7 @@ export function pointInPolygon(p: Point, points: Point[]) {
   return inside
 }
 
-function closestOnSegment(p: Point, a: Point, b: Point): Point {
+export function closestOnSegment(p: Point, a: Point, b: Point): Point {
   const dx = b.x - a.x
   const dz = b.z - a.z
   const t = Math.max(

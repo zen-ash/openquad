@@ -123,3 +123,19 @@ export function interiorAt(p: Point) {
     )
   })
 }
+
+/** the building you're in, or else the one whose door you're closest to (within range) */
+export function interiorNear(p: Point, range = 20) {
+  const inside = interiorAt(p)
+  if (inside) return inside
+  let best: Interior | undefined
+  let bestDist = range
+  for (const r of interiors) {
+    const d = Math.hypot(r.door.x - p.x, r.door.z - p.z)
+    if (d < bestDist) {
+      best = r
+      bestDist = d
+    }
+  }
+  return best
+}

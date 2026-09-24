@@ -6,7 +6,7 @@ import * as THREE from 'three'
 import { cutout } from '../campus/cutout'
 import type { Controls } from '../game/controls'
 import { avatarById } from '../game/avatars'
-import { clampDistance, clampPitch, orbit } from '../game/camera'
+import { clampDistance, clampPitch, clearView, orbit } from '../game/camera'
 import { interiorAt } from '../game/interiors'
 import { blocksView } from '../game/occlusion'
 import { localPlayer } from '../game/localPlayer'
@@ -20,7 +20,7 @@ import {
   WALK_SPEED,
 } from '../game/movement'
 import { input } from '../game/input'
-import { world } from '../game/world'
+import { tallFurniture, worldFor } from '../game/world'
 import { send } from '../net/connection'
 import { stopEmote, useEmotes } from '../net/emotes'
 import Character, { type Anim } from './Character'
@@ -110,7 +110,14 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
 
     if (dir) {
       const speed = running ? RUN_SPEED : WALK_SPEED
-      const pos = walk(player.position, dir, speed, delta, PLAYER_RADIUS, world)
+      const pos = walk(
+        player.position,
+        dir,
+        speed,
+        delta,
+        PLAYER_RADIUS,
+        worldFor(localPlayer.inside),
+      )
       player.position.x = pos.x
       player.position.z = pos.z
       player.rotation.y = lerpAngle(player.rotation.y, headingFor(dir), 1 - Math.exp(-12 * dt))
@@ -172,6 +179,14 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
       pitch.current * outdoors + Math.min(pitch.current, INDOOR_PITCH) * indoor.current,
       dist * outdoors + Math.min(dist, INDOOR_DISTANCE) * indoor.current,
     )
+    // come in front of a bookshelf instead of filming the back of it
+    const clear = clearView(look, want, tallFurniture(localPlayer.inside))
+    if (clear < 1) {
+      const k = Math.max(0.2, clear * 0.85)
+      want.x = look.x + (want.x - look.x) * k
+      want.y = look.y + (want.y - look.y) * k
+      want.z = look.z + (want.z - look.z) * k
+    }
     if (snapCamera.current) camera.position.set(want.x, want.y, want.z)
     else camera.position.lerp(want, 1 - Math.exp(-7 * dt))
     snapCamera.current = false
