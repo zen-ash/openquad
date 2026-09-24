@@ -55,7 +55,7 @@ along with a panel to switch each effect off.
 
 The join button waits until every shader is built, drawing the whole campus once in each
 quality, so nothing stutters the first time it comes into view. On a first visit that takes
-about 20 seconds (the GPU compiles them all), after that a few.
+20-25 seconds (the GPU compiles them all), after that 5-10.
 
 The mic only works on localhost or https. Opening it from another device on your wifi
 (http://your-ip:5173) works, but that device can only listen.
