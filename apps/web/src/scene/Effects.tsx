@@ -5,11 +5,15 @@ import { aerialPerspective } from '@takram/three-atmosphere/webgpu'
 import { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js'
 import { ao } from 'three/examples/jsm/tsl/display/GTAONode.js'
 import { depthAwareBlur } from 'three/examples/jsm/tsl/display/depthAwareBlur.js'
-import { smaa } from 'three/examples/jsm/tsl/display/SMAANode.js'
+import { taau } from 'three/examples/jsm/tsl/display/TAAUNode.js'
+import { sharpen } from 'three/examples/jsm/tsl/display/SharpenNode.js'
 import {
+  convertToTexture,
   distance,
   float,
   int,
+  mrt,
+  output,
   pass,
   renderOutput,
   rtt,
@@ -18,9 +22,14 @@ import {
   textureSize,
   vec2,
   vec4,
+  velocity,
 } from 'three/tsl'
 import { RenderPipeline, type Node, type WebGPURenderer } from 'three/webgpu'
 import { exposure } from './Atmosphere'
+
+// how big the scene is drawn before taau scales it up: 0.8 is 64% of the pixels. 0.67
+// was cheaper but visibly softer, 0.8 with the sharpening looks like full size (pnpm visual)
+const SCALE = 0.8
 
 // only mounted on high quality (see App). webgpu only, the webgl2 fallback is always low
 export default function Effects() {
@@ -29,8 +38,12 @@ export default function Effects() {
   const camera = useThree((s) => s.camera)
 
   const pipeline = useMemo(() => {
-    // no msaa, smaa does the edges at the end (like the old composer)
+    // the scene is drawn smaller than the screen, a bit off center every frame, and taau
+    // (below) puts the frames together into a sharp full size picture. that's the
+    // antialiasing too, so no msaa
     const scenePass = pass(scene, camera, { samples: 0 })
+    scenePass.setResolutionScale(SCALE)
+    scenePass.setMRT(mrt({ output, velocity }))
     const color = scenePass.getTextureNode('output')
     const depth = scenePass.getTextureNode('depth')
 
@@ -57,7 +70,12 @@ export default function Effects() {
     // the sky itself is drawn in the scene already (Atmosphere.tsx)
     air.skyNode = null
     // drawn into a texture once, it's a lot of shader to repeat in every pass after it
-    out = rtt(air as unknown as Node<'vec4'>)
+    const lit = rtt(air as unknown as Node<'vec4'>, null, null, { resolutionScale: SCALE })
+
+    // back up to full size, and the edges smooth, from this frame and the ones before it
+    const full = taau(lit, depth, scenePass.getTextureNode('velocity'), camera)
+    // taa softens everything a little, this gets the detail back (0 is the most, 2 none)
+    out = sharpen(convertToTexture(full as unknown as Node<'vec4'>), 0.6) as unknown as Node<'vec4'>
 
     // only really bright things glow, which in practice is lit windows at night. three's
     // bloom spreads a lot more than the postprocessing library's did, these numbers match
@@ -70,10 +88,9 @@ export default function Effects() {
 
     out = out.mul(exposure)
 
-    // tone mapping, then smaa on the final colors (it looks for edges in what you see)
     const pipeline = new RenderPipeline(
       gl,
-      smaa(renderOutput(out, ACESFilmicToneMapping, SRGBColorSpace)),
+      renderOutput(out, ACESFilmicToneMapping, SRGBColorSpace),
     )
     pipeline.outputColorTransform = false
     return pipeline
