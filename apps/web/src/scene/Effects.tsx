@@ -1,6 +1,6 @@
 import { useFrame, useThree } from '@react-three/fiber'
-import { useEffect, useMemo } from 'react'
-import { ACESFilmicToneMapping, SRGBColorSpace } from 'three'
+import { useEffect, useMemo, useRef } from 'react'
+import { ACESFilmicToneMapping, SRGBColorSpace, Vector2 } from 'three'
 import { aerialPerspective } from '@takram/three-atmosphere/webgpu'
 import { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js'
 import { ao as gtao } from 'three/examples/jsm/tsl/display/GTAONode.js'
@@ -48,15 +48,19 @@ import { effects } from './fx'
 // how far (meters) the ambient occlusion looks for things that block the sky
 const AO_RADIUS = 2
 
-// how big the scene is drawn before taau scales it up: 0.8 is 64% of the pixels. 0.67
-// was cheaper but visibly softer, 0.8 with the sharpening looks like full size (pnpm visual)
-const SCALE = 0.8
+// the scene is drawn at most this big and taa scales it up to the screen. a retina
+// laptop's screen is ~3000 pixels wide, drawing all of them costs twice as much and taa
+// gets most of it back anyway. settings.native draws them all
+const MAX_WIDTH = 1920
+const MAX_HEIGHT = 1200
 
 // how much light spreads (0.04 is what cameras and games use) and how wide (0 to 1)
 const GLARE = 0.04
 const GLARE_SPREAD = 0.2
 // color fringes: how far the red and blue move per pixel away from the middle
 const ABERRATION = 0.001
+
+const size = new Vector2()
 
 // three's rtt() and sss() reset their own shader every time a material that uses them gets
 // built. the ambient occlusion and contact shadows are used by every material in the scene
@@ -81,17 +85,15 @@ export default function Effects() {
   const scene = useThree((s) => s.scene)
   const camera = useThree((s) => s.camera)
 
-  const { pipeline, lit } = useMemo(() => {
+  const { pipeline, lit, resize } = useMemo(() => {
     // ambient occlusion first, from a quick pass that only draws depth and normals: how
     // much of the sky each spot can see. the scene pass then darkens only the light from
     // the sky and the environment with it, not the sun (which has shadows for that). the
     // old way multiplied the whole picture and made sunlit ground in corners too dark
     const prePass = pass(scene, camera, { samples: 0 })
-    prePass.setResolutionScale(SCALE)
     prePass.setMRT(mrt({ output: normalView }))
     const preDepth = prePass.getTextureNode('depth')
     const aoPass = gtao(preDepth, prePass.getTextureNode(), camera)
-    aoPass.resolutionScale = 0.5
     aoPass.radius.value = AO_RADIUS
     aoPass.scale.value = 1
     // the noise pattern turns every frame and taa averages it out
@@ -101,19 +103,13 @@ export default function Effects() {
     // bug with its kernel)
     const raw = aoPass.getTextureNode()
     const texel = vec2(1).div(vec2(textureSize(raw, int(0)) as unknown as Node<'ivec2'>))
-    const half = { resolutionScale: 0.5 }
-    const blurX = buildOnce(
-      rtt(depthAwareBlur(raw, preDepth, texel.mul(vec2(1, 0)), camera), null, null, half),
-    )
-    const blurY = buildOnce(
-      rtt(depthAwareBlur(blurX, preDepth, texel.mul(vec2(0, 1)), camera), null, null, half),
-    )
+    const blurX = buildOnce(rtt(depthAwareBlur(raw, preDepth, texel.mul(vec2(1, 0)), camera)))
+    const blurY = buildOnce(rtt(depthAwareBlur(blurX, preDepth, texel.mul(vec2(0, 1)), camera)))
 
     // the scene is drawn smaller than the screen, a bit off center every frame, and taau
     // (below) puts the frames together into a sharp full size picture. that's the
     // antialiasing too, so no msaa
     const scenePass = pass(scene, camera, { samples: 0 })
-    scenePass.setResolutionScale(SCALE)
     scenePass.setMRT(mrt({ output, velocity }))
     // contact shadows: the fine ones the shadow map is too coarse for, where a bench leg
     // or a shoe meets the ground, by marching toward the sun through the depth buffer.
@@ -121,19 +117,13 @@ export default function Effects() {
     const contact = buildOnce(sss(preDepth, camera, sunlight))
     contact.maxDistance.value = 0.3
     contact.thickness.value = 0.02
-    contact.resolutionScale = 0.5
     contact.useTemporalFiltering = false
     // both on top of the renderer's own context, which has the atmosphere in it
     const ao = builtinAOContext(blurY.sample(screenUV).r)
     // only up close: far away the depth buffer is too coarse and things shadow themselves
     const near = float(1).sub(smoothstep(12, 25, positionView.z.negate()))
     const soft = buildOnce(
-      rtt(
-        boxBlur(contact.getTextureNode(), { size: int(1), separation: int(1) }),
-        null,
-        null,
-        half,
-      ),
+      rtt(boxBlur(contact.getTextureNode(), { size: int(1), separation: int(1) })),
     )
     const contactShadow = mix(1, soft.sample(screenUV).r, near)
     const shadows = builtinShadowContext(contactShadow, sunlight)
@@ -151,7 +141,7 @@ export default function Effects() {
     // the sky itself is drawn in the scene already (Atmosphere.tsx)
     air.skyNode = null
     // drawn into a texture once, it's a lot of shader to repeat in every pass after it
-    const lit = rtt(air as unknown as Node<'vec4'>, null, null, { resolutionScale: SCALE })
+    const lit = rtt(air as unknown as Node<'vec4'>)
 
     // back up to full size, and the edges smooth, from this frame and the ones before it
     const full = taau(lit, depth, scenePass.getTextureNode('velocity'), camera)
@@ -176,8 +166,6 @@ export default function Effects() {
     // at night. no threshold, so it's the same at any exposure. three's bloom adds up 5
     // blur sizes with weights that sum to 3
     const glare = bloom(image, 1 / 3, GLARE_SPREAD, 0)
-    // it's all blur, a quarter size is plenty (0.1ms less than half, looks the same)
-    glare.setResolutionScale(0.25)
     out = mix(out, glare, GLARE)
 
     // darker corners, same curve as the postprocessing library's vignette we had before
@@ -191,16 +179,38 @@ export default function Effects() {
       renderOutput(out, ACESFilmicToneMapping, SRGBColorSpace),
     )
     pipeline.outputColorTransform = false
-    return { pipeline, lit }
+
+    // everything drawn at the scene's size follows it, the half and quarter size passes too
+    const resize = (scale: number) => {
+      prePass.setResolutionScale(scale)
+      scenePass.setResolutionScale(scale)
+      lit.setResolutionScale(scale)
+      aoPass.resolutionScale = scale / 2
+      contact.resolutionScale = scale / 2
+      blurX.setResolutionScale(scale / 2)
+      blurY.setResolutionScale(scale / 2)
+      soft.setResolutionScale(scale / 2)
+      // it's all blur, a quarter size is plenty (0.1ms less than half, looks the same)
+      glare.setResolutionScale(scale / 4)
+    }
+    return { pipeline, lit, resize }
   }, [gl, scene, camera])
 
   useEffect(() => () => pipeline.dispose(), [pipeline])
+  const sized = useRef<{ pipeline: RenderPipeline; scale: number } | null>(null)
 
   // priority 1 takes the rendering over from fiber
   useFrame((state, dt) => {
-    if (useSettings.getState().quality !== 'high') {
+    const { quality, native } = useSettings.getState()
+    if (quality !== 'high') {
       gl.render(state.scene, state.camera)
       return
+    }
+    gl.getDrawingBufferSize(size)
+    const scale = native ? 1 : Math.min(1, MAX_WIDTH / size.x, MAX_HEIGHT / size.y)
+    if (sized.current?.pipeline !== pipeline || sized.current.scale !== scale) {
+      resize(scale)
+      sized.current = { pipeline, scale }
     }
     pipeline.render()
     effects.drawn = true

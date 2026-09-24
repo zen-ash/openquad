@@ -753,10 +753,15 @@ button {
   }
 }
 
-.time-picker {
+.view-options {
   position: fixed;
   top: 16px;
   right: 138px;
+  display: flex;
+  gap: 8px;
+}
+
+.view-option {
   padding: 9px 12px;
   border: 1px solid var(--panel-border);
   border-radius: 10px;
@@ -770,12 +775,12 @@ button {
   cursor: pointer;
 }
 
-.time-picker option {
+.view-option option {
   color: #111;
 }
 
 @media (max-width: 640px), (max-height: 500px) {
-  .time-picker {
+  .view-options {
     top: auto;
     right: 16px;
     bottom: 16px;

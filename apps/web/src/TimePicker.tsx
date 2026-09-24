@@ -12,7 +12,7 @@ export default function TimePicker() {
   const time = useSettings((s) => s.time)
   return (
     <select
-      className="time-picker"
+      className="view-option"
       aria-label="Time of day"
       value={time}
       onChange={(e) => {

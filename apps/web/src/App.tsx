@@ -13,6 +13,7 @@ import PhotoMode from './hud/PhotoMode'
 import Minimap from './hud/Minimap'
 import NavBar from './hud/NavBar'
 import PlacesMenu from './hud/PlacesMenu'
+import ResolutionPicker from './ResolutionPicker'
 import { instrument } from './net/perf'
 import { useGame } from './net/store'
 import CameraInput from './scene/CameraInput'
@@ -79,7 +80,9 @@ export default function App() {
         // (an object when off: plain false makes fiber pick PCFSoftShadowMap, which three's
         // webgpu renderer warns about)
         shadows={quality === 'high' ? 'percentage' : { enabled: false, type: PCFShadowMap }}
-        dpr={quality === 'high' ? [1, 1.5] : 1}
+        // the screen's own pixels on high: the effects draw the scene at most 1920x1200 and
+        // taa scales it up to this (Effects). low draws everything at 1x
+        dpr={quality === 'high' ? window.devicePixelRatio : 1}
         // near is as far out as it can be without clipping your own head. every bit
         // helps the depth buffer tell apart things that are close together far away
         camera={{ fov: 50, near: 0.3, far: 1500 }}
@@ -128,7 +131,10 @@ export default function App() {
               <MicButton />
               <PlacesMenu />
               <NavBar />
-              <TimePicker />
+              <div className="view-options">
+                <ResolutionPicker />
+                <TimePicker />
+              </div>
               {showDebug && <DebugLayers />}
             </>
           )}

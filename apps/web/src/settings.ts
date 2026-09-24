@@ -54,6 +54,15 @@ const tiles = Boolean(TILES_KEY) && !params.has('notiles') && !tilesTurnedOff()
 // the tiles/buildings/outlines checkboxes, in dev or with ?debug
 export const showDebug = import.meta.env.DEV || params.has('debug')
 
+// full resolution, remembered between visits (the resolution button)
+function savedNative() {
+  try {
+    return localStorage.getItem('native') === '1'
+  } catch {
+    return false
+  }
+}
+
 export const useSettings = create<{
   quality: Quality
   // which renderer backend we ended up with, null until it's started
@@ -64,6 +73,8 @@ export const useSettings = create<{
   atmosphere: boolean
   // shaders are being built before anyone can walk around (scene/WarmUp.tsx)
   warming: boolean
+  // draw at the screen's own resolution instead of at most 1920x1200 (scaled up by taa)
+  native: boolean
   time: string
   photo: boolean
   tiles: boolean
@@ -77,6 +88,7 @@ export const useSettings = create<{
   atmosphere: false,
   // nothing to build without the city (the e2e tests)
   warming: !hideCity,
+  native: savedNative(),
   time: startingTime(),
   // everything on screen hidden, for screenshots
   photo: false,
