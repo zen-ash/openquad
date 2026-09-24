@@ -71,8 +71,10 @@ export const useSettings = create<{
   // with webgpu. dropping to low later keeps them and only draws without the effects, so
   // the shaders built for both stay built
   atmosphere: boolean
-  // shaders are being built before anyone can walk around (scene/WarmUp.tsx)
+  // shaders are being built before anyone can walk around (scene/WarmUp.tsx), and how
+  // many of the gpu's pipelines are done out of how many were asked for
   warming: boolean
+  built: [number, number]
   // draw at the screen's own resolution instead of at most 1920x1200 (scaled up by taa)
   native: boolean
   // taa on or off and the tone mapping, debug switches (the other effects' switches are
@@ -92,6 +94,7 @@ export const useSettings = create<{
   atmosphere: false,
   // nothing to build without the city (the e2e tests)
   warming: !hideCity,
+  built: [0, 0],
   native: savedNative(),
   taa: true,
   toneMapping: 'neutral',

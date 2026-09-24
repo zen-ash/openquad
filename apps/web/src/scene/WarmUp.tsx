@@ -20,8 +20,16 @@ const FRAMES = 3
 // seconds, don't wait forever on a download that never finishes
 const MAX_WAIT = 20
 
-type Step = 'loading' | 'high' | 'low' | 'back'
+type Step = 'loading' | 'high' | 'low' | 'back' | 'last'
 
+// three's pipeline cache (renderer._pipelines). while warming it asks the gpu for them
+// without waiting (createRenderPipelineAsync), so the gpu process compiles them all at once
+// on its own threads. one at a time, as they came up, took almost two minutes on a mac with
+// nothing in its shader cache yet (a first visit). whatever isn't ready yet just isn't drawn
+type Pipelines = {
+  updateForRender(object: unknown): void
+  getForRender(object: unknown, promises: Promise<unknown>[]): void
+}
 export default function WarmUp() {
   const warming = useSettings((s) => s.warming)
   return (
@@ -53,9 +61,44 @@ function Warming() {
   const frames = useRef(0)
   const started = useRef(0)
   const culled = useRef<Object3D[]>([])
+  const pending = useRef<Promise<unknown>[]>([])
+  // pipelines asked for and done, for the join button. counted as they're asked for and
+  // shown on a timer: while the gpu is busy compiling, frames hardly come at all
+  const count = useRef({ asked: 0, done: 0 })
+  // how many of the counted ones were already taken out of pending
+  const counted = useRef(0)
+  const countNew = () => {
+    for (const p of pending.current.slice(count.current.asked - counted.current)) {
+      count.current.asked++
+      void p.finally(() => count.current.done++)
+    }
+  }
+  useEffect(() => {
+    let shown = ''
+    const timer = setInterval(() => {
+      countNew()
+      const { asked, done } = count.current
+      if (`${done}/${asked}` === shown) return
+      shown = `${done}/${asked}`
+      useSettings.setState({ built: [done, asked] })
+    }, 250)
+    return () => clearInterval(timer)
+  }, [])
+  const waiting = useRef(false)
+  const plain = useRef<{ pipelines: Pipelines; update: Pipelines['updateForRender'] } | null>(null)
+  // back to the normal way if this goes away halfway
+  useEffect(
+    () => () => {
+      if (plain.current) plain.current.pipelines.updateForRender = plain.current.update
+    },
+    [],
+  )
 
-  useFrame(({ scene, clock }) => {
+  useFrame(({ scene, clock, gl }) => {
     started.current ||= clock.elapsedTime
+    countNew()
+    // the gpu is still compiling the last step's pipelines, the frames keep going
+    if (waiting.current) return
     // nothing is left out for being off screen while it builds
     if (step.current !== 'loading')
       scene.traverse((o) => {
@@ -66,6 +109,7 @@ function Warming() {
       })
     frames.current++
     const atmosphere = useSettings.getState().atmosphere
+    const pipelines = (gl as unknown as { _pipelines: Pipelines })._pipelines
     const next = (to: Step | 'done') => {
       frames.current = 0
       if (to === 'done') {
@@ -73,12 +117,32 @@ function Warming() {
         useSettings.setState({ warming: false })
         return
       }
+      // the last frames are drawn the normal way, anything missing gets made there
+      if (to === 'last' && plain.current) {
+        pipelines.updateForRender = plain.current.update
+        plain.current = null
+      }
       step.current = to
       if (to === 'low') useSettings.setState({ quality: 'low' })
       if (to === 'back') useSettings.setState({ quality: 'high' })
     }
+    // on to the next step once every pipeline asked for so far is made
+    const settle = (to: Step) => {
+      waiting.current = true
+      const asked = pending.current.splice(0)
+      counted.current += asked.length
+      void Promise.allSettled(asked).then(() => {
+        waiting.current = false
+        next(to)
+      })
+    }
 
     if (step.current === 'loading') {
+      // from the first frame, or what's on screen while loading gets made one at a time
+      if (!plain.current) {
+        plain.current = { pipelines, update: pipelines.updateForRender }
+        pipelines.updateForRender = (object) => pipelines.getForRender(object, pending.current)
+      }
       // everything downloaded (models, textures, the labels' font) for a moment, and the
       // effects drawing (they're loaded separately)
       const loaded =
@@ -86,8 +150,9 @@ function Warming() {
       if (!loaded && clock.elapsedTime - started.current < MAX_WAIT) frames.current = 0
       else if (frames.current > 5) next(atmosphere ? 'high' : 'low')
     } else if (frames.current > FRAMES) {
-      if (step.current === 'high') next('low')
-      else if (step.current === 'low') next(atmosphere ? 'back' : 'done')
+      if (step.current === 'high') settle('low')
+      else if (step.current === 'low') settle(atmosphere ? 'back' : 'last')
+      else if (step.current === 'back') settle('last')
       else next('done')
     }
   })

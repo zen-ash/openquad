@@ -34,6 +34,7 @@ function save(key: string, value: string) {
 export default function JoinScreen() {
   const status = useGame((s) => s.status)
   const warming = useSettings((s) => s.warming)
+  const [built, asked] = useSettings((s) => s.built)
   const [name, setName] = useState(() => saved('name', ''))
   const [firstPick] = useState(() => {
     const last = saved('avatar', AVATAR_IDS[0]!)
@@ -93,7 +94,13 @@ export default function JoinScreen() {
           className="join"
           disabled={warming || !name.trim() || status === 'connecting'}
         >
-          {warming ? 'Loading campus...' : status === 'connecting' ? 'Joining...' : 'Join'}
+          {warming
+            ? asked > 0
+              ? `Building shaders ${built}/${asked}`
+              : 'Loading campus...'
+            : status === 'connecting'
+              ? 'Joining...'
+              : 'Join'}
         </button>
       </form>
     </div>
