@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { createServer, type Server } from 'node:http'
+import { createServer, type Server, type ServerResponse } from 'node:http'
 import { TICK_RATE } from '@quad/shared'
 import sirv from 'sirv'
 import { WebSocketServer, WebSocket } from 'ws'
@@ -19,10 +19,24 @@ type Options = {
 // of the ~110 bytes). only need to be unique while the server's running
 let nextId = 0
 
+// without these browsers guess how long to keep files, and kept showing the old site for a
+// while after a deploy
+function setHeaders(res: ServerResponse, pathname: string) {
+  // vite puts a hash in these names, a new build never reuses one
+  if (pathname.startsWith('/assets/')) {
+    res.setHeader('cache-control', 'public, max-age=31536000, immutable')
+  } else {
+    // index.html, models, textures: ask every time. the etag makes that a quick 304 when
+    // nothing changed
+    res.setHeader('cache-control', 'no-cache')
+  }
+}
+
 export function startServer(port: number, { webDir, heartbeatMs = 30_000 }: Options = {}) {
   const room = new Room()
   const stats = new Stats()
-  const serveWeb = webDir && existsSync(webDir) ? sirv(webDir, { single: true }) : null
+  const serveWeb =
+    webDir && existsSync(webDir) ? sirv(webDir, { single: true, etag: true, setHeaders }) : null
 
   const http = createServer((req, res) => {
     if (req.url === '/health') {

@@ -1,4 +1,7 @@
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import type { AddressInfo } from 'node:net'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import type { ServerMessage } from '@quad/shared'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { WebSocket } from 'ws'
@@ -93,5 +96,41 @@ describe('heartbeat', () => {
     const left = await alice.waitFor('player-left')
     expect(left.id).toBe(bobId)
     alice.socket.close()
+  })
+})
+
+describe('serving the site', () => {
+  let base: string
+
+  beforeEach(async () => {
+    // a tiny fake build
+    const dir = mkdtempSync(join(tmpdir(), 'openquad-web-'))
+    mkdirSync(join(dir, 'assets'))
+    writeFileSync(join(dir, 'index.html'), '<script src="/assets/index-abc123.js"></script>')
+    writeFileSync(join(dir, 'assets', 'index-abc123.js'), 'console.log(1)')
+    await server.close()
+    server = await startServer(0, { webDir: dir })
+    base = `http://localhost:${(server.http.address() as AddressInfo).port}`
+  })
+
+  it('makes browsers check for a new index.html every time', async () => {
+    for (const path of ['/', '/index.html', '/some/page']) {
+      const res = await fetch(base + path)
+      expect(res.headers.get('cache-control')).toBe('no-cache')
+      expect(res.headers.get('etag')).toBeTruthy()
+    }
+  })
+
+  it('answers 304 when the page did not change', async () => {
+    const first = await fetch(base + '/')
+    const again = await fetch(base + '/', {
+      headers: { 'if-none-match': first.headers.get('etag')! },
+    })
+    expect(again.status).toBe(304)
+  })
+
+  it('lets browsers keep the hashed build files', async () => {
+    const res = await fetch(base + '/assets/index-abc123.js')
+    expect(res.headers.get('cache-control')).toContain('immutable')
   })
 })
