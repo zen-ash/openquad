@@ -304,6 +304,86 @@ you see first: everything around Hurt Park and the quad.
   Center and more, GSU's news and event pages, Urbanize Atlanta's July and September 2026
   articles, Esri's August 2026 satellite images.
 
+## Part 12 - Google's 3D tiles
+
+Hand-building every building would take forever, so the rest of downtown now comes from
+Google's Photorealistic 3D Tiles (the 3D city from Google Earth), streamed while you play
+with NASA-AMMOS' `3d-tiles-renderer`. Our own buildings are still there for walls, directions
+and insides, they're just not drawn. `scene/Tiles.tsx`.
+
+- **Lining up** - `ReorientationPlugin` puts Hurt Park at (0, 0, 0), turned so x is east and z
+  south like campus.json. campus.json uses a flat meters-per-degree approximation that comes
+  out ~2m short at the north edge, so the tiles get squeezed by the same amount
+  (`campus/tilesFrame.ts`, tested against the real ellipsoid). Checked by drawing every OSM
+  footprint on top from above (`?outlines`): they sit on the tile buildings, under 1m off
+  anywhere on the map.
+- **Flattening** - the game is flat, downtown isn't: Peachtree Center is ~7m above Hurt Park
+  and the east side of campus ~5m below. Every tile is flattened as it loads: each point goes
+  down by the real ground height there, from a USGS lidar grid (`pnpm terrain`,
+  `campus/terrain.json`, 20m apart). Google's heights go by the global EGM2008 geoid, not the
+  US one USGS comes with. That's a meter, and with the wrong one every tile street was a
+  meter under ours.
+- **Only the buildings** - up close the tiles' trees, cars and hedges are dark blobs, and they
+  were on top of our grass and trees. On the map the tiles only draw on OSM footprints (plus
+  2m), minus the hand-built buildings so there's no second copy of them
+  (`campus/tileMask.ts`, a 1px-per-meter mask the tile shader checks). Past the edge of the
+  map they draw everything and our ground stops, so you see real downtown out to the Capitol.
+- **Detail** - error target 6px, less far away (`errorFalloff`), 300mb of tiles max. About 1ms
+  a frame on an M4.
+- **Rules** (Google's terms) - their credits on screen, nothing saved (no tile data in the
+  repo or on disk, it only streams), and nothing we build may be traced or measured from the
+  tiles. The key is in the built js (it has to be, the browser calls Google), so it's locked
+  to our domains in Google Cloud.
+- Dev: the Layers box (top right in dev, or `?debug`) turns the tiles, our box buildings, the
+  tiles' trees/ground and the outlines on and off. `?notiles` turns the tiles off.
+
+## Part 13 - a fence round the middle of campus
+
+The whole map was walkable, but most of it is Google's tiles now and only the middle is
+really built. So there's a fence round the main downtown campus: Hurt Park, the library,
+Langdale, Classroom South, the Student Centers, the Sports Arena and the Research Tower.
+The housing across Piedmont Ave, the Woodruff Park buildings and the Park Place block are
+outside it for now.
+
+- **Where** - `packages/shared/src/fence.ts`, 20 corners in campus.json coordinates, along
+  the far curb of Edgewood, Piedmont, Gilmer, Jesse Hill, Wall, Pryor and Decatur, so the
+  streets round the edge are ours too. Edgewood bends and widens at the corners, so it has
+  a few extra points. It's meant to be edited by hand. Picked by looking at GSU's campus map, but the corners are
+  OSM street crossings (and a gap between two parking decks), nothing traced off the map.
+  Tests check no building is half in and half out.
+- **Walking** - the fence is just walls in the collision world, so you slide along it like
+  any other wall, no bounce. Directions only use paths at least 1.5m inside it (tested
+  from four corners of campus to every door). The places menu only has spots inside.
+- **Server** - moves past the fence are ignored, and a reconnect from out there puts you
+  back at spawn. So a modified client can walk off, but nobody else sees it.
+- **Looks** - inside it's our buildings and hand-built landmarks only, the tiles throw
+  away everything there. Past it is the far sidewalk: our ground fades out over 5m there and
+  theirs shows through, and their trees, cars and poles are thrown away too (their
+  buildings are kept, OSM footprints say where), so their clutter starts past the sidewalk.
+  Our trees and lamps go out to there as well.
+  Near the fence there's a bit of haze and a faint line on the ground, only when you're
+  close. The distance to the fence for the shaders is baked into a small texture once,
+  working it out per pixel cost a millisecond.
+- The see-through ground at the fence is slower on macs (the gpu can't skip ground hidden
+  behind buildings), so it's only see-through with the tiles on. Without tiles it's the
+  whole map like before, just with the fence.
+- Checked GSU's map against campus.json: six pieces of GSU buildings with no name on OSM
+  were 3d on the map but not tagged, `GSU_PARTS` in build-campus.mjs tags them by way id.
+- **The library link** over Decatur St was a 14m block across the street. OSM only has
+  `level=1` and `layer=1` for it, so it now starts a floor up (3.5m, Library South's floors)
+  and is a floor tall. A photo taken from it looking down Decatur St puts the floor at about
+  3.3-4.4m, which fits. You walk under it, and Decatur St isn't cut in two under it anymore
+  (build-campus used to cut roads wherever there was a building). `min_height` or
+  `building:min_level` would win if OSM had them.
+- **"GSU Daycare"** in Dahlberg's courtyard was a 14m round tower. It's a paved yard with a
+  low wall on the satellite images, the daycare (Suttles Child Development Center) is inside
+  Dahlberg Hall. Taken out (`NOT_BUILDINGS`).
+- **Tiles inside the fence aren't downloaded** (`SkipInsidePlugin`, tiles whose bounding box
+  is all inside). For one view with no memory limit that's 16% fewer requests, 10% less
+  downloaded and 12% less memory. But a whole view would take over 1GB, the cache is always
+  full at its 300MB, so in practice memory is the same and the room goes into sharper tiles
+  further out. It can't go much lower: at 200MB a busy view got stuck on one blurry tile.
+
 ## Deployment
 
 - One Docker image: build the web app and bundle the server into a single file with esbuild
@@ -365,6 +445,8 @@ malformed.
 9. **Real buildings** - Library North rebuilt from photos, more to come
 10. **More of the real campus** - Dahlberg, Arts & Humanities, Research Tower, the fountain,
     real trees, benches and lights, per-building facades
+11. **Google's 3D tiles** - the real buildings of downtown, lined up with our map
+12. **The fence** - a playable area round the middle of campus, ours inside, tiles outside
 
 ## Testing
 
@@ -377,6 +459,11 @@ malformed.
   the cpu made every test time out), but the map is still loaded for collisions. A separate
   test (`e2e/city.spec.ts`) loads the full city and fails on any page or shader error. It
   also walks into Library North, since the furniture and the inside only load near a door
+- `e2e/fence.spec.ts` runs a player into the fence and checks they stop there, never go
+  back, and the other player sees them inside
+- `e2e/tiles.spec.ts` loads Google's tiles for real and fails on any error, and checks the
+  tile streets are just under ours at Hurt Park and up the hill to the west. Skipped
+  without a key (ci)
 - walking takes small steps on long frames (`walk()` in movement.ts) instead of capping the
   frame time, otherwise slow laptops (and ci) walk in slow motion
 - to reproduce ci locally: run the e2e tests in the `mcr.microsoft.com/playwright` docker image
