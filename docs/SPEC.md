@@ -197,6 +197,30 @@ being there.
 - **Low quality** also turns off the blur behind the HUD panels. On CI (no gpu) it cost
   about a third of the framerate and made the movement test flaky.
 
+## Part 10 - real buildings, starting with Library North
+
+Every building so far is its OpenStreetMap footprint pulled up to a height, with windows
+drawn by a shader. That looks like a city, not like GSU. So I'm redoing the important ones
+by hand from photos, one at a time. Library North is the first.
+
+- **Footprint** - OSM's outline was from before the 2022 renovation (it still had the old
+  plaza stairs). The build script replaces it: the brick box (OSM's own corner nodes, about
+  53m square) plus the new curved glass lobby on the northeast side, facing the greenway.
+  OSM has no height for it, so it got the 14m default. It's 26m going by the photos.
+- **Door** - moved to the real entrance, under the canopy in the lobby.
+- **Look** (`campus/libraryNorth.ts`) - brown brick with almost no windows, a stone band
+  around the top, the white wavy panel (a shader, it's just shading), a row of small windows
+  above it that light up at night, dark window slots, and the lobby: glass with frames,
+  a terrace with tables and a planted bit on its roof, the limestone block, the canopy and
+  the sign. Roof has the penthouse, the round patch and AC units. It's left out of the
+  regular buildings mesh.
+- **Inside** - the brick walls have no windows (the real ones don't), the lobby is all glass.
+- **References** - the builder's project photos (Macallan Construction), a Wikimedia
+  Commons photo, and satellite imagery to check the footprint. None of them are in the repo.
+- Gotcha: three.js caches a material's shader by its `onBeforeCompile` source. All the
+  library's materials share one wrapper function, so without a `customProgramCacheKey` each
+  they could end up sharing a shader.
+
 ## Deployment
 
 - One Docker image: build the web app and bundle the server into a single file with esbuild
@@ -255,6 +279,7 @@ malformed.
 7. **Stretch** - emotes, day/night from real Atlanta time, load test with bots
 8. **Real life** - HUD, location titles, GPS directions, cinematic camera, going inside
    buildings
+9. **Real buildings** - Library North rebuilt from photos, more to come
 
 ## Testing
 

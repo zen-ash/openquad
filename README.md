@@ -4,6 +4,7 @@ A multiplayer 3D campus in the browser with proximity voice chat. Walk up to som
 
 It's the real Georgia State campus, built from OpenStreetMap. You can walk into any of the 55
 GSU buildings, get walking directions to one, and people inside sound muffled from the street.
+Library North is rebuilt by hand from photos of the real one, more buildings to come.
 
 Final project for CSC 4370 (Web Programming) at Georgia State.
 
