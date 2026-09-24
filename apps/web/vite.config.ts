@@ -4,8 +4,9 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   build: {
-    // three and the other 3d libs are ~750kb each on their own, can't do much about that
-    chunkSizeWarningLimit: 800,
+    // three is ~1.5mb: the webgpu renderer, and fiber still pulls in the old webgl one
+    // for its default renderer even though we never make it
+    chunkSizeWarningLimit: 1600,
     rolldownOptions: {
       output: {
         // libraries in their own files. they change way less often than the game code,
@@ -18,7 +19,7 @@ export default defineConfig({
             { name: 'three', test: /node_modules[\\/]three[\\/]/ },
             {
               name: '3d',
-              test: /node_modules[\\/](@react-three|postprocessing|n8ao|troika|three-)/,
+              test: /node_modules[\\/](@react-three|three-)/,
             },
             // google's 3d tiles renderer, after 3d so it doesn't take fiber with it
             { name: 'tiles', test: /node_modules[\\/]3d-tiles-renderer[\\/]/ },

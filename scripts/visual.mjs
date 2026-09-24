@@ -102,6 +102,8 @@ for (const mode of modes) {
       await me?.page.close()
       me = await join(context, `time=${t}${DAY}${MODES[mode]}`, 'Camera')
       await me.page.keyboard.press('KeyP') // photo mode, no hud
+      // before the switch to webgpu there's no backend() (it's all webgl)
+      me.backend = await me.page.evaluate(() => globalThis.quad.backend?.() ?? 'webgl')
       time = t
     }
     const { page } = me
@@ -125,7 +127,13 @@ for (const mode of modes) {
     await other?.page.close()
     writeFileSync(`${dir}/${v.name}.png`, shot)
     if (update) {
-      results.push({ mode, view: v.name, diff: '-', errors: me.errors.length })
+      results.push({
+        mode,
+        view: v.name,
+        diff: '-',
+        renderer: me.backend,
+        errors: me.errors.length,
+      })
       continue
     }
 
@@ -145,6 +153,7 @@ for (const mode of modes) {
       view: v.name,
       diff: `${(share * 100).toFixed(2)}%`,
       ok: share <= LIMIT ? 'ok' : 'CHANGED',
+      renderer: me.backend,
       errors: me.errors.length,
     })
   }

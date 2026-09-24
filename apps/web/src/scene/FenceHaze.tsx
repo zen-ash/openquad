@@ -1,6 +1,17 @@
 import { FENCE } from '@quad/shared'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import {
+  attribute,
+  distance,
+  float,
+  positionWorld,
+  pow,
+  smoothstep,
+  uniform,
+  vec4,
+} from 'three/tsl'
+import { MeshBasicNodeMaterial } from 'three/webgpu'
 import { night } from '../campus/facade'
 import { localPlayer } from '../game/localPlayer'
 
@@ -31,45 +42,28 @@ function band() {
     .setAttribute('aUp', new THREE.Float32BufferAttribute(up, 1))
 }
 
-const material = new THREE.ShaderMaterial({
-  uniforms: {
-    uColor: { value: DAY.clone() },
-    uPlayer: { value: new THREE.Vector2() },
-  },
-  vertexShader: /* glsl */ `
-    attribute float aUp;
-    varying float vUp;
-    varying vec2 vXZ;
-    void main() {
-      vUp = aUp;
-      vec4 world = modelMatrix * vec4(position, 1.0);
-      vXZ = world.xz;
-      gl_Position = projectionMatrix * viewMatrix * world;
-    }`,
-  // only shows up near you. from across campus there's nothing there
-  fragmentShader: /* glsl */ `
-    uniform vec3 uColor;
-    uniform vec2 uPlayer;
-    varying float vUp;
-    varying vec2 vXZ;
-    void main() {
-      float near = 1.0 - smoothstep(4.0, 20.0, distance(vXZ, uPlayer));
-      gl_FragColor = vec4(uColor, 0.45 * near * pow(1.0 - vUp, 1.5));
-      #include <tonemapping_fragment>
-      #include <colorspace_fragment>
-    }`,
+const color = uniform(DAY.clone())
+const player = uniform(new THREE.Vector2())
+const material = new MeshBasicNodeMaterial({
   transparent: true,
   depthWrite: false,
   side: THREE.DoubleSide,
+  fog: false,
 })
+// only shows up near you. from across campus there's nothing there
+const near = float(1).sub(smoothstep(4, 20, distance(positionWorld.xz, player)))
+material.colorNode = vec4(
+  color,
+  near.mul(0.45).mul(pow(float(1).sub(attribute('aUp', 'float')), 1.5)),
+)
 const geometry = band()
 
 // where you can't walk any further (packages/shared/src/fence.ts). no wall, just a bit of
 // haze and a faint line when you get close, so running into it doesn't feel like a bug
 export default function FenceHaze() {
   useFrame(() => {
-    material.uniforms.uPlayer!.value.set(localPlayer.x, localPlayer.z)
-    material.uniforms.uColor!.value.copy(DAY).lerp(NIGHT, night.value)
+    player.value.set(localPlayer.x, localPlayer.z)
+    color.value.copy(DAY).lerp(NIGHT, night.value)
   })
   return <mesh geometry={geometry} material={material} renderOrder={5} frustumCulled={false} />
 }

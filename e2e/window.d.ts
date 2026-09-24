@@ -20,5 +20,6 @@ interface Window {
       mb: number
     } | null
     tileHeightAt: (x: number, z: number) => number | null
+    backend: () => 'webgpu' | 'webgl2' | null
   }
 }

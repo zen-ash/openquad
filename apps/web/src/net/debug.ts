@@ -2,6 +2,7 @@ import { input } from '../game/input'
 import { interiors } from '../game/interiors'
 import { localPlayer } from '../game/localPlayer'
 import { tileHeightAt, tilesStats } from '../scene/Tiles'
+import { useSettings } from '../settings'
 import { peers } from '../voice/voice'
 import { lastSound } from '../voice/VoiceUpdater'
 import { dropConnection } from './connection'
@@ -35,6 +36,8 @@ declare global {
       tiles: typeof tilesStats
       // height of the loaded tiles at a spot (y = 0 is our ground)
       tileHeightAt: typeof tileHeightAt
+      // webgpu, or the webgl2 fallback
+      backend: () => 'webgpu' | 'webgl2' | null
     }
   }
 }
@@ -71,5 +74,6 @@ if (import.meta.env.DEV) {
     },
     tiles: tilesStats,
     tileHeightAt,
+    backend: () => useSettings.getState().backend,
   }
 }

@@ -2,6 +2,7 @@ import { KeyboardControls, PerformanceMonitor } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { Suspense, useEffect } from 'react'
 import { ACESFilmicToneMapping } from 'three'
+import { WebGPURenderer, type WebGPURendererParameters } from 'three/webgpu'
 import ChatPanel from './ChatPanel'
 import EmoteBar from './EmoteBar'
 import { keyMap } from './game/controls'
@@ -21,11 +22,23 @@ import JoinCamera from './scene/JoinCamera'
 import Player from './scene/Player'
 import RemotePlayers from './scene/RemotePlayers'
 import RouteLine from './scene/RouteLine'
-import { hideCity, showDebug, useSettings } from './settings'
+import { forceWebGL, hideCity, showDebug, useSettings } from './settings'
 import TimePicker from './TimePicker'
 import TouchControls, { isTouchScreen } from './TouchControls'
 import MicButton from './voice/MicButton'
 import VoiceUpdater from './voice/VoiceUpdater'
+
+// three's webgpu renderer. where there's no webgpu it runs on webgl2 instead, and that
+// gets the low preset: no shadows or effects (the effects are written for webgpu)
+async function startRenderer(props: object) {
+  const renderer = new WebGPURenderer({ ...(props as WebGPURendererParameters), forceWebGL })
+  await renderer.init()
+  // same tone mapping as the effects use, so low quality (no effects) looks the same
+  renderer.toneMapping = ACESFilmicToneMapping
+  const webgpu = (renderer.backend as { isWebGPUBackend?: boolean }).isWebGPUBackend === true
+  useSettings.setState(webgpu ? { backend: 'webgpu' } : { backend: 'webgl2', quality: 'low' })
+  return renderer
+}
 
 export default function App() {
   const status = useGame((s) => s.status)
@@ -50,8 +63,7 @@ export default function App() {
         // near is as far out as it can be without clipping your own head. every bit
         // helps the depth buffer tell apart things that are close together far away
         camera={{ fov: 50, near: 0.3, far: 1500 }}
-        // same tone mapping as the effects use, so low quality (no effects) looks the same
-        gl={{ toneMapping: ACESFilmicToneMapping }}
+        gl={startRenderer}
       >
         {/* drops to low quality if the framerate stays bad */}
         <PerformanceMonitor onDecline={() => useSettings.setState({ quality: 'low' })} />

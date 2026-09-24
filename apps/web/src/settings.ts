@@ -2,8 +2,14 @@ import { create } from 'zustand'
 
 type Quality = 'high' | 'low'
 
+// ?webgl2: three's webgl2 fallback even where webgpu works. it's what browsers without
+// webgpu get (older safari, firefox on linux, the ci machines), so it can be tested here
+export const forceWebGL = new URLSearchParams(location.search).has('webgl2')
+
 function startingQuality(): Quality {
-  // ?quality=low to force it, for old laptops (and the e2e tests, no real gpu there)
+  // ?quality=low to force it, for old laptops (and the e2e tests, no real gpu there).
+  // the webgl2 fallback is always low, see App
+  if (forceWebGL) return 'low'
   return new URLSearchParams(location.search).get('quality') === 'low' ? 'low' : 'high'
 }
 
@@ -50,6 +56,8 @@ export const showDebug = import.meta.env.DEV || params.has('debug')
 
 export const useSettings = create<{
   quality: Quality
+  // which renderer backend we ended up with, null until it's started
+  backend: 'webgpu' | 'webgl2' | null
   time: string
   photo: boolean
   tiles: boolean
@@ -59,6 +67,7 @@ export const useSettings = create<{
   fenceLine: boolean
 }>(() => ({
   quality: startingQuality(),
+  backend: null,
   time: startingTime(),
   // everything on screen hidden, for screenshots
   photo: false,

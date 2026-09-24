@@ -1,4 +1,3 @@
-import { Environment, Sky, Stars } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Color, PlaneGeometry, type DirectionalLight, type HemisphereLight } from 'three'
@@ -25,6 +24,7 @@ import Interiors from './Interiors'
 import Landmarks from './Landmarks'
 import Outlines, { FenceLine } from './Outlines'
 import PantherQuad from './PantherQuad'
+import { SkyDome, SkyEnvironment, Stars } from './Sky'
 import StreetFurniture from './StreetFurniture'
 import Tiles from './Tiles'
 import Trees from './Trees'
@@ -58,7 +58,7 @@ function useSky() {
     const day = daylight(sunPosition(when).altitude)
     // at night the "sun" light is moonlight from high up in the east
     const light: [number, number, number] = day > 0 ? dir : [0.3, 0.8, -0.5]
-    return { dir, day, light, key: `${setting}-${Math.round(when.getTime() / 600_000)}` }
+    return { dir, day, light }
   }, [setting, now])
 }
 
@@ -172,13 +172,9 @@ export default function Campus() {
 
   return (
     <>
-      <Sky sunPosition={sunAt} turbidity={5} rayleigh={1.2} mieCoefficient={0.004} />
-      {sky.day < 0.3 && <Stars radius={600} depth={100} count={3000} factor={12} fade />}
-      {/* same sky rendered into a cube map, for reflections and soft light. the key
-          makes it re-render when the sun has moved */}
-      <Environment key={sky.key} frames={1} resolution={128} environmentIntensity={environment}>
-        <Sky sunPosition={sunAt} turbidity={5} rayleigh={1.2} mieCoefficient={0.004} />
-      </Environment>
+      <SkyDome sun={sunAt} />
+      {sky.day < 0.3 && <Stars />}
+      <SkyEnvironment sun={sunAt} />
       <fog attach="fog" args={[haze, 300, 1000]} />
       <SkyLight intensity={0.12 + 0.16 * sky.day} environment={environment} />
       <Sun dir={sky.light} day={sky.day} />
