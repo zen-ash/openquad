@@ -129,13 +129,13 @@ function Ground({ tiles }: { tiles: boolean }) {
     return {
       // goes well past the edge of the map so you don't see where it ends
       ground: planarUv(new PlaneGeometry(size, size).rotateX(-Math.PI / 2)),
-      lots: areasGeometry(campus.lots, 0.012),
-      parks: areasGeometry([...campus.parks, ...campus.lawns], 0.02),
-      plazas: areasGeometry(campus.plazas, 0.03),
+      lots: areasGeometry(campus.lots, 0.0012),
+      parks: areasGeometry([...campus.parks, ...campus.lawns], 0.002),
+      plazas: areasGeometry(campus.plazas, 0.003),
       // under the lawns, which sit on top of it
-      pavers: areasGeometry(campus.quad.pavers, 0.015),
-      roads: linesGeometry(campus.roads, 0.04),
-      paths: linesGeometry(campus.paths, 0.05),
+      pavers: areasGeometry(campus.quad.pavers, 0.0015),
+      roads: linesGeometry(campus.roads, 0.004),
+      paths: linesGeometry(campus.paths, 0.005),
     }
   }, [])
 
