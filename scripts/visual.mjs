@@ -117,12 +117,16 @@ for (const mode of modes) {
     if (v.other) {
       other = await join(context, `quality=low&nocity${DAY}`, 'Sam')
       await other.page.evaluate(([x, z]) => globalThis.quad.teleport(x, z), v.other)
-      await page.waitForTimeout(1500)
-      await other.page.getByRole('textbox', { name: 'Chat message' }).fill('meet at the fountain?')
-      await other.page.getByRole('textbox', { name: 'Chat message' }).press('Enter')
     }
     // textures, furniture and the shadow map settle in the first few seconds
     await page.waitForTimeout(v === views[0] ? 8000 : 4000)
+    if (other) {
+      // the bubble only stays up for 6 seconds
+      const chat = other.page.getByRole('textbox', { name: 'Chat message' })
+      await chat.fill('meet at the fountain?')
+      await chat.press('Enter')
+      await page.waitForTimeout(1500)
+    }
     const shot = await page.screenshot()
     await other?.page.close()
     writeFileSync(`${dir}/${v.name}.png`, shot)
