@@ -1,5 +1,7 @@
 import { FENCE, fenceDistance } from '@quad/shared'
 import * as THREE from 'three'
+import { select, texture, vec2, vec4 } from 'three/tsl'
+import type { Node } from 'three/webgpu'
 import campus from './campus.json'
 
 // the strip just past the fence, about the far sidewalk. our ground fades out across it
@@ -56,31 +58,27 @@ function fenceMap() {
   return texture
 }
 
-const fenceUniforms = {
-  uFenceMap: { value: null as THREE.DataTexture | null },
-  uFenceBox: { value: new THREE.Vector4(x0, z0, width * STEP, height * STEP) },
+// starts out as a blank 1x1 and gets the real map the first time a material asks for the
+// fence (tiles on), it takes a moment to work out
+const map = texture(new THREE.DataTexture(new Uint8Array(2), 1, 1, THREE.RGFormat))
+const box = vec4(x0, z0, width * STEP, height * STEP)
+let made = false
+
+function sample(p: Node<'vec2'>) {
+  if (!made) {
+    made = true
+    map.value = fenceMap()
+  }
+  const uv = p.sub(box.xy).div(box.zw)
+  const outside = uv.x
+    .lessThan(0)
+    .or(uv.y.lessThan(0))
+    .or(uv.x.greaterThan(1))
+    .or(uv.y.greaterThan(1))
+  return select(outside, vec2(0), map.sample(uv).rg)
 }
 
-// only made the first time a shader needs it (tiles on), it takes a moment
-export function fenceMapUniforms() {
-  fenceUniforms.uFenceMap.value ??= fenceMap()
-  return fenceUniforms
-}
+// the same as fenceDistance in packages/shared: meters to the fence, positive inside
+export const fenceDistanceAt = (p: Node<'vec2'>) => sample(p).x.mul(2).sub(1).mul(RANGE)
 
-// fenceDistance is the same as in packages/shared: meters to the fence, positive inside
-export const fenceGlsl = /* glsl */ `
-#define FENCE_BAND ${BAND.toFixed(1)}
-uniform sampler2D uFenceMap;
-uniform vec4 uFenceBox;
-vec2 fenceSample(vec2 p) {
-  vec2 uv = (p - uFenceBox.xy) / uFenceBox.zw;
-  if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) return vec2(0.0);
-  return texture2D(uFenceMap, uv).rg;
-}
-float fenceDistance(vec2 p) {
-  return (fenceSample(p).r * 2.0 - 1.0) * ${RANGE.toFixed(1)};
-}
-bool onBuilding(vec2 p) {
-  return fenceSample(p).g > 0.5;
-}
-`
+export const onBuildingAt = (p: Node<'vec2'>) => sample(p).y.greaterThan(0.5)

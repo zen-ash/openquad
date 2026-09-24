@@ -50,14 +50,21 @@ function Books({ shelves }: { shelves: Item[] }) {
     const row = new THREE.Matrix4()
     const q = new THREE.Quaternion()
     const one = new THREE.Vector3(1, 1, 1)
+    // a number per row for the shader to pick the books with (interiorMaterials.ts)
+    const seeds = new Float32Array(shelves.length * SHELF_LEVELS.length)
+    const at = new THREE.Vector3()
     let i = 0
     for (const s of shelves) {
       shelf.compose(new THREE.Vector3(s.x, FLOOR, s.z), q.setFromAxisAngle(UP, s.rot), one)
       for (const [y, room] of SHELF_LEVELS) {
         row.makeScale(1, room - 0.02, 1).setPosition(0, y, 0)
-        inst.setMatrixAt(i++, shelf.clone().multiply(row))
+        const m = shelf.clone().multiply(row)
+        at.setFromMatrixPosition(m)
+        seeds[i] = at.x * 12.9898 + at.y * 78.233 + at.z * 37.719
+        inst.setMatrixAt(i++, m)
       }
     }
+    inst.geometry.setAttribute('aShelf', new THREE.InstancedBufferAttribute(seeds, 1))
     inst.instanceMatrix.needsUpdate = true
     inst.computeBoundingSphere()
   }, [shelves])

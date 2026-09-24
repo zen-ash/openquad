@@ -35,8 +35,10 @@ export default function Effects() {
     ) as unknown as Node<'vec4'>
     let out = color.mul(shade.r)
 
-    // only really bright things glow, which in practice is lit windows at night
-    out = out.add(bloom(out, 0.6, 0.85, 1))
+    // only really bright things glow, which in practice is lit windows at night. three's
+    // bloom spreads a lot more than the postprocessing library's did, these numbers match
+    // the old look (pnpm visual)
+    out = out.add(bloom(out, 0.15, 0.4, 1))
 
     // darker corners, same curve as the postprocessing library's vignette we had before
     const d = distance(screenUV, vec2(0.5))

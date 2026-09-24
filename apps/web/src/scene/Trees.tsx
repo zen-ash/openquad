@@ -3,6 +3,8 @@ import { useGLTF } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { Suspense, useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
+import { attribute, positionLocal, sin, uniform } from 'three/tsl'
+import { MeshStandardNodeMaterial, type NodeBuilder } from 'three/webgpu'
 import campus from '../campus/campus.json'
 import { BAND } from '../campus/fenceShader'
 import { still, useSettings } from '../settings'
@@ -23,24 +25,21 @@ function variantOf(x: number, z: number): Variant {
   return r < 0.45 ? 'oak' : r < 0.72 ? 'magnolia' : 'street'
 }
 
-const wind = { value: 0 }
+const wind = uniform(0)
 
-// leaves move a little in the wind, more the further out on the tree they are
-function sway(material: THREE.Material) {
-  material.onBeforeCompile = (shader) => {
-    shader.uniforms.uWind = wind
-    shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nuniform float uWind;')
-      .replace(
-        '#include <begin_vertex>',
-        `#include <begin_vertex>
-        float phase = dot(instanceMatrix[3].xz, vec2(0.13, 0.17));
-        float bend = transformed.y * 0.012;
-        transformed.x += sin(uWind * 1.3 + phase + transformed.y * 0.3) * bend;
-        transformed.z += sin(uWind * 1.1 + phase * 1.7 + transformed.x * 0.3) * bend;`,
-      )
+// leaves move a little in the wind, more the further out on the tree they are. it's
+// done to the model before it's placed (and not in the shadows), so a tree's phase comes
+// in as an attribute: aPhase, from where the tree stands
+class Leaves extends MeshStandardNodeMaterial {
+  setupPosition(builder: NodeBuilder) {
+    const phase = attribute('aPhase', 'float')
+    const bend = positionLocal.y.mul(0.012).toVar()
+    positionLocal.x.addAssign(sin(wind.mul(1.3).add(phase).add(positionLocal.y.mul(0.3))).mul(bend))
+    positionLocal.z.addAssign(
+      sin(wind.mul(1.1).add(phase.mul(1.7)).add(positionLocal.x.mul(0.3))).mul(bend),
+    )
+    return super.setupPosition(builder)
   }
-  material.customProgramCacheKey = () => 'tree-leaves'
 }
 
 // full detail this close to the camera, the cheaper version further out
@@ -65,12 +64,31 @@ function Variant({ name, spots }: { name: Variant; spots: number[][] }) {
   const last = useRef<{ x: number; z: number } | null>(null)
 
   const leafMaterial = useMemo(() => {
-    const m = (meshes.nearLeaves.material as THREE.MeshStandardMaterial).clone()
-    // sunlit leaves are warmer than the texture comes out under our sky
-    m.color.set('#fff2c4')
-    sway(m)
+    const m = new Leaves()
+    // everything from the model's material, the way three converts it for webgpu
+    const from = meshes.nearLeaves.material as THREE.MeshStandardMaterial
+    m.setValues({
+      map: from.map,
+      normalMap: from.normalMap,
+      alphaTest: from.alphaTest,
+      side: from.side,
+      transparent: from.transparent,
+      roughness: from.roughness,
+      metalness: from.metalness,
+      // sunlit leaves are warmer than the texture comes out under our sky
+      color: '#fff2c4',
+    })
     return m
   }, [meshes])
+
+  // where each tree stands, for the leaves' sway. filled in with the matrices below
+  useLayoutEffect(() => {
+    for (const key of ['nearLeaves', 'farLeaves'] as const) {
+      const phase = new THREE.InstancedBufferAttribute(new Float32Array(spots.length), 1)
+      meshes[key].geometry.setAttribute('aPhase', phase)
+    }
+    last.current = null
+  }, [meshes, spots])
 
   // where each tree is, turned and sized a bit differently
   const places = useMemo(() => {
@@ -110,11 +128,14 @@ function Variant({ name, spots }: { name: Variant; spots: number[][] }) {
         const key: Part = `${which}${part}`
         meshesNow[key]!.setMatrixAt(n, m.multiplyMatrices(place, meshes[key].matrixWorld))
       }
+      const phase = meshesNow[`${which}Leaves`]!.geometry.getAttribute('aPhase')
+      phase.setX(n, m.elements[12]! * 0.13 + m.elements[14]! * 0.17)
     })
     for (const key of PARTS) {
       const mesh = meshesNow[key]!
       mesh.count = count[key.startsWith('near') ? 'near' : 'far']
       mesh.instanceMatrix.needsUpdate = true
+      if (key.endsWith('Leaves')) mesh.geometry.getAttribute('aPhase').needsUpdate = true
       mesh.computeBoundingSphere()
     }
   })

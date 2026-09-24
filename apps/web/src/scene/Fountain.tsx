@@ -6,14 +6,14 @@ import { bedPlantsGeometry, fountainGeometry, inscription, type Part } from '../
 import { make, marble } from '../campus/landmarkMaterials'
 
 const materials: Record<Part, THREE.Material> = {
-  marble: marble('fountain-marble', '#dcdcd8', [1.2, 0.55]),
+  marble: marble('#dcdcd8', [1.2, 0.55]),
   // the basin is the blue-grey marble with the heavy veins
-  basin: marble('fountain-basin', '#c3c9ce', [0.9, 0.9], 2.5),
-  paint: make('fountain-paint', { color: '#a6d6d8', roughness: 0.75 }),
-  water: make('fountain-water', { color: '#38503f', roughness: 0.04, metalness: 0.4 }),
-  soil: make('fountain-soil', { color: '#4a2e22', roughness: 1 }),
-  concrete: make('fountain-concrete', { color: '#b9b5ab', roughness: 0.9 }),
-  bronze: make('fountain-bronze', { color: '#6f7d62', roughness: 0.5, metalness: 0.6 }),
+  basin: marble('#c3c9ce', [0.9, 0.9], 2.5),
+  paint: make({ color: '#a6d6d8', roughness: 0.75 }),
+  water: make({ color: '#38503f', roughness: 0.04, metalness: 0.4 }),
+  soil: make({ color: '#4a2e22', roughness: 1 }),
+  concrete: make({ color: '#b9b5ab', roughness: 0.9 }),
+  bronze: make({ color: '#6f7d62', roughness: 0.5, metalness: 0.6 }),
 }
 
 const TEXT = 'THIS PARK IS DEDICATED TO THE MEMORY OF JOEL HURT'

@@ -1,46 +1,24 @@
 import * as THREE from 'three'
+import { distance, dot, floor, Fn, mod, positionWorld, screenCoordinate, uniform } from 'three/tsl'
 
 // cuts a see-through hole in buildings between the camera and the player so tall
 // buildings never hide you. updated every frame by Player
 export const cutout = {
-  uCutoutPlayer: { value: new THREE.Vector3() },
-  uCutoutCamera: { value: new THREE.Vector3() },
+  uCutoutPlayer: uniform(new THREE.Vector3()),
+  uCutoutCamera: uniform(new THREE.Vector3()),
   // Player turns this down to 0 when nothing's in the way
-  uCutoutRadius: { value: 0 },
+  uCutoutRadius: uniform(0),
 }
 
-// meant to be called from a material's onBeforeCompile. also gives the fragment
-// shader the world position as vWorldPos, the facade shader needs it too
-export function cutoutShader(shader: THREE.WebGLProgramParametersWithUniforms) {
-  Object.assign(shader.uniforms, cutout)
-
-  shader.vertexShader = shader.vertexShader
-    .replace('#include <common>', '#include <common>\nvarying vec3 vWorldPos;')
-    .replace(
-      '#include <project_vertex>',
-      '#include <project_vertex>\nvWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;',
-    )
-
-  shader.fragmentShader = shader.fragmentShader
-    .replace(
-      '#include <common>',
-      `#include <common>
-      varying vec3 vWorldPos;
-      uniform vec3 uCutoutPlayer;
-      uniform vec3 uCutoutCamera;
-      uniform float uCutoutRadius;`,
-    )
-    .replace(
-      '#include <clipping_planes_fragment>',
-      `#include <clipping_planes_fragment>
-      vec3 seg = uCutoutPlayer - uCutoutCamera;
-      // how far along the camera -> player line this pixel is
-      float t = dot(vWorldPos - uCutoutCamera, seg) / dot(seg, seg);
-      if (uCutoutRadius > 0.05 && t > 0.0 && t < 0.97) {
-        float d = distance(vWorldPos, uCutoutCamera + seg * t);
-        if (d < uCutoutRadius) discard;
-        // checkerboard fade at the edge so it's not a hard circle
-        if (d < uCutoutRadius + 1.5 && mod(floor(gl_FragCoord.x) + floor(gl_FragCoord.y), 2.0) < 1.0) discard;
-      }`,
-    )
-}
+// false inside the hole. for a material's maskNode (see landmarkMaterials.ts make())
+export const outsideCutout = Fn(() => {
+  const { uCutoutPlayer: player, uCutoutCamera: camera, uCutoutRadius: radius } = cutout
+  const seg = player.sub(camera)
+  // how far along the camera -> player line this pixel is
+  const t = dot(positionWorld.sub(camera), seg).div(dot(seg, seg))
+  const d = distance(positionWorld, camera.add(seg.mul(t)))
+  // checkerboard fade at the edge so it's not a hard circle
+  const checker = mod(floor(screenCoordinate.x).add(floor(screenCoordinate.y)), 2).lessThan(1)
+  const hole = d.lessThan(radius).or(d.lessThan(radius.add(1.5)).and(checker))
+  return radius.greaterThan(0.05).and(t.greaterThan(0)).and(t.lessThan(0.97)).and(hole).not()
+})

@@ -1,5 +1,8 @@
 import * as THREE from 'three'
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+import {
+  interleaveAttributes,
+  mergeGeometries,
+} from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { facadeOf, seedOf } from './facades'
 
 type Pt = number[] // [x, z]
@@ -68,8 +71,16 @@ export function buildingsGeometry(
     geo.setAttribute('aDoor', new THREE.BufferAttribute(door, 4))
     return [geo]
   })
-  return mergeGeometries(parts)
+  const geo = mergeGeometries(parts)
+  // webgpu takes at most 8 vertex buffers per mesh, so the facade numbers share one
+  const packed = interleaveAttributes(
+    FACADE.map((n) => geo.getAttribute(n) as THREE.BufferAttribute),
+  ) as unknown as THREE.InterleavedBufferAttribute[]
+  FACADE.forEach((n, i) => geo.setAttribute(n, packed[i]!))
+  return geo
 }
+
+const FACADE = ['aStyle', 'aHeight', 'aSeed', 'aDoor', 'aWindow', 'aFrame']
 
 // ground textures are mapped straight from world x/z, one repeat every 5m
 export function planarUv(geo: THREE.BufferGeometry, scale = 0.2) {

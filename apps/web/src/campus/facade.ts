@@ -1,7 +1,33 @@
-import * as THREE from 'three'
+import {
+  abs,
+  attribute,
+  bool,
+  cameraViewMatrix,
+  dot,
+  float,
+  floor,
+  fract,
+  mat3,
+  max,
+  min,
+  mix,
+  normalGeometry,
+  normalize,
+  normalView,
+  positionWorld,
+  select,
+  sin,
+  texture,
+  uniform,
+  vec2,
+  vec3,
+  vec4,
+  vertexColor,
+} from 'three/tsl'
+import { MeshStandardNodeMaterial, type Node } from 'three/webgpu'
 import { DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
-import { cutoutShader } from './cutout'
-import { texture } from './textures'
+import { outsideCutout } from './cutout'
+import { texture as load } from './textures'
 
 // facade styles, stored per vertex in the aStyle attribute
 export const GLASS = 0
@@ -13,194 +39,180 @@ export const DECK = 4
 // ground floor shop windows, as [left, bottom, right, top] inside each grid cell. shared
 // with the inside walls (interiorMaterials.ts) so the holes line up
 export const GROUND_WINDOW_WALL = [0.08, 0.1, 0.92, 0.9]
-const vec4 = (r: number[]) => `vec4(${r.map((n) => n.toFixed(2)).join(', ')})`
+
+// 0 in the day, 1 at night. set by the sky every so often
+export const night = uniform(0)
+
+// the usual shader "random": the same number for the same input, all over the place
+export const hash = (p: Node<'vec3'>) =>
+  fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))).mul(43758.5453))
+
+// true when x is strictly between a and b
+const between = (x: Node<'float'>, a: Node<'float'> | number, b: Node<'float'> | number) =>
+  x.greaterThan(a).and(x.lessThan(b))
 
 /**
  * Building material. Windows aren't modeled, they're drawn by the shader from the
  * world position: a row every floor, and a column every few meters along the wall.
- * Each building has its own grid and colors (facades.ts). Glass is shiny and reflects the sky, walls get brick/concrete
- * textures. Roofs (anything facing up) get gravel.
+ * Each building has its own grid and colors (facades.ts). Glass is shiny and reflects the
+ * sky, walls get brick/concrete textures. Roofs (anything facing up) get gravel.
  */
-// 0 in the day, 1 at night. set by the sky every so often
-export const night = { value: 0 }
-
 export function facadeMaterial() {
-  const material = new THREE.MeshStandardMaterial({ vertexColors: true })
-  const uniforms = {
-    uBrick: { value: texture('brick', 'color') },
-    uBrickNormal: { value: texture('brick', 'normal') },
-    uConcrete: { value: texture('concrete', 'color') },
-    uConcreteNormal: { value: texture('concrete', 'normal') },
-    uRoof: { value: texture('roof', 'color') },
-    uNight: night,
-  }
+  const material = new MeshStandardNodeMaterial()
+  const brickMap = load('brick', 'color')
+  const brickNormal = load('brick', 'normal')
+  const concreteMap = load('concrete', 'color')
+  const concreteNormal = load('concrete', 'normal')
+  const roofMap = load('roof', 'color')
 
-  material.onBeforeCompile = (shader) => {
-    cutoutShader(shader)
-    Object.assign(shader.uniforms, uniforms)
+  const style = attribute('aStyle', 'float')
+  const height = attribute('aHeight', 'float')
+  const seed = attribute('aSeed', 'float')
+  const door = attribute('aDoor', 'vec4')
+  const grid = attribute('aWindow', 'vec4')
+  const frameColor = attribute('aFrame', 'vec3')
+  const tint = vertexColor().rgb
+  const p = positionWorld
+  // the buildings mesh is in world space already
+  const wn = normalize(normalGeometry)
 
-    shader.vertexShader = shader.vertexShader
-      .replace(
-        '#include <common>',
-        `#include <common>
-        attribute float aStyle;
-        attribute float aHeight;
-        attribute float aSeed;
-        attribute vec4 aDoor;
-        attribute vec4 aWindow;
-        attribute vec3 aFrame;
-        varying vec4 vDoor;
-        varying vec4 vWindow;
-        varying vec3 vFrame;
-        varying float vStyle;
-        varying float vHeight;
-        varying float vSeed;
-        varying vec3 vWorldNormal;`,
-      )
-      .replace(
-        '#include <begin_vertex>',
-        `#include <begin_vertex>
-        vStyle = aStyle;
-        vHeight = aHeight;
-        vSeed = aSeed;
-        vDoor = aDoor;
-        vWindow = aWindow;
-        vFrame = aFrame;
-        vWorldNormal = normal;`,
-      )
+  // the doorway of buildings you can walk into. door is (x, z, normal x, normal z)
+  const off = p.xz.sub(door.xy)
+  const doorway = dot(door.zw, door.zw)
+    .greaterThan(0.5)
+    .and(dot(wn.xz, door.zw).greaterThan(0.9))
+    .and(p.y.lessThan(DOOR_HEIGHT))
+    .and(abs(dot(off, door.zw)).lessThan(0.3))
+    .and(abs(dot(off, vec2(door.w, door.z.negate()))).lessThan(DOOR_WIDTH / 2))
+  material.maskNode = outsideCutout().and(doorway.not())
+  // the shadows never had the holes
+  material.maskShadowNode = bool(true)
 
-    shader.fragmentShader = shader.fragmentShader
-      .replace(
-        '#include <common>',
-        `#include <common>
-        uniform sampler2D uBrick;
-        uniform sampler2D uBrickNormal;
-        uniform sampler2D uConcrete;
-        uniform sampler2D uConcreteNormal;
-        uniform sampler2D uRoof;
-        uniform float uNight;
-        varying float vStyle;
-        varying float vHeight;
-        varying float vSeed;
-        varying vec4 vDoor;
-        varying vec4 vWindow;
-        varying vec3 vFrame;
-        varying vec3 vWorldNormal;
+  const isRoof = wn.y.greaterThan(0.5)
+  // along the wall (left to right when you face it) and up
+  const along = vec2(wn.z, wn.x.negate())
+  const u = dot(p.xz, along)
+  const v = p.y
+  const wallUv = vec2(u, v).div(4)
 
-        float hash(vec3 p) {
-          return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453);
-        }`,
-      )
-      .replace(
-        '#include <color_fragment>',
-        `#include <color_fragment>
-        vec3 wn = normalize(vWorldNormal);
-        // the doorway of buildings you can walk into. vDoor is (x, z, normal x, normal z)
-        if (dot(vDoor.zw, vDoor.zw) > 0.5 && dot(wn.xz, vDoor.zw) > 0.9 && vWorldPos.y < ${DOOR_HEIGHT.toFixed(2)}) {
-          vec2 off = vWorldPos.xz - vDoor.xy;
-          if (abs(dot(off, vDoor.zw)) < 0.3 && abs(dot(off, vec2(vDoor.w, -vDoor.z))) < ${(DOOR_WIDTH / 2).toFixed(2)}) discard;
-        }
-        bool isRoof = wn.y > 0.5;
-        bool isGlass = false;
-        // some windows have the lights on at night
-        bool lit = false;
-        // along the wall (left to right when you face it) and up
-        vec2 along = vec2(wn.z, -wn.x);
-        float u = dot(vWorldPos.xz, along);
-        float v = vWorldPos.y;
-        vec2 wallUv = vec2(u, v) / 4.0;
+  // flat roofs are anything from white membrane to dark gravel
+  const roof = texture(roofMap, p.xz.div(12)).rgb.mul(mix(vec3(1.25), vec3(0.55), seed))
 
-        if (isRoof) {
-          // flat roofs are anything from white membrane to dark gravel
-          diffuseColor.rgb = texture2D(uRoof, vWorldPos.xz / 12.0).rgb * mix(vec3(1.25), vec3(0.55), vSeed);
-        } else {
-          bool brick = vStyle > 1.5 && vStyle < 2.5;
-          // the brick texture is red. it's tinted to whatever this building's bricks are
-          vec3 brickTex = texture2D(uBrick, wallUv).rgb;
-          vec3 wall = brick
-            ? mix(vec3(dot(brickTex, vec3(0.3, 0.59, 0.11))), brickTex, 0.25) / 0.174 * diffuseColor.rgb
-            // and the concrete one is olive, divided by its average so the tint is the color
-            : texture2D(uConcrete, wallUv * 0.5).rgb / vec3(0.179, 0.172, 0.126) * diffuseColor.rgb * 0.6;
-          if (vStyle < 0.5) wall = diffuseColor.rgb; // glass towers: color is the metal frame
-          bool deck = vStyle > 3.5;
+  const brick = between(style, 1.5, 2.5)
+  // the brick texture is red. it's tinted to whatever this building's bricks are
+  const brickTex = texture(brickMap, wallUv).rgb
+  const bricks = mix(vec3(dot(brickTex, vec3(0.3, 0.59, 0.11))), brickTex, 0.25)
+    .div(0.174)
+    .mul(tint)
+  // and the concrete one is olive, divided by its average so the tint is the color
+  const concrete = texture(concreteMap, wallUv.mul(0.5))
+    .rgb.div(vec3(0.179, 0.172, 0.126))
+    .mul(tint)
+    .mul(0.6)
+  // glass towers: color is the metal frame
+  const wall = select(style.lessThan(0.5), tint, select(brick, bricks, concrete))
+  const deck = style.greaterThan(3.5)
 
-          // each building's own window grid (facades.ts): column, floor, window size
-          float colWidth = vWindow.x;
-          float floorHeight = vWindow.y;
-          vec2 cell = fract(vec2(u / colWidth, v / floorHeight));
-          float floorNum = floor(v / floorHeight);
+  // each building's own window grid (facades.ts): column, floor, window size
+  const colWidth = grid.x
+  const floorHeight = grid.y
+  const cell = fract(vec2(u.div(colWidth), v.div(floorHeight)))
+  const floorNum = floor(v.div(floorHeight))
+  const column = floor(u.div(colWidth))
 
-          // window rectangle inside each cell (0-1 on both axes). full width is a strip
-          // of windows along the whole floor, with a mullion every column
-          vec4 rect = vec4(0.5 - vWindow.z / 2.0, max(0.02, 0.575 - vWindow.w / 2.0),
-            0.5 + vWindow.z / 2.0, min(1.0, 0.575 + vWindow.w / 2.0));
-          if (vWindow.z > 0.99) rect.xz = vec2(0.0, 1.0);
-          // shop windows on the ground floor
-          if (floorNum < 1.0 && vStyle > 0.5) rect = ${vec4(GROUND_WINDOW_WALL)};
+  // window rectangle inside each cell (0-1 on both axes). full width is a strip of
+  // windows along the whole floor, with a mullion every column
+  const full = grid.z.greaterThan(0.99)
+  const top = min(1, grid.w.mul(0.5).add(0.575))
+  const bottom = max(0.02, float(0.575).sub(grid.w.mul(0.5)))
+  const [gl, gb, gr, gt] = GROUND_WINDOW_WALL as [number, number, number, number]
+  // shop windows on the ground floor, and decks have a gap all along each floor between
+  // the wall and the next slab, dark inside with a column every bay
+  const rect = select(
+    deck,
+    vec4(0, 0.34, 1, 0.9),
+    select(
+      floorNum.lessThan(1).and(style.greaterThan(0.5)),
+      vec4(gl, gb, gr, gt),
+      vec4(
+        select(full, 0, float(0.5).sub(grid.z.mul(0.5))),
+        bottom,
+        select(full, 1, grid.z.mul(0.5).add(0.5)),
+        top,
+      ),
+    ),
+  )
+  // solid strip along the top
+  const win = between(cell.x, rect.x, rect.z)
+    .and(between(cell.y, rect.y, rect.w))
+    .and(v.lessThanEqual(height.sub(1)))
 
-          // decks: a gap all along each floor between the wall and the next slab, dark
-          // inside with a column every bay
-          if (deck) rect = vec4(0.0, 0.34, 1.0, 0.9);
-          bool win = cell.x > rect.x && cell.x < rect.z && cell.y > rect.y && cell.y < rect.w;
-          // solid strip along the top
-          if (v > vHeight - 1.0) win = false;
+  // the dark inside of decks, and the columns
+  const deckColumn = min(cell.x, float(1).sub(cell.x)).mul(colWidth)
+  const deckColor = select(
+    deckColumn.lessThan(0.25),
+    wall.mul(0.8),
+    vec3(0.02, 0.02, 0.022).add(wall.mul(0.02)),
+  )
 
-          if (win && deck) {
-            // the dark inside, and the columns
-            float column = min(cell.x, 1.0 - cell.x) * colWidth;
-            diffuseColor.rgb = column < 0.25 ? wall * 0.8 : vec3(0.02, 0.02, 0.022) + wall * 0.02;
-          } else if (win) {
-            float edge = min(min(cell.x - rect.x, rect.z - cell.x), min(cell.y - rect.y, rect.w - cell.y));
-            // some windows darker/lighter, like blinds half down
-            float h = hash(vec3(floor(u / colWidth), floorNum, vSeed));
-            lit = hash(vec3(floorNum, floor(u / colWidth), vSeed + 7.0)) > 0.55;
-            vec3 glass = mix(vec3(0.03, 0.05, 0.07), vec3(0.18, 0.22, 0.26), h * 0.7);
-            // windows sit back in the wall, so the top of the glass is in shadow
-            if (rect.w - cell.y < 0.12 && vStyle > 0.5) glass *= 0.5;
+  const edge = min(
+    min(cell.x.sub(rect.x), rect.z.sub(cell.x)),
+    min(cell.y.sub(rect.y), rect.w.sub(cell.y)),
+  )
+  // some windows darker/lighter, like blinds half down
+  const h = hash(vec3(column, floorNum, seed))
+  // some windows have the lights on at night
+  const lit = hash(vec3(floorNum, column, seed.add(7))).greaterThan(0.55)
+  // windows sit back in the wall, so the top of the glass is in shadow
+  const recessed = rect.w.sub(cell.y).lessThan(0.12).and(style.greaterThan(0.5))
+  const glass = mix(vec3(0.03, 0.05, 0.07), vec3(0.18, 0.22, 0.26), h.mul(0.7)).mul(
+    select(recessed, 0.5, 1),
+  )
+  const frame = edge.lessThan(0.025)
+  const windowColor = select(frame, select(style.lessThan(0.5), wall.mul(0.8), frameColor), glass)
 
-            if (edge < 0.025) {
-              diffuseColor.rgb = vStyle < 0.5 ? wall * 0.8 : vFrame; // frame
-            } else {
-              diffuseColor.rgb = glass;
-              isGlass = true;
-            }
-          } else {
-            diffuseColor.rgb = wall;
-            // stone sill under each window
-            bool sill = vStyle > 0.5 && vStyle < 3.5 && floorNum >= 1.0 && cell.y < rect.y && cell.y > rect.y - 0.05
-              && cell.x > rect.x - 0.03 && cell.x < rect.z + 0.03;
-            if (sill) diffuseColor.rgb = vec3(0.78, 0.76, 0.72);
-          }
-        }`,
-      )
-      .replace(
-        '#include <emissivemap_fragment>',
-        `#include <emissivemap_fragment>
-        // not every room is as bright, and too bright just blows out to white blocks
-        if (isGlass && lit) totalEmissiveRadiance += vec3(1.0, 0.78, 0.48) * (0.35 + 0.6 * hash(vec3(u, v, vSeed) * 0.01 + floor(vec3(u / 3.0, v / 3.5, vSeed)))) * uNight;`,
-      )
-      .replace(
-        '#include <roughnessmap_fragment>',
-        `#include <roughnessmap_fragment>
-        roughnessFactor = isGlass ? 0.06 : 0.9;`,
-      )
-      .replace(
-        '#include <metalnessmap_fragment>',
-        `#include <metalnessmap_fragment>
-        metalnessFactor = isGlass ? 0.85 : (vStyle < 0.5 ? 0.6 : 0.0);`,
-      )
-      .replace(
-        '#include <normal_fragment_maps>',
-        `#include <normal_fragment_maps>
-        // bumps from the brick/concrete normal maps. the wall's own directions, moved
-        // into view space since that's what normal is in here
-        if (!isRoof && !isGlass && vStyle > 0.5) {
-          vec3 m = (vStyle > 1.5 && vStyle < 2.5 ? texture2D(uBrickNormal, wallUv) : texture2D(uConcreteNormal, wallUv * 0.5)).xyz * 2.0 - 1.0;
-          vec3 T = normalize((viewMatrix * vec4(along.x, 0.0, along.y, 0.0)).xyz);
-          vec3 B = normalize((viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
-          normal = normalize(mat3(T, B, normal) * m);
-        }`,
-      )
-  }
+  // stone sill under each window
+  const sill = between(style, 0.5, 3.5)
+    .and(floorNum.greaterThanEqual(1))
+    .and(between(cell.y, rect.y.sub(0.05), rect.y))
+    .and(between(cell.x, rect.x.sub(0.03), rect.z.add(0.03)))
+  const wallColor = select(sill, vec3(0.78, 0.76, 0.72), wall)
+
+  const isGlass = isRoof.not().and(win).and(deck.not()).and(frame.not())
+  material.colorNode = select(
+    isRoof,
+    roof,
+    select(win, select(deck, deckColor, windowColor), wallColor),
+  )
+
+  // not every room is as bright, and too bright just blows out to white blocks
+  const brightness = hash(
+    vec3(u, v, seed)
+      .mul(0.01)
+      .add(floor(vec3(u.div(3), v.div(3.5), seed))),
+  )
+    .mul(0.6)
+    .add(0.35)
+  material.emissiveNode = select(
+    isGlass.and(lit),
+    vec3(1, 0.78, 0.48).mul(brightness).mul(night),
+    vec3(0),
+  )
+  material.roughnessNode = select(isGlass, 0.06, 0.9)
+  material.metalnessNode = select(isGlass, 0.85, select(style.lessThan(0.5), 0.6, 0))
+
+  // bumps from the brick/concrete normal maps, in the wall's own directions moved into
+  // view space since that's what the normal is in there
+  const bump = select(brick, texture(brickNormal, wallUv), texture(concreteNormal, wallUv.mul(0.5)))
+    .xyz.mul(2)
+    .sub(1)
+  const t = normalize(cameraViewMatrix.mul(vec4(along.x, 0, along.y, 0)).xyz)
+  const b = normalize(cameraViewMatrix.mul(vec4(0, 1, 0, 0)).xyz)
+  const bumped = normalize(mat3(t, b, normalView).mul(bump))
+  material.normalNode = select(
+    isRoof.not().and(isGlass.not()).and(style.greaterThan(0.5)),
+    bumped,
+    normalView,
+  )
   return material
 }

@@ -1,166 +1,157 @@
 import * as THREE from 'three'
-import { cutoutShader } from './cutout'
+import {
+  abs,
+  attribute,
+  bool,
+  float,
+  floor,
+  fract,
+  length,
+  materialColor,
+  max,
+  min,
+  mix,
+  normalGeometry,
+  normalize,
+  positionGeometry,
+  positionWorld,
+  select,
+  sin,
+  smoothstep,
+  vec2,
+  vec3,
+  vec4,
+} from 'three/tsl'
+import { MeshStandardNodeMaterial, type Node } from 'three/webgpu'
+import { outsideCutout } from './cutout'
 import { GROUND_WINDOW_WALL } from './facade'
 import { texture } from './textures'
 
-const vec4 = (r: number[]) => `vec4(${r.map((n) => n.toFixed(2)).join(', ')})`
+// like make() in landmarkMaterials.ts: the see-through hole, but not in the shadows
+function material(params: THREE.MeshStandardMaterialParameters) {
+  const m = new MeshStandardNodeMaterial(params)
+  m.maskNode = outsideCutout()
+  m.maskShadowNode = bool(true)
+  return m
+}
 
 // the texture is a pale grey oak, a bit dull next to white walls, so it's tinted warmer
-export const floorMaterial = new THREE.MeshStandardMaterial({
+export const floorMaterial = material({
   map: texture('floor', 'color'),
   normalMap: texture('floor', 'normal'),
   color: '#e2c6a6',
   roughness: 0.6,
 })
 // brighter pools under each ceiling light (same 4m grid as the panels). without them the
-// light indoors is completely even, which just looks flat
-floorMaterial.onBeforeCompile = (shader) => {
-  cutoutShader(shader)
-  shader.vertexShader = shader.vertexShader
-    .replace('#include <common>', '#include <common>\nvarying vec3 vPos;')
-    .replace(
-      '#include <project_vertex>',
-      '#include <project_vertex>\nvPos = (modelMatrix * vec4(transformed, 1.0)).xyz;',
-    )
-  shader.fragmentShader = shader.fragmentShader
-    .replace('#include <common>', '#include <common>\nvarying vec3 vPos;')
-    .replace(
-      '#include <lights_fragment_end>',
-      `#include <lights_fragment_end>
-      float fromLight = length(fract(vPos.xz / 4.0) - 0.5) * 4.0;
-      reflectedLight.indirectDiffuse *= mix(0.75, 1.3, 1.0 - smoothstep(0.2, 2.0, fromLight));`,
-    )
-}
+// light indoors is completely even, which just looks flat. ao is what scales the light
+// from the room (the ceiling lights are the "sky" indoors, see SkyLight)
+const fromLight = length(fract(positionWorld.xz.div(4)).sub(0.5)).mul(4)
+floorMaterial.aoNode = mix(0.75, 1.3, float(1).sub(smoothstep(0.2, 2, fromLight)))
 
 // office ceiling tiles with a grid of light panels
-export const ceilingMaterial = new THREE.MeshStandardMaterial({
-  color: '#d9d7d1',
-  roughness: 0.9,
-})
-ceilingMaterial.onBeforeCompile = (shader) => {
-  cutoutShader(shader)
-  shader.vertexShader = shader.vertexShader
-    .replace('#include <common>', '#include <common>\nvarying vec3 vPos;')
-    .replace(
-      '#include <project_vertex>',
-      '#include <project_vertex>\nvPos = (modelMatrix * vec4(transformed, 1.0)).xyz;',
-    )
-  shader.fragmentShader = shader.fragmentShader
-    .replace('#include <common>', '#include <common>\nvarying vec3 vPos;')
-    .replace(
-      '#include <emissivemap_fragment>',
-      `#include <emissivemap_fragment>
-      vec2 tile = fract(vPos.xz / 0.6);
-      if (min(tile.x, tile.y) < 0.03) diffuseColor.rgb *= 0.75;
-      vec2 cell = fract(vPos.xz / 4.0);
-      // under bloom's threshold, otherwise the whole ceiling turns into a glow
-      if (abs(cell.x - 0.5) < 0.18 && abs(cell.y - 0.5) < 0.18) totalEmissiveRadiance += vec3(0.75, 0.73, 0.69);`,
-    )
+export const ceilingMaterial = material({ color: '#d9d7d1', roughness: 0.9 })
+{
+  const tile = fract(positionWorld.xz.div(0.6))
+  const cell = fract(positionWorld.xz.div(4))
+  ceilingMaterial.colorNode = materialColor.rgb.mul(
+    select(min(tile.x, tile.y).lessThan(0.03), 0.75, 1),
+  )
+  // under bloom's threshold, otherwise the whole ceiling turns into a glow
+  const panel = abs(cell.x.sub(0.5))
+    .lessThan(0.18)
+    .and(abs(cell.y.sub(0.5)).lessThan(0.18))
+  ceilingMaterial.emissiveNode = select(panel, vec3(0.75, 0.73, 0.69), vec3(0))
 }
 
-// the window grid from facade.ts, so the holes line up with the windows outside.
-// keepGlass flips it: the glass only keeps the window part
-function windows(keepGlass: boolean) {
-  return (shader: THREE.WebGLProgramParametersWithUniforms) => {
-    cutoutShader(shader)
-    shader.vertexShader = shader.vertexShader
-      .replace(
-        '#include <common>',
-        '#include <common>\nattribute float aStyle;\nattribute vec4 aWindow;\nvarying float vStyle;\nvarying vec4 vWindow;\nvarying vec3 vPos;\nvarying vec3 vN;',
-      )
-      .replace(
-        '#include <project_vertex>',
-        '#include <project_vertex>\nvStyle = aStyle;\nvWindow = aWindow;\nvPos = (modelMatrix * vec4(transformed, 1.0)).xyz;\nvN = normal;',
-      )
-    shader.fragmentShader = shader.fragmentShader
-      .replace(
-        '#include <common>',
-        '#include <common>\nvarying float vStyle;\nvarying vec4 vWindow;\nvarying vec3 vPos;\nvarying vec3 vN;',
-      )
-      .replace(
-        '#include <clipping_planes_fragment>',
-        `#include <clipping_planes_fragment>
-        bool isWindow = false;
-        if (vStyle > -0.5) {
-          // same "along the wall" coordinate the outside uses, from the outward normal
-          vec2 outward = -normalize(vN.xz);
-          float u = dot(vPos.xz, vec2(outward.y, -outward.x));
-          bool glass = vStyle < 0.5;
-          vec2 cell = fract(vec2(u / vWindow.x, vPos.y / vWindow.y));
-          // same as the ground floor outside (facade.ts)
-          vec4 rect = glass
-            ? vec4(0.5 - vWindow.z / 2.0, max(0.02, 0.575 - vWindow.w / 2.0), 0.5 + vWindow.z / 2.0, min(1.0, 0.575 + vWindow.w / 2.0))
-            : ${vec4(GROUND_WINDOW_WALL)};
-          isWindow = cell.x > rect.x && cell.x < rect.z && cell.y > rect.y && cell.y < rect.w;
-          // a glass wall, just thin frames
-          if (vStyle > 2.5 && vStyle < 3.5) isWindow = vPos.y > 0.3 && fract(u / 1.5) > 0.05;
-          // parking decks are open above the wall, between the columns, and have no glass
-          if (vStyle > 3.5) {
-            float column = min(cell.x, 1.0 - cell.x) * vWindow.x;
-            isWindow = cell.y > 0.34 && cell.y < 0.9 && column > 0.25;
-            if (${keepGlass}) discard;
-          }
-        }
-        if (isWindow != ${keepGlass}) discard;`,
-      )
-  }
+const between = (x: Node<'float'>, a: Node<'float'> | number, b: Node<'float'> | number) =>
+  x.greaterThan(a).and(x.lessThan(b))
+
+// the window grid from facade.ts, so the holes line up with the windows outside. true
+// where there's a window (or an open floor on a parking deck)
+function windowHole() {
+  const style = attribute('aStyle', 'float')
+  const grid = attribute('aWindow', 'vec4')
+  const p = positionWorld
+  // same "along the wall" coordinate the outside uses, from the outward normal
+  const outward = normalize(normalGeometry.xz).negate()
+  const u = p.xz.dot(vec2(outward.y, outward.x.negate()))
+  const cell = fract(vec2(u.div(grid.x), p.y.div(grid.y)))
+  const [gl, gb, gr, gt] = GROUND_WINDOW_WALL as [number, number, number, number]
+  // same as the ground floor outside (facade.ts)
+  const rect = select(
+    style.lessThan(0.5),
+    vec4(
+      float(0.5).sub(grid.z.mul(0.5)),
+      max(0.02, float(0.575).sub(grid.w.mul(0.5))),
+      grid.z.mul(0.5).add(0.5),
+      min(1, grid.w.mul(0.5).add(0.575)),
+    ),
+    vec4(gl, gb, gr, gt),
+  )
+  const inRect = between(cell.x, rect.x, rect.z).and(between(cell.y, rect.y, rect.w))
+  // a glass wall, just thin frames
+  const glassWall = p.y.greaterThan(0.3).and(fract(u.div(1.5)).greaterThan(0.05))
+  // parking decks are open above the wall, between the columns, and have no glass
+  const column = min(cell.x, float(1).sub(cell.x)).mul(grid.x)
+  const open = between(cell.y, 0.34, 0.9).and(column.greaterThan(0.25))
+  const hole = select(
+    style.greaterThan(3.5),
+    open,
+    select(between(style, 2.5, 3.5), glassWall, inRect),
+  )
+  return { hole: style.greaterThan(-0.5).and(hole), deck: style.greaterThan(3.5) }
 }
 
 // inside walls, with holes where the windows are so you see the real street through them
-export const wallMaterial = new THREE.MeshStandardMaterial({
+export const wallMaterial = material({
   map: texture('plaster', 'color'),
   normalMap: texture('plaster', 'normal'),
   color: '#efe6d8',
   roughness: 0.95,
 })
-wallMaterial.onBeforeCompile = windows(false)
-wallMaterial.customProgramCacheKey = () => 'interior-wall'
+wallMaterial.maskNode = outsideCutout().and(windowHole().hole.not())
 
 // and a faint pane in each hole. mostly it's the sky reflection that sells it
-export const glassMaterial = new THREE.MeshStandardMaterial({
+export const glassMaterial = material({
   color: '#a9bcc6',
   roughness: 0.05,
   transparent: true,
   opacity: 0.1,
   depthWrite: false,
 })
-glassMaterial.onBeforeCompile = windows(true)
-glassMaterial.customProgramCacheKey = () => 'interior-glass'
+{
+  const { hole, deck } = windowHole()
+  glassMaterial.maskNode = outsideCutout().and(hole).and(deck.not())
+}
 
 // a whole row of books on a shelf is one box. the shader splits it into books of random
-// colors and heights, way cheaper than a box per book (the big library has thousands)
-export const booksMaterial = new THREE.MeshStandardMaterial({ roughness: 0.8 })
-booksMaterial.onBeforeCompile = (shader) => {
-  shader.vertexShader = shader.vertexShader
-    .replace('#include <common>', '#include <common>\nvarying vec3 vLocal;\nvarying float vSeed;')
-    .replace(
-      '#include <project_vertex>',
-      `#include <project_vertex>
-      vLocal = position;
-      vSeed = dot(instanceMatrix[3].xyz, vec3(12.9898, 78.233, 37.719));`,
-    )
-  shader.fragmentShader = shader.fragmentShader
-    .replace(
-      '#include <common>',
-      `#include <common>
-      varying vec3 vLocal;
-      varying float vSeed;
-      float hash(float n) { return fract(sin(n) * 43758.5453); }`,
-    )
-    .replace(
-      '#include <color_fragment>',
-      `#include <color_fragment>
-      // 3.5cm books along the row
-      float book = floor(vLocal.x / 0.035);
-      float h = hash(book + vSeed);
-      // some gaps, and not every book is as tall
-      if (hash(book * 1.7 + vSeed) < 0.08 || vLocal.y > 0.65 + 0.35 * h) discard;
-      vec3 palette[6] = vec3[](
-        vec3(0.35, 0.07, 0.06), vec3(0.08, 0.13, 0.3), vec3(0.1, 0.22, 0.12),
-        vec3(0.4, 0.28, 0.14), vec3(0.75, 0.7, 0.58), vec3(0.08, 0.08, 0.08)
-      );
-      diffuseColor.rgb = palette[int(hash(book * 3.1 + vSeed) * 5.99)];
-      // darker line between books
-      if (fract(vLocal.x / 0.035) < 0.12) diffuseColor.rgb *= 0.5;`,
-    )
+// colors and heights, way cheaper than a box per book (the big library has thousands).
+// aShelf is a number per shelf (Furniture.tsx) so every shelf is different
+export const booksMaterial = new MeshStandardNodeMaterial({ roughness: 0.8 })
+{
+  const hash = (n: Node<'float'>) => fract(sin(n).mul(43758.5453))
+  const shelf = attribute('aShelf', 'float')
+  const local = positionGeometry
+  // 3.5cm books along the row
+  const book = floor(local.x.div(0.035))
+  const h = hash(book.add(shelf))
+  // some gaps, and not every book is as tall
+  booksMaterial.maskNode = hash(book.mul(1.7).add(shelf))
+    .greaterThanEqual(0.08)
+    .and(local.y.lessThanEqual(h.mul(0.35).add(0.65)))
+  const pick = floor(hash(book.mul(3.1).add(shelf)).mul(5.99))
+  const palette = [
+    vec3(0.35, 0.07, 0.06),
+    vec3(0.08, 0.13, 0.3),
+    vec3(0.1, 0.22, 0.12),
+    vec3(0.4, 0.28, 0.14),
+    vec3(0.75, 0.7, 0.58),
+    vec3(0.08, 0.08, 0.08),
+  ]
+  const color = palette.reduceRight<Node<'vec3'>>(
+    (rest, c, i) => select(pick.equal(i), c, rest),
+    palette[5]!,
+  )
+  // darker line between books
+  booksMaterial.colorNode = color.mul(select(fract(local.x.div(0.035)).lessThan(0.12), 0.5, 1))
 }
