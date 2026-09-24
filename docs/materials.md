@@ -120,8 +120,17 @@ A texture repeating every few meters makes a grid you can see from far away.
 
 ## Lights at night
 
-`night` goes from 0 in the day to 1 at night. Window and wall lights go in `emissiveNode`
-times `night`. Keep them under 1 unless they're meant to glow: bloom starts at 1.
+`night` goes from 0 in the day to 1 at night. Lights go in `emissiveNode` times `night`, at
+their real brightness compared to each other: a lit office window is about 1, a lamp globe
+80 (StreetFurniture.tsx). There's no bloom threshold. A few percent of all light spreads
+out as glare (Effects.tsx), so a light glows when it's much brighter than what's around
+it, like in a photo. Don't dim a light to stop it glowing, set it to how bright it really
+is. Low quality has no glare and anything way over 1 comes out as a flat white shape there,
+so give it a low value on low (the lamps use 2.5).
+
+Brightness is judged at noon in Hurt Park, where auto exposure (scene/autoExposure.ts)
+leaves the picture alone. Everywhere else it evens things out, so a wall that looks too dark
+at 9am or indoors may be fine.
 
 ## Checking a change
 
