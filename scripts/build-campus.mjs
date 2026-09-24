@@ -472,6 +472,11 @@ function mainNetwork(lines) {
 
 // skip things that aren't really buildings you'd walk around
 const SKIP_BUILDINGS = new Set(['roof', 'construction', 'no', 'bridge'])
+// osm ways that are tagged as buildings but aren't. way ids.
+// 270880874 "GSU Daycare" in dahlberg hall's courtyard: a round paved yard with a low wall
+// on the satellite images, no roof and no shadow. the daycare itself (the suttles child
+// development center) is inside dahlberg hall
+const NOT_BUILDINGS = new Set([270880874])
 
 // how high the underside is, for buildings up off the ground like the library link over
 // decatur st. osm has min_height for that, or which floor it starts on. the link only has
@@ -658,7 +663,12 @@ function main(elements) {
   for (const el of elements) {
     const tags = el.tags ?? {}
 
-    if (tags.building && !SKIP_BUILDINGS.has(tags.building) && tags.location !== 'underground') {
+    if (
+      tags.building &&
+      !SKIP_BUILDINGS.has(tags.building) &&
+      tags.location !== 'underground' &&
+      !(el.type === 'way' && NOT_BUILDINGS.has(el.id))
+    ) {
       // multipolygons: just use the outer rings that are closed on their own
       const rings =
         el.type === 'way'
