@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { pointInPolygon, type World } from './collision'
-import { DOOR_WIDTH, doorOpens, doorPanels, interiors, wallsWithDoorway } from './interiors'
+import {
+  DOOR_WIDTH,
+  doorOpens,
+  doorPanels,
+  interiors,
+  wallBetween,
+  wallsWithDoorway,
+} from './interiors'
 import { walk } from './movement'
 
 // a 10x10 room with the door in the middle of the bottom wall (z = 10), facing +z
@@ -87,5 +94,31 @@ describe('sliding doors', () => {
       // and just inside the building
       expect(p.z).toBeLessThan(10)
     }
+  })
+})
+
+describe('wallBetween', () => {
+  const library = interiors.find((r) => r.name === 'Library North')!
+  const { x, z, nx, nz } = library.door
+  const inside = (d: number) => ({ x: x - nx * d, z: z - nz * d })
+
+  it('is clear in the same room or both outside', () => {
+    expect(wallBetween(inside(6), inside(10))).toBe(false)
+    expect(wallBetween({ x: 0, z: 0 }, { x: 5, z: 3 })).toBe(false)
+  })
+
+  it('muffles someone inside for someone outside', () => {
+    expect(wallBetween(inside(8), inside(-8))).toBe(true)
+    expect(wallBetween(inside(-8), inside(8))).toBe(true)
+  })
+
+  it('is clear through the open door', () => {
+    expect(wallBetween(inside(1.5), inside(-1.5))).toBe(false)
+  })
+
+  it('muffles between two different buildings', () => {
+    const other = interiors.find((r) => r.name === 'Classroom South')!
+    const there = { x: other.door.x - other.door.nx * 5, z: other.door.z - other.door.nz * 5 }
+    expect(wallBetween(inside(5), there)).toBe(true)
   })
 })

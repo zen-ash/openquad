@@ -1,10 +1,11 @@
 import { voiceVolume, VOICE_MAX_DISTANCE, VOICE_MIN_DISTANCE } from '@quad/shared'
 import { useFrame } from '@react-three/fiber'
 import { useRef } from 'react'
+import { wallBetween } from '../game/interiors'
 import { INTERP_DELAY, sample } from '../game/interpolation'
 import { localPlayer } from '../game/localPlayer'
 import { snapshots, useGame } from '../net/store'
-import { audioContext, levelOf, setListener } from './audio'
+import { audioContext, levelOf, OPEN_AIR, setListener, THROUGH_WALL } from './audio'
 import { planCalls, shouldCall, type Nearby } from './peers'
 import { useVoice } from './store'
 import { call, hangUp, micAnalyser, peers } from './voice'
@@ -44,8 +45,10 @@ export default function VoiceUpdater() {
       if (audio) {
         audio.panner.positionX.value = s.x
         audio.panner.positionZ.value = s.z
-        const volume = voiceVolume(dist, VOICE_MIN_DISTANCE, VOICE_MAX_DISTANCE)
+        const wall = wallBetween(localPlayer, s)
+        const volume = voiceVolume(dist, VOICE_MIN_DISTANCE, VOICE_MAX_DISTANCE) * (wall ? 0.5 : 1)
         audio.gain.gain.setTargetAtTime(volume, ac.currentTime, 0.1)
+        audio.filter.frequency.setTargetAtTime(wall ? THROUGH_WALL : OPEN_AIR, ac.currentTime, 0.1)
       }
     }
 

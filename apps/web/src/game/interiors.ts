@@ -139,3 +139,17 @@ export function interiorNear(p: Point, range = 20) {
   }
   return best
 }
+
+/**
+ * Is there a wall between two people? Being in different buildings, or one in and one
+ * out, counts. Unless they're both right by the door, it's open then
+ */
+export function wallBetween(a: Point, b: Point) {
+  const ra = interiorAt(a)
+  const rb = interiorAt(b)
+  if (ra === rb) return false
+  const atDoor = (r: Interior | undefined) =>
+    r !== undefined &&
+    [a, b].every((p) => Math.hypot(p.x - r.door.x, p.z - r.door.z) < DOOR_SENSOR + 1)
+  return !atDoor(ra) && !atDoor(rb)
+}

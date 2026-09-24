@@ -32,6 +32,10 @@ export function levelOf(analyser: AnalyserNode) {
 
 export type RemoteAudio = ReturnType<typeof playRemote>
 
+// lowpass cutoff in Hz. walls let the low part of a voice through, not the rest
+export const OPEN_AIR = 20000
+export const THROUGH_WALL = 500
+
 export function playRemote(stream: MediaStream) {
   const ac = audioContext()
 
@@ -45,17 +49,21 @@ export function playRemote(stream: MediaStream) {
   const { source, analyser } = createAnalyser(stream)
   const gain = ac.createGain()
   gain.gain.value = 0
+  // turned down to muffle someone on the other side of a wall
+  const filter = new BiquadFilterNode(ac, { type: 'lowpass', frequency: OPEN_AIR })
   // panner only does direction. rolloff 0 because distance is handled by voiceVolume
   const panner = new PannerNode(ac, { panningModel: 'HRTF', rolloffFactor: 0 })
-  source.connect(gain).connect(panner).connect(ac.destination)
+  source.connect(gain).connect(filter).connect(panner).connect(ac.destination)
 
   return {
     gain,
+    filter,
     panner,
     analyser,
     stop() {
       source.disconnect()
       gain.disconnect()
+      filter.disconnect()
       panner.disconnect()
       el.srcObject = null
     },
