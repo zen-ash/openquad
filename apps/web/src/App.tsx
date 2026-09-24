@@ -1,6 +1,6 @@
 import { KeyboardControls, PerformanceMonitor } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
-import { Suspense } from 'react'
+import { Suspense, useEffect } from 'react'
 import { AgXToneMapping } from 'three'
 import ChatPanel from './ChatPanel'
 import EmoteBar from './EmoteBar'
@@ -34,6 +34,11 @@ export default function App() {
   const inGame = me && (status === 'connected' || status === 'reconnecting')
   const quality = useSettings((s) => s.quality)
   const photo = useSettings((s) => s.photo)
+
+  // the blur behind the panels is slow without a gpu, low quality turns it off (styles.css)
+  useEffect(() => {
+    document.documentElement.classList.toggle('low', quality === 'low')
+  }, [quality])
 
   return (
     <KeyboardControls map={keyMap}>

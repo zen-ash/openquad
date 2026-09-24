@@ -787,3 +787,9 @@ button {
   pointer-events: none;
   animation: title 3s ease forwards;
 }
+
+/* low quality, see App */
+:root.low * {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
