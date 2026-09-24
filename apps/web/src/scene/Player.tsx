@@ -6,6 +6,7 @@ import * as THREE from 'three'
 import { cutout } from '../campus/cutout'
 import type { Controls } from '../game/controls'
 import { avatarById } from '../game/avatars'
+import { clampDistance, clampPitch, orbit } from '../game/camera'
 import { localPlayer } from '../game/localPlayer'
 import {
   headingFor,
@@ -16,17 +17,21 @@ import {
   walk,
   WALK_SPEED,
 } from '../game/movement'
-import { touch } from '../game/touch'
+import { input } from '../game/input'
 import { world } from '../game/world'
 import { send } from '../net/connection'
 import { stopEmote, useEmotes } from '../net/emotes'
 import Character, { type Anim } from './Character'
 import ChatBubble from './ChatBubble'
 
-// behind and a bit above. lower than the pokemon games since downtown has real
-// buildings and you want to see them, not just the sidewalk
-const CAMERA_OFFSET = new THREE.Vector3(0, 4.5, 9)
-const LOOK_HEIGHT = 1.8
+// behind and a bit above, looking at about head height
+const LOOK_HEIGHT = 1.6
+const START_PITCH = 0.3
+const START_DISTANCE = 9
+// the camera eases back this much while you jog, and the lens widens a little
+const RUN_PULL = 1.8
+const WALK_FOV = 50
+const RUN_FOV = 56
 const CAMERA_TURN_SPEED = 2 // radians/sec
 const PLAYER_RADIUS = 0.4
 const SEND_INTERVAL = 1 / TICK_RATE
@@ -41,13 +46,16 @@ const NO_KEYS: Record<Controls, boolean> = {
   turnRight: false,
 }
 
-const UP = new THREE.Vector3(0, 1, 0)
-const camTarget = new THREE.Vector3()
+const look = new THREE.Vector3()
+const lookGoal = new THREE.Vector3()
 
 export default function Player({ spawn }: { spawn: PlayerInfo }) {
   const body = useRef<THREE.Group>(null)
   // carried over from before a reconnect, so the camera doesn't jump
   const cameraYaw = useRef(localPlayer.cameraYaw)
+  const pitch = useRef(START_PITCH)
+  const distance = useRef(START_DISTANCE)
+  const pull = useRef(0)
   const currentAnim = useRef<Anim>('Idle')
   const [anim, setAnim] = useState<Anim>('Idle')
   const emote = useEmotes((s) => s.playing[spawn.id])
@@ -77,16 +85,19 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
       snapCamera.current = true
     }
 
-    if (keys.turnLeft) cameraYaw.current -= CAMERA_TURN_SPEED * dt
-    if (keys.turnRight) cameraYaw.current += CAMERA_TURN_SPEED * dt
-    cameraYaw.current += touch.turn
-    touch.turn = 0
+    // bigger yaw swings the camera around so the view turns left
+    if (keys.turnLeft) cameraYaw.current += CAMERA_TURN_SPEED * dt
+    if (keys.turnRight) cameraYaw.current -= CAMERA_TURN_SPEED * dt
+    cameraYaw.current += input.turn
+    pitch.current = clampPitch(pitch.current + input.tilt)
+    distance.current = clampDistance(distance.current + input.zoom)
+    input.turn = input.tilt = input.zoom = 0
 
     let dir = moveDirection(keys, cameraYaw.current)
     let running = keys.run
     if (!dir) {
-      dir = stickDirection(touch.x, touch.y, cameraYaw.current)
-      running = Math.hypot(touch.x, touch.y) > STICK_RUN
+      dir = stickDirection(input.x, input.y, cameraYaw.current)
+      running = Math.hypot(input.x, input.y) > STICK_RUN
     }
     let next: Anim = 'Idle'
 
@@ -123,13 +134,30 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
       }
     }
 
-    camTarget.copy(CAMERA_OFFSET).applyAxisAngle(UP, cameraYaw.current).add(player.position)
+    // ease back while jogging, back in when you stop
+    pull.current += ((running && dir ? 1 : 0) - pull.current) * (1 - Math.exp(-2 * dt))
+    const cam = camera as THREE.PerspectiveCamera
+    const fov = WALK_FOV + (RUN_FOV - WALK_FOV) * pull.current
+    if (Math.abs(cam.fov - fov) > 0.01) {
+      cam.fov = fov
+      cam.updateProjectionMatrix()
+    }
 
-    camera.position.lerp(camTarget, snapCamera.current ? 1 : 1 - Math.exp(-6 * dt))
+    // what the camera looks at glides after you a little, and the camera glides after
+    // that. two layers of smoothing is what makes it feel like someone's filming
+    lookGoal.set(player.position.x, player.position.y + LOOK_HEIGHT, player.position.z)
+    if (snapCamera.current) look.copy(lookGoal)
+    else look.lerp(lookGoal, 1 - Math.exp(-10 * dt))
+
+    const dist = distance.current + RUN_PULL * pull.current
+    const want = orbit(look, cameraYaw.current, pitch.current, dist)
+    if (snapCamera.current) camera.position.set(want.x, want.y, want.z)
+    else camera.position.lerp(want, 1 - Math.exp(-7 * dt))
     snapCamera.current = false
+    camera.lookAt(look)
+
     cutout.uCutoutPlayer.value.set(player.position.x, 1, player.position.z)
     cutout.uCutoutCamera.value.copy(camera.position)
-    camera.lookAt(player.position.x, player.position.y + LOOK_HEIGHT, player.position.z)
   })
 
   return (

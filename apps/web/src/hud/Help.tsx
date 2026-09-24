@@ -4,7 +4,8 @@ import { isTouchScreen } from '../TouchControls'
 const KEYS: [string, string][] = [
   ['W A S D', 'walk'],
   ['Shift', 'run'],
-  ['Q / E', 'turn the camera'],
+  ['Q / E or drag', 'turn the camera'],
+  ['Scroll', 'zoom'],
   ['Enter', 'chat'],
   ['1-5', 'emotes'],
   ['M', 'mute'],

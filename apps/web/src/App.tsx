@@ -9,6 +9,7 @@ import JoinScreen from './JoinScreen'
 import Hud from './hud/Hud'
 import Minimap from './hud/Minimap'
 import { useGame } from './net/store'
+import CameraInput from './scene/CameraInput'
 import Campus from './scene/Campus'
 import Effects from './scene/Effects'
 import JoinCamera from './scene/JoinCamera'
@@ -45,6 +46,7 @@ export default function App() {
         {inGame ? (
           <Suspense fallback={null}>
             <Player key={me.id} spawn={me} />
+            <CameraInput />
             <RemotePlayers />
             <VoiceUpdater />
           </Suspense>

@@ -1,5 +1,5 @@
 import { useRef, useState, type PointerEvent } from 'react'
-import { touch } from './game/touch'
+import { input } from './game/input'
 
 const RADIUS = 50 // px the knob can move
 const TURN_SPEED = 0.008 // radians per px dragged
@@ -10,7 +10,7 @@ export const isTouchScreen = window.matchMedia('(pointer: coarse)').matches
 export default function TouchControls() {
   const [knob, setKnob] = useState({ x: 0, y: 0 })
   const center = useRef({ x: 0, y: 0 })
-  const lastX = useRef<number | null>(null)
+  const last = useRef<{ x: number; y: number } | null>(null)
 
   function stickDown(e: PointerEvent<HTMLDivElement>) {
     const r = e.currentTarget.getBoundingClientRect()
@@ -29,13 +29,13 @@ export default function TouchControls() {
       dy = (dy / len) * RADIUS
     }
     setKnob({ x: dx, y: dy })
-    touch.x = dx / RADIUS
-    touch.y = -dy / RADIUS // screen y goes down, forward is up
+    input.x = dx / RADIUS
+    input.y = -dy / RADIUS // screen y goes down, forward is up
   }
 
   function stickUp() {
     setKnob({ x: 0, y: 0 })
-    touch.x = touch.y = 0
+    input.x = input.y = 0
   }
 
   return (
@@ -44,15 +44,17 @@ export default function TouchControls() {
         className="touch-look"
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId)
-          lastX.current = e.clientX
+          last.current = { x: e.clientX, y: e.clientY }
         }}
         onPointerMove={(e) => {
-          if (lastX.current === null) return
-          touch.turn += (e.clientX - lastX.current) * TURN_SPEED
-          lastX.current = e.clientX
+          if (!last.current) return
+          // drag right to look right, down to look down
+          input.turn -= (e.clientX - last.current.x) * TURN_SPEED
+          input.tilt += (e.clientY - last.current.y) * TURN_SPEED * 0.8
+          last.current = { x: e.clientX, y: e.clientY }
         }}
-        onPointerUp={() => (lastX.current = null)}
-        onPointerCancel={() => (lastX.current = null)}
+        onPointerUp={() => (last.current = null)}
+        onPointerCancel={() => (last.current = null)}
       />
       <div
         className="stick"
