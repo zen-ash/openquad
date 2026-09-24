@@ -217,6 +217,23 @@ by hand from photos, one at a time. Library North is the first.
 - **Inside** - the brick walls have no windows (the real ones don't), the lobby is all glass.
 - **References** - the builder's project photos (Macallan Construction), a Wikimedia
   Commons photo, and satellite imagery to check the footprint. None of them are in the repo.
+- **Panther Quad** - GSU tore down Sparks Hall at the end of 2025 and closed Gilmer Street
+  between Peachtree Center and Courtland, so Hurt Park, the Sparks Hall site and the greenway
+  are one quad now. OSM doesn't have it yet. The build script drops that bit of Gilmer, turns
+  it into lawn with a row of trees, and lays out the quad by eye from GSU's campus map: tan
+  pavers, lawns, the triangle planter (solid, you can't walk through it), the monument and
+  the flags. It's a named GSU place, so the location title says Panther Quad even right
+  next to Arts & Humanities. I only use GSU's map as a reference, none of its data is in the repo.
+- **Only the downtown campus** - GSU's campus map shows which buildings are part of the
+  downtown campus. The map now reaches far enough north for Piedmont North (660m north of
+  Hurt Park, 480m south, 540m either side). Only buildings on GSU's map count as GSU (you can
+  go into those), with the names GSU uses (25 Park Place, not the Trust Company of Georgia
+  Building). Georgia Hall and Piedmont Hall were tagged GSU on OSM but aren't on GSU's map.
+- **Research Tower** - opened in September 2026, too new for OSM. Traced from satellite
+  images, 9 floors.
+- **Heights** - OSM has no height for a lot of GSU buildings, so they all came out 14m. For
+  the ones it had, Overture Maps has real heights (USGS lidar, or Microsoft's estimates from
+  aerial photos). Langdale Hall went from 14m to 29m.
 - Gotcha: three.js caches a material's shader by its `onBeforeCompile` source. All the
   library's materials share one wrapper function, so without a `customProgramCacheKey` each
   they could end up sharing a shader.
