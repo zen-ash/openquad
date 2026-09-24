@@ -16,6 +16,7 @@
     "format:check": "prettier --check .",
     "e2e": "playwright test",
     "visual": "node scripts/visual.mjs",
+    "frametime": "node scripts/frametime.mjs",
     "campus": "node scripts/build-campus.mjs",
     "terrain": "node scripts/build-terrain.mjs",
     "bots": "pnpm --filter @quad/server bots"
