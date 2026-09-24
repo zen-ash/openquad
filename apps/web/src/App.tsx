@@ -45,6 +45,9 @@ async function startRenderer(props: object) {
   renderer.toneMappingExposure = 2 ** 0.35
   const webgpu = (renderer.backend as { isWebGPUBackend?: boolean }).isWebGPUBackend === true
   useSettings.setState(webgpu ? { backend: 'webgpu' } : { backend: 'webgl2', quality: 'low' })
+  // no shader warm-up (WarmUp.tsx) on a gpu that's really the cpu, like in ci. every frame
+  // after it took twice as long there, and the next page took a minute to open
+  if (softwareGpu(renderer)) useSettings.setState({ warming: false })
   // high quality's atmosphere and effects, loaded before the first frame (the atmosphere
   // hooks into the renderer). they stay for the whole visit even if it drops to low, so
   // starting on low they're never needed
@@ -57,6 +60,13 @@ async function startRenderer(props: object) {
     useSettings.setState({ atmosphere: true })
   }
   return renderer
+}
+
+function softwareGpu(renderer: WebGPURenderer) {
+  const gl = (renderer.backend as { gl?: WebGL2RenderingContext }).gl
+  const info = gl?.getExtension('WEBGL_debug_renderer_info')
+  const name = gl && info ? String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL)) : ''
+  return /swiftshader|llvmpipe|software/i.test(name)
 }
 
 export default function App() {
