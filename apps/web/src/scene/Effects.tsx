@@ -61,13 +61,14 @@ const AO_RADIUS = 2
 const MAX_WIDTH = 1920
 const MAX_HEIGHT = 1200
 
-// how much taa's softness gets sharpened back (0 is the most, 2 hardly any)
-const SHARPNESS = 0.6
+// how much taa's softness gets sharpened back (0 is the most, 2 hardly any). 0.6 made
+// leaves and edges crunchy, like a tv with the sharpness turned up
+const SHARPNESS = 1.5
 // how much light spreads (0.04 is what cameras and games use) and how wide (0 to 1)
 const GLARE = 0.04
 const GLARE_SPREAD = 0.2
 // color fringes: how far the red and blue move per pixel away from the middle
-const ABERRATION = 0.001
+const ABERRATION = 0.0006
 // a camera makes colors a bit stronger than they are. without it the sky and the grass
 // came out paler than in any photo of a sunny day (chroma 26 against 44 for the sky). and
 // it washes out things that are nearly too bright to white: without that the sky around
