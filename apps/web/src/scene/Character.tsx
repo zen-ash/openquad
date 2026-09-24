@@ -9,7 +9,7 @@ export type Anim = 'Idle' | 'Walk' | 'Run'
 
 const HEIGHT = 1.8 // meters
 
-const modelUrl = (a: Avatar) => `/models/people/${a.id}.glb`
+export const modelUrl = (a: Avatar) => `/models/people/${a.id}.glb`
 const animsUrl = (a: Avatar) => `/models/people/anims_${a.body}.glb`
 
 type Props = {

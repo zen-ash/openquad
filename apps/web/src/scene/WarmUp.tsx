@@ -1,10 +1,11 @@
-import { useProgress } from '@react-three/drei'
+import { useGLTF, useProgress } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
-import { Suspense, useEffect, useRef } from 'react'
+import { Suspense, useEffect, useMemo, useRef } from 'react'
 import type { Object3D } from 'three'
-import { AVATARS } from '../game/avatars'
+import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js'
+import { AVATARS, type Avatar as AvatarInfo } from '../game/avatars'
 import { hideCity, useSettings } from '../settings'
-import Character from './Character'
+import { modelUrl } from './Character'
 import { effects } from './fx'
 
 // three builds a shader (and the gpu a pipeline) the first time something is drawn. that
@@ -29,10 +30,11 @@ export default function WarmUp() {
       {/* drawn while warming, then kept but hidden: three throws a shader away once
           nothing uses it, and other people's avatars come and go */}
       {!hideCity && (
-        <group position={[0, -50, 0]} visible={warming}>
+        // and left out of the world matrix updates once it's hidden (all those bones)
+        <group position={[0, -50, 0]} visible={warming} matrixWorldAutoUpdate={warming}>
           {AVATARS.map((a) => (
             <Suspense key={a.id} fallback={null}>
-              <Character avatar={a} anim="Idle" />
+              <Avatar avatar={a} />
             </Suspense>
           ))}
         </group>
@@ -91,4 +93,15 @@ function Warming() {
   })
 
   return null
+}
+
+// just the model, standing still: it only has to be drawn once, shadow and all
+function Avatar({ avatar }: { avatar: AvatarInfo }) {
+  const { scene } = useGLTF(modelUrl(avatar))
+  const model = useMemo(() => {
+    const copy = clone(scene)
+    copy.traverse((o) => (o.castShadow = true))
+    return copy
+  }, [scene])
+  return <primitive object={model} />
 }
