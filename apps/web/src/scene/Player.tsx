@@ -201,11 +201,17 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
     else camera.position.lerp(want, 1 - Math.exp(-7 * dt))
     snapCamera.current = false
     camera.lookAt(look)
+    if (localPlayer.shot) {
+      camera.position.fromArray(localPlayer.shot.from)
+      camera.lookAt(new THREE.Vector3().fromArray(localPlayer.shot.at))
+    }
 
     cutout.uCutoutPlayer.value.set(player.position.x, 1, player.position.z)
     cutout.uCutoutCamera.value.copy(camera.position)
     // only cut a hole if a building is actually in the way
-    const blocked = blocksView({ x: camera.position.x, z: camera.position.z }, player.position)
+    const blocked =
+      !localPlayer.shot &&
+      blocksView({ x: camera.position.x, z: camera.position.z }, player.position)
     const radius = cutout.uCutoutRadius
     radius.value += ((blocked ? 3.5 : 0) - radius.value) * (1 - Math.exp(-10 * dt))
   })

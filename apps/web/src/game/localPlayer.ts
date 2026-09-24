@@ -10,4 +10,6 @@ export const localPlayer = {
   inside: -1,
   // set by the teleport menu, picked up by Player on the next frame
   teleport: null as { x: number; z: number } | null,
+  // dev only: put the camera exactly here, for lining up shots with photos
+  shot: null as { from: number[]; at: number[] } | null,
 }
