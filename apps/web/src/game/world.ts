@@ -17,9 +17,10 @@ export const fenceWalls: Segment[] = FENCE.map(([ax, az], i) => {
 })
 
 export const world: World = {
-  // buildings you can walk into are just their walls (with a doorway), the rest are solid
+  // buildings you can walk into are just their walls (with a doorway), the rest are solid.
+  // except the ones up off the ground, you walk under those (the library link)
   buildings: [
-    ...campus.buildings.filter((_, i) => !enterable.has(i)).map((b) => b.points),
+    ...campus.buildings.filter((b, i) => !enterable.has(i) && !b.minHeight).map((b) => b.points),
     ...quad.planters.map((p) => p.points),
   ].map((points) => polygon(points as [number, number][])),
   walls: [

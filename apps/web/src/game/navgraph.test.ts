@@ -131,7 +131,10 @@ describe('real campus', () => {
       ...campus.roads.map((r) => ({ ...r, cost: 2.5 })),
     ]),
   )
-  const shapes = campus.buildings.map((b) => polygon(b.points as [number, number][]))
+  // not the ones up off the ground, routes go under the library link
+  const shapes = campus.buildings
+    .filter((b) => !b.minHeight)
+    .map((b) => polygon(b.points as [number, number][]))
   const doors = campus.buildings
     .filter((b) => b.door)
     .map((b) => {

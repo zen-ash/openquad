@@ -473,6 +473,17 @@ function mainNetwork(lines) {
 // skip things that aren't really buildings you'd walk around
 const SKIP_BUILDINGS = new Set(['roof', 'construction', 'no', 'bridge'])
 
+// how high the underside is, for buildings up off the ground like the library link over
+// decatur st. osm has min_height for that, or which floor it starts on. the link only has
+// level=1 (and layer=1), a floor up from the street, 3.5m like library south's floors
+const FLOOR = 3.5
+function minHeightOf(tags) {
+  const h = parseFloat(tags.min_height)
+  if (h > 0) return h
+  const level = parseFloat(tags['building:min_level'] ?? (Number(tags.layer) >= 1 && tags.level))
+  return level > 0 ? level * FLOOR : 0
+}
+
 const ROAD_WIDTH = {
   primary: 12,
   secondary: 11,
@@ -657,6 +668,13 @@ function main(elements) {
       for (const points of rings) {
         if (!points || !inside(centroid(points))) continue
         const b = { height: round(heightOf(tags) * SCALE), points }
+        const minHeight = minHeightOf(tags)
+        if (minHeight > 0) {
+          b.minHeight = round(minHeight * SCALE)
+          // a bridge is a floor tall unless osm says how tall it is
+          if (!tags.height && !tags['building:levels'])
+            b.height = round((minHeight + FLOOR) * SCALE)
+        }
         if (tags.name) b.name = GSU_NAMES[tags.name] ?? tags.name
         if (isGsu(tags)) b.gsu = true
         if (el.type === 'way' && GSU_PARTS.has(el.id)) b.gsu = b.part = true
@@ -762,7 +780,9 @@ function main(elements) {
 
   // osm has footpaths that go through buildings (covered passages, indoor corridors).
   // buildings are solid in the game, so cut those bits out
-  const outside = (lines) => lines.flatMap((l) => outsideRuns(l, buildings))
+  // you can walk under the ones up off the ground
+  const grounded = buildings.filter((b) => !b.minHeight)
+  const outside = (lines) => lines.flatMap((l) => outsideRuns(l, grounded))
   const walkPaths = outside(paths)
   const walkCrossings = outside(crossings)
   const walkRoads = outside(roads.filter((r) => !quad.closed(r)))

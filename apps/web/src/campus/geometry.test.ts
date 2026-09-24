@@ -11,6 +11,13 @@ const square = [
 ]
 
 describe('buildingsGeometry', () => {
+  it('starts a bridge at its underside', () => {
+    const geo = buildingsGeometry([{ points: square, height: 7, minHeight: 3.5 }])
+    geo.computeBoundingBox()
+    expect(geo.boundingBox!.min.y).toBeCloseTo(3.5)
+    expect(geo.boundingBox!.max.y).toBeCloseTo(7)
+  })
+
   it('extrudes up to the building height in the right spot', () => {
     const geo = buildingsGeometry([{ points: square, height: 10 }])
     geo.computeBoundingBox()

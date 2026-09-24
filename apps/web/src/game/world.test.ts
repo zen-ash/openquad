@@ -16,4 +16,21 @@ describe('world', () => {
     for (let i = 0; i < 180; i++) p = walk(p, { x: -1, z: 0 }, 1.6, 1 / 30, 0.4, world)
     expect(pointInPolygon(p, planter)).toBe(false)
   })
+
+  it('lets you walk down decatur st under the library link', () => {
+    const link = campus.buildings.find((b) => b.minHeight)!
+    expect(link.minHeight).toBeGreaterThan(2.5)
+    // down the middle of decatur st, from one side of the link to the other
+    const [from, to] = [
+      { x: -190, z: 133.3 },
+      { x: -110, z: 203.1 },
+    ]
+    const len = Math.hypot(to.x - from.x, to.z - from.z)
+    const dir = { x: (to.x - from.x) / len, z: (to.z - from.z) / len }
+    let p = from
+    for (let i = 0; i < 30 * 80 && Math.hypot(p.x - to.x, p.z - to.z) > 1; i++) {
+      p = walk(p, dir, 1.6, 1 / 30, 0.4, world)
+    }
+    expect(Math.hypot(p.x - to.x, p.z - to.z)).toBeLessThan(5)
+  })
 })

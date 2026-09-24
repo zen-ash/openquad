@@ -5,6 +5,7 @@ import { pointInPolygon, polygon, type Point } from './collision'
 const shapes = campus.buildings.map((b) => ({
   ...polygon(b.points as [number, number][]),
   height: b.height,
+  bottom: b.minHeight ?? 0,
 }))
 
 // do segments ab and cd cross
@@ -51,7 +52,8 @@ export function cameraReach(
 ) {
   for (const s of shapes) {
     if (camera.x < s.minX || camera.x > s.maxX || camera.z < s.minZ || camera.z > s.maxZ) continue
-    if (camera.y > s.height + 0.5 || s.points === inside) continue
+    // over the roof, or under a bridge, it's not inside it
+    if (camera.y > s.height + 0.5 || camera.y < s.bottom - 0.3 || s.points === inside) continue
     if (!pointInPolygon(camera, s.points)) continue
     const walls = s.points.map((a, i) => {
       const b = s.points[(i + 1) % s.points.length]!

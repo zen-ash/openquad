@@ -10,6 +10,8 @@ export type BuildingData = {
   gsu?: boolean
   // a piece of a gsu building with no name of its own, no door
   part?: boolean
+  // up off the ground, like the library link over decatur st: where the underside is
+  minHeight?: number
   deck?: boolean
   door?: Pt
   // drawn by hand instead (campus/landmarks.ts)
@@ -33,8 +35,12 @@ export function buildingsGeometry(
 ) {
   const parts = buildings.flatMap((b, i) => {
     if (b.landmark || !keep(b)) return []
-    const geo = new THREE.ExtrudeGeometry(shape(b.points), { depth: b.height, bevelEnabled: false })
-    geo.rotateX(-Math.PI / 2)
+    const bottom = b.minHeight ?? 0
+    const geo = new THREE.ExtrudeGeometry(shape(b.points), {
+      depth: b.height - bottom,
+      bevelEnabled: false,
+    })
+    geo.rotateX(-Math.PI / 2).translate(0, bottom, 0)
     geo.clearGroups()
 
     const count = geo.attributes.position!.count
