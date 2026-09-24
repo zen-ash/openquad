@@ -28,9 +28,9 @@ const TAPS = 8
 // log2 of the average brightness that comes out as it is. hurt park at noon measures -2.2,
 // so it gets a quarter stop more: that matched sunny photos of downtown (sunlit concrete
 // L* ~72) with the pbr neutral tone mapping, which doesn't brighten like three's aces did.
-// darker or brighter than that gets evened out, like a phone camera does, but only so far. a lobby or 9am get lifted about all the way, past
-// DARKEST it gives some of it back so night still looks like night (measured: noon -2.2,
-// 9am -3.6, library lobby -3.3, 11pm -5.5)
+// darker or brighter than that gets evened out, like a phone camera does, but only so far.
+// a lobby or 9am get lifted about all the way, past DARKEST it gives some of it back so
+// night still looks like night (measured: noon -2.2, 9am -3.6, library lobby -3.3, 11pm -5.5)
 const MIDDLE = -1.95
 const DARKEST = -3.3
 const BRIGHTEST = -1.3
