@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import campus from '../campus/campus.json'
 import { localPlayer } from '../game/localPlayer'
+import { useNav } from '../game/nav'
 import { snapshots } from '../net/store'
 
 const SIZE = 170 // px on screen
@@ -64,6 +65,17 @@ export default function Minimap() {
       ctx.scale(SCALE, SCALE)
       ctx.translate(-x, -z)
       ctx.drawImage(map, -campus.halfSize, -campus.halfSize)
+
+      // gps route
+      const { path } = useNav.getState()
+      if (path.length > 1) {
+        ctx.strokeStyle = '#4c8dff'
+        ctx.lineWidth = 4 / SCALE
+        ctx.lineCap = ctx.lineJoin = 'round'
+        ctx.beginPath()
+        path.forEach((p, i) => (i ? ctx.lineTo(p.x, p.z) : ctx.moveTo(p.x, p.z)))
+        ctx.stroke()
+      }
 
       // everyone else
       ctx.fillStyle = '#ffd24a'

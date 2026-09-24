@@ -35,11 +35,26 @@ function openSpotNear(p: Point) {
 
 export type Place = { label: string; spot: Point }
 
+// a couple of meters out from the front door
+function inFrontOfDoor(door: number[]) {
+  const [x, z, nx, nz] = door as [number, number, number, number]
+  return { x: x + nx * 2.5, z: z + nz * 2.5 }
+}
+
 export const places: Place[] = [
   { label: 'Hurt Park', spot: { x: 0, z: 0 } },
   ...SPOTS.flatMap(([label, name]) => {
     const building = campus.buildings.find((b) => b.name === name)
-    return building ? [{ label, spot: openSpotNear(centroid(building.points)) }] : []
+    if (!building) return []
+    // go to the front door if it has one
+    return [
+      {
+        label,
+        spot: building.door
+          ? inFrontOfDoor(building.door)
+          : openSpotNear(centroid(building.points)),
+      },
+    ]
   }),
 ]
 

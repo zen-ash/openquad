@@ -9,6 +9,8 @@ import JoinScreen from './JoinScreen'
 import Hud from './hud/Hud'
 import PhotoMode from './hud/PhotoMode'
 import Minimap from './hud/Minimap'
+import NavBar from './hud/NavBar'
+import PlacesMenu from './hud/PlacesMenu'
 import { useGame } from './net/store'
 import CameraInput from './scene/CameraInput'
 import Campus from './scene/Campus'
@@ -16,8 +18,8 @@ import Effects from './scene/Effects'
 import JoinCamera from './scene/JoinCamera'
 import Player from './scene/Player'
 import RemotePlayers from './scene/RemotePlayers'
+import RouteLine from './scene/RouteLine'
 import { hideCity, useSettings } from './settings'
-import TeleportMenu from './TeleportMenu'
 import TimePicker from './TimePicker'
 import TouchControls, { isTouchScreen } from './TouchControls'
 import MicButton from './voice/MicButton'
@@ -49,6 +51,7 @@ export default function App() {
           <Suspense fallback={null}>
             <Player key={me.id} spawn={me} />
             <CameraInput />
+            <RouteLine />
             <RemotePlayers />
             <VoiceUpdater />
           </Suspense>
@@ -71,7 +74,8 @@ export default function App() {
               <Minimap />
               <EmoteBar />
               <MicButton />
-              <TeleportMenu />
+              <PlacesMenu />
+              <NavBar />
               <TimePicker />
             </>
           )}

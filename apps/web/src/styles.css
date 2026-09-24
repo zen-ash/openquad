@@ -38,8 +38,8 @@ button {
 .hud,
 .card,
 .mic,
-.teleport button,
-.teleport ul {
+.places button,
+.places ul {
   border: 1px solid var(--panel-border);
   background: var(--panel);
   backdrop-filter: blur(14px);
@@ -149,7 +149,7 @@ button {
 .clock {
   position: fixed;
   top: 16px;
-  right: 290px;
+  right: 308px;
   padding: 9px 12px;
   border: 1px solid var(--panel-border);
   border-radius: 10px;
@@ -405,7 +405,7 @@ button {
   cursor: default;
 }
 
-.teleport {
+.places {
   position: fixed;
   top: 16px;
   right: 16px;
@@ -415,7 +415,7 @@ button {
   gap: 8px;
 }
 
-.teleport button {
+.places button {
   padding: 9px 16px;
   border-radius: 10px;
   color: var(--text);
@@ -424,7 +424,7 @@ button {
   cursor: pointer;
 }
 
-.teleport ul {
+.places ul {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -436,18 +436,84 @@ button {
   list-style: none;
 }
 
-.teleport ul button {
-  width: 100%;
-  border: none;
-  background: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
-  font-weight: 500;
-  text-align: left;
+.places li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px 3px 10px;
+  border-radius: 8px;
 }
 
-.teleport ul button:hover {
-  background: rgb(255 255 255 / 0.1);
+.places li:hover {
+  background: rgb(255 255 255 / 0.06);
+}
+
+.places li span {
+  flex: 1;
+  min-width: 150px;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.places li button {
+  padding: 5px 10px;
+  border: none;
+  box-shadow: none;
+  font-size: 12px;
+}
+
+.places li .directions {
+  background: var(--accent);
+}
+
+.places li .teleport {
+  background: rgb(255 255 255 / 0.12);
+  backdrop-filter: none;
+}
+
+.navbar {
+  position: fixed;
+  top: 54px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transform: translateX(-50%);
+  padding: 7px 8px 7px 14px;
+  border: 1px solid rgb(76 141 255 / 0.6);
+  border-radius: 999px;
+  background: rgb(18 30 56 / 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+
+.navbar .to {
+  font-weight: 650;
+}
+
+.navbar .how {
+  color: var(--muted);
+}
+
+.navbar button {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.12);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.navbar.arrived {
+  padding-right: 14px;
+  border-color: rgb(63 185 80 / 0.7);
+  background: rgb(20 50 30 / 0.75);
+  font-weight: 600;
 }
 
 .credit {
@@ -682,7 +748,7 @@ button {
 .time-picker {
   position: fixed;
   top: 16px;
-  right: 120px;
+  right: 138px;
   padding: 9px 12px;
   border: 1px solid var(--panel-border);
   border-radius: 10px;

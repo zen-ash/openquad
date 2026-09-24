@@ -6,6 +6,7 @@ const KEYS: [string, string][] = [
   ['Shift', 'run'],
   ['Q / E or drag', 'turn the camera'],
   ['Scroll', 'zoom'],
+  ['G', 'directions to a building'],
   ['Enter', 'chat'],
   ['1-5', 'emotes'],
   ['M', 'mute'],
