@@ -3,6 +3,8 @@ import {
   abs,
   attribute,
   bool,
+  dFdx,
+  dFdy,
   dot,
   float,
   floor,
@@ -16,9 +18,11 @@ import {
   min,
   mix,
   mod,
+  normalMap,
   sin,
   smoothstep,
   step,
+  texture as sample,
   uv,
   vec2,
   vec3,
@@ -74,6 +78,36 @@ export function mFbm(p: Vec2) {
     q = q.mul(2.03).add(1.7)
   }
   return v
+}
+
+// breaks up the repeat of a tiled texture (inigo quilez, "texture repetition", the noise
+// version). each patch of about one repeat reads the texture at its own random offset, and
+// neighbouring patches blend where they meet, so from far away there's no grid. two reads
+// instead of one. at is in repeats (meters / how big one repeat is)
+export function untiled(map: THREE.Texture, at: Vec2) {
+  const l = mNoise(at.mul(1.3)).mul(8)
+  const f = fract(l)
+  const a = floor(l)
+  const b = a.add(1)
+  // the gradients of the real uv, or there'd be seams where the offset jumps
+  const dx = dFdx(at)
+  const dy = dFdy(at)
+  const ta = sample(map, at.add(sin(vec2(3, 7).mul(a)))).grad(dx, dy)
+  const tb = sample(map, at.add(sin(vec2(3, 7).mul(b)))).grad(dx, dy)
+  return mix(ta, tb, smoothstep(0.2, 0.8, f.sub(dot(ta.sub(tb).rgb, vec3(0.1)))))
+}
+
+// a full set of maps from poly haven on a material: <name>_color, _normal and _arm, one
+// repeat every `size` meters of uv, without the repeat showing. the material's color tints
+// the color map (docs/materials.md)
+export function surface(m: Material, name: string, size: number) {
+  const at = meters.div(size)
+  const arm = untiled(texture(name, 'arm'), at)
+  m.colorNode = untiled(texture(name, 'color'), at).rgb.mul(materialColor.rgb)
+  m.normalNode = normalMap(untiled(texture(name, 'normal'), at).rgb)
+  m.aoNode = arm.r
+  m.roughnessNode = arm.g
+  m.metalnessNode = arm.b
 }
 
 // how much of a thin line at distance e (meters) shows, fading out far away where it
