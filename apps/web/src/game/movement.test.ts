@@ -60,9 +60,10 @@ describe('animForSpeed', () => {
 })
 
 describe('walk', () => {
-  const open: World = { buildings: [], circles: [], halfSize: 100 }
+  const open: World = { buildings: [], walls: [], circles: [], halfSize: 100 }
   // a thin wall across x = 2
   const walled: World = {
+    walls: [],
     buildings: [
       polygon([
         [2, -10],

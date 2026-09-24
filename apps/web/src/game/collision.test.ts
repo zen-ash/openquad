@@ -19,6 +19,7 @@ const lShape = polygon([
 
 const world: World = {
   buildings: [square, lShape],
+  walls: [],
   circles: [{ x: 10, z: 10, radius: 1 }],
   halfSize: 50,
 }

@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
 import { cutoutShader } from './cutout'
 import { texture } from './textures'
 
@@ -8,7 +9,14 @@ export const CONCRETE = 1
 export const BRICK = 2
 
 // real floors are ~3.5m
-const FLOOR_HEIGHT = 3.5
+export const FLOOR_HEIGHT = 3.5
+// window grid, shared with the inside walls (interiors.ts) so the holes line up
+export const COL_GLASS = 2.4
+export const COL_WALL = 3.0
+// ground floor window, as [left, bottom, right, top] inside each grid cell
+export const GROUND_WINDOW_GLASS = [0.04, 0.1, 0.96, 1.0]
+export const GROUND_WINDOW_WALL = [0.08, 0.1, 0.92, 0.9]
+const vec4 = (r: number[]) => `vec4(${r.map((n) => n.toFixed(2)).join(', ')})`
 
 /**
  * Building material. Windows aren't modeled, they're drawn by the shader from the
@@ -41,6 +49,8 @@ export function facadeMaterial() {
         attribute float aStyle;
         attribute float aHeight;
         attribute float aSeed;
+        attribute vec4 aDoor;
+        varying vec4 vDoor;
         varying float vStyle;
         varying float vHeight;
         varying float vSeed;
@@ -52,6 +62,7 @@ export function facadeMaterial() {
         vStyle = aStyle;
         vHeight = aHeight;
         vSeed = aSeed;
+        vDoor = aDoor;
         vWorldNormal = normal;`,
       )
 
@@ -68,6 +79,7 @@ export function facadeMaterial() {
         varying float vStyle;
         varying float vHeight;
         varying float vSeed;
+        varying vec4 vDoor;
         varying vec3 vWorldNormal;
 
         float hash(vec3 p) {
@@ -78,6 +90,11 @@ export function facadeMaterial() {
         '#include <color_fragment>',
         `#include <color_fragment>
         vec3 wn = normalize(vWorldNormal);
+        // the doorway of buildings you can walk into. vDoor is (x, z, normal x, normal z)
+        if (dot(vDoor.zw, vDoor.zw) > 0.5 && dot(wn.xz, vDoor.zw) > 0.9 && vWorldPos.y < ${DOOR_HEIGHT.toFixed(2)}) {
+          vec2 off = vWorldPos.xz - vDoor.xy;
+          if (abs(dot(off, vDoor.zw)) < 0.3 && abs(dot(off, vec2(vDoor.w, -vDoor.z))) < ${(DOOR_WIDTH / 2).toFixed(2)}) discard;
+        }
         bool isRoof = wn.y > 0.5;
         bool isGlass = false;
         // some windows have the lights on at night
@@ -98,14 +115,14 @@ export function facadeMaterial() {
             : texture2D(uConcrete, wallUv * 0.5).rgb * diffuseColor.rgb * 1.6;
           if (vStyle < 0.5) wall = diffuseColor.rgb; // glass towers: color is the metal frame
 
-          float colWidth = vStyle < 0.5 ? 2.4 : 3.0;
+          float colWidth = vStyle < 0.5 ? ${COL_GLASS.toFixed(1)} : ${COL_WALL.toFixed(1)};
           vec2 cell = fract(vec2(u / colWidth, v / ${FLOOR_HEIGHT}));
           float floorNum = floor(v / ${FLOOR_HEIGHT});
 
           // window rectangle inside each cell (0-1 on both axes)
-          vec4 rect = vStyle < 0.5 ? vec4(0.04, 0.1, 0.96, 1.0) : vec4(0.22, 0.3, 0.78, 0.85);
+          vec4 rect = vStyle < 0.5 ? ${vec4(GROUND_WINDOW_GLASS)} : vec4(0.22, 0.3, 0.78, 0.85);
           // shop windows on the ground floor
-          if (floorNum < 1.0 && vStyle > 0.5) rect = vec4(0.08, 0.1, 0.92, 0.9);
+          if (floorNum < 1.0 && vStyle > 0.5) rect = ${vec4(GROUND_WINDOW_WALL)};
 
           bool win = cell.x > rect.x && cell.x < rect.z && cell.y > rect.y && cell.y < rect.w;
           // solid strip along the top

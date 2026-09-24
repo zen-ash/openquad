@@ -1,7 +1,9 @@
 import campus from '../campus/campus.json'
 import { centroid } from '../campus/geometry'
-import { resolveCollisions, type Point } from './collision'
+import { pointInPolygon, polygon, resolveCollisions, type Point } from './collision'
 import { world } from './world'
+
+const outlines = campus.buildings.map((b) => polygon(b.points as [number, number][]))
 
 // short name in the menu -> building name on openstreetmap
 const SPOTS: [string, string][] = [
@@ -64,5 +66,7 @@ export function arrivalSpot(spot: Point, random = Math.random) {
   const angle = random() * Math.PI * 2
   const dist = 1 + random() * 1.5
   const p = { x: spot.x + Math.cos(angle) * dist, z: spot.z + Math.sin(angle) * dist }
-  return resolveCollisions(p, 0.4, world)
+  const landed = resolveCollisions(p, 0.4, world)
+  // right in front of a door it could land just inside the doorway, so fall back to the spot
+  return outlines.some((o) => pointInPolygon(landed, o.points)) ? spot : landed
 }

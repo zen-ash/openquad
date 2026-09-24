@@ -89,13 +89,30 @@ function outOfCircle(p: Point, radius: number, c: Circle): Point {
   return { x: c.x + (dx / dist) * min, z: c.z + (dz / dist) * min }
 }
 
-export type World = { buildings: Polygon[]; circles: Circle[]; halfSize: number }
+// a thin wall, like the outside wall of a building you can walk into
+export type Segment = { ax: number; az: number; bx: number; bz: number }
+
+function outOfSegment(p: Point, radius: number, s: Segment): Point {
+  const c = closestOnSegment(p, { x: s.ax, z: s.az }, { x: s.bx, z: s.bz })
+  const d = Math.hypot(p.x - c.x, p.z - c.z)
+  if (d >= radius) return p
+  if (d === 0) return p // right on the line, next frame sorts it out
+  return { x: c.x + ((p.x - c.x) / d) * radius, z: c.z + ((p.z - c.z) / d) * radius }
+}
+
+export type World = {
+  buildings: Polygon[]
+  walls: Segment[]
+  circles: Circle[]
+  halfSize: number
+}
 
 export function resolveCollisions(p: Point, radius: number, world: World): Point {
   let out = p
   // twice, since getting pushed out of one building can push you into the one next to it
   for (let pass = 0; pass < 2; pass++) {
     for (const b of world.buildings) out = outOfPolygon(out, radius, b)
+    for (const w of world.walls) out = outOfSegment(out, radius, w)
     for (const c of world.circles) out = outOfCircle(out, radius, c)
   }
 

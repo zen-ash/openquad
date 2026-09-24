@@ -15,6 +15,7 @@ import { useGame } from './net/store'
 import CameraInput from './scene/CameraInput'
 import Campus from './scene/Campus'
 import Effects from './scene/Effects'
+import IndoorLight from './scene/IndoorLight'
 import JoinCamera from './scene/JoinCamera'
 import Player from './scene/Player'
 import RemotePlayers from './scene/RemotePlayers'
@@ -52,6 +53,7 @@ export default function App() {
             <Player key={me.id} spawn={me} />
             <CameraInput />
             <RouteLine />
+            <IndoorLight />
             <RemotePlayers />
             <VoiceUpdater />
           </Suspense>

@@ -1,7 +1,7 @@
 import { Environment, Sky, Stars } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Color, PlaneGeometry, type DirectionalLight } from 'three'
+import { Color, PlaneGeometry, type DirectionalLight, type HemisphereLight } from 'three'
 import campus from '../campus/campus.json'
 import { areasGeometry, linesGeometry, planarUv } from '../campus/geometry'
 import { night } from '../campus/facade'
@@ -10,6 +10,7 @@ import { localPlayer } from '../game/localPlayer'
 import { daylight, sunDirection, sunPosition, timeFor } from '../game/sun'
 import { useSettings } from '../settings'
 import Buildings from './Buildings'
+import Interiors from './Interiors'
 import Trees from './Trees'
 
 const DAY_HAZE = new Color('#c9d6e0')
@@ -17,6 +18,12 @@ const NIGHT_HAZE = new Color('#0b1322')
 const SUNLIGHT = new Color('#fff0dc')
 const SUNSET_LIGHT = new Color('#ffb070')
 const MOONLIGHT = new Color('#8fa6d6')
+const SKY_LIGHT = new Color('#dcecff')
+const GROUND_LIGHT = new Color('#6d6452')
+const CEILING_LIGHT = new Color('#fff0dc')
+const FLOOR_LIGHT = new Color('#8a7460')
+const INDOOR_LIGHT = 1.2
+const INDOOR_ENVIRONMENT = 0.12
 
 // the real sun over atlanta (or a picked time of day). checked every 30 seconds, it
 // doesn't move fast enough to need more
@@ -75,6 +82,28 @@ function Sun({ dir, day }: { dir: [number, number, number]; day: number }) {
   )
 }
 
+// light from the whole sky (the hemisphere light and the environment map). indoors the
+// sky can't reach you, it becomes the ceiling lights instead: warm, and the same at any
+// time of day. with the sky still lighting everything the rooms looked foggy and blue
+function SkyLight({ intensity, environment }: { intensity: number; environment: number }) {
+  const light = useRef<HemisphereLight>(null)
+  const indoors = useRef(0)
+
+  useFrame(({ scene }, dt) => {
+    const l = light.current
+    if (!l) return
+    const k = (indoors.current +=
+      ((localPlayer.inside >= 0 ? 1 : 0) - indoors.current) * Math.min(1, dt * 4))
+    // materials without their own envMap all use this, their envMapIntensity is ignored
+    scene.environmentIntensity = environment + (INDOOR_ENVIRONMENT - environment) * k
+    l.intensity = intensity + (INDOOR_LIGHT - intensity) * k
+    l.color.copy(SKY_LIGHT).lerp(CEILING_LIGHT, k)
+    l.groundColor.copy(GROUND_LIGHT).lerp(FLOOR_LIGHT, k)
+  })
+
+  return <hemisphereLight ref={light} args={[SKY_LIGHT, GROUND_LIGHT, intensity]} />
+}
+
 function Ground() {
   const geos = useMemo(() => {
     const size = campus.halfSize * 6
@@ -102,6 +131,7 @@ function Ground() {
 export default function Campus() {
   const sky = useSky()
   const sunAt = sky.dir.map((v) => v * 100) as [number, number, number]
+  const environment = 0.15 + 0.55 * sky.day
   const haze = useMemo(() => NIGHT_HAZE.clone().lerp(DAY_HAZE, sky.day), [sky.day])
 
   // lit windows fade in as it gets dark
@@ -115,19 +145,15 @@ export default function Campus() {
       {sky.day < 0.3 && <Stars radius={600} depth={100} count={3000} factor={12} fade />}
       {/* same sky rendered into a cube map, for reflections and soft light. the key
           makes it re-render when the sun has moved */}
-      <Environment
-        key={sky.key}
-        frames={1}
-        resolution={128}
-        environmentIntensity={0.15 + 0.55 * sky.day}
-      >
+      <Environment key={sky.key} frames={1} resolution={128} environmentIntensity={environment}>
         <Sky sunPosition={sunAt} turbidity={5} rayleigh={1.2} mieCoefficient={0.004} />
       </Environment>
       <fog attach="fog" args={[haze, 300, 1000]} />
-      <hemisphereLight args={['#dcecff', '#6d6452', 0.12 + 0.38 * sky.day]} />
+      <SkyLight intensity={0.12 + 0.38 * sky.day} environment={environment} />
       <Sun dir={sky.light} day={sky.day} />
       <Ground />
       <Buildings />
+      <Interiors />
       <Trees />
     </>
   )

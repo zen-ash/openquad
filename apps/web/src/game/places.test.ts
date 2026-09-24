@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { pointInPolygon } from './collision'
+import { pointInPolygon, polygon } from './collision'
 import { arrivalSpot, places } from './places'
-import { world } from './world'
+import campus from '../campus/campus.json'
+
+// every building's real outline. the collision world only has walls for the ones you
+// can walk into, which wouldn't catch a spot inside one of those
+const outlines = campus.buildings.map((b) => polygon(b.points as [number, number][]))
 
 describe('places', () => {
   it('found all the buildings in the map data', () => {
@@ -9,7 +13,7 @@ describe('places', () => {
   })
 
   it.each(places.map((p) => [p.label, p]))('%s is not inside a building', (_, place) => {
-    for (const b of world.buildings) expect(pointInPolygon(place.spot, b.points)).toBe(false)
+    for (const b of outlines) expect(pointInPolygon(place.spot, b.points)).toBe(false)
   })
 
   it('spreads people out a bit around the spot', () => {

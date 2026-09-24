@@ -3,7 +3,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { BRICK, CONCRETE, GLASS } from './facade'
 
 type Pt = number[] // [x, z]
-export type BuildingData = { points: Pt[]; height: number; name?: string; gsu?: boolean }
+export type BuildingData = { points: Pt[]; height: number; name?: string; gsu?: boolean; door?: Pt }
 export type LineData = { width: number; points: Pt[] }
 
 // anything taller than ~14 floors (in real life) is a glass tower
@@ -18,7 +18,7 @@ function shape(points: Pt[]) {
 }
 
 // same "random" 0-1 number for a building every time
-const seedOf = (i: number) => {
+export const seedOf = (i: number) => {
   const n = Math.sin(i * 12.9898) * 43758.5453
   return n - Math.floor(n)
 }
@@ -51,6 +51,10 @@ export function buildingsGeometry(buildings: BuildingData[]) {
     geo.setAttribute('aStyle', fill(count, style))
     geo.setAttribute('aHeight', fill(count, b.height))
     geo.setAttribute('aSeed', fill(count, seed))
+    // where the doorway is, for the shader to cut it out. zeros for buildings without one
+    const door = new Float32Array(count * 4)
+    if (b.door) for (let v = 0; v < count; v++) door.set(b.door.slice(0, 4), v * 4)
+    geo.setAttribute('aDoor', new THREE.BufferAttribute(door, 4))
     return geo
   })
   return mergeGeometries(parts)

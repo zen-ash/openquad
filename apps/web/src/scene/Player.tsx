@@ -7,6 +7,7 @@ import { cutout } from '../campus/cutout'
 import type { Controls } from '../game/controls'
 import { avatarById } from '../game/avatars'
 import { clampDistance, clampPitch, orbit } from '../game/camera'
+import { interiorAt } from '../game/interiors'
 import { blocksView } from '../game/occlusion'
 import { localPlayer } from '../game/localPlayer'
 import {
@@ -33,6 +34,9 @@ const START_DISTANCE = 9
 const RUN_PULL = 1.8
 const WALK_FOV = 50
 const RUN_FOV = 56
+// indoors the camera comes in close and flatter so it stays under the ceiling
+const INDOOR_DISTANCE = 4
+const INDOOR_PITCH = 0.2
 const CAMERA_TURN_SPEED = 2 // radians/sec
 const PLAYER_RADIUS = 0.4
 const SEND_INTERVAL = 1 / TICK_RATE
@@ -57,6 +61,8 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
   const pitch = useRef(START_PITCH)
   const distance = useRef(START_DISTANCE)
   const pull = useRef(0)
+  const indoor = useRef(0) // 0 outside, 1 inside, eases in between
+  const insideTimer = useRef(0)
   const currentAnim = useRef<Anim>('Idle')
   const [anim, setAnim] = useState<Anim>('Idle')
   const emote = useEmotes((s) => s.playing[spawn.id])
@@ -135,6 +141,14 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
       }
     }
 
+    // which building we're in. doesn't need checking every frame
+    insideTimer.current -= dt
+    if (insideTimer.current <= 0) {
+      insideTimer.current = 0.15
+      localPlayer.inside = interiorAt(player.position)?.index ?? -1
+    }
+    indoor.current += ((localPlayer.inside >= 0 ? 1 : 0) - indoor.current) * (1 - Math.exp(-4 * dt))
+
     // ease back while jogging, back in when you stop
     pull.current += ((running && dir ? 1 : 0) - pull.current) * (1 - Math.exp(-2 * dt))
     const cam = camera as THREE.PerspectiveCamera
@@ -150,8 +164,14 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
     if (snapCamera.current) look.copy(lookGoal)
     else look.lerp(lookGoal, 1 - Math.exp(-10 * dt))
 
+    const outdoors = 1 - indoor.current
     const dist = distance.current + RUN_PULL * pull.current
-    const want = orbit(look, cameraYaw.current, pitch.current, dist)
+    const want = orbit(
+      look,
+      cameraYaw.current,
+      pitch.current * outdoors + Math.min(pitch.current, INDOOR_PITCH) * indoor.current,
+      dist * outdoors + Math.min(dist, INDOOR_DISTANCE) * indoor.current,
+    )
     if (snapCamera.current) camera.position.set(want.x, want.y, want.z)
     else camera.position.lerp(want, 1 - Math.exp(-7 * dt))
     snapCamera.current = false
