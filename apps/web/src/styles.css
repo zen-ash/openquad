@@ -787,10 +787,16 @@ button {
   }
 }
 
-.debug-layers {
+.debug-panel {
   position: fixed;
   top: 64px;
   right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.debug-layers {
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -819,7 +825,7 @@ button {
 }
 
 @media (max-width: 640px), (max-height: 500px) {
-  .debug-layers {
+  .debug-panel {
     display: none;
   }
 }

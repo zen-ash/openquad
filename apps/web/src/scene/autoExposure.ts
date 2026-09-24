@@ -15,6 +15,7 @@ import {
 import { FloatType, NodeMaterial, QuadMesh, RenderTarget, Texture } from 'three/webgpu'
 import type { WebGPURenderer } from 'three/webgpu'
 import { still } from '../settings'
+import { fx } from './fx'
 
 // eye adaptation: after every frame the picture's brightness is measured and the exposure
 // moves toward what makes it look right, like your eyes getting used to a dim lobby or the
@@ -95,7 +96,8 @@ export function adapt(dt: number) {
   // photos (?still) jump straight there so they come out the same every time
   if (ev === null || still) ev = want
   else ev += (want - ev) * (1 - Math.exp(-dt / (want < ev ? TO_BRIGHT : TO_DARK)))
-  exposure.value = 2 ** ev
+  // switched off in the debug panel: the picture as it comes
+  exposure.value = fx.exposure.value > 0.5 ? 2 ** ev : 1
 }
 
 export const exposureStats = () => ({ measured, ev })

@@ -1,6 +1,6 @@
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
-import { ACESFilmicToneMapping, SRGBColorSpace, Vector2 } from 'three'
+import { NoToneMapping, SRGBColorSpace, Vector2 } from 'three'
 import { aerialPerspective } from '@takram/three-atmosphere/webgpu'
 import { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js'
 import { ao as gtao } from 'three/examples/jsm/tsl/display/GTAONode.js'
@@ -10,6 +10,8 @@ import { sharpen } from 'three/examples/jsm/tsl/display/SharpenNode.js'
 import { sss } from 'three/examples/jsm/tsl/display/SSSNode.js'
 import { boxBlur } from 'three/examples/jsm/tsl/display/boxBlur.js'
 import {
+  acesFilmicToneMapping,
+  agxToneMapping,
   builtinAOContext,
   builtinShadowContext,
   context,
@@ -19,6 +21,7 @@ import {
   int,
   mix,
   mrt,
+  neutralToneMapping,
   normalView,
   output,
   pass,
@@ -26,6 +29,7 @@ import {
   renderOutput,
   rtt,
   screenUV,
+  select,
   smoothstep,
   textureSize,
   vec2,
@@ -43,7 +47,7 @@ import {
 import { useSettings } from '../settings'
 import { sunlight } from './Atmosphere'
 import { adapt, exposure, meter } from './autoExposure'
-import { effects } from './fx'
+import { effects, fx, toneMapping } from './fx'
 
 // how far (meters) the ambient occlusion looks for things that block the sky
 const AO_RADIUS = 2
@@ -54,6 +58,8 @@ const AO_RADIUS = 2
 const MAX_WIDTH = 1920
 const MAX_HEIGHT = 1200
 
+// how much taa's softness gets sharpened back (0 is the most, 2 hardly any)
+const SHARPNESS = 0.6
 // how much light spreads (0.04 is what cameras and games use) and how wide (0 to 1)
 const GLARE = 0.04
 const GLARE_SPREAD = 0.2
@@ -84,6 +90,7 @@ export default function Effects() {
   const gl = useThree((s) => s.gl) as unknown as WebGPURenderer
   const scene = useThree((s) => s.scene)
   const camera = useThree((s) => s.camera)
+  const taaOn = useSettings((s) => s.taa)
 
   const { pipeline, lit, resize } = useMemo(() => {
     // ambient occlusion first, from a quick pass that only draws depth and normals: how
@@ -119,9 +126,11 @@ export default function Effects() {
     contact.thickness.value = 0.02
     contact.useTemporalFiltering = false
     // both on top of the renderer's own context, which has the atmosphere in it
-    const ao = builtinAOContext(blurY.sample(screenUV).r)
+    const ao = builtinAOContext(mix(1, blurY.sample(screenUV).r, fx.ao))
     // only up close: far away the depth buffer is too coarse and things shadow themselves
-    const near = float(1).sub(smoothstep(12, 25, positionView.z.negate()))
+    const near = float(1)
+      .sub(smoothstep(12, 25, positionView.z.negate()))
+      .mul(fx.contact)
     const soft = buildOnce(
       rtt(boxBlur(contact.getTextureNode(), { size: int(1), separation: int(1) })),
     )
@@ -133,50 +142,64 @@ export default function Effects() {
       ...(shadows.value as object),
     })
     const depth = scenePass.getTextureNode('depth')
-    let out = scenePass.getTextureNode('output') as Node<'vec4'>
+    const drawn = scenePass.getTextureNode('output') as Node<'vec4'>
 
     // the air between you and everything: far things fade toward the sky's color and turn
     // bluer (Atmosphere.tsx, which also tells it the camera)
-    const air = aerialPerspective(out, depth)
+    const air = aerialPerspective(drawn, depth)
     // the sky itself is drawn in the scene already (Atmosphere.tsx)
     air.skyNode = null
     // drawn into a texture once, it's a lot of shader to repeat in every pass after it
-    const lit = rtt(air as unknown as Node<'vec4'>)
+    const lit = rtt(mix(drawn, air as unknown as Node<'vec4'>, fx.haze))
 
-    // back up to full size, and the edges smooth, from this frame and the ones before it
-    const full = taau(lit, depth, scenePass.getTextureNode('velocity'), camera)
-    // taa softens everything a little, this gets the detail back (0 is the most, 2 none)
-    const sharp = sharpen(convertToTexture(full as unknown as Node<'vec4'>), 0.6) as unknown as {
-      getTextureNode(): TextureNode
+    // back up to full size, and the edges smooth, from this frame and the ones before it.
+    // taa softens everything a little, sharpening gets some of the detail back
+    let image = lit as TextureNode
+    if (taaOn) {
+      const full = taau(lit, depth, scenePass.getTextureNode('velocity'), camera)
+      const sharpness = mix(float(20), float(SHARPNESS), fx.sharpen)
+      const sharp = sharpen(
+        convertToTexture(full as unknown as Node<'vec4'>),
+        sharpness,
+      ) as unknown as { getTextureNode(): TextureNode }
+      image = sharp.getTextureNode()
     }
-    const image = sharp.getTextureNode()
 
     // lenses bend red and blue a tiny bit differently, so toward the corners the colors
     // pull apart, about a pixel at the edge of a 1920 wide screen
-    const shift = screenUV.sub(0.5).mul(ABERRATION)
-    out = vec4(
+    const shift = screenUV.sub(0.5).mul(fx.aberration.mul(ABERRATION))
+    let out = vec4(
       image.sample(screenUV.add(shift)).r,
       image.sample(screenUV).g,
       image.sample(screenUV.sub(shift)).b,
       1,
-    )
+    ) as Node<'vec4'>
 
     // glare: a few percent of all light scatters in a lens (or an eye), which only shows
     // around things much brighter than what's next to them, the sun on glass, lit windows
     // at night. no threshold, so it's the same at any exposure. three's bloom adds up 5
     // blur sizes with weights that sum to 3
     const glare = bloom(image, 1 / 3, GLARE_SPREAD, 0)
-    out = mix(out, glare, GLARE)
+    out = mix(out, glare, fx.glare.mul(GLARE))
 
     // darker corners, same curve as the postprocessing library's vignette we had before
     const d = distance(screenUV, vec2(0.5))
-    out = vec4(out.rgb.mul(smoothstep(0.8, float(0.3 * 0.799), d.mul(0.35 + 0.3))), 1)
+    const vignette = mix(1, smoothstep(0.8, float(0.3 * 0.799), d.mul(0.35 + 0.3)), fx.vignette)
+    const color = out.rgb.mul(vignette).mul(exposure)
 
-    out = out.mul(exposure)
-
+    // tone mapping here rather than in renderOutput, so the debug panel can switch it
+    const mapped = select(
+      toneMapping.equal(1),
+      acesFilmicToneMapping(color, float(1)),
+      select(
+        toneMapping.equal(2),
+        agxToneMapping(color, float(1)),
+        select(toneMapping.equal(3), neutralToneMapping(color, float(1)), color.clamp(0, 1)),
+      ),
+    )
     const pipeline = new RenderPipeline(
       gl,
-      renderOutput(out, ACESFilmicToneMapping, SRGBColorSpace),
+      renderOutput(vec4(mapped as unknown as Node<'vec3'>, 1), NoToneMapping, SRGBColorSpace),
     )
     pipeline.outputColorTransform = false
 
@@ -194,7 +217,7 @@ export default function Effects() {
       glare.setResolutionScale(scale / 4)
     }
     return { pipeline, lit, resize }
-  }, [gl, scene, camera])
+  }, [gl, scene, camera, taaOn])
 
   useEffect(() => () => pipeline.dispose(), [pipeline])
   const sized = useRef<{ pipeline: RenderPipeline; scale: number } | null>(null)

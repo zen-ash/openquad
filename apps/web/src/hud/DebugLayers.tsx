@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { fx, TONE_MAPPINGS, toneMapping } from '../scene/fx'
 import { TILES_KEY, useSettings } from '../settings'
 
 type Layer = 'tiles' | 'extruded' | 'tilesInside' | 'outlines' | 'fenceLine'
@@ -10,9 +12,31 @@ const LAYERS: [Layer, string][] = [
   ['fenceLine', 'Fence line'],
 ]
 
+const EFFECTS: [keyof typeof fx, string][] = [
+  ['ao', 'Ambient occlusion'],
+  ['contact', 'Contact shadows'],
+  ['haze', 'Haze'],
+  ['sharpen', 'Sharpening'],
+  ['aberration', 'Color fringes'],
+  ['glare', 'Glare'],
+  ['vignette', 'Vignette'],
+  ['exposure', 'Auto exposure'],
+]
+
 // dev (or ?debug): turn the tiles and our own buildings on and off separately, to compare
-// them and check they line up. inside the fence it's always our buildings
+// them and check they line up. inside the fence it's always our buildings. and each of
+// the effects, to see what it does
 export default function DebugLayers() {
+  const atmosphere = useSettings((s) => s.atmosphere)
+  return (
+    <div className="debug-panel">
+      <Layers />
+      {atmosphere && <Effects />}
+    </div>
+  )
+}
+
+function Layers() {
   const settings = useSettings()
   return (
     <fieldset className="debug-layers">
@@ -31,6 +55,60 @@ export default function DebugLayers() {
           {label}
         </label>
       ))}
+    </fieldset>
+  )
+}
+
+function Effects() {
+  const taa = useSettings((s) => s.taa)
+  const [on, setOn] = useState(() => EFFECTS.map(([key]) => fx[key].value > 0.5))
+  const [mapping, setMapping] = useState(toneMapping.value)
+  return (
+    <fieldset className="debug-layers">
+      <legend>Effects</legend>
+      <label>
+        <input
+          type="checkbox"
+          checked={taa}
+          onChange={(e) => {
+            // taa off puts the picture together differently, the shaders get rebuilt
+            useSettings.setState({ taa: e.target.checked })
+            e.currentTarget.blur()
+          }}
+        />
+        TAA
+      </label>
+      {EFFECTS.map(([key, label], i) => (
+        <label key={key}>
+          <input
+            type="checkbox"
+            checked={on[i]}
+            onChange={(e) => {
+              fx[key].value = e.target.checked ? 1 : 0
+              setOn(on.map((v, j) => (j === i ? e.target.checked : v)))
+              e.currentTarget.blur()
+            }}
+          />
+          {label}
+        </label>
+      ))}
+      <label>
+        Tone mapping
+        <select
+          value={mapping}
+          onChange={(e) => {
+            toneMapping.value = Number(e.target.value)
+            setMapping(toneMapping.value)
+            e.currentTarget.blur()
+          }}
+        >
+          {TONE_MAPPINGS.map((name, i) => (
+            <option key={name} value={i}>
+              {name}
+            </option>
+          ))}
+        </select>
+      </label>
     </fieldset>
   )
 }

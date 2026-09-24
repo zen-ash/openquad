@@ -75,6 +75,8 @@ export const useSettings = create<{
   warming: boolean
   // draw at the screen's own resolution instead of at most 1920x1200 (scaled up by taa)
   native: boolean
+  // taa on or off, a debug switch (the other effects' switches are in scene/fx.ts)
+  taa: boolean
   time: string
   photo: boolean
   tiles: boolean
@@ -89,6 +91,7 @@ export const useSettings = create<{
   // nothing to build without the city (the e2e tests)
   warming: !hideCity,
   native: savedNative(),
+  taa: true,
   time: startingTime(),
   // everything on screen hidden, for screenshots
   photo: false,
