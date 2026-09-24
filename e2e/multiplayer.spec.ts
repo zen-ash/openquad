@@ -15,13 +15,11 @@ test('two players can see each other move', async ({ join }) => {
   const before = await positionOf(bob, aliceId)
   expect(before).toBeDefined()
 
-  // alice walks right for a bit. how far depends on framerate (slow in headless),
-  // so just check she clearly moved
+  // alice walks right until bob sees she clearly moved. holding the key for a set time
+  // wasn't enough on a slow ci machine, it sometimes only got a couple of frames in
   await alice.keyboard.down('KeyD')
-  await alice.waitForTimeout(2500)
-  await alice.keyboard.up('KeyD')
-
   await expect.poll(async () => (await positionOf(bob, aliceId))!.x).toBeGreaterThan(before!.x + 1)
+  await alice.keyboard.up('KeyD')
 })
 
 test('player count goes down when someone leaves', async ({ join }) => {
