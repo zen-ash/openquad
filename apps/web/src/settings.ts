@@ -75,8 +75,10 @@ export const useSettings = create<{
   warming: boolean
   // draw at the screen's own resolution instead of at most 1920x1200 (scaled up by taa)
   native: boolean
-  // taa on or off, a debug switch (the other effects' switches are in scene/fx.ts)
+  // taa on or off and the tone mapping, debug switches (the other effects' switches are
+  // in scene/fx.ts)
   taa: boolean
+  toneMapping: 'neutral' | 'aces' | 'agx' | 'none'
   time: string
   photo: boolean
   tiles: boolean
@@ -92,6 +94,7 @@ export const useSettings = create<{
   warming: !hideCity,
   native: savedNative(),
   taa: true,
+  toneMapping: 'neutral',
   time: startingTime(),
   // everything on screen hidden, for screenshots
   photo: false,

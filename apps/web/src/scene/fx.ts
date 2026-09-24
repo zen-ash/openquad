@@ -1,3 +1,4 @@
+import { ACESFilmicToneMapping, AgXToneMapping, NeutralToneMapping, NoToneMapping } from 'three'
 import { uniform } from 'three/tsl'
 
 // a switch for each effect, in the debug panel (hud/DebugLayers.tsx), to see what each one
@@ -16,8 +17,14 @@ export const fx = {
   exposure: uniform(1),
 }
 
-export const TONE_MAPPINGS = ['none', 'aces', 'agx', 'neutral'] as const
-export const toneMapping = uniform(3)
+// the tone mappings the debug panel can switch between (settings.toneMapping). that one
+// rebuilds the effects, so only the one in use is ever run
+export const TONE_MAPPINGS = {
+  neutral: NeutralToneMapping,
+  aces: ACESFilmicToneMapping,
+  agx: AgXToneMapping,
+  none: NoToneMapping,
+}
 
 // set once the effects have drawn a frame. the warm-up (WarmUp.tsx) waits for it, or it
 // builds the shaders for drawing without them, which high quality never uses

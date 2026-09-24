@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { fx, TONE_MAPPINGS, toneMapping } from '../scene/fx'
+import { fx, TONE_MAPPINGS } from '../scene/fx'
 import { TILES_KEY, useSettings } from '../settings'
 
 type Layer = 'tiles' | 'extruded' | 'tilesInside' | 'outlines' | 'fenceLine'
@@ -63,7 +63,7 @@ function Layers() {
 function Effects() {
   const taa = useSettings((s) => s.taa)
   const [on, setOn] = useState(() => EFFECTS.map(([key]) => fx[key].value > 0.5))
-  const [mapping, setMapping] = useState(toneMapping.value)
+  const mapping = useSettings((s) => s.toneMapping)
   return (
     <fieldset className="debug-layers">
       <legend>Effects</legend>
@@ -98,13 +98,13 @@ function Effects() {
         <select
           value={mapping}
           onChange={(e) => {
-            toneMapping.value = Number(e.target.value)
-            setMapping(toneMapping.value)
+            // rebuilds the effects too
+            useSettings.setState({ toneMapping: e.target.value as typeof mapping })
             e.currentTarget.blur()
           }}
         >
-          {TONE_MAPPINGS.map((name, i) => (
-            <option key={name} value={i}>
+          {Object.keys(TONE_MAPPINGS).map((name) => (
+            <option key={name} value={name}>
               {name}
             </option>
           ))}

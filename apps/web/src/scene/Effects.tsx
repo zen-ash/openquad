@@ -10,9 +10,6 @@ import { sharpen } from 'three/examples/jsm/tsl/display/SharpenNode.js'
 import { sss } from 'three/examples/jsm/tsl/display/SSSNode.js'
 import { boxBlur } from 'three/examples/jsm/tsl/display/boxBlur.js'
 import {
-  abs,
-  acesFilmicToneMapping,
-  agxToneMapping,
   builtinAOContext,
   builtinShadowContext,
   context,
@@ -22,9 +19,7 @@ import {
   int,
   luminance,
   mix,
-  min,
   mrt,
-  neutralToneMapping,
   normalView,
   output,
   pass,
@@ -34,6 +29,7 @@ import {
   screenUV,
   smoothstep,
   textureSize,
+  toneMapping,
   vec2,
   vec3,
   vec4,
@@ -50,7 +46,7 @@ import {
 import { useSettings } from '../settings'
 import { sunlight } from './Atmosphere'
 import { adapt, exposure, meter } from './autoExposure'
-import { effects, fx, toneMapping } from './fx'
+import { effects, fx, TONE_MAPPINGS } from './fx'
 
 // how far (meters) the ambient occlusion looks for things that block the sky
 const AO_RADIUS = 2
@@ -101,6 +97,7 @@ export default function Effects() {
   const scene = useThree((s) => s.scene)
   const camera = useThree((s) => s.camera)
   const taaOn = useSettings((s) => s.taa)
+  const mapping = useSettings((s) => s.toneMapping)
 
   const { pipeline, lit, resize } = useMemo(() => {
     // ambient occlusion first, from a quick pass that only draws depth and normals: how
@@ -200,20 +197,14 @@ export default function Effects() {
     const saturation = mix(float(SATURATION), float(BRIGHT_SATURATION), smoothstep(0.3, 0.8, lum))
     const color = mix(vec3(lum), exposed, mix(1, saturation, fx.saturation))
 
-    // tone mapping here rather than in renderOutput, so the debug panel can switch it.
     // pbr neutral: aces washed the sky out to white near the horizon (chroma 20 -> 8) and
-    // took the green out of the grass, neutral keeps colors and still rolls off the sun
-    // (weights, a chain of select()s came out black for the last two)
-    const pick = (i: number) => float(1).sub(min(abs(toneMapping.sub(i)), 1))
-    const mapped = color
-      .clamp(0, 1)
-      .mul(pick(0))
-      .add((acesFilmicToneMapping(color, float(1)) as Node<'vec3'>).mul(pick(1)))
-      .add((agxToneMapping(color, float(1)) as Node<'vec3'>).mul(pick(2)))
-      .add((neutralToneMapping(color, float(1)) as Node<'vec3'>).mul(pick(3)))
+    // took the green out of the grass, neutral keeps colors and still rolls off the sun.
+    // here and not in renderOutput, that would add the renderer's exposure (the one for low
+    // quality) on top of ours
+    const mapped = toneMapping(TONE_MAPPINGS[mapping], float(1), vec4(color, 1))
     const pipeline = new RenderPipeline(
       gl,
-      renderOutput(vec4(mapped, 1), NoToneMapping, SRGBColorSpace),
+      renderOutput(mapped as unknown as Node<'vec4'>, NoToneMapping, SRGBColorSpace),
     )
     pipeline.outputColorTransform = false
 
@@ -231,7 +222,7 @@ export default function Effects() {
       glare.setResolutionScale(scale / 4)
     }
     return { pipeline, lit, resize }
-  }, [gl, scene, camera, taaOn])
+  }, [gl, scene, camera, taaOn, mapping])
 
   useEffect(() => () => pipeline.dispose(), [pipeline])
   const sized = useRef<{ pipeline: RenderPipeline; scale: number } | null>(null)
