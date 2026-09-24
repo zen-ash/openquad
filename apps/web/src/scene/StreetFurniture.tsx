@@ -135,6 +135,7 @@ const insideOnly = (spots: Spot[]) => spots.filter((s) => fenceDistance(s.x, s.z
 // benches, bins, lamp posts and street lights (game/streetFurniture.ts)
 export default function StreetFurniture() {
   const tiles = useSettings((s) => s.tiles)
+  const quality = useSettings((s) => s.quality)
   const spots = useMemo(() => {
     const pick = tiles ? insideOnly : (s: Spot[]) => s
     return {
@@ -163,9 +164,10 @@ export default function StreetFurniture() {
   )
 
   // lamps come on as it gets dark. way brighter than a lit window, like real ones, which is
-  // what makes them glow (the glare in Effects has no threshold)
+  // what makes them glow (the glare in Effects has no threshold). low quality has no glare
+  // and that much just comes out as a flat white disc
   useFrame(() => {
-    lampGlass.emissiveIntensity = night.value * 80
+    lampGlass.emissiveIntensity = night.value * (quality === 'high' ? 80 : 2.5)
     pools.park.opacity = night.value * 0.5
     pools.street.opacity = night.value * 0.45
   })
