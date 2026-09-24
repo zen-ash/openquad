@@ -22,7 +22,9 @@ function startingTime(): TimeOfDay {
   return TIMES.includes(t as TimeOfDay) ? (t as TimeOfDay) : 'live'
 }
 
-export const useSettings = create<{ quality: Quality; time: TimeOfDay }>(() => ({
+export const useSettings = create<{ quality: Quality; time: TimeOfDay; photo: boolean }>(() => ({
   quality: startingQuality(),
   time: startingTime(),
+  // everything on screen hidden, for screenshots
+  photo: false,
 }))

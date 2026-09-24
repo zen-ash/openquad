@@ -9,6 +9,7 @@ const KEYS: [string, string][] = [
   ['Enter', 'chat'],
   ['1-5', 'emotes'],
   ['M', 'mute'],
+  ['P', 'photo mode'],
   ['H', 'show / hide this'],
 ]
 

@@ -7,6 +7,7 @@ import EmoteBar from './EmoteBar'
 import { keyMap } from './game/controls'
 import JoinScreen from './JoinScreen'
 import Hud from './hud/Hud'
+import PhotoMode from './hud/PhotoMode'
 import Minimap from './hud/Minimap'
 import { useGame } from './net/store'
 import CameraInput from './scene/CameraInput'
@@ -29,6 +30,7 @@ export default function App() {
   // you never got in at all
   const inGame = me && (status === 'connected' || status === 'reconnecting')
   const quality = useSettings((s) => s.quality)
+  const photo = useSettings((s) => s.photo)
 
   return (
     <KeyboardControls map={keyMap}>
@@ -56,18 +58,23 @@ export default function App() {
         {quality === 'high' && <Effects />}
       </Canvas>
 
-      {inGame && isTouchScreen && <TouchControls />}
+      {inGame && isTouchScreen && !photo && <TouchControls />}
 
       {inGame ? (
         <>
+          <PhotoMode />
           {status === 'reconnecting' && <div className="banner">Reconnecting...</div>}
-          <Hud />
-          <ChatPanel />
-          <Minimap />
-          <EmoteBar />
-          <MicButton />
-          <TeleportMenu />
-          <TimePicker />
+          {!photo && (
+            <>
+              <Hud />
+              <ChatPanel />
+              <Minimap />
+              <EmoteBar />
+              <MicButton />
+              <TeleportMenu />
+              <TimePicker />
+            </>
+          )}
         </>
       ) : (
         <JoinScreen />
