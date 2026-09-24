@@ -123,8 +123,9 @@ const GSU_NAMES = {
 
 const isGsu = (tags) => GSU_BUILDINGS.has(tags.name)
 
-// heights for gsu buildings osm has none for, from overture maps. mostly usgs lidar,
-// the ones with decimals are microsoft's estimates from aerial photos
+// heights for gsu buildings osm has none for (or only a floor count), from overture maps.
+// mostly usgs lidar, the ones with decimals are microsoft's estimates from aerial photos.
+// the ones marked floors are counted from photos
 const MEASURED_HEIGHTS = {
   '148 Edgewood': 17.2,
   'GSU Parking A Deck': 4.2,
@@ -140,14 +141,23 @@ const MEASURED_HEIGHTS = {
   'Piedmont North Dining Hall': 18.2,
   'Sports Annex': 27.5,
   'Loft Parking': 12.3,
+  // osm says 4 floors, but they're tall ones
+  'Helen M. Aderhold Learning Center': 21.9,
+  // floors: 4 tall old warehouse floors
+  '58 Edgewood': 16.5,
+  // floors: 5
+  'Science Annex': 18,
+  // floors: the marble box on courtland is about 3
+  'Student Center West': 13,
+  'Student Center East': 15,
 }
 
 function heightOf(tags) {
   const h = parseFloat(tags.height)
   if (h > 0) return h
+  if (MEASURED_HEIGHTS[tags.name]) return MEASURED_HEIGHTS[tags.name]
   const levels = parseFloat(tags['building:levels'])
   if (levels > 0) return levels * 3.5
-  if (MEASURED_HEIGHTS[tags.name]) return MEASURED_HEIGHTS[tags.name]
   if (tags.building === 'house' || tags.building === 'kiosk') return 6
   return 14 // most of downtown is bigger than a house, 4 floors is a decent guess
 }
