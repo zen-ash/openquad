@@ -32,7 +32,7 @@ import {
   vec4,
   velocity,
 } from 'three/tsl'
-import { RenderPipeline, type Node, type WebGPURenderer } from 'three/webgpu'
+import { RenderPipeline, type Node, type TextureNode, type WebGPURenderer } from 'three/webgpu'
 import { exposure, sunlight } from './Atmosphere'
 
 // how far (meters) the ambient occlusion looks for things that block the sky
@@ -41,6 +41,10 @@ const AO_RADIUS = 2
 // how big the scene is drawn before taau scales it up: 0.8 is 64% of the pixels. 0.67
 // was cheaper but visibly softer, 0.8 with the sharpening looks like full size (pnpm visual)
 const SCALE = 0.8
+
+// how much light spreads (0.04 is what cameras and games use) and how wide (0 to 1)
+const GLARE = 0.04
+const GLARE_SPREAD = 0.2
 
 // only mounted on high quality (see App). webgpu only, the webgl2 fallback is always low
 export default function Effects() {
@@ -127,12 +131,21 @@ export default function Effects() {
     // back up to full size, and the edges smooth, from this frame and the ones before it
     const full = taau(lit, depth, scenePass.getTextureNode('velocity'), camera)
     // taa softens everything a little, this gets the detail back (0 is the most, 2 none)
-    out = sharpen(convertToTexture(full as unknown as Node<'vec4'>), 0.6) as unknown as Node<'vec4'>
+    const sharp = sharpen(convertToTexture(full as unknown as Node<'vec4'>), 0.6) as unknown as {
+      getTextureNode(): TextureNode
+    }
+    const image = sharp.getTextureNode()
 
-    // only really bright things glow, which in practice is lit windows at night. three's
-    // bloom spreads a lot more than the postprocessing library's did, these numbers match
-    // the old look (pnpm visual)
-    out = out.add(bloom(out, 0.15, 0.4, 1))
+    out = image as unknown as Node<'vec4'>
+
+    // glare: a few percent of all light scatters in a lens (or an eye), which only shows
+    // around things much brighter than what's next to them, the sun on glass, lit windows
+    // at night. no threshold, so it's the same at any exposure. three's bloom adds up 5
+    // blur sizes with weights that sum to 3
+    const glare = bloom(image, 1 / 3, GLARE_SPREAD, 0)
+    // it's all blur, a quarter size is plenty (0.1ms less than half, looks the same)
+    glare.setResolutionScale(0.25)
+    out = mix(out, glare, GLARE)
 
     // darker corners, same curve as the postprocessing library's vignette we had before
     const d = distance(screenUV, vec2(0.5))

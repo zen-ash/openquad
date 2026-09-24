@@ -162,9 +162,10 @@ export default function StreetFurniture() {
     [geos],
   )
 
-  // lamps come on as it gets dark
+  // lamps come on as it gets dark. way brighter than a lit window, like real ones, which is
+  // what makes them glow (the glare in Effects has no threshold)
   useFrame(() => {
-    lampGlass.emissiveIntensity = night.value * 2.5
+    lampGlass.emissiveIntensity = night.value * 80
     pools.park.opacity = night.value * 0.5
     pools.street.opacity = night.value * 0.45
   })
