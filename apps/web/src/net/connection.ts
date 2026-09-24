@@ -86,6 +86,9 @@ function handle(msg: ServerMessage) {
         players[p.id] = person(p)
         snapshots.set(p.id, [{ t: now, x: p.position.x, z: p.position.z, heading: p.heading }])
       }
+      // where we are from the start, not from Player's first frame a moment later
+      localPlayer.x = msg.you.position.x
+      localPlayer.z = msg.you.position.z
       useGame.setState({ status: 'connected', me: msg.you, players })
       break
     }
