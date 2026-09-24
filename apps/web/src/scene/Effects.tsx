@@ -45,6 +45,8 @@ const SCALE = 0.8
 // how much light spreads (0.04 is what cameras and games use) and how wide (0 to 1)
 const GLARE = 0.04
 const GLARE_SPREAD = 0.2
+// color fringes: how far the red and blue move per pixel away from the middle
+const ABERRATION = 0.001
 
 // only mounted on high quality (see App). webgpu only, the webgl2 fallback is always low
 export default function Effects() {
@@ -136,7 +138,15 @@ export default function Effects() {
     }
     const image = sharp.getTextureNode()
 
-    out = image as unknown as Node<'vec4'>
+    // lenses bend red and blue a tiny bit differently, so toward the corners the colors
+    // pull apart, about a pixel at the edge of a 1920 wide screen
+    const shift = screenUV.sub(0.5).mul(ABERRATION)
+    out = vec4(
+      image.sample(screenUV.add(shift)).r,
+      image.sample(screenUV).g,
+      image.sample(screenUV.sub(shift)).b,
+      1,
+    )
 
     // glare: a few percent of all light scatters in a lens (or an eye), which only shows
     // around things much brighter than what's next to them, the sun on glass, lit windows
