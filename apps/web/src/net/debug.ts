@@ -1,6 +1,7 @@
 import { input } from '../game/input'
 import { interiors } from '../game/interiors'
 import { localPlayer } from '../game/localPlayer'
+import { exposureStats } from '../scene/autoExposure'
 import { tileHeightAt, tilesStats } from '../scene/Tiles'
 import { useSettings } from '../settings'
 import { peers } from '../voice/voice'
@@ -38,6 +39,8 @@ declare global {
       tileHeightAt: typeof tileHeightAt
       // webgpu, or the webgl2 fallback
       backend: () => 'webgpu' | 'webgl2' | null
+      // auto exposure: log2 of the measured brightness, and the exposure in stops
+      exposure: typeof exposureStats
     }
   }
 }
@@ -75,5 +78,6 @@ if (import.meta.env.DEV) {
     tiles: tilesStats,
     tileHeightAt,
     backend: () => useSettings.getState().backend,
+    exposure: exposureStats,
   }
 }

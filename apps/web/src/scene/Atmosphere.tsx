@@ -68,9 +68,6 @@ export function addAtmosphere(renderer: WebGPURenderer) {
   renderer.library.addLight(AtmosphereLightNode as never, AtmosphereLight)
 }
 
-// how bright the picture comes out (Effects), for auto exposure to set
-export const exposure = uniform(1)
-
 // the sky: a quad over the whole screen at the far plane, drawn after everything solid so
 // it only runs where sky actually shows (it's an expensive shader, as the scene background
 // it ran for every pixel, 3ms), and before glass and labels so they blend with it. Effects

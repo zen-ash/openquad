@@ -33,7 +33,8 @@ import {
   velocity,
 } from 'three/tsl'
 import { RenderPipeline, type Node, type TextureNode, type WebGPURenderer } from 'three/webgpu'
-import { exposure, sunlight } from './Atmosphere'
+import { sunlight } from './Atmosphere'
+import { adapt, exposure, meter } from './autoExposure'
 
 // how far (meters) the ambient occlusion looks for things that block the sky
 const AO_RADIUS = 2
@@ -54,7 +55,7 @@ export default function Effects() {
   const scene = useThree((s) => s.scene)
   const camera = useThree((s) => s.camera)
 
-  const pipeline = useMemo(() => {
+  const { pipeline, lit } = useMemo(() => {
     // ambient occlusion first, from a quick pass that only draws depth and normals: how
     // much of the sky each spot can see. the scene pass then darkens only the light from
     // the sky and the environment with it, not the sun (which has shadows for that). the
@@ -168,12 +169,16 @@ export default function Effects() {
       renderOutput(out, ACESFilmicToneMapping, SRGBColorSpace),
     )
     pipeline.outputColorTransform = false
-    return pipeline
+    return { pipeline, lit }
   }, [gl, scene, camera])
 
   useEffect(() => () => pipeline.dispose(), [pipeline])
 
   // priority 1 takes the rendering over from fiber
-  useFrame(() => pipeline.render(), 1)
+  useFrame((_, dt) => {
+    pipeline.render()
+    meter(gl, lit.value)
+    adapt(dt)
+  }, 1)
   return null
 }
