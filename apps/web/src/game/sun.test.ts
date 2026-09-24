@@ -76,6 +76,10 @@ describe('timeFor', () => {
     expect(alt).toBeLessThan(4)
   })
 
+  it('takes an exact time too', () => {
+    expect(timeFor('17:30', now).toISOString()).toBe('2026-09-23T21:30:00.000Z')
+  })
+
   it('is dark for night and bright for noon', () => {
     expect(daylight(sunPosition(timeFor('night', now)).altitude)).toBe(0)
     expect(daylight(sunPosition(timeFor('noon', now)).altitude)).toBe(1)

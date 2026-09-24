@@ -15,14 +15,22 @@ export const hideCity = new URLSearchParams(location.search).has('nocity')
 export const TIMES = ['live', 'morning', 'noon', 'sunset', 'night'] as const
 export type TimeOfDay = (typeof TIMES)[number]
 
+const params = new URLSearchParams(location.search)
+
 // live follows the real time in atlanta. the others are handy for showing night in a
-// daytime class. ?time=night works too
-function startingTime(): TimeOfDay {
-  const t = new URLSearchParams(location.search).get('time')
-  return TIMES.includes(t as TimeOfDay) ? (t as TimeOfDay) : 'live'
+// daytime class. ?time=night works too, and so does an exact time like ?time=17:00
+function startingTime(): string {
+  const t = params.get('time') ?? ''
+  return TIMES.includes(t as TimeOfDay) || /^\d{1,2}:\d{2}$/.test(t) ? t : 'live'
 }
 
-const params = new URLSearchParams(location.search)
+// ?date=2026-09-24 keeps the sun on that day, so screenshots taken weeks apart match
+const pinnedDay = params.get('date')
+export const today = () => (pinnedDay ? new Date(`${pinnedDay}T12:00:00-04:00`) : new Date())
+
+// ?still: nothing moves by itself (wind in the trees, the route arrows). for screenshots
+// that get compared pixel by pixel (scripts/visual.mjs)
+export const still = params.has('still')
 export const TILES_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined
 
 // localStorage.notiles = '1' works like ?notiles and sticks. the e2e tests start with it
@@ -42,7 +50,7 @@ export const showDebug = import.meta.env.DEV || params.has('debug')
 
 export const useSettings = create<{
   quality: Quality
-  time: TimeOfDay
+  time: string
   photo: boolean
   tiles: boolean
   extruded: boolean

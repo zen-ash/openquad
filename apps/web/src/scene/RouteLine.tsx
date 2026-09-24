@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import * as THREE from 'three'
 import { linesGeometry } from '../campus/geometry'
 import { useNav } from '../game/nav'
+import { still } from '../settings'
 
 const time = { value: 0 }
 
@@ -43,7 +44,7 @@ export default function RouteLine() {
   )
 
   useFrame((_, dt) => {
-    time.value += dt
+    if (!still) time.value += dt
   })
 
   if (!geometry) return null

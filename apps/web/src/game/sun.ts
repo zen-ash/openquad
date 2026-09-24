@@ -88,6 +88,8 @@ function sunsetToday(now: Date) {
 
 /** the moment to light the scene for, for each time of day setting */
 export function timeFor(setting: string, now = new Date()) {
+  const clock = /^(\d{1,2}):(\d{2})$/.exec(setting) // exact times like 09:00, for screenshots
+  if (clock) return atlantaTime(Number(clock[1]), Number(clock[2]), now)
   if (setting === 'morning') return atlantaTime(8, 30, now)
   if (setting === 'noon') return atlantaTime(13, 30, now)
   if (setting === 'sunset') return sunsetToday(now)

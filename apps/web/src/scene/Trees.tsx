@@ -5,7 +5,7 @@ import { Suspense, useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import campus from '../campus/campus.json'
 import { BAND } from '../campus/fenceShader'
-import { useSettings } from '../settings'
+import { still, useSettings } from '../settings'
 
 // made with ez-tree and poly haven's bark, see docs/SPEC.md. one model each
 const VARIANTS = ['oak', 'magnolia', 'street'] as const
@@ -161,7 +161,7 @@ export default function Trees() {
   }, [tiles])
 
   useFrame((_, dt) => {
-    wind.value += dt
+    if (!still) wind.value += dt
   })
 
   return (

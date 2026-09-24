@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { timeFor } from '../game/sun'
-import { useSettings } from '../settings'
+import { today, useSettings } from '../settings'
 
 const format = new Intl.DateTimeFormat('en-US', {
   timeZone: 'America/New_York',
@@ -10,10 +10,10 @@ const format = new Intl.DateTimeFormat('en-US', {
 
 export default function Clock() {
   const setting = useSettings((s) => s.time)
-  const [now, setNow] = useState(() => new Date())
+  const [now, setNow] = useState(today)
 
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 10_000)
+    const timer = setInterval(() => setNow(today()), 10_000)
     return () => clearInterval(timer)
   }, [])
 

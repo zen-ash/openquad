@@ -16,10 +16,11 @@ export default function TimePicker() {
       aria-label="Time of day"
       value={time}
       onChange={(e) => {
-        useSettings.setState({ time: e.target.value as TimeOfDay })
+        useSettings.setState({ time: e.target.value })
         e.currentTarget.blur() // so walking keys don't change it
       }}
     >
+      {!TIMES.includes(time as TimeOfDay) && <option value={time}>{time}</option>}
       {TIMES.map((t) => (
         <option key={t} value={t}>
           {LABELS[t]}

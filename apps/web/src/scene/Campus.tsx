@@ -15,7 +15,7 @@ import {
 } from '../campus/ground'
 import { localPlayer } from '../game/localPlayer'
 import { daylight, sunDirection, sunPosition, timeFor } from '../game/sun'
-import { useSettings } from '../settings'
+import { today, useSettings } from '../settings'
 import Buildings from './Buildings'
 import Doors from './Doors'
 import FenceHaze from './FenceHaze'
@@ -45,10 +45,10 @@ const INDOOR_ENVIRONMENT = 0.12
 // doesn't move fast enough to need more
 function useSky() {
   const setting = useSettings((s) => s.time)
-  const [now, setNow] = useState(() => new Date())
+  const [now, setNow] = useState(today)
 
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 30_000)
+    const timer = setInterval(() => setNow(today()), 30_000)
     return () => clearInterval(timer)
   }, [])
 
