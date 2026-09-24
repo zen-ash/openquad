@@ -164,6 +164,110 @@ function plantParkTrees(parks, lines) {
   return trees
 }
 
+// which way round a ring goes. positive = counter clockwise with z pointing down the screen
+function signedArea(points) {
+  let a = 0
+  for (let i = 0; i < points.length; i++) {
+    const [x1, z1] = points[i]
+    const [x2, z2] = points[(i + 1) % points.length]
+    a += x1 * z2 - x2 * z1
+  }
+  return a / 2
+}
+
+// where the front door goes: the spot on the outside wall that's closest to a footpath,
+// and not squashed up against the building next door. [x, z, outward normal x, z]
+function findDoor(building, buildings, walkable) {
+  const pts = building.points
+  const flip = signedArea(pts) > 0 ? -1 : 1
+  let best = null
+  for (let i = 0; i < pts.length; i++) {
+    const [ax, az] = pts[i]
+    const [bx, bz] = pts[(i + 1) % pts.length]
+    const len = Math.hypot(bx - ax, bz - az)
+    if (len < 4) continue // too short to fit a door
+    const dx = (bx - ax) / len
+    const dz = (bz - az) / len
+    const nx = -dz * flip
+    const nz = dx * flip
+    for (let t = 1.5; t <= len - 1.5; t += 1) {
+      const x = ax + dx * t
+      const z = az + dz * t
+      const outside = [x + nx * 2, z + nz * 2]
+      if (buildings.some((o) => pointInPolygon(outside, o.points))) continue
+      const score = Math.min(...walkable.map((l) => distToLine(outside, l.points)))
+      if (!best || score < best.score)
+        best = {
+          score,
+          door: [round(x), round(z), Math.round(nx * 100) / 100, Math.round(nz * 100) / 100],
+        }
+    }
+  }
+  return best?.door
+}
+
+// splits a line into the parts that aren't inside a building. checks along each segment
+// too, not just the corners, since a straight bit can clip the corner of a building
+function outsideRuns(line, buildings) {
+  const blocked = (p) => buildings.some((b) => pointInPolygon(p, b.points))
+  const runs = []
+  let run = []
+  const end = () => {
+    if (run.length > 1) runs.push({ ...line, points: run })
+    run = []
+  }
+  line.points.forEach((p, i) => {
+    if (i > 0 && run.length > 0) {
+      const [ax, az] = line.points[i - 1]
+      const steps = Math.ceil(Math.hypot(p[0] - ax, p[1] - az) / 2)
+      for (let k = 1; k < steps; k++) {
+        if (blocked([ax + ((p[0] - ax) * k) / steps, az + ((p[1] - az) * k) / steps])) {
+          end()
+          break
+        }
+      }
+    }
+    if (blocked(p)) end()
+    else run.push(p)
+  })
+  end()
+  return runs
+}
+
+// the lines that make up the biggest connected piece of the path network. same rules as
+// the game's navgraph: points within 0.5m are the same spot, loose ends within 3m join up
+function mainNetwork(lines) {
+  const parent = new Map()
+  const find = (k) => {
+    while (parent.get(k) !== k) {
+      parent.set(k, parent.get(parent.get(k)))
+      k = parent.get(k)
+    }
+    return k
+  }
+  const union = (a, b) => parent.set(find(a), find(b))
+  const key = ([x, z]) => `${Math.round(x / 0.5)},${Math.round(z / 0.5)}`
+  for (const l of lines)
+    for (const p of l.points) if (!parent.has(key(p))) parent.set(key(p), key(p))
+  for (const l of lines)
+    for (let i = 1; i < l.points.length; i++) union(key(l.points[i - 1]), key(l.points[i]))
+
+  const ends = lines.flatMap((l) => [l.points[0], l.points[l.points.length - 1]])
+  for (const a of ends) {
+    for (const b of ends) {
+      if (a !== b && Math.hypot(a[0] - b[0], a[1] - b[1]) < 3) union(key(a), key(b))
+    }
+  }
+
+  const count = new Map()
+  for (const l of lines) {
+    const root = find(key(l.points[0]))
+    count.set(root, (count.get(root) ?? 0) + l.points.length)
+  }
+  const biggest = [...count.entries()].sort((a, b) => b[1] - a[1])[0][0]
+  return lines.filter((l) => find(key(l.points[0])) === biggest)
+}
+
 // skip things that aren't really buildings you'd walk around
 const SKIP_BUILDINGS = new Set(['roof', 'construction', 'no', 'bridge'])
 
@@ -184,6 +288,10 @@ function main(elements) {
   const roads = []
   const paths = []
   const parks = []
+  // named parks, for the "you're at Hurt Park" titles
+  const areas = []
+  // crosswalks. not drawn as paths, but gps needs them to get across roads
+  const crossings = []
   const plazas = []
   const trees = []
 
@@ -210,12 +318,16 @@ function main(elements) {
     if (tags.leisure === 'park') {
       const points = ring(el.geometry)
       if (points) parks.push(points)
+      if (points && tags.name) areas.push({ name: tags.name, points })
       continue
     }
 
     if (tags.highway) {
       if (tags.tunnel === 'yes' || Number(tags.layer) < 0) continue
-      if (tags.footway === 'crossing') continue // drawn on top of the road anyway
+      if (tags.footway === 'crossing') {
+        crossings.push({ width: 3, points: el.geometry.map(toLocal) })
+        continue
+      }
 
       // pedestrian plazas are drawn as areas, not lines
       if (tags.area === 'yes') {
@@ -228,7 +340,9 @@ function main(elements) {
       if (!points.some(inside)) continue
 
       if (ROAD_WIDTH[tags.highway]) {
-        roads.push({ width: ROAD_WIDTH[tags.highway] * SCALE, points })
+        const road = { width: ROAD_WIDTH[tags.highway] * SCALE, points }
+        if (tags.name) road.name = tags.name
+        roads.push(road)
       } else if (PATH_WIDTH[tags.highway]) {
         paths.push({ width: PATH_WIDTH[tags.highway] * SCALE, points })
       }
@@ -242,7 +356,28 @@ function main(elements) {
   }
 
   trees.push(...plantParkTrees(parks, [...roads, ...paths]))
-  return { halfSize, buildings, roads, paths, parks, plazas, trees }
+  // osm has footpaths that go through buildings (covered passages, indoor corridors).
+  // buildings are solid in the game, so cut those bits out
+  const outside = (lines) => lines.flatMap((l) => outsideRuns(l, buildings))
+  const walkPaths = outside(paths)
+  const walkCrossings = outside(crossings)
+  const walkRoads = outside(roads)
+
+  // doors face the main connected walking network, not some path that doesn't lead anywhere
+  const walkable = mainNetwork([...walkPaths, ...walkCrossings, ...walkRoads])
+  for (const b of buildings) if (b.gsu) b.door = findDoor(b, buildings, walkable)
+
+  return {
+    halfSize,
+    buildings,
+    roads: walkRoads,
+    paths: walkPaths,
+    crossings: walkCrossings,
+    parks,
+    areas,
+    plazas,
+    trees,
+  }
 }
 
 const res = await fetch('https://overpass-api.de/api/interpreter', {
@@ -255,8 +390,10 @@ if (!res.ok) throw new Error(`overpass said ${res.status}, it's probably busy. t
 const campus = main((await res.json()).elements)
 
 const gsu = campus.buildings.filter((b) => b.gsu).length
+const doors = campus.buildings.filter((b) => b.door).length
 console.log(
-  `${campus.buildings.length} buildings (${gsu} gsu), ${campus.roads.length} roads, ` +
+  `${campus.buildings.length} buildings (${gsu} gsu, ${doors} with doors), ${campus.roads.length} roads, ` +
+    `${campus.crossings.length} crossings, ${campus.areas.length} named parks, ` +
     `${campus.paths.length} paths, ${campus.parks.length} parks, ${campus.trees.length} trees`,
 )
 if (campus.buildings.length < 100) throw new Error('way fewer buildings than expected')
