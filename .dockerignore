@@ -7,3 +7,6 @@ playwright-report
 e2e
 CLAUDE.md
 .claude
+# keys come in as build args (see Dockerfile), not from a local .env
+**/.env
+**/.env.*

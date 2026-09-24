@@ -13,3 +13,7 @@ services:
         sync: false
       - key: CF_TURN_API_TOKEN
         sync: false
+      # google maps key for the web app. it gets built into the js (see Dockerfile), so
+      # anyone can see it, restrict it to the site's domain in google cloud
+      - key: VITE_GOOGLE_MAPS_API_KEY
+        sync: false

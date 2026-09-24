@@ -12,6 +12,10 @@ COPY packages/shared/package.json packages/shared/
 RUN pnpm install --frozen-lockfile
 
 COPY . .
+# vite bakes VITE_ variables into the js when it builds, so the key has to be here for
+# the build. render hands its env vars to docker builds as build args
+ARG VITE_GOOGLE_MAPS_API_KEY
+ENV VITE_GOOGLE_MAPS_API_KEY=$VITE_GOOGLE_MAPS_API_KEY
 RUN pnpm build
 
 FROM node:22-slim
