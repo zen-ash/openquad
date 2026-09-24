@@ -84,7 +84,8 @@ function Warming() {
     }, 250)
     return () => clearInterval(timer)
   }, [])
-  const waiting = useRef(false)
+  // the step to go on to, once the gpu has made the last one's pipelines
+  const after = useRef<{ to: Step; done: boolean } | null>(null)
   const plain = useRef<{ pipelines: Pipelines; update: Pipelines['updateForRender'] } | null>(null)
   // back to the normal way if this goes away halfway
   useEffect(
@@ -97,17 +98,6 @@ function Warming() {
   useFrame(({ scene, clock, gl }) => {
     started.current ||= clock.elapsedTime
     countNew()
-    // the gpu is still compiling the last step's pipelines, the frames keep going
-    if (waiting.current) return
-    // nothing is left out for being off screen while it builds
-    if (step.current !== 'loading')
-      scene.traverse((o) => {
-        if (o.frustumCulled) {
-          o.frustumCulled = false
-          culled.current.push(o)
-        }
-      })
-    frames.current++
     const atmosphere = useSettings.getState().atmosphere
     const pipelines = (gl as unknown as { _pipelines: Pipelines })._pipelines
     const next = (to: Step | 'done') => {
@@ -126,22 +116,45 @@ function Warming() {
       if (to === 'low') useSettings.setState({ quality: 'low' })
       if (to === 'back') useSettings.setState({ quality: 'high' })
     }
-    // on to the next step once every pipeline asked for so far is made
+    // on to the next step once every pipeline asked for so far is made, the frames keep
+    // going meanwhile
     const settle = (to: Step) => {
-      waiting.current = true
       const asked = pending.current.splice(0)
       counted.current += asked.length
-      void Promise.allSettled(asked).then(() => {
-        waiting.current = false
-        next(to)
-      })
+      const wait = { to, done: false }
+      after.current = wait
+      void Promise.allSettled(asked).then(() => (wait.done = true))
+    }
+    // the step changes here, before the effects draw the frame. changing the quality in
+    // between frames left taa smearing the labels for good (the cause inside three wasn't
+    // found)
+    if (after.current) {
+      if (!after.current.done) return
+      next(after.current.to)
+      after.current = null
     }
 
+    // nothing is left out for being off screen while it builds
+    if (step.current !== 'loading')
+      scene.traverse((o) => {
+        if (o.frustumCulled) {
+          o.frustumCulled = false
+          culled.current.push(o)
+        }
+      })
+    frames.current++
+
     if (step.current === 'loading') {
-      // from the first frame, or what's on screen while loading gets made one at a time
+      // from the first frame, or what's on screen while loading gets made one at a time. only
+      // for the scene itself: some other things are drawn just once (the sky's light, taa's
+      // first frame), and skipping the sky's light left the shade black
       if (!plain.current) {
-        plain.current = { pipelines, update: pipelines.updateForRender }
-        pipelines.updateForRender = (object) => pipelines.getForRender(object, pending.current)
+        const update = pipelines.updateForRender
+        plain.current = { pipelines, update }
+        pipelines.updateForRender = (object) =>
+          (object as { scene: unknown }).scene === scene
+            ? pipelines.getForRender(object, pending.current)
+            : update.call(pipelines, object)
       }
       // everything downloaded (models, textures, the labels' font) for a moment, and the
       // effects drawing (they're loaded separately)
