@@ -11,6 +11,7 @@ import { daylight, sunDirection, sunPosition, timeFor } from '../game/sun'
 import { useSettings } from '../settings'
 import Buildings from './Buildings'
 import Doors from './Doors'
+import Fountain from './Fountain'
 import Furniture from './Furniture'
 import Interiors from './Interiors'
 import Landmarks from './Landmarks'
@@ -165,6 +166,7 @@ export default function Campus() {
       <Furniture />
       <Doors />
       <PantherQuad />
+      <Fountain />
       <Trees />
     </>
   )

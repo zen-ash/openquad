@@ -1,4 +1,5 @@
 import campus from '../campus/campus.json'
+import { BED, memorialWall } from '../campus/fountain'
 import { polygon, type Segment, type World } from './collision'
 import { footprint, furnish } from './furniture'
 import { enterable, interiors } from './interiors'
@@ -12,10 +13,15 @@ export const world: World = {
     ...campus.buildings.filter((_, i) => !enterable.has(i)).map((b) => b.points),
     ...quad.planters.map((p) => p.points),
   ].map((points) => polygon(points as [number, number][])),
-  walls: interiors.flatMap((i) => i.walls),
+  walls: [
+    ...interiors.flatMap((i) => i.walls),
+    ...memorialWall({ x: campus.fountain[0]!, z: campus.fountain[1]! }),
+  ],
   circles: [
     ...campus.trees.map(([x, z]) => ({ x: x!, z: z!, radius: TREE_RADIUS })),
     { x: quad.monument[0]!, z: quad.monument[1]!, radius: 1 },
+    // the fountain, out to the edge of its flower beds
+    { x: campus.fountain[0]!, z: campus.fountain[1]!, radius: BED },
     ...quad.flags.map(([x, z]) => ({ x: x!, z: z!, radius: 0.2 })),
   ],
   halfSize: campus.halfSize,

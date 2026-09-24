@@ -31,6 +31,7 @@ const query = `[out:json][timeout:90];
   way["highway"](${bbox});
   way["leisure"="park"](${bbox});
   node["natural"="tree"](${bbox});
+  node["amenity"="fountain"](${bbox});
 );
 out geom;`
 
@@ -614,6 +615,7 @@ function main(elements) {
   const parks = []
   // named parks, for the "you're at Hurt Park" titles
   const areas = []
+  const fountains = []
   // crosswalks. not drawn as paths, but gps needs them to get across roads
   const crossings = []
   const plazas = []
@@ -673,6 +675,11 @@ function main(elements) {
       continue
     }
 
+    if (tags.amenity === 'fountain') {
+      fountains.push(toLocal(el))
+      continue
+    }
+
     if (tags.natural === 'tree') {
       const p = toLocal(el)
       if (inside(p)) trees.push(p)
@@ -687,7 +694,22 @@ function main(elements) {
   if (arts) artsHumanities(arts)
   for (const b of NEW_BUILDINGS) buildings.push({ ...b, height: b.height * SCALE, gsu: true })
 
-  trees.push(...plantParkTrees(parks, [...roads, ...paths]))
+  // hurt park's fountain. it hasn't worked in years, the memorial wall to joel hurt curves
+  // round the south side of it. drawn in scene/Fountain.tsx
+  const hurtPark = areas.find((a) => a.name === 'Hurt Park')
+  const fountain = fountains.find((f) => hurtPark && pointInPolygon(f, hurtPark.points))
+  // paved all round it, out past the path that circles it
+  if (fountain)
+    plazas.push(
+      Array.from({ length: 40 }, (_, i) => [
+        round(fountain[0] + Math.cos((i / 40) * Math.PI * 2) * 11.5),
+        round(fountain[1] + Math.sin((i / 40) * Math.PI * 2) * 11.5),
+      ]),
+    )
+  const planted = plantParkTrees(parks, [...roads, ...paths])
+  trees.push(
+    ...planted.filter((t) => !fountain || Math.hypot(t[0] - fountain[0], t[1] - fountain[1]) > 10),
+  )
   const quad = pantherQuad([...roads, ...paths], crossings)
   parks.push(...quad.parks)
   areas.push(quad.area)
@@ -715,6 +737,7 @@ function main(elements) {
     plazas,
     trees,
     quad: quad.quad,
+    fountain,
   }
 }
 
