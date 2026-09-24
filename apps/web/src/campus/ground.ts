@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { fenceGlsl, fenceMapUniforms } from './fenceShader'
 import { texture } from './textures'
 
 // the ground is layers a few cm apart. from far away (the join screen) that's too close
@@ -51,3 +52,50 @@ roadMaterial.onBeforeCompile = (shader) => {
       }`,
     )
 }
+
+// with google's tiles on, the ground fades out across the far sidewalk past the fence and
+// their ground shows through underneath (campus/fenceShader.ts). that makes it see-through, which is a lot
+// slower on macs (the gpu can't skip ground hidden behind buildings anymore), so with the
+// tiles off it's the plain opaque ground like before
+let fading = false
+const faded: THREE.Material[] = []
+
+export function fadeGroundAtFence(on: boolean) {
+  if (on === fading) return
+  fading = on
+  for (const m of faded) {
+    m.transparent = on
+    m.needsUpdate = true
+  }
+}
+
+function fadesAtFence(material: THREE.Material, key: string) {
+  const lanes = material.onBeforeCompile
+  faded.push(material)
+  material.onBeforeCompile = (shader, renderer) => {
+    lanes.call(material, shader, renderer)
+    if (!fading) return
+    Object.assign(shader.uniforms, fenceMapUniforms())
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec2 vGroundXZ;')
+      .replace(
+        '#include <project_vertex>',
+        '#include <project_vertex>\nvGroundXZ = (modelMatrix * vec4(transformed, 1.0)).xz;',
+      )
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', `#include <common>\nvarying vec2 vGroundXZ;\n${fenceGlsl}`)
+      .replace(
+        '#include <alphatest_fragment>',
+        `#include <alphatest_fragment>
+        diffuseColor.a *= smoothstep(-FENCE_BAND, 0.0, fenceDistance(vGroundXZ));
+        if (diffuseColor.a < 0.01) discard;`,
+      )
+  }
+  // the road has the lane lines on top, so it's a different shader from the rest
+  material.customProgramCacheKey = () => key + (fading ? '-fade' : '')
+}
+fadesAtFence(grassMaterial, 'ground')
+fadesAtFence(sidewalkMaterial, 'ground')
+fadesAtFence(pavingMaterial, 'ground')
+fadesAtFence(paversMaterial, 'ground')
+fadesAtFence(roadMaterial, 'road')

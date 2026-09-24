@@ -26,9 +26,13 @@ function fill(count: number, value: number) {
   return new THREE.BufferAttribute(new Float32Array(count).fill(value), 1)
 }
 
-export function buildingsGeometry(buildings: BuildingData[]) {
+// keep picks which ones. the index still counts all of them, the facades go by it
+export function buildingsGeometry(
+  buildings: BuildingData[],
+  keep: (b: BuildingData) => boolean = () => true,
+) {
   const parts = buildings.flatMap((b, i) => {
-    if (b.landmark) return []
+    if (b.landmark || !keep(b)) return []
     const geo = new THREE.ExtrudeGeometry(shape(b.points), { depth: b.height, bevelEnabled: false })
     geo.rotateX(-Math.PI / 2)
     geo.clearGroups()

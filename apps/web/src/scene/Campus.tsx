@@ -6,6 +6,7 @@ import campus from '../campus/campus.json'
 import { areasGeometry, linesGeometry, planarUv } from '../campus/geometry'
 import { night } from '../campus/facade'
 import {
+  fadeGroundAtFence,
   grassMaterial,
   paversMaterial,
   pavingMaterial,
@@ -17,11 +18,12 @@ import { daylight, sunDirection, sunPosition, timeFor } from '../game/sun'
 import { useSettings } from '../settings'
 import Buildings from './Buildings'
 import Doors from './Doors'
+import FenceHaze from './FenceHaze'
 import Fountain from './Fountain'
 import Furniture from './Furniture'
 import Interiors from './Interiors'
 import Landmarks from './Landmarks'
-import Outlines from './Outlines'
+import Outlines, { FenceLine } from './Outlines'
 import PantherQuad from './PantherQuad'
 import StreetFurniture from './StreetFurniture'
 import Tiles from './Tiles'
@@ -118,7 +120,9 @@ function SkyLight({ intensity, environment }: { intensity: number; environment: 
   return <hemisphereLight ref={light} args={[SKY_LIGHT, GROUND_LIGHT, intensity]} />
 }
 
-function Ground() {
+function Ground({ tiles }: { tiles: boolean }) {
+  // with google's tiles on, the ground fades out at the fence and theirs takes over
+  useEffect(() => fadeGroundAtFence(tiles), [tiles])
   const geos = useMemo(() => {
     const size = campus.halfSize * 6
     return {
@@ -134,16 +138,18 @@ function Ground() {
     }
   }, [])
 
+  // with the tiles on the ground is see-through at the fence, so it's drawn with the
+  // transparent things. renderOrder keeps the layers in order, bottom first
   return (
     <>
-      <mesh geometry={geos.ground} material={pavingMaterial} receiveShadow />
+      <mesh geometry={geos.ground} material={pavingMaterial} receiveShadow renderOrder={-10} />
       {/* parking lots are asphalt like the roads, the lane lines only go on roads */}
-      <mesh geometry={geos.lots} material={roadMaterial} receiveShadow />
-      <mesh geometry={geos.parks} material={grassMaterial} receiveShadow />
-      <mesh geometry={geos.plazas} material={sidewalkMaterial} receiveShadow />
-      <mesh geometry={geos.pavers} material={paversMaterial} receiveShadow />
-      <mesh geometry={geos.roads} material={roadMaterial} receiveShadow />
-      <mesh geometry={geos.paths} material={sidewalkMaterial} receiveShadow />
+      <mesh geometry={geos.lots} material={roadMaterial} receiveShadow renderOrder={-9} />
+      <mesh geometry={geos.pavers} material={paversMaterial} receiveShadow renderOrder={-8} />
+      <mesh geometry={geos.parks} material={grassMaterial} receiveShadow renderOrder={-7} />
+      <mesh geometry={geos.roads} material={roadMaterial} receiveShadow renderOrder={-6} />
+      <mesh geometry={geos.plazas} material={sidewalkMaterial} receiveShadow renderOrder={-5} />
+      <mesh geometry={geos.paths} material={sidewalkMaterial} receiveShadow renderOrder={-4} />
     </>
   )
 }
@@ -152,6 +158,7 @@ export default function Campus() {
   const sky = useSky()
   const tiles = useSettings((s) => s.tiles)
   const outlines = useSettings((s) => s.outlines)
+  const fenceLine = useSettings((s) => s.fenceLine)
   const sunAt = sky.dir.map((v) => v * 100) as [number, number, number]
   // not too much light from the sky, or shade looks nearly as bright as sun and the
   // whole city goes flat and hazy
@@ -175,7 +182,7 @@ export default function Campus() {
       <fog attach="fog" args={[haze, 300, 1000]} />
       <SkyLight intensity={0.12 + 0.16 * sky.day} environment={environment} />
       <Sun dir={sky.light} day={sky.day} />
-      <Ground />
+      <Ground tiles={tiles} />
       <Buildings />
       <Landmarks />
       <Interiors />
@@ -185,8 +192,10 @@ export default function Campus() {
       <Fountain />
       <StreetFurniture />
       <Trees />
+      <FenceHaze />
       {tiles && <Tiles />}
       {outlines && <Outlines />}
+      {fenceLine && <FenceLine />}
     </>
   )
 }

@@ -1,3 +1,4 @@
+import { FENCE } from '@quad/shared'
 import { useEffect, useRef } from 'react'
 import campus from '../campus/campus.json'
 import { localPlayer } from '../game/localPlayer'
@@ -43,6 +44,15 @@ function drawCampus() {
   campus.roads.forEach((r) => line(r.points, r.width, '#6b6e73'))
   campus.paths.forEach((r) => line(r.points, r.width, '#d8d4cb'))
   campus.buildings.forEach((b) => area(b.points, b.gsu ? '#5b7fc4' : '#b9b3a8'))
+
+  // past the fence, where you can't go, is a bit darker
+  ctx.fillStyle = 'rgba(30, 34, 42, 0.35)'
+  ctx.beginPath()
+  ctx.rect(0, 0, full, full)
+  FENCE.forEach(([x, z], i) => (i ? ctx.lineTo(px(x), px(z)) : ctx.moveTo(px(x), px(z))))
+  ctx.closePath()
+  ctx.fill('evenodd')
+  line([...FENCE, FENCE[0]!], 2, 'rgba(255, 255, 255, 0.85)')
   return canvas
 }
 

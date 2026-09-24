@@ -1,15 +1,17 @@
 import { TilesAttributionOverlay, TilesPlugin, TilesRenderer } from '3d-tiles-renderer/r3f'
 import { GoogleCloudAuthPlugin, ReorientationPlugin } from '3d-tiles-renderer/plugins'
 import type { TilesRenderer as TilesRendererImpl } from '3d-tiles-renderer/three'
+import { FENCE, fenceDistance } from '@quad/shared'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { night } from '../campus/facade'
+import { fenceGlsl, fenceMapUniforms } from '../campus/fenceShader'
 import { groundHeight } from '../campus/terrain'
 import { REORIENT, STRETCH } from '../campus/tilesFrame'
 import { TILES_KEY, useSettings } from '../settings'
 
-// the tiles are just below our ground so the two don't flicker through each other.
-// our streets and grass cover the tile ground, the tile buildings stick up through it
+// a little below our ground, so where the two overlap at the fence theirs stays under
+// ours instead of flickering through it
 const SINK = 0.15
 
 const DAY = new THREE.Color('#ffffff')
@@ -22,6 +24,50 @@ const materials = new Set<THREE.MeshBasicMaterial>()
 // whenever its args change, and a new google plugin starts a new session halfway through
 const AUTH = [{ apiToken: TILES_KEY ?? '', autoRefreshToken: true, useRecommendedSettings: false }]
 const FRAME = [REORIENT]
+
+const fenceOn = { value: 1 }
+
+// inside the fence it's our own buildings and streets (see packages/shared/src/fence.ts),
+// so the tiles throw away everything there. in the strip just past it (the far sidewalk)
+// they keep their ground and buildings but not their trees, cars and lamp posts
+function fenced(material: THREE.Material) {
+  material.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, fenceMapUniforms(), { uFenceOn: fenceOn })
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vTileWorld;')
+      .replace(
+        '#include <project_vertex>',
+        '#include <project_vertex>\nvTileWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;',
+      )
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        `#include <common>
+        varying vec3 vTileWorld;
+        uniform float uFenceOn;
+        ${fenceGlsl}`,
+      )
+      .replace(
+        '#include <clipping_planes_fragment>',
+        `#include <clipping_planes_fragment>
+        float fd = fenceDistance(vTileWorld.xz);
+        bool clutter = fd > -FENCE_BAND && vTileWorld.y > 0.4 && !onBuilding(vTileWorld.xz);
+        if (uFenceOn > 0.5 && (fd > 0.0 || clutter)) discard;`,
+      )
+  }
+  material.customProgramCacheKey = () => 'tile-fence'
+}
+
+// tile pieces that are all the way inside the fence. every bit of them would get thrown
+// away, so they aren't drawn at all (unless the debug box says tiles inside the fence)
+const insideMeshes = new Set<THREE.Mesh>()
+const allInside = (x0: number, z0: number, x1: number, z1: number) =>
+  [x0, x1].every((x) => [z0, z1].every((z) => fenceDistance(x, z) > 1)) &&
+  !FENCE.some(([x, z]) => x > x0 && x < x1 && z > z0 && z < z1)
+
+// for shadows, or the tile buildings inside the fence would still cast them
+const depthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking })
+fenced(depthMaterial)
 
 // for window.quad (net/debug.ts)
 let renderer: TilesRendererImpl | null = null
@@ -86,16 +132,30 @@ class FlattenPlugin {
         pos = floats(pos)
         mesh.geometry.setAttribute('position', pos)
       }
+      let x0 = Infinity
+      let z0 = Infinity
+      let x1 = -Infinity
+      let z1 = -Infinity
       for (let i = 0; i < pos.count; i++) {
         p.fromBufferAttribute(pos, i).applyMatrix4(toWorld)
         p.y -= groundHeight(p.x, p.z)
+        x0 = Math.min(x0, p.x)
+        z0 = Math.min(z0, p.z)
+        x1 = Math.max(x1, p.x)
+        z1 = Math.max(z1, p.z)
         p.applyMatrix4(toLocal)
         pos.setXYZ(i, p.x, p.y, p.z)
+      }
+      if (allInside(x0, z0, x1, z1)) {
+        insideMeshes.add(mesh)
+        mesh.visible = fenceOn.value < 0.5
       }
       pos.needsUpdate = true
       mesh.geometry.computeBoundingBox()
       mesh.geometry.computeBoundingSphere()
       mesh.castShadow = true
+      mesh.customDepthMaterial = depthMaterial
+      fenced(mesh.material as THREE.Material)
       materials.add(mesh.material as THREE.MeshBasicMaterial)
     })
   }
@@ -105,6 +165,11 @@ function Tint() {
   useFrame(() => {
     const k = 1 - night.value * 0.92
     for (const m of materials) m.color.copy(NIGHT).lerp(DAY, k)
+    const on = useSettings.getState().tilesInside ? 0 : 1
+    if (on !== fenceOn.value) {
+      fenceOn.value = on
+      for (const m of insideMeshes) m.visible = !on
+    }
   })
   return null
 }
@@ -126,9 +191,10 @@ export default function Tiles() {
         lruCache-minBytesSize={(quality === 'high' ? 200 : 130) * 1e6}
         lruCache-maxBytesSize={(quality === 'high' ? 300 : 200) * 1e6}
         onDisposeModel={({ scene }: { scene: THREE.Object3D }) => {
-          scene.traverse((o) =>
-            materials.delete((o as THREE.Mesh).material as THREE.MeshBasicMaterial),
-          )
+          scene.traverse((o) => {
+            materials.delete((o as THREE.Mesh).material as THREE.MeshBasicMaterial)
+            insideMeshes.delete(o as THREE.Mesh)
+          })
         }}
         onLoadError={({ tile }: { tile: unknown }) => {
           // no root tileset means no tiles at all (bad key, no network): back to our own

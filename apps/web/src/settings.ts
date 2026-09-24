@@ -36,6 +36,8 @@ export const useSettings = create<{
   tiles: boolean
   extruded: boolean
   outlines: boolean
+  tilesInside: boolean
+  fenceLine: boolean
 }>(() => ({
   quality: startingQuality(),
   time: startingTime(),
@@ -43,9 +45,13 @@ export const useSettings = create<{
   photo: false,
   // google's photorealistic 3d tiles (scene/Tiles.tsx). needs a key, ?notiles turns them off
   tiles,
-  // our own box buildings. they're hidden under the tiles but still there for walls,
-  // directions and the insides. ?extruded draws them anyway
+  // our own box buildings outside the fence, where the tiles are. the ones inside are
+  // always drawn. ?extruded draws them anyway
   extruded: !tiles || params.has('extruded'),
   // osm footprints drawn on top of everything, to check the tiles line up
   outlines: params.has('outlines'),
+  // where the fence is, as a yellow line on the ground
+  fenceLine: params.has('fence'),
+  // the tiles inside the fence too, on top of our buildings. for comparing
+  tilesInside: params.has('tilesinside'),
 }))
