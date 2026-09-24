@@ -1,10 +1,12 @@
-import { useLayoutEffect, useMemo, useRef } from 'react'
+import { useGLTF } from '@react-three/drei'
+import { useFrame } from '@react-three/fiber'
+import { Suspense, useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import campus from '../campus/campus.json'
 
-const bark = new THREE.MeshStandardMaterial({ color: '#5a4332', roughness: 1 })
-const leaves = new THREE.MeshStandardMaterial({ roughness: 0.9 })
+// made with ez-tree and poly haven's bark, see docs/SPEC.md. one model each
+const VARIANTS = ['oak', 'magnolia', 'street'] as const
+type Variant = (typeof VARIANTS)[number]
 
 // same "random" number for a tree every time
 const rand = (x: number, z: number, salt: number) => {
@@ -12,68 +14,154 @@ const rand = (x: number, z: number, salt: number) => {
   return n - Math.floor(n)
 }
 
-// a canopy made of a few lumpy blobs instead of one ball, so it reads as leaves
-function canopyGeometry() {
-  const blobs = [
-    [0, 0, 0, 1.6],
-    [0.9, -0.3, 0.4, 1.1],
-    [-0.8, -0.2, 0.5, 1.2],
-    [0.2, 0.6, -0.7, 1.1],
-    [-0.3, 0.9, 0.3, 1],
-  ].map(([x, y, z, r]) => {
-    // detail 1 is a quarter of the triangles of 2 and looks the same from the camera.
-    // 250 trees at detail 2 was over a million vertices
-    const geo = new THREE.IcosahedronGeometry(r, 1)
-    const pos = geo.getAttribute('position')
-    for (let i = 0; i < pos.count; i++) {
-      const bump = 1 + (rand(pos.getX(i), pos.getZ(i), pos.getY(i)) - 0.5) * 0.25
-      pos.setXYZ(i, pos.getX(i) * bump, pos.getY(i) * bump, pos.getZ(i) * bump)
-    }
-    geo.translate(x!, y!, z!)
-    return geo
-  })
-  const merged = mergeGeometries(blobs)
-  merged.computeVertexNormals()
-  return merged
+// mostly willow oaks, then magnolias, then younger street trees
+function variantOf(x: number, z: number): Variant {
+  const r = rand(x, z, 5)
+  return r < 0.45 ? 'oak' : r < 0.72 ? 'magnolia' : 'street'
 }
 
-// 250+ trees, so one instanced mesh for all the trunks and one for all the canopies
-export default function Trees() {
-  const trunks = useRef<THREE.InstancedMesh>(null)
-  const tops = useRef<THREE.InstancedMesh>(null)
-  const canopy = useMemo(() => canopyGeometry(), [])
+const wind = { value: 0 }
+
+// leaves move a little in the wind, more the further out on the tree they are
+function sway(material: THREE.Material) {
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uWind = wind
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nuniform float uWind;')
+      .replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+        float phase = dot(instanceMatrix[3].xz, vec2(0.13, 0.17));
+        float bend = transformed.y * 0.012;
+        transformed.x += sin(uWind * 1.3 + phase + transformed.y * 0.3) * bend;
+        transformed.z += sin(uWind * 1.1 + phase * 1.7 + transformed.x * 0.3) * bend;`,
+      )
+  }
+  material.customProgramCacheKey = () => 'tree-leaves'
+}
+
+// full detail this close to the camera, the cheaper version further out
+const NEAR = 80
+const PARTS = ['nearBark', 'nearLeaves', 'farBark', 'farLeaves'] as const
+type Part = (typeof PARTS)[number]
+
+// one kind of tree: the ones near the camera get the detailed model and cast shadows,
+// the rest get the far one. which is which gets redone as the camera moves
+function Variant({ name, spots }: { name: Variant; spots: number[][] }) {
+  const { nodes, scene } = useGLTF('/models/trees.glb')
+  const meshes = useMemo(() => {
+    const get = (part: string) => nodes[part] as THREE.Mesh
+    return {
+      nearBark: get(`${name}_bark`),
+      nearLeaves: get(`${name}_leaves`),
+      farBark: get(`${name}_far_bark`),
+      farLeaves: get(`${name}_far_leaves`),
+    }
+  }, [nodes, name])
+  const instanced = useRef<Partial<Record<Part, THREE.InstancedMesh>>>({})
+  const last = useRef<{ x: number; z: number } | null>(null)
+
+  const leafMaterial = useMemo(() => {
+    const m = (meshes.nearLeaves.material as THREE.MeshStandardMaterial).clone()
+    // sunlit leaves are warmer than the texture comes out under our sky
+    m.color.set('#fff2c4')
+    sway(m)
+    return m
+  }, [meshes])
+
+  // where each tree is, turned and sized a bit differently
+  const places = useMemo(() => {
+    const q = new THREE.Quaternion()
+    const up = new THREE.Vector3(0, 1, 0)
+    return spots.map(([x, z]) => {
+      const s = 0.75 + rand(x!, z!, 1) * 0.5
+      q.setFromAxisAngle(up, rand(x!, z!, 2) * Math.PI * 2)
+      return new THREE.Matrix4().compose(
+        new THREE.Vector3(x!, 0, z!),
+        q,
+        new THREE.Vector3(s, s, s),
+      )
+    })
+  }, [spots])
 
   useLayoutEffect(() => {
+    // the compressed model keeps its scale on the node, not in the vertices
+    scene.updateMatrixWorld(true)
+    last.current = null
+  }, [scene])
+
+  useFrame(({ camera }) => {
+    const meshesNow = instanced.current
+    if (PARTS.some((key) => !meshesNow[key])) return
+    // only when the camera has moved a bit
+    const at = last.current
+    if (at && Math.hypot(camera.position.x - at.x, camera.position.z - at.z) < 5) return
+    last.current = { x: camera.position.x, z: camera.position.z }
+    const count = { near: 0, far: 0 }
     const m = new THREE.Matrix4()
-    const q = new THREE.Quaternion()
-    const color = new THREE.Color()
-    const up = new THREE.Vector3(0, 1, 0)
-
-    campus.trees.forEach(([x, z], i) => {
-      const s = 1.6 + rand(x!, z!, 1) * 1.2
-      const turn = q.setFromAxisAngle(up, rand(x!, z!, 2) * Math.PI * 2)
-
-      m.compose(new THREE.Vector3(x!, 1.2 * s, z!), turn, new THREE.Vector3(s, s, s))
-      trunks.current!.setMatrixAt(i, m)
-      m.compose(new THREE.Vector3(x!, 3.4 * s, z!), turn, new THREE.Vector3(s, s * 0.9, s))
-      tops.current!.setMatrixAt(i, m)
-
-      // a bit of variety in the greens
-      color.setHSL(0.26 + rand(x!, z!, 3) * 0.06, 0.55, 0.12 + rand(x!, z!, 4) * 0.07)
-      tops.current!.setColorAt(i, color)
+    places.forEach((place, i) => {
+      const [x, z] = spots[i] as [number, number]
+      const which = Math.hypot(x - camera.position.x, z - camera.position.z) < NEAR ? 'near' : 'far'
+      const n = count[which]++
+      for (const part of ['Bark', 'Leaves'] as const) {
+        const key: Part = `${which}${part}`
+        meshesNow[key]!.setMatrixAt(n, m.multiplyMatrices(place, meshes[key].matrixWorld))
+      }
     })
-    trunks.current!.instanceMatrix.needsUpdate = true
-    tops.current!.instanceMatrix.needsUpdate = true
-    tops.current!.instanceColor!.needsUpdate = true
-  }, [])
+    for (const key of PARTS) {
+      const mesh = meshesNow[key]!
+      mesh.count = count[key.startsWith('near') ? 'near' : 'far']
+      mesh.instanceMatrix.needsUpdate = true
+      mesh.computeBoundingSphere()
+    }
+  })
 
-  const count = campus.trees.length
   return (
     <>
-      <instancedMesh ref={trunks} args={[undefined, bark, count]} castShadow>
-        <cylinderGeometry args={[0.18, 0.28, 2.4, 7]} />
-      </instancedMesh>
-      <instancedMesh ref={tops} args={[canopy, leaves, count]} castShadow receiveShadow />
+      {PARTS.map((key) => {
+        const near = key.startsWith('near')
+        const leaves = key.endsWith('Leaves')
+        return (
+          <instancedMesh
+            key={key}
+            ref={(mesh) => {
+              if (mesh) instanced.current[key] = mesh
+            }}
+            args={[
+              meshes[key].geometry,
+              leaves ? leafMaterial : meshes[key].material,
+              spots.length,
+            ]}
+            // far away the shadow wouldn't be in the shadow map anyway
+            castShadow={near}
+            receiveShadow
+          />
+        )
+      })}
     </>
+  )
+}
+
+// every tree on the map, one instanced mesh per kind of tree and part of it
+export default function Trees() {
+  const byVariant = useMemo(() => {
+    const out = Object.fromEntries(VARIANTS.map((v) => [v, [] as number[][]])) as Record<
+      Variant,
+      number[][]
+    >
+    for (const t of campus.trees) out[variantOf(t[0]!, t[1]!)].push(t)
+    return out
+  }, [])
+
+  useFrame((_, dt) => {
+    wind.value += dt
+  })
+
+  return (
+    <Suspense fallback={null}>
+      {VARIANTS.map((v) => (
+        <Variant key={v} name={v} spots={byVariant[v]} />
+      ))}
+    </Suspense>
   )
 }
