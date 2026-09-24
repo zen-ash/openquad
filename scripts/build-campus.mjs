@@ -7,8 +7,9 @@ import { fileURLToPath } from 'node:url'
 
 // hurt park, pretty much the middle of campus. this is (0, 0) in the game
 const CENTER = { lat: 33.75419, lon: -84.3854 }
-// meters from the center to the edge of the map
-const RADIUS = 500
+// meters from the center (hurt park) to each edge of the map. just big enough for the whole
+// downtown campus, which goes further north (piedmont north) than it does south
+const EDGES = { north: 660, south: 480, west: 540, east: 540 }
 // 1 unit = 1 meter. tried half size at first to make walking across faster, but then
 // people were as tall as a whole floor of a building
 const SCALE = 1
@@ -17,10 +18,10 @@ const OUT = new URL('../apps/web/src/campus/campus.json', import.meta.url)
 const METERS_PER_DEG_LAT = 110_540
 const METERS_PER_DEG_LON = 111_320 * Math.cos((CENTER.lat * Math.PI) / 180)
 
-const south = CENTER.lat - RADIUS / METERS_PER_DEG_LAT
-const north = CENTER.lat + RADIUS / METERS_PER_DEG_LAT
-const west = CENTER.lon - RADIUS / METERS_PER_DEG_LON
-const east = CENTER.lon + RADIUS / METERS_PER_DEG_LON
+const south = CENTER.lat - EDGES.south / METERS_PER_DEG_LAT
+const north = CENTER.lat + EDGES.north / METERS_PER_DEG_LAT
+const west = CENTER.lon - EDGES.west / METERS_PER_DEG_LON
+const east = CENTER.lon + EDGES.east / METERS_PER_DEG_LON
 const bbox = `${south},${west},${north},${east}`
 
 const query = `[out:json][timeout:90];
@@ -40,56 +41,86 @@ const toLocal = ({ lat, lon }) => [
   round(-(lat - CENTER.lat) * METERS_PER_DEG_LAT * SCALE),
 ]
 
-const halfSize = RADIUS * SCALE
-const inside = ([x, z]) => Math.abs(x) <= halfSize && Math.abs(z) <= halfSize
+// the game treats the map as a square this big either way from the middle
+const halfSize = Math.max(...Object.values(EDGES)) * SCALE
+const inside = ([x, z]) =>
+  x >= -EDGES.west * SCALE &&
+  x <= EDGES.east * SCALE &&
+  z >= -EDGES.north * SCALE &&
+  z <= EDGES.south * SCALE
 
-// names that don't have "Georgia State" anywhere in their tags on OSM
-const GSU_NAMES = new Set([
+// gsu's downtown atlanta campus, going by gsu's own campus map. only these count as gsu
+// buildings (you can go inside them, they get labels). osm names, the ones osm calls
+// something else are renamed below
+const GSU_BUILDINGS = new Set([
+  '148 Edgewood',
+  '55 Park Place',
+  '58 Edgewood',
+  'Alumni Center',
+  'Arts & Humanities',
+  'Bell Building',
+  'Bennett A. Brown Commerce Building',
+  'Centennial Hall',
+  'Classroom South',
+  'College of Education',
+  'Courtland Building',
+  'Courtland North',
+  'Dahlberg Hall',
+  'G Deck',
+  'GSU Citizens Trust Building',
+  'GSU College of Law',
+  'GSU Parking A Deck',
+  'Greek Housing',
+  'Haas-Howell Building',
+  'Helen M. Aderhold Learning Center',
+  'J Deck',
+  'J. Mack Robinson College of Business',
+  'K Deck',
   'Langdale Hall',
   'Library North',
   'Library South',
-  'Classroom South',
-  'Sparks Hall',
-  'Helen M. Aderhold Learning Center',
+  'Loft Parking',
+  'M Deck',
+  'N Deck',
+  'Natural Science Center',
+  'One Park Place',
+  'Patton Hall',
+  'Petit Science Center',
+  'Piedmont Central',
+  'Piedmont North A',
+  'Piedmont North B',
+  'Piedmont North Dining Hall',
+  'Research Science Center',
+  'Rialto Center for the Arts',
+  'S Deck',
+  'Science Annex',
+  'Sports Annex',
+  'Sports Arena',
+  'Standard Building',
   'Student Center East',
   'Student Center West',
-  'Urban Life Building',
-  'Petit Science Center',
-  'Natural Science Center',
-  'Science Annex',
-  'Dahlberg Hall',
-  'Haas-Howell Building',
-  'Arts & Humanities',
-  'Courtland North',
-  'Rialto Center for the Arts',
-  'J. Mack Robinson College of Business',
-  'GSU College of Law',
   'Student Recreation Center',
-  'Piedmont Central',
+  'T Deck',
+  'Trust Company of Georgia Building',
+  'University Bookstore',
   'University Commons',
-  'Georgia Hall',
-  'Patton Hall',
-  'Centennial Hall',
-  'Alumni Center',
-  'Research Science Center',
-  'Sports Arena',
-  'College of Education',
-  'Standard Building',
-  'One Park Place',
-  'Ten Park Place',
-  '55 Park Place',
-  'Bennett A. Brown Commerce Building',
-  'Piedmont Hall',
-  'Sports Annex',
   'University Lofts',
-  'M. Rich Center',
-  'Courtland Building',
-  'Georgia State Health Building',
+  'Urban Life Building',
 ])
 
-function isGsu(tags) {
-  return GSU_NAMES.has(tags.name) || JSON.stringify(tags).includes('Georgia State University')
+// osm name -> what gsu calls it
+const GSU_NAMES = {
+  'Trust Company of Georgia Building': '25 Park Place',
+  'GSU Citizens Trust Building': '75 Piedmont Avenue',
+  'GSU College of Law': 'College of Law',
+  'College of Education': 'College of Education & Human Development',
+  'Sports Arena': 'GSU Sports Arena',
+  'Sports Annex': 'Practice Facility',
+  'GSU Parking A Deck': 'A Deck',
+  'Loft Parking': 'University Lofts Parking',
 }
+
+const isGsu = (tags) => GSU_BUILDINGS.has(tags.name)
 
 function heightOf(tags) {
   const h = parseFloat(tags.height)
@@ -467,7 +498,7 @@ function main(elements) {
       for (const points of rings) {
         if (!points || !inside(centroid(points))) continue
         const b = { height: round(heightOf(tags) * SCALE), points }
-        if (tags.name) b.name = tags.name
+        if (tags.name) b.name = GSU_NAMES[tags.name] ?? tags.name
         if (isGsu(tags)) b.gsu = true
         buildings.push(b)
       }

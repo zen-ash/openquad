@@ -59,3 +59,26 @@ describe('panther quad', () => {
     expect(gilmer.length).toBeGreaterThan(0)
   })
 })
+
+describe('gsu buildings', () => {
+  const gsuNames = new Set(gsu.map((b) => b.name))
+
+  it('are the downtown campus, with the names gsu uses', () => {
+    for (const name of [
+      '25 Park Place',
+      '75 Piedmont Avenue',
+      'College of Law',
+      'Piedmont North A',
+    ]) {
+      expect(gsuNames.has(name), name).toBe(true)
+    }
+    // osm tags these as gsu but they aren't on gsu's campus map
+    for (const name of ['Georgia Hall', 'Piedmont Hall', 'Ten Park Place']) {
+      expect(gsuNames.has(name), name).toBe(false)
+    }
+  })
+
+  it('all have names', () => {
+    expect(gsu.every((b) => b.name)).toBe(true)
+  })
+})

@@ -15,7 +15,7 @@ const SPOTS: [string, string][] = [
   ['Urban Life', 'Urban Life Building'],
   ['Petit Science Center', 'Petit Science Center'],
   ['Rialto Center', 'Rialto Center for the Arts'],
-  ['College of Law', 'GSU College of Law'],
+  ['College of Law', 'College of Law'],
   ['Rec Center', 'Student Recreation Center'],
 ]
 
