@@ -3,9 +3,21 @@ import { useEffect, useMemo } from 'react'
 import { ACESFilmicToneMapping, SRGBColorSpace } from 'three'
 import { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js'
 import { ao } from 'three/examples/jsm/tsl/display/GTAONode.js'
-import { denoise } from 'three/examples/jsm/tsl/display/DenoiseNode.js'
+import { depthAwareBlur } from 'three/examples/jsm/tsl/display/depthAwareBlur.js'
 import { smaa } from 'three/examples/jsm/tsl/display/SMAANode.js'
-import { distance, float, pass, renderOutput, screenUV, smoothstep, vec2, vec4 } from 'three/tsl'
+import {
+  distance,
+  float,
+  int,
+  pass,
+  renderOutput,
+  rtt,
+  screenUV,
+  smoothstep,
+  textureSize,
+  vec2,
+  vec4,
+} from 'three/tsl'
 import { RenderPipeline, type Node, type WebGPURenderer } from 'three/webgpu'
 
 // only mounted on high quality (see App). webgpu only, the webgl2 fallback is always low
@@ -27,13 +39,15 @@ export default function Effects() {
     aoPass.resolutionScale = 0.5
     aoPass.radius.value = 3
     aoPass.scale.value = 2.5
-    const shade = denoise(
-      aoPass.getTextureNode(),
-      depth,
-      null as unknown as Node,
-      camera,
-    ) as unknown as Node<'vec4'>
-    let out = color.mul(shade.r)
+    // soften its noise without blurring across edges (n8ao's denoiser did this). each
+    // pass is drawn into its own half size texture once, everything after just reads it.
+    // not three's DenoiseNode: stock chrome can't compile it (a tint bug with its kernel)
+    const raw = aoPass.getTextureNode()
+    const texel = vec2(1).div(vec2(textureSize(raw, int(0)) as unknown as Node<'ivec2'>))
+    const half = { resolutionScale: 0.5 }
+    const blurX = rtt(depthAwareBlur(raw, depth, texel.mul(vec2(1, 0)), camera), null, null, half)
+    const blurY = rtt(depthAwareBlur(blurX, depth, texel.mul(vec2(0, 1)), camera), null, null, half)
+    let out = color.mul(blurY.r)
 
     // only really bright things glow, which in practice is lit windows at night. three's
     // bloom spreads a lot more than the postprocessing library's did, these numbers match
