@@ -2,6 +2,7 @@ import { AVATAR_IDS, MAX_NAME_LENGTH } from '@quad/shared'
 import { useState, type FormEvent } from 'react'
 import { connect } from './net/connection'
 import { useGame } from './net/store'
+import { useSettings } from './settings'
 import { startMic } from './voice/voice'
 
 // for screen readers and the tests, the thumbnails say the rest
@@ -32,6 +33,7 @@ function save(key: string, value: string) {
 
 export default function JoinScreen() {
   const status = useGame((s) => s.status)
+  const warming = useSettings((s) => s.warming)
   const [name, setName] = useState(() => saved('name', ''))
   const [firstPick] = useState(() => {
     const last = saved('avatar', AVATAR_IDS[0]!)
@@ -85,8 +87,13 @@ export default function JoinScreen() {
           ))}
         </fieldset>
 
-        <button type="submit" className="join" disabled={!name.trim() || status === 'connecting'}>
-          {status === 'connecting' ? 'Joining...' : 'Join'}
+        {/* waits for the shaders to be built (scene/WarmUp.tsx), or walking around hitches */}
+        <button
+          type="submit"
+          className="join"
+          disabled={warming || !name.trim() || status === 'connecting'}
+        >
+          {warming ? 'Loading campus...' : status === 'connecting' ? 'Joining...' : 'Join'}
         </button>
       </form>
     </div>

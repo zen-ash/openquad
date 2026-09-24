@@ -40,8 +40,10 @@ import {
   type NodeBuilder,
   type WebGPURenderer,
 } from 'three/webgpu'
+import { useSettings } from '../settings'
 import { sunlight } from './Atmosphere'
 import { adapt, exposure, meter } from './autoExposure'
+import { effects } from './fx'
 
 // how far (meters) the ambient occlusion looks for things that block the sky
 const AO_RADIUS = 2
@@ -72,7 +74,8 @@ function buildOnce<T>(node: T): T {
   return node
 }
 
-// only mounted on high quality (see App). webgpu only, the webgl2 fallback is always low
+// mounted for the whole visit when it starts on high quality with webgpu (see App). on low
+// it draws straight to the screen instead, the effects stay built for when it's back
 export default function Effects() {
   const gl = useThree((s) => s.gl) as unknown as WebGPURenderer
   const scene = useThree((s) => s.scene)
@@ -194,8 +197,13 @@ export default function Effects() {
   useEffect(() => () => pipeline.dispose(), [pipeline])
 
   // priority 1 takes the rendering over from fiber
-  useFrame((_, dt) => {
+  useFrame((state, dt) => {
+    if (useSettings.getState().quality !== 'high') {
+      gl.render(state.scene, state.camera)
+      return
+    }
     pipeline.render()
+    effects.drawn = true
     meter(gl, lit.value)
     adapt(dt)
   }, 1)

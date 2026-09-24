@@ -83,7 +83,7 @@ async function join(context, query, name) {
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()))
   await page.goto(`${URL}/?${query}`)
   await page.getByLabel("What's your name?").fill(name)
-  await page.getByRole('button', { name: 'Join' }).click()
+  await page.getByRole('button', { name: 'Join' }).click({ timeout: 120_000 })
   await page.getByText(/^\d+ online$/).waitFor({ timeout: 90_000 })
   return { page, errors }
 }
@@ -115,7 +115,8 @@ for (const mode of modes) {
 
     let other = null
     if (v.other) {
-      other = await join(context, `quality=low&nocity${DAY}`, 'Sam')
+      // its own window: a background tab gets no frames, and join waits for the warm-up
+      other = await join(await browser.newContext(), `quality=low&nocity${DAY}`, 'Sam')
       await other.page.evaluate(([x, z]) => globalThis.quad.teleport(x, z), v.other)
     }
     // textures, furniture and the shadow map settle in the first few seconds
@@ -128,7 +129,7 @@ for (const mode of modes) {
       await page.waitForTimeout(1500)
     }
     const shot = await page.screenshot()
-    await other?.page.close()
+    await other?.page.context().close()
     writeFileSync(`${dir}/${v.name}.png`, shot)
     if (update) {
       results.push({

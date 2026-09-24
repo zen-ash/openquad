@@ -38,7 +38,7 @@ await page.goto(
   `${process.env.BASE ?? 'http://localhost:5173'}/?time=09:00&date=2026-09-24&still&notiles${extra}`,
 )
 await page.getByLabel("What's your name?").fill('Timer')
-await page.getByRole('button', { name: 'Join' }).click()
+await page.getByRole('button', { name: 'Join' }).click({ timeout: 120_000 })
 await page.getByText(/^\d+ online$/).waitFor({ timeout: 90_000 })
 await page.keyboard.press('KeyP')
 

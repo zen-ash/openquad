@@ -93,15 +93,33 @@ function Model({ kind, items }: { kind: Kind; items: Item[] }) {
   return meshes.map((m) => <Piece key={m.uuid} mesh={m} kind={kind} items={items} />)
 }
 
+// rooms that between them have one of everything, for the warm-up (WarmUp.tsx)
+let samples: number[] | null = null
+export function sampleRooms() {
+  if (samples) return samples
+  samples = []
+  const missing = new Set(KINDS)
+  for (const r of interiors) {
+    const kinds = furnish(r).map((i) => i.kind)
+    if (!kinds.some((k) => missing.has(k))) continue
+    samples.push(r.index)
+    for (const k of kinds) missing.delete(k)
+    if (missing.size === 0) break
+  }
+  return samples
+}
+
 // only the building you're in (or about to walk into) gets furniture, all of campus at
-// once would be thousands of chairs nobody can see
-export default function Furniture() {
-  const [room, setRoom] = useState(-1)
+// once would be thousands of chairs nobody can see. or always the same room (WarmUp)
+export default function Furniture({ fixed }: { fixed?: number }) {
+  const [near, setNear] = useState(-1)
+  const room = fixed ?? near
 
   useEffect(() => {
-    const timer = setInterval(() => setRoom(interiorNear(localPlayer)?.index ?? -1), 500)
+    if (fixed !== undefined) return
+    const timer = setInterval(() => setNear(interiorNear(localPlayer)?.index ?? -1), 500)
     return () => clearInterval(timer)
-  }, [])
+  }, [fixed])
 
   const items = useMemo(() => {
     const r = interiors.find((i) => i.index === room)

@@ -162,8 +162,9 @@ function Ground({ tiles }: { tiles: boolean }) {
 export default function Campus() {
   const sky = useSky()
   const tiles = useSettings((s) => s.tiles)
-  // high quality has the real atmosphere, low the old sky (it's cheaper and runs on webgl2)
-  const high = useSettings((s) => s.quality === 'high')
+  // the real atmosphere when the visit started on high quality with webgpu (it stays if it
+  // drops to low), otherwise the old sky (it's cheaper and runs on webgl2)
+  const high = useSettings((s) => s.atmosphere)
   const outlines = useSettings((s) => s.outlines)
   const fenceLine = useSettings((s) => s.fenceLine)
   const sunAt = sky.dir.map((v) => v * 100) as [number, number, number]

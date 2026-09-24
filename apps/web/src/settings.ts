@@ -58,6 +58,12 @@ export const useSettings = create<{
   quality: Quality
   // which renderer backend we ended up with, null until it's started
   backend: 'webgpu' | 'webgl2' | null
+  // the real sky and the effects. decided once, when the renderer starts on high quality
+  // with webgpu. dropping to low later keeps them and only draws without the effects, so
+  // the shaders built for both stay built
+  atmosphere: boolean
+  // shaders are being built before anyone can walk around (scene/WarmUp.tsx)
+  warming: boolean
   time: string
   photo: boolean
   tiles: boolean
@@ -68,6 +74,9 @@ export const useSettings = create<{
 }>(() => ({
   quality: startingQuality(),
   backend: null,
+  atmosphere: false,
+  // nothing to build without the city (the e2e tests)
+  warming: !hideCity,
   time: startingTime(),
   // everything on screen hidden, for screenshots
   photo: false,

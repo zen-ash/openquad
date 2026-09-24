@@ -1,7 +1,7 @@
 import { KeyboardControls, PerformanceMonitor } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { lazy, Suspense, useEffect } from 'react'
-import { ACESFilmicToneMapping } from 'three'
+import { ACESFilmicToneMapping, PCFShadowMap } from 'three'
 import { WebGPURenderer, type WebGPURendererParameters } from 'three/webgpu'
 import ChatPanel from './ChatPanel'
 import EmoteBar from './EmoteBar'
@@ -22,6 +22,7 @@ import JoinCamera from './scene/JoinCamera'
 import Player from './scene/Player'
 import RemotePlayers from './scene/RemotePlayers'
 import RouteLine from './scene/RouteLine'
+import WarmUp from './scene/WarmUp'
 import { forceWebGL, hideCity, showDebug, useSettings } from './settings'
 import TimePicker from './TimePicker'
 import TouchControls, { isTouchScreen } from './TouchControls'
@@ -41,15 +42,16 @@ async function startRenderer(props: object) {
   renderer.toneMapping = ACESFilmicToneMapping
   const webgpu = (renderer.backend as { isWebGPUBackend?: boolean }).isWebGPUBackend === true
   useSettings.setState(webgpu ? { backend: 'webgpu' } : { backend: 'webgl2', quality: 'low' })
-  // high quality's atmosphere and effects, loaded before the first frame: the atmosphere
-  // hooks into the renderer, and a frame drawn without the effects first leaves the sky
-  // black. quality only ever goes from high to low, so starting on low they're never needed
+  // high quality's atmosphere and effects, loaded before the first frame (the atmosphere
+  // hooks into the renderer). they stay for the whole visit even if it drops to low, so
+  // starting on low they're never needed
   if (useSettings.getState().quality === 'high') {
     const [{ addAtmosphere }] = await Promise.all([
       import('./scene/Atmosphere'),
       import('./scene/Effects'),
     ])
     addAtmosphere(renderer)
+    useSettings.setState({ atmosphere: true })
   }
   return renderer
 }
@@ -61,6 +63,8 @@ export default function App() {
   // you never got in at all
   const inGame = me && (status === 'connected' || status === 'reconnecting')
   const quality = useSettings((s) => s.quality)
+  const atmosphere = useSettings((s) => s.atmosphere)
+  const warming = useSettings((s) => s.warming)
   const photo = useSettings((s) => s.photo)
 
   // the blur behind the panels is slow without a gpu, low quality turns it off (styles.css)
@@ -72,33 +76,41 @@ export default function App() {
     <KeyboardControls map={keyMap}>
       <Canvas
         // shadows are an extra render of the whole scene, first thing to go on slow laptops
-        shadows={quality === 'high' ? 'percentage' : false}
+        // (an object when off: plain false makes fiber pick PCFSoftShadowMap, which three's
+        // webgpu renderer warns about)
+        shadows={quality === 'high' ? 'percentage' : { enabled: false, type: PCFShadowMap }}
         dpr={quality === 'high' ? [1, 1.5] : 1}
         // near is as far out as it can be without clipping your own head. every bit
         // helps the depth buffer tell apart things that are close together far away
         camera={{ fov: 50, near: 0.3, far: 1500 }}
         gl={startRenderer}
       >
-        {/* drops to low quality if the framerate stays bad */}
-        <PerformanceMonitor onDecline={() => useSettings.setState({ quality: 'low' })} />
+        {/* drops to low quality if the framerate stays bad. not while the shaders are being
+            built, those frames are slow on purpose */}
+        {!warming && (
+          <PerformanceMonitor onDecline={() => useSettings.setState({ quality: 'low' })} />
+        )}
         {!hideCity && <Campus />}
+        {/* from the start, not after joining: a light added later changes every
+            material's shader, and they'd all be built again */}
+        <IndoorLight />
         {inGame ? (
           <Suspense fallback={null}>
             <Player key={me.id} spawn={me} />
             <CameraInput />
             <RouteLine />
-            <IndoorLight />
             <RemotePlayers />
             <VoiceUpdater />
           </Suspense>
         ) : (
           <JoinCamera />
         )}
-        {quality === 'high' && (
+        {atmosphere && (
           <Suspense fallback={null}>
             <Effects />
           </Suspense>
         )}
+        <WarmUp />
       </Canvas>
 
       {inGame && isTouchScreen && !photo && <TouchControls />}
