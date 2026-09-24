@@ -146,9 +146,8 @@ function jitter(x, z) {
 
 // osm barely has any trees mapped, so fill the parks in. grid with some jitter,
 // staying off the paths and away from where people spawn
-function plantParkTrees(parks, lines) {
+function plantParkTrees(parks, lines, spacing = 14) {
   const trees = []
-  const spacing = 14
   for (const park of parks) {
     const xs = park.map((p) => p[0])
     const zs = park.map((p) => p[1])
@@ -162,6 +161,116 @@ function plantParkTrees(parks, lines) {
     }
   }
   return trees
+}
+
+// the panther quad. sparks hall came down at the end of 2025 and this stretch of gilmer
+// street closed, so hurt park, the sparks hall site and the greenway are one big quad now.
+// osm doesn't have it yet, so it's laid out by eye from gsu's campus map. meters from hurt
+// park. u runs along courtland street from the old gilmer corner, v goes in toward arts &
+// humanities
+function pantherQuad(lines, crossings) {
+  const o = [-3, 78]
+  const u = [-0.651, 0.759]
+  const v = [-0.759, -0.651]
+  const at = ([a, b]) => [round(o[0] + u[0] * a + v[0] * b), round(o[1] + u[1] * a + v[1] * b)]
+
+  // follows the old gilmer sidewalk, courtland, the greenway path and arts & humanities
+  const outline = [
+    [-69, 24],
+    [-47, 40],
+    [-10, 72],
+    [-3, 78],
+    [-41, 122],
+    [-57, 141],
+    [-68, 132],
+    [-88, 108],
+    [-82, 76],
+    [-69, 63],
+    [-67, 48],
+  ]
+  // where the road was, now lawn joined onto hurt park
+  const gilmer = [
+    [-99, -22],
+    [-72.6, -16],
+    [-68.3, -4.6],
+    [-48.3, 15.2],
+    [-3.3, 54.5],
+    [1.3, 65.5],
+    [-3, 78],
+    [-10, 72],
+    [-47, 40],
+    [-105, -10],
+  ]
+  const lawns = [
+    // the big one toward the library, one by the fountain, a strip along arts & humanities
+    [
+      [40, 6],
+      [74, 6],
+      [78, 22],
+      [62, 30],
+      [44, 24],
+    ],
+    [
+      [4, 10],
+      [14, 8],
+      [16, 26],
+      [6, 30],
+    ],
+    [
+      [8, 52],
+      [44, 52],
+      [44, 58],
+      [8, 60],
+    ],
+  ].map((l) => l.map(at))
+  const planter = [
+    [22, 36],
+    [40, 30],
+    [34, 48],
+  ].map(at)
+
+  // a row of trees down the middle of where the road was, it's too narrow for the grid
+  const middle = [
+    [-97, -17.6],
+    [-79.3, 0.5],
+    [-41.4, 34.5],
+    [1.2, 72.7],
+  ]
+  const row = []
+  for (let i = 1; i < middle.length; i++) {
+    const [ax, az] = middle[i - 1]
+    const [bx, bz] = middle[i]
+    const n = Math.round(Math.hypot(bx - ax, bz - az) / 9)
+    for (let k = 0; k < n; k++)
+      row.push([round(ax + ((bx - ax) * k) / n), round(az + ((bz - az) * k) / n)])
+  }
+
+  const trees = [
+    // not on a crosswalk, gps walks people across those
+    ...row.filter((p) => !crossings.some((l) => distToLine(p, l.points) < 2)),
+    ...plantParkTrees([gilmer, ...lawns], lines, 8),
+    // a few in the planter
+    ...[
+      [30, 38],
+      [36, 36],
+      [33, 43],
+    ].map(at),
+  ]
+  return {
+    // gilmer between peachtree center and courtland
+    closed: (road) =>
+      road.name?.startsWith('Gilmer') &&
+      road.points.every(([x, z]) => x > -103 && x < 8 && z > -26 && z < 79),
+    parks: [gilmer, ...lawns],
+    area: { name: 'Panther Quad', gsu: true, points: outline },
+    trees,
+    quad: {
+      pavers: [outline],
+      planters: [{ height: 0.6, points: planter }],
+      monument: at([18, 18]),
+      flags: [at([5, 6]), at([8, 5])],
+    },
+  }
 }
 
 // which way round a ring goes. positive = counter clockwise with z pointing down the screen
@@ -409,12 +518,17 @@ function main(elements) {
   if (lib) libraryNorth(lib)
 
   trees.push(...plantParkTrees(parks, [...roads, ...paths]))
+  const quad = pantherQuad([...roads, ...paths], crossings)
+  parks.push(...quad.parks)
+  areas.push(quad.area)
+  trees.push(...quad.trees)
+
   // osm has footpaths that go through buildings (covered passages, indoor corridors).
   // buildings are solid in the game, so cut those bits out
   const outside = (lines) => lines.flatMap((l) => outsideRuns(l, buildings))
   const walkPaths = outside(paths)
   const walkCrossings = outside(crossings)
-  const walkRoads = outside(roads)
+  const walkRoads = outside(roads.filter((r) => !quad.closed(r)))
 
   // doors face the main connected walking network, not some path that doesn't lead anywhere
   const walkable = mainNetwork([...walkPaths, ...walkCrossings, ...walkRoads])
@@ -430,6 +544,7 @@ function main(elements) {
     areas,
     plazas,
     trees,
+    quad: quad.quad,
   }
 }
 

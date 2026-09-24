@@ -38,3 +38,24 @@ describe('campus doors', () => {
     },
   )
 })
+
+describe('panther quad', () => {
+  const quad = campus.areas.find((a) => a.name === 'Panther Quad')!
+
+  it('is a gsu place on the map', () => {
+    expect(quad.gsu).toBe(true)
+  })
+
+  it('closed gilmer street where it crosses the quad', () => {
+    const gilmer = campus.roads.filter((r) => r.name?.startsWith('Gilmer'))
+    for (const r of gilmer) {
+      for (const [x, z] of r.points) {
+        expect(
+          pointInPolygon({ x: x!, z: z! }, polygon(quad.points as [number, number][]).points),
+        ).toBe(false)
+      }
+    }
+    // the part east of courtland is still a street
+    expect(gilmer.length).toBeGreaterThan(0)
+  })
+})
