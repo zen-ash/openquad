@@ -2,3 +2,4 @@ pnpm-lock.yaml
 dist
 coverage
 apps/web/src/campus/campus.json
+apps/web/src/campus/terrain.json
