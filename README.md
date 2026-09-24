@@ -45,6 +45,12 @@ Chrome, Windows on ARM) get three's WebGL2 fallback instead, always on low quali
 shadows and no effects, because those are written for WebGPU. `?webgl2` forces the
 fallback to try it.
 
+High quality is the whole thing: the sky and the haze over far buildings from takram's
+three-atmosphere, cascaded sun shadows with soft edges, ambient occlusion, contact shadows,
+TAA drawn at 80% size and scaled up, glare, and auto exposure. It all fits in about 8ms a
+frame at 1920x1200 on an M4 MacBook Air. The frame rate shows in the top left box in dev
+(or with `?debug`).
+
 The mic only works on localhost or https. Opening it from another device on your wifi
 (http://your-ip:5173) works, but that device can only listen.
 
