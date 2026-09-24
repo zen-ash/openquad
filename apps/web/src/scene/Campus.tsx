@@ -1,5 +1,5 @@
 import { useFrame } from '@react-three/fiber'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Color, PlaneGeometry, type DirectionalLight, type HemisphereLight } from 'three'
 import campus from '../campus/campus.json'
 import { areasGeometry, linesGeometry, planarUv } from '../campus/geometry'
@@ -15,7 +15,6 @@ import {
 import { localPlayer } from '../game/localPlayer'
 import { daylight, sunDirection, sunPosition, timeFor } from '../game/sun'
 import { today, useSettings } from '../settings'
-import Atmosphere from './Atmosphere'
 import Buildings from './Buildings'
 import Doors from './Doors'
 import FenceHaze from './FenceHaze'
@@ -29,6 +28,9 @@ import { SkyDome, SkyEnvironment, Stars } from './Sky'
 import StreetFurniture from './StreetFurniture'
 import Tiles from './Tiles'
 import Trees from './Trees'
+
+// only loaded on high quality (App loads it first thing when it starts on high)
+const Atmosphere = lazy(() => import('./Atmosphere'))
 
 const DAY_HAZE = new Color('#c9d6e0')
 const NIGHT_HAZE = new Color('#0b1322')
@@ -176,7 +178,9 @@ export default function Campus() {
   return (
     <>
       {high ? (
-        <Atmosphere sun={sky.dir} when={sky.when} day={sky.day} />
+        <Suspense fallback={null}>
+          <Atmosphere sun={sky.dir} when={sky.when} day={sky.day} />
+        </Suspense>
       ) : (
         <>
           <SkyDome sun={sunAt} />

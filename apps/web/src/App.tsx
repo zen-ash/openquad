@@ -1,6 +1,6 @@
 import { KeyboardControls, PerformanceMonitor } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
-import { Suspense, useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { ACESFilmicToneMapping } from 'three'
 import { WebGPURenderer, type WebGPURendererParameters } from 'three/webgpu'
 import ChatPanel from './ChatPanel'
@@ -14,10 +14,8 @@ import Minimap from './hud/Minimap'
 import NavBar from './hud/NavBar'
 import PlacesMenu from './hud/PlacesMenu'
 import { useGame } from './net/store'
-import { addAtmosphere } from './scene/Atmosphere'
 import CameraInput from './scene/CameraInput'
 import Campus from './scene/Campus'
-import Effects from './scene/Effects'
 import IndoorLight from './scene/IndoorLight'
 import JoinCamera from './scene/JoinCamera'
 import Player from './scene/Player'
@@ -29,16 +27,28 @@ import TouchControls, { isTouchScreen } from './TouchControls'
 import MicButton from './voice/MicButton'
 import VoiceUpdater from './voice/VoiceUpdater'
 
+// high quality only. low (and the webgl2 fallback) never downloads takram's atmosphere
+const Effects = lazy(() => import('./scene/Effects'))
+
 // three's webgpu renderer. where there's no webgpu it runs on webgl2 instead, and that
 // gets the low preset: no shadows or effects (the effects are written for webgpu)
 async function startRenderer(props: object) {
   const renderer = new WebGPURenderer({ ...(props as WebGPURendererParameters), forceWebGL })
   await renderer.init()
-  addAtmosphere(renderer)
   // same tone mapping as the effects use, so low quality (no effects) looks the same
   renderer.toneMapping = ACESFilmicToneMapping
   const webgpu = (renderer.backend as { isWebGPUBackend?: boolean }).isWebGPUBackend === true
   useSettings.setState(webgpu ? { backend: 'webgpu' } : { backend: 'webgl2', quality: 'low' })
+  // high quality's atmosphere and effects, loaded before the first frame: the atmosphere
+  // hooks into the renderer, and a frame drawn without the effects first leaves the sky
+  // black. quality only ever goes from high to low, so starting on low they're never needed
+  if (useSettings.getState().quality === 'high') {
+    const [{ addAtmosphere }] = await Promise.all([
+      import('./scene/Atmosphere'),
+      import('./scene/Effects'),
+    ])
+    addAtmosphere(renderer)
+  }
   return renderer
 }
 
@@ -82,7 +92,11 @@ export default function App() {
         ) : (
           <JoinCamera />
         )}
-        {quality === 'high' && <Effects />}
+        {quality === 'high' && (
+          <Suspense fallback={null}>
+            <Effects />
+          </Suspense>
+        )}
       </Canvas>
 
       {inGame && isTouchScreen && !photo && <TouchControls />}
