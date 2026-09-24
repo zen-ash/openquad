@@ -8,11 +8,13 @@ import { depthAwareBlur } from 'three/examples/jsm/tsl/display/depthAwareBlur.js
 import { taau } from 'three/examples/jsm/tsl/display/TAAUNode.js'
 import { sharpen } from 'three/examples/jsm/tsl/display/SharpenNode.js'
 import {
+  builtinAOContext,
   convertToTexture,
   distance,
   float,
   int,
   mrt,
+  normalView,
   output,
   pass,
   renderOutput,
@@ -27,6 +29,9 @@ import {
 import { RenderPipeline, type Node, type WebGPURenderer } from 'three/webgpu'
 import { exposure } from './Atmosphere'
 
+// how far (meters) the ambient occlusion looks for things that block the sky
+const AO_RADIUS = 2
+
 // how big the scene is drawn before taau scales it up: 0.8 is 64% of the pixels. 0.67
 // was cheaper but visibly softer, 0.8 with the sharpening looks like full size (pnpm visual)
 const SCALE = 0.8
@@ -38,31 +43,51 @@ export default function Effects() {
   const camera = useThree((s) => s.camera)
 
   const pipeline = useMemo(() => {
+    // ambient occlusion first, from a quick pass that only draws depth and normals: how
+    // much of the sky each spot can see. the scene pass then darkens only the light from
+    // the sky and the environment with it, not the sun (which has shadows for that). the
+    // old way multiplied the whole picture and made sunlit ground in corners too dark
+    const prePass = pass(scene, camera, { samples: 0 })
+    prePass.setResolutionScale(SCALE)
+    prePass.setMRT(mrt({ output: normalView }))
+    const preDepth = prePass.getTextureNode('depth')
+    const aoPass = ao(preDepth, prePass.getTextureNode(), camera)
+    aoPass.resolutionScale = 0.5
+    aoPass.radius.value = AO_RADIUS
+    aoPass.scale.value = 1
+    // the noise pattern turns every frame and taa averages it out
+    aoPass.useTemporalFiltering = true
+    // soften the rest without blurring across edges. each pass is drawn into its own half
+    // size texture once. not three's DenoiseNode: stock chrome can't compile it (a tint
+    // bug with its kernel)
+    const raw = aoPass.getTextureNode()
+    const texel = vec2(1).div(vec2(textureSize(raw, int(0)) as unknown as Node<'ivec2'>))
+    const half = { resolutionScale: 0.5 }
+    const blurX = rtt(
+      depthAwareBlur(raw, preDepth, texel.mul(vec2(1, 0)), camera),
+      null,
+      null,
+      half,
+    )
+    const blurY = rtt(
+      depthAwareBlur(blurX, preDepth, texel.mul(vec2(0, 1)), camera),
+      null,
+      null,
+      half,
+    )
+
     // the scene is drawn smaller than the screen, a bit off center every frame, and taau
     // (below) puts the frames together into a sharp full size picture. that's the
     // antialiasing too, so no msaa
     const scenePass = pass(scene, camera, { samples: 0 })
     scenePass.setResolutionScale(SCALE)
     scenePass.setMRT(mrt({ output, velocity }))
-    const color = scenePass.getTextureNode('output')
+    // (on top of the renderer's own context, which has the atmosphere in it)
+    const aoContext = builtinAOContext(blurY.sample(screenUV).r)
+    aoContext.value = { ...(gl.contextNode.value as object), ...(aoContext.value as object) }
+    scenePass.contextNode = aoContext
     const depth = scenePass.getTextureNode('depth')
-
-    // soft contact shadows where walls meet the ground and in corners. this is most of
-    // what makes it look less like a video game. also the most expensive part. normals
-    // come from the depth, cheaper than drawing them out separately
-    const aoPass = ao(depth, null as unknown as Node, camera)
-    aoPass.resolutionScale = 0.5
-    aoPass.radius.value = 3
-    aoPass.scale.value = 2.5
-    // soften its noise without blurring across edges (n8ao's denoiser did this). each
-    // pass is drawn into its own half size texture once, everything after just reads it.
-    // not three's DenoiseNode: stock chrome can't compile it (a tint bug with its kernel)
-    const raw = aoPass.getTextureNode()
-    const texel = vec2(1).div(vec2(textureSize(raw, int(0)) as unknown as Node<'ivec2'>))
-    const half = { resolutionScale: 0.5 }
-    const blurX = rtt(depthAwareBlur(raw, depth, texel.mul(vec2(1, 0)), camera), null, null, half)
-    const blurY = rtt(depthAwareBlur(blurX, depth, texel.mul(vec2(0, 1)), camera), null, null, half)
-    let out = color.mul(blurY.r)
+    let out = scenePass.getTextureNode('output') as Node<'vec4'>
 
     // the air between you and everything: far things fade toward the sky's color and turn
     // bluer (Atmosphere.tsx, which also tells it the camera)
