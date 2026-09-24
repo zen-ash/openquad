@@ -15,6 +15,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "e2e": "playwright test",
+    "visual": "node scripts/visual.mjs",
     "campus": "node scripts/build-campus.mjs",
     "terrain": "node scripts/build-terrain.mjs",
     "bots": "pnpm --filter @quad/server bots"
@@ -26,6 +27,8 @@
     "eslint": "^10.11.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.12.0",
+    "pixelmatch": "7.2.0",
+    "pngjs": "7.0.0",
     "prettier": "^3.9.8",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.70.1"

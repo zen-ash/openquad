@@ -11,6 +11,8 @@ coverage
 # playwright
 test-results
 playwright-report
+# screenshots from pnpm visual, they depend on the gpu
+visual
 
 # editor / local tooling
 .vscode/*
