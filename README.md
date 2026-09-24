@@ -16,7 +16,7 @@ Final project for CSC 4370 (Web Programming) at Georgia State.
 
 ## Stack
 
-- **web** - React, React Three Fiber, Vite
+- **web** - React, React Three Fiber, three.js's WebGPU renderer, Vite
 - **server** - Node + `ws`, handles position sync and WebRTC signaling
 - **shared** - types, message protocol and math used by both
 
@@ -40,6 +40,11 @@ yourself through the other one (use headphones or it'll feed back).
 Add `?quality=low` to the url to turn off shadows and effects on a slow laptop. It also does
 this on its own if the framerate stays bad.
 
+It draws with WebGPU. Browsers without it (Safari before 26, Firefox on Linux, most Linux
+Chrome, Windows on ARM) get three's WebGL2 fallback instead, always on low quality: no
+shadows and no effects, because those are written for WebGPU. `?webgl2` forces the
+fallback to try it.
+
 The mic only works on localhost or https. Opening it from another device on your wifi
 (http://your-ip:5173) works, but that device can only listen.
 
@@ -48,6 +53,8 @@ Other scripts:
 ```sh
 pnpm test        # unit + integration tests
 pnpm e2e         # playwright, opens two browsers and checks they see each other
+pnpm visual      # screenshots from fixed spots vs a baseline, for any rendering change
+pnpm frametime   # how long a frame takes at 1920x1200
 pnpm bots        # load test with fake players, see docs/LOAD_TEST.md
 pnpm terrain     # ground heights for flattening google's tiles (usgs lidar)
 pnpm typecheck
