@@ -13,10 +13,10 @@ const black = new THREE.MeshStandardMaterial({ color: '#202326', roughness: 0.5,
 const grey = new THREE.MeshStandardMaterial({ color: '#7b7f83', roughness: 0.45, metalness: 0.7 })
 const blue = new THREE.MeshStandardMaterial({ color: '#1f4f9e', roughness: 0.55, metalness: 0.3 })
 // lamp glass, lit at night (see useFrame)
+const LAMP = new THREE.Color('#ffcf8a')
 const lampGlass = new THREE.MeshStandardMaterial({
   color: '#f2efe6',
-  emissive: '#ffcf8a',
-  emissiveIntensity: 0,
+  emissive: '#000000',
   roughness: 0.2,
 })
 
@@ -166,8 +166,11 @@ export default function StreetFurniture() {
   // lamps come on as it gets dark. way brighter than a lit window, like real ones, which is
   // what makes them glow (the glare in Effects has no threshold). low quality has no glare
   // and that much just comes out as a flat white disc
+  // (it's the color that fades, three builds a new shader when a number like
+  // emissiveIntensity goes from 0 to something)
   useFrame(() => {
-    lampGlass.emissiveIntensity = night.value * (quality === 'high' ? 80 : 2.5)
+    lampGlass.emissiveIntensity = quality === 'high' ? 80 : 2.5
+    lampGlass.emissive.copy(LAMP).multiplyScalar(night.value)
     pools.park.opacity = night.value * 0.5
     pools.street.opacity = night.value * 0.45
   })

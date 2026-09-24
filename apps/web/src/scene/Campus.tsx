@@ -120,7 +120,9 @@ function SkyLight({ intensity, environment }: { intensity: number; environment: 
     l.groundColor.copy(GROUND_LIGHT).lerp(FLOOR_LIGHT, k)
   })
 
-  return <hemisphereLight ref={light} args={[SKY_LIGHT, GROUND_LIGHT, intensity]} />
+  // not in args: fiber makes a new light when args change, and a new light (new id) means
+  // every material in the scene gets rebuilt. that happened whenever the time of day moved
+  return <hemisphereLight ref={light} args={[SKY_LIGHT, GROUND_LIGHT]} intensity={intensity} />
 }
 
 function Ground({ tiles }: { tiles: boolean }) {
@@ -186,7 +188,8 @@ export default function Campus() {
           <SkyDome sun={sunAt} />
           {sky.day < 0.3 && <Stars />}
           <SkyEnvironment sun={sunAt} />
-          <fog attach="fog" args={[haze, 300, 1000]} />
+          {/* the color as a prop for the same reason as the sky light below */}
+          <fog attach="fog" args={[DAY_HAZE, 300, 1000]} color={haze} />
           <Sun dir={sky.light} day={sky.day} />
         </>
       )}
