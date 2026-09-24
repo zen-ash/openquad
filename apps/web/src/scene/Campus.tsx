@@ -10,6 +10,7 @@ import { localPlayer } from '../game/localPlayer'
 import { daylight, sunDirection, sunPosition, timeFor } from '../game/sun'
 import { useSettings } from '../settings'
 import Buildings from './Buildings'
+import Doors from './Doors'
 import Interiors from './Interiors'
 import Trees from './Trees'
 
@@ -154,6 +155,7 @@ export default function Campus() {
       <Ground />
       <Buildings />
       <Interiors />
+      <Doors />
       <Trees />
     </>
   )

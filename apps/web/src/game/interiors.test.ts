@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { pointInPolygon, type World } from './collision'
-import { DOOR_WIDTH, interiors, wallsWithDoorway } from './interiors'
+import { DOOR_WIDTH, doorOpens, doorPanels, interiors, wallsWithDoorway } from './interiors'
 import { walk } from './movement'
 
 // a 10x10 room with the door in the middle of the bottom wall (z = 10), facing +z
@@ -57,5 +57,35 @@ describe('campus interiors', () => {
     let p = { x: x + nx * 3, z: z + nz * 3 }
     for (let i = 0; i < 90; i++) p = walk(p, { x: -nx, z: -nz }, 2, 1 / 30, 0.4, w)
     expect(pointInPolygon(p, room.points)).toBe(true)
+  })
+})
+
+describe('sliding doors', () => {
+  const door = { x: 5, z: 10, nx: 0, nz: 1 }
+
+  it('opens when someone walks up to it', () => {
+    expect(doorOpens(door, [{ x: 5, z: 12 }])).toBe(true)
+    expect(
+      doorOpens(door, [
+        { x: 5, z: 20 },
+        { x: 30, z: 10 },
+      ]),
+    ).toBe(false)
+    expect(doorOpens(door, [])).toBe(false)
+  })
+
+  it('shuts in the middle and slides out of the doorway when open', () => {
+    const [left, right] = doorPanels(door, 0)
+    // each panel is half the door wide, so their middles are half a panel from the center
+    expect(Math.abs(left!.x - 5)).toBeCloseTo(DOOR_WIDTH / 4)
+    expect(Math.abs(right!.x - 5)).toBeCloseTo(DOOR_WIDTH / 4)
+
+    const open = doorPanels(door, 1)
+    for (const p of open) {
+      // the inner edge of each panel is out of the doorway (or nearly)
+      expect(Math.abs(p.x - 5) - DOOR_WIDTH / 4).toBeGreaterThan(DOOR_WIDTH / 2 - 0.1)
+      // and just inside the building
+      expect(p.z).toBeLessThan(10)
+    }
   })
 })

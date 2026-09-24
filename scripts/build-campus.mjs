@@ -177,6 +177,8 @@ function signedArea(points) {
 
 // where the front door goes: the spot on the outside wall that's closest to a footpath,
 // and not squashed up against the building next door. [x, z, outward normal x, z]
+const DOOR_MARGIN = 2.4
+
 function findDoor(building, buildings, walkable) {
   const pts = building.points
   const flip = signedArea(pts) > 0 ? -1 : 1
@@ -185,12 +187,13 @@ function findDoor(building, buildings, walkable) {
     const [ax, az] = pts[i]
     const [bx, bz] = pts[(i + 1) % pts.length]
     const len = Math.hypot(bx - ax, bz - az)
-    if (len < 4) continue // too short to fit a door
+    // room on both sides of the door for the sliding panels to go
+    if (len < DOOR_MARGIN * 2) continue
     const dx = (bx - ax) / len
     const dz = (bz - az) / len
     const nx = -dz * flip
     const nz = dx * flip
-    for (let t = 1.5; t <= len - 1.5; t += 1) {
+    for (let t = DOOR_MARGIN; t <= len - DOOR_MARGIN; t += 1) {
       const x = ax + dx * t
       const z = az + dz * t
       const outside = [x + nx * 2, z + nz * 2]

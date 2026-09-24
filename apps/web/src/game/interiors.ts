@@ -16,6 +16,36 @@ export type Interior = {
   walls: Segment[]
 }
 
+// the sliding doors open when someone's this close
+export const DOOR_SENSOR = 3
+
+export function doorOpens(door: Point, people: Iterable<Point>) {
+  for (const p of people) {
+    if (Math.hypot(p.x - door.x, p.z - door.z) < DOOR_SENSOR) return true
+  }
+  return false
+}
+
+/**
+ * Where the two panels of a sliding door are, open from 0 (shut) to 1. They sit just
+ * inside the doorway and slide sideways along the wall. rot is rotation.y for a panel
+ * that's wide along x
+ */
+export function doorPanels(door: Interior['door'], open: number) {
+  const along = { x: -door.nz, z: door.nx }
+  const w = DOOR_WIDTH / 2
+  const inset = 0.1
+  const rot = Math.atan2(-door.nx, -door.nz)
+  return [-1, 1].map((side) => {
+    const out = side * (w / 2 + w * open * 0.95)
+    return {
+      x: door.x - door.nx * inset + along.x * out,
+      z: door.z - door.nz * inset + along.z * out,
+      rot,
+    }
+  })
+}
+
 /** splits the building outline into wall segments, leaving a doorway at the door */
 export function wallsWithDoorway(points: Point[], door: Point, width = DOOR_WIDTH): Segment[] {
   const walls: Segment[] = []
