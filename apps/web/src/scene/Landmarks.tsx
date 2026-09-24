@@ -1,6 +1,7 @@
 import { Text } from '@react-three/drei'
 import type * as THREE from 'three'
 import campus from '../campus/campus.json'
+import { artsHumanitiesMaterials } from '../campus/artsHumanitiesMaterials'
 import { dahlbergMaterials } from '../campus/dahlbergMaterials'
 import { landmarkGeometry, type Sign } from '../campus/landmarks'
 import { libraryNorthMaterials } from '../campus/libraryNorthMaterials'
@@ -8,11 +9,25 @@ import { libraryNorthMaterials } from '../campus/libraryNorthMaterials'
 const materials: Record<string, Record<string, THREE.Material>> = {
   'Library North': libraryNorthMaterials,
   'Dahlberg Hall': dahlbergMaterials,
+  'Arts & Humanities': artsHumanitiesMaterials,
 }
 
 // white sign with the name in gsu blue. the real ones have the logo where the blue
 // square is, but that's gsu's trademark
 function NameSign({ sign }: { sign: Sign }) {
+  if (sign.letters)
+    return (
+      <Text
+        position={[sign.x, sign.y, sign.z]}
+        rotation-y={sign.rot}
+        fontSize={0.3}
+        lineHeight={1.25}
+        textAlign="center"
+        color="#3b3d40"
+      >
+        {sign.text}
+      </Text>
+    )
   const width = 0.8 + sign.text.length * 0.23
   return (
     <group position={[sign.x, sign.y, sign.z]} rotation-y={sign.rot}>

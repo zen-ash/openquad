@@ -554,6 +554,57 @@ function dahlberg(b) {
   })
 }
 
+// arts & humanities. white marble boxes, the entrance to the recital hall is at the corner of
+// peachtree center and gilmer, facing gilmer (the quad now). drawn in campus/artsHumanities.ts
+const ARTS = {
+  // the long southwest wall, from the peachtree center end to the far end
+  front: [
+    { lat: 33.7539286, lon: -84.3868197 },
+    { lat: 33.7535305, lon: -84.3862924 },
+  ],
+  // the marble block along that side is taller than the rest, going by photos
+  height: 20,
+  // meters along the front and out from it: the doors under the canopy
+  door: [3.2, 40.8],
+}
+
+function artsHumanities(b) {
+  const [from, to] = ARTS.front.map((c) => {
+    const [x, z] = toLocal(c)
+    return b.points.reduce((best, p) =>
+      Math.hypot(p[0] - x, p[1] - z) < Math.hypot(best[0] - x, best[1] - z) ? p : best,
+    )
+  })
+  const len = Math.hypot(to[0] - from[0], to[1] - from[1])
+  const along = [(to[0] - from[0]) / len, (to[1] - from[1]) / len]
+  const out = [along[1], -along[0]]
+  const [a, d] = ARTS.door
+  const at = [from[0] + along[0] * a + out[0] * d, from[1] + along[1] * a + out[1] * d]
+  // snap onto the closest wall and face out of it
+  let best = null
+  b.points.forEach((p, i) => {
+    const q = b.points[(i + 1) % b.points.length]
+    const l = Math.hypot(q[0] - p[0], q[1] - p[1])
+    const t = Math.max(
+      0,
+      Math.min(1, ((at[0] - p[0]) * (q[0] - p[0]) + (at[1] - p[1]) * (q[1] - p[1])) / (l * l)),
+    )
+    const c = [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t]
+    const dist = Math.hypot(c[0] - at[0], c[1] - at[1])
+    if (!best || dist < best.dist) best = { dist, c, n: [(q[1] - p[1]) / l, -(q[0] - p[0]) / l] }
+  })
+  // the outline goes the other way round, so flip it if it points in
+  if (best.n[0] * out[0] + best.n[1] * out[1] < 0) best.n = best.n.map((v) => -v)
+  b.height = ARTS.height
+  b.landmark = { front: [from, to] }
+  b.door = [
+    round(best.c[0]),
+    round(best.c[1]),
+    Math.round(best.n[0] * 100) / 100,
+    Math.round(best.n[1] * 100) / 100,
+  ]
+}
+
 function main(elements) {
   const buildings = []
   const roads = []
@@ -630,6 +681,8 @@ function main(elements) {
   if (lib) libraryNorth(lib)
   const hall = buildings.find((b) => b.name === 'Dahlberg Hall')
   if (hall) dahlberg(hall)
+  const arts = buildings.find((b) => b.name === 'Arts & Humanities')
+  if (arts) artsHumanities(arts)
   for (const b of NEW_BUILDINGS) buildings.push({ ...b, height: b.height * SCALE, gsu: true })
 
   trees.push(...plantParkTrees(parks, [...roads, ...paths]))

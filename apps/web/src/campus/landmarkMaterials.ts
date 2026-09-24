@@ -71,15 +71,16 @@ float mLine(float e, float width, float px) {
 
 /**
  * White georgia marble in slabs: each slab a slightly different tone, cloudy, with faint
- * grey veins. poly haven doesn't have one like it, so it's done in the shader
+ * grey veins. poly haven doesn't have one like it, so it's done in the shader. bond is
+ * how far each row of slabs is shifted (0.5 like bricks, 0 for a straight grid)
  */
-export function marble(key: string, color: string, slab = [1.6, 0.75]) {
+export function marble(key: string, color: string, slab = [1.6, 0.75], veins = 1, bond = 0.5) {
   const [w, h] = slab.map((n) => n.toFixed(2))
   return make(key, { color, roughness: 0.4 }, (shader) => {
     withUv(
       shader,
       `float row = floor(vMeters.y / ${h});
-      float sx = vMeters.x + mod(row, 2.0) * ${w} * 0.5;
+      float sx = vMeters.x + mod(row, 2.0) * ${w} * ${bond.toFixed(2)};
       vec2 slab = vec2(floor(sx / ${w}), row);
       vec2 q = vMeters + slab * 3.1;
       float vein = abs(sin(q.x * 1.1 + q.y * 0.6 + mFbm(q * 1.4) * 6.0));
@@ -88,7 +89,7 @@ export function marble(key: string, color: string, slab = [1.6, 0.75]) {
       // grey clouds and veins, a little bluer than the stone
       vec3 grey = stone * vec3(0.74, 0.76, 0.79);
       float veined = 1.0 - smoothstep(0.0, 0.14, vein) * mix(0.55, 1.0, smoothstep(0.0, 0.06, vein2));
-      stone = mix(stone, grey, veined);
+      stone = mix(stone, grey, min(1.0, veined * ${veins.toFixed(2)}));
       // the joints between slabs
       vec2 j = vec2(fract(sx / ${w}) * ${w}, fract(vMeters.y / ${h}) * ${h});
       float px = length(fwidth(vMeters));
