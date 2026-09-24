@@ -1,11 +1,13 @@
 import type { ThreeElements } from '@react-three/fiber'
 import { useEffect, useMemo, useState } from 'react'
 import * as THREE from 'three'
+import { float, fwidth, max, mix, smoothstep, texture, uniform, vec4 } from 'three/tsl'
+import { MeshBasicNodeMaterial } from 'three/webgpu'
 
-// text drawn into a canvas and put on a quad. it replaces drei's <Text>, which is troika
-// underneath and troika only works by patching webgl shaders. same font it used (noto
-// sans, from the same place troika downloaded it) and laid out the same way: centered on
-// the position, fontSize is the height of the letters' em box in meters
+// text on a quad, drawn from a distance field so it stays sharp at any size. it replaces
+// drei's <Text> (troika), which does the same thing but only works by patching webgl
+// shaders. same font it used (noto sans, from the same place troika downloaded it) and
+// laid out the same way: centered on the position, fontSize is the em box in meters
 const FONT =
   'https://cdn.jsdelivr.net/gh/lojjic/unicode-font-resolver@v1.0.1/packages/data/font-files/latin/sans-serif.normal'
 const FAMILY = 'Label Sans'
@@ -18,56 +20,110 @@ const fonts = Promise.all(
 let fontsLoaded = false
 void fonts.then(() => (fontsLoaded = true))
 
-// canvas pixels per em. a label is never much bigger than this on screen
-const PX = 96
+// canvas pixels per em, and how many pixels past the letters the distance field reaches
+// (it has to cover the thickest outline)
+const PX = 64
+const SPREAD = 8
 // noto sans goes 1.069 em above the baseline and 0.293 below. troika's "normal" line height
 const ASCENT = 1.069
 const DESCENT = 0.293
 
-type Style = {
-  fontSize: number
-  fontWeight: number
-  lineHeight?: number
-  textAlign: 'left' | 'center' | 'right'
-  outlineWidth: number
-  outlineColor: string
+type Layout = { fontSize: number; fontWeight: number; lineHeight?: number; textAlign: string }
+
+// squared distance to the nearest zero along one row or column (felzenszwalb & huttenlocher,
+// "distance transforms of sampled functions")
+function edt1d(f: Float64Array, n: number, d: Float64Array, v: Int32Array, z: Float64Array) {
+  v[0] = 0
+  z[0] = -Infinity
+  z[1] = Infinity
+  const cut = (q: number, k: number) =>
+    (f[q]! + q * q - f[v[k]!]! - v[k]! * v[k]!) / (2 * (q - v[k]!))
+  for (let q = 1, k = 0; q < n; q++) {
+    let s = cut(q, k)
+    while (s <= z[k]!) s = cut(q, --k)
+    v[++k] = q
+    z[k] = s
+    z[k + 1] = Infinity
+  }
+  for (let q = 0, k = 0; q < n; q++) {
+    while (z[k + 1]! < q) k++
+    d[q] = (q - v[k]!) ** 2 + f[v[k]!]!
+  }
 }
 
-// the letters are white, the material's color tints them. outlines here are always dark,
-// so the tint doesn't change them
-function draw(text: string, s: Style) {
+function edt(grid: Float64Array, w: number, h: number) {
+  const n = Math.max(w, h)
+  const [f, d, z, v] = [
+    new Float64Array(n),
+    new Float64Array(n),
+    new Float64Array(n + 1),
+    new Int32Array(n),
+  ]
+  for (let x = 0; x < w; x++) {
+    for (let y = 0; y < h; y++) f[y] = grid[y * w + x]!
+    edt1d(f, h, d, v, z)
+    for (let y = 0; y < h; y++) grid[y * w + x] = d[y]!
+  }
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) f[x] = grid[y * w + x]!
+    edt1d(f, w, d, v, z)
+    for (let x = 0; x < w; x++) grid[y * w + x] = d[x]!
+  }
+}
+
+// the text in white on a canvas, then how far each pixel is from the letters' edge
+function draw(text: string, s: Layout) {
   const lines = text.split('\n')
   const canvas = document.createElement('canvas')
-  const ctx = canvas.getContext('2d')!
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })!
   const font = `${s.fontWeight} ${PX}px "${FAMILY}"`
   ctx.font = font
   const widths = lines.map((l) => ctx.measureText(l).width)
   const width = Math.max(...widths)
   const line = (s.lineHeight ?? ASCENT + DESCENT) * PX
-  const outline = (s.outlineWidth / s.fontSize) * PX
-  const pad = Math.ceil(outline) + 2
-  canvas.width = Math.ceil(width) + pad * 2
-  canvas.height = Math.ceil(line * lines.length) + pad * 2
-
+  const w = Math.ceil(width) + SPREAD * 2
+  const h = Math.ceil(line * lines.length) + SPREAD * 2
+  canvas.width = w
+  canvas.height = h
   ctx.font = font
-  ctx.lineJoin = 'round'
-  ctx.lineWidth = outline * 2
-  ctx.strokeStyle = s.outlineColor
   ctx.fillStyle = 'white'
   lines.forEach((text, i) => {
     const left = s.textAlign === 'left' ? 0 : s.textAlign === 'right' ? 1 : 0.5
-    const x = pad + (width - widths[i]!) * left
-    const y = pad + i * line + (line - (ASCENT + DESCENT) * PX) / 2 + ASCENT * PX
-    // the stroke is half inside the letters, the fill covers that half
-    if (outline > 0) ctx.strokeText(text, x, y)
-    ctx.fillText(text, x, y)
+    const y = SPREAD + i * line + (line - (ASCENT + DESCENT) * PX) / 2 + ASCENT * PX
+    ctx.fillText(text, SPREAD + (width - widths[i]!) * left, y)
   })
 
-  const texture = new THREE.CanvasTexture(canvas)
-  texture.colorSpace = THREE.SRGBColorSpace
-  texture.anisotropy = 8
+  // distance to the outside from inside the letters and to the inside from outside, the
+  // edge pixels in between count by how covered they are
+  const alpha = ctx.getImageData(0, 0, w, h).data
+  const outer = new Float64Array(w * h)
+  const inner = new Float64Array(w * h)
+  for (let i = 0; i < w * h; i++) {
+    const a = alpha[i * 4 + 3]! / 255
+    outer[i] = a === 1 ? 0 : a === 0 ? 1e20 : Math.max(0, 0.5 - a) ** 2
+    inner[i] = a === 1 ? 1e20 : a === 0 ? 0 : Math.max(0, a - 0.5) ** 2
+  }
+  edt(outer, w, h)
+  edt(inner, w, h)
+  // 0.5 is the edge, more is inside. rows flipped, textures start at the bottom
+  const data = new Uint8Array(w * h)
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x
+      const d = Math.sqrt(outer[i]!) - Math.sqrt(inner[i]!)
+      data[(h - 1 - y) * w + x] = Math.max(
+        0,
+        Math.min(255, Math.round(127.5 - (d / SPREAD) * 127.5)),
+      )
+    }
+  }
+  const field = new THREE.DataTexture(data, w, h, THREE.RedFormat)
+  field.magFilter = THREE.LinearFilter
+  field.minFilter = THREE.LinearMipmapLinearFilter
+  field.generateMipmaps = true
+  field.needsUpdate = true
   const meters = s.fontSize / PX
-  return { texture, width: canvas.width * meters, height: canvas.height * meters }
+  return { field, width: w * meters, height: h * meters }
 }
 
 type Props = Omit<ThreeElements['mesh'], 'children'> & {
@@ -76,10 +132,11 @@ type Props = Omit<ThreeElements['mesh'], 'children'> & {
   color?: THREE.ColorRepresentation
   fontWeight?: number
   lineHeight?: number
-  textAlign?: Style['textAlign']
+  textAlign?: 'left' | 'center' | 'right'
   outlineWidth?: number
-  outlineColor?: string
-  opacity?: number
+  outlineColor?: THREE.ColorRepresentation
+  fillOpacity?: number
+  outlineOpacity?: number
 }
 
 export default function Label({
@@ -91,7 +148,8 @@ export default function Label({
   textAlign = 'left',
   outlineWidth = 0,
   outlineColor = 'black',
-  opacity = 1,
+  fillOpacity = 1,
+  outlineOpacity = 1,
   ...props
 }: Props) {
   const [ready, setReady] = useState(fontsLoaded)
@@ -100,32 +158,49 @@ export default function Label({
   }, [ready])
 
   const label = useMemo(
-    () =>
-      ready
-        ? draw(children, {
-            fontSize,
-            fontWeight,
-            lineHeight,
-            textAlign,
-            outlineWidth,
-            outlineColor,
-          })
-        : null,
-    [ready, children, fontSize, fontWeight, lineHeight, textAlign, outlineWidth, outlineColor],
+    () => (ready ? draw(children, { fontSize, fontWeight, lineHeight, textAlign }) : null),
+    [ready, children, fontSize, fontWeight, lineHeight, textAlign],
   )
-  useEffect(() => () => label?.texture.dispose(), [label])
+  useEffect(() => () => label?.field.dispose(), [label])
 
-  if (!label) return null
+  // colors and opacity are uniforms, so a name tag turning green doesn't redraw anything
+  const look = useMemo(() => {
+    if (!label) return null
+    const fill = uniform(new THREE.Color())
+    const edge = uniform(new THREE.Color())
+    // fill and outline opacity
+    const alpha = uniform(new THREE.Vector2(1, 1))
+    // pixels (of the canvas) outside the letters' edge, antialiased over one screen pixel
+    const d = float(0.5)
+      .sub(texture(label.field).r)
+      .mul(2 * SPREAD)
+    const aa = max(fwidth(d).mul(0.5), 0.001)
+    const inLetter = float(1).sub(smoothstep(aa.negate(), aa, d))
+    // troika's outlines came out a bit wider than the width it was given, this matches
+    // them (pnpm visual)
+    const outline = (outlineWidth / fontSize) * PX * 1.25
+    const inOutline = float(1).sub(smoothstep(aa.negate().add(outline), aa.add(outline), d))
+    const material = new MeshBasicNodeMaterial({ transparent: true, side: THREE.DoubleSide })
+    material.colorNode = vec4(
+      mix(edge, fill, inLetter),
+      mix(inOutline.mul(alpha.y), alpha.x, inLetter),
+    )
+    return { material, fill, edge, alpha }
+  }, [label, outlineWidth, fontSize])
+  useEffect(() => () => look?.material.dispose(), [look])
+
+  useEffect(() => {
+    if (!look) return
+    look.fill.value.set(color)
+    // no outline: the edge is the letters' own color, or it'd get a dark fringe
+    look.edge.value.set(outlineWidth > 0 ? outlineColor : color)
+    look.alpha.value.set(fillOpacity, outlineOpacity)
+  }, [look, color, outlineColor, outlineWidth, fillOpacity, outlineOpacity])
+
+  if (!label || !look) return null
   return (
-    <mesh {...props}>
+    <mesh {...props} material={look.material}>
       <planeGeometry args={[label.width, label.height]} />
-      <meshBasicMaterial
-        map={label.texture}
-        color={color}
-        opacity={opacity}
-        transparent
-        side={THREE.DoubleSide}
-      />
     </mesh>
   )
 }

@@ -80,7 +80,8 @@ function RemotePlayer({ id, person }: { id: string; person: Person }) {
           fontSize={0.35}
           color={speaking ? '#7dff6a' : 'white'}
           // faded when they're too far away to hear you
-          opacity={inRange ? 1 : 0.45}
+          fillOpacity={inRange ? 1 : 0.45}
+          outlineOpacity={inRange ? 1 : 0.45}
           outlineWidth={0.03}
           outlineColor="black"
         >

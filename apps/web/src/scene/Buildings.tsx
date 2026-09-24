@@ -45,7 +45,7 @@ function Labels({ outside }: { outside: boolean }) {
           }}
           position={[l.x, l.height + 4, l.z]}
         >
-          <Label fontSize={2.4} outlineWidth={0.14} outlineColor="#111" opacity={0.95}>
+          <Label fontSize={2.4} outlineWidth={0.14} outlineColor="#111" fillOpacity={0.95}>
             {l.name}
           </Label>
         </Billboard>
