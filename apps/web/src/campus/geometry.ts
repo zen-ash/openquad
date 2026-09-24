@@ -9,7 +9,7 @@ export type BuildingData = {
   name?: string
   gsu?: boolean
   door?: Pt
-  // drawn by hand instead (scene/LibraryNorth.tsx)
+  // drawn by hand instead (campus/landmarks.ts)
   landmark?: unknown
 }
 export type LineData = { width: number; points: Pt[] }

@@ -1,15 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import campus from './campus.json'
 import { buildingsGeometry } from './geometry'
-import { libraryNorthGeometry, LOBBY } from './libraryNorth'
+import { libraryNorthGeometry, LOBBY, type LibraryNorthData } from './libraryNorth'
 
-const lib = campus.buildings.find((b) => b.name === 'Library North')!
+const lib = campus.buildings.find((b) => b.name === 'Library North') as LibraryNorthData
 const box = lib.landmark!.box
 const mid = {
   x: box.reduce((s, p) => s + p[0]!, 0) / 4,
   z: box.reduce((s, p) => s + p[1]!, 0) / 4,
 }
-const { parts, sign } = libraryNorthGeometry(lib)
+const { parts, signs } = libraryNorthGeometry(lib)
+const sign = signs[0]
 
 describe('library north', () => {
   it('is the real size, a box about 53m on each side and 26m tall', () => {

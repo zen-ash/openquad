@@ -13,7 +13,7 @@ import Buildings from './Buildings'
 import Doors from './Doors'
 import Furniture from './Furniture'
 import Interiors from './Interiors'
-import LibraryNorth from './LibraryNorth'
+import Landmarks from './Landmarks'
 import PantherQuad from './PantherQuad'
 import Trees from './Trees'
 
@@ -160,7 +160,7 @@ export default function Campus() {
       <Sun dir={sky.light} day={sky.day} />
       <Ground />
       <Buildings />
-      <LibraryNorth />
+      <Landmarks />
       <Interiors />
       <Furniture />
       <Doors />

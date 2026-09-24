@@ -1,49 +1,10 @@
 import * as THREE from 'three'
-import { cutoutShader } from './cutout'
-import { night } from './facade'
 import type { Part } from './libraryNorth'
-import { texture } from './textures'
-
-type Shader = THREE.WebGLProgramParametersWithUniforms
-
-// uvs are in meters, this makes a texture repeat every `meters`
-function tiled(name: string, kind: 'color' | 'normal', meters: number) {
-  const t = texture(name, kind)
-  t.repeat.set(1 / meters, 1 / meters)
-  return t
-}
-
-// the see-through hole like every other building, plus whatever else the material needs.
-// three caches shaders by the onBeforeCompile source, which is the same function for all
-// of these, so each one needs its own key or they'd share a shader
-function make(
-  key: string,
-  params: THREE.MeshStandardMaterialParameters,
-  extra?: (shader: Shader) => void,
-) {
-  const m = new THREE.MeshStandardMaterial(params)
-  m.onBeforeCompile = (shader) => {
-    cutoutShader(shader)
-    extra?.(shader)
-  }
-  m.customProgramCacheKey = () => `library-north-${key}`
-  return m
-}
-
-// our own copy of the uvs (three only passes them along when there's a texture)
-function withUv(shader: Shader, fragment: string, after = '#include <color_fragment>') {
-  shader.uniforms.uNight = night
-  shader.vertexShader = shader.vertexShader
-    .replace('#include <common>', '#include <common>\nvarying vec2 vMeters;')
-    .replace('#include <uv_vertex>', '#include <uv_vertex>\nvMeters = uv;')
-  shader.fragmentShader = shader.fragmentShader
-    .replace('#include <common>', '#include <common>\nvarying vec2 vMeters;\nuniform float uNight;')
-    .replace(after, `${after}\n${fragment}`)
-}
+import { make, tiled, withUv } from './landmarkMaterials'
 
 // the texture is a warm red brick, the real one is a duller brown
 const brick = make(
-  'brick',
+  'library-north-brick',
   {
     map: tiled('brick', 'color', 4),
     normalMap: tiled('brick', 'normal', 4),
@@ -68,18 +29,21 @@ const brick = make(
 
 // concrete texture comes out dark, brightened into a light stone
 const stoneLike = (color: string) =>
-  make(color, { map: tiled('concrete', 'color', 3), color, roughness: 0.8 }, (shader) =>
-    withUv(
-      shader,
-      `diffuseColor.rgb *= 1.8;
+  make(
+    `library-north-${color}`,
+    { map: tiled('concrete', 'color', 3), color, roughness: 0.8 },
+    (shader) =>
+      withUv(
+        shader,
+        `diffuseColor.rgb *= 1.8;
       // joints between the stone slabs
       if (fract(vMeters.y / 0.9) < 0.02 || fract(vMeters.x / 1.8) < 0.012) diffuseColor.rgb *= 0.8;`,
-      '#include <map_fragment>',
-    ),
+        '#include <map_fragment>',
+      ),
   )
 
 // the wavy white panel: rows of waves in low relief. just shading, no real bumps
-const panel = make('panel', { color: '#ebe7de', roughness: 0.6 }, (shader) =>
+const panel = make('library-north-panel', { color: '#ebe7de', roughness: 0.6 }, (shader) =>
   withUv(
     shader,
     `float wave = fract(vMeters.y / 1.6 - 0.28 * sin(vMeters.x * 1.75));
@@ -89,7 +53,7 @@ const panel = make('panel', { color: '#ebe7de', roughness: 0.6 }, (shader) =>
 
 // the lobby: glass with metal frames, and lit up inside at night
 const lobbyGlass = make(
-  'lobby',
+  'library-north-lobby',
   {
     color: '#6f9f96',
     roughness: 0.04,
@@ -113,12 +77,15 @@ const lobbyGlass = make(
 )
 
 // the row of small windows up top has the lights on at night
-const windows = make('windows', { color: '#1d252e', roughness: 0.1, metalness: 0.6 }, (shader) =>
-  withUv(
-    shader,
-    `if (fract(vMeters.x / 1.2) > 0.12) totalEmissiveRadiance += vec3(1.0, 0.85, 0.6) * uNight;`,
-    '#include <emissivemap_fragment>',
-  ),
+const windows = make(
+  'library-north-windows',
+  { color: '#1d252e', roughness: 0.1, metalness: 0.6 },
+  (shader) =>
+    withUv(
+      shader,
+      `if (fract(vMeters.x / 1.2) > 0.12) totalEmissiveRadiance += vec3(1.0, 0.85, 0.6) * uNight;`,
+      '#include <emissivemap_fragment>',
+    ),
 )
 
 export const libraryNorthMaterials: Record<Part, THREE.Material> = {
@@ -128,8 +95,8 @@ export const libraryNorthMaterials: Record<Part, THREE.Material> = {
   panel,
   windows,
   lobbyGlass,
-  darkGlass: make('dark-glass', { color: '#1d252e', roughness: 0.1, metalness: 0.6 }),
-  railing: make('railing', {
+  darkGlass: make('library-north-dark-glass', { color: '#1d252e', roughness: 0.1, metalness: 0.6 }),
+  railing: make('library-north-railing', {
     color: '#c8d6dc',
     roughness: 0.05,
     transparent: true,
@@ -137,17 +104,25 @@ export const libraryNorthMaterials: Record<Part, THREE.Material> = {
     side: THREE.DoubleSide,
     depthWrite: false,
   }),
-  white: make('white', { color: '#f1f0eb', roughness: 0.6 }),
-  wood: make('wood', { map: tiled('floor', 'color', 2), color: '#d9a878', roughness: 0.7 }),
-  roof: make('roof', { color: '#2e3c5c', roughness: 0.85 }),
-  terrace: make('terrace', {
+  white: make('library-north-white', { color: '#f1f0eb', roughness: 0.6 }),
+  wood: make('library-north-wood', {
+    map: tiled('floor', 'color', 2),
+    color: '#d9a878',
+    roughness: 0.7,
+  }),
+  roof: make('library-north-roof', { color: '#2e3c5c', roughness: 0.85 }),
+  terrace: make('library-north-terrace', {
     map: tiled('sidewalk', 'color', 1.5),
     color: '#e6e2da',
     roughness: 0.9,
   }),
-  green: make('green', { map: tiled('grass', 'color', 2), color: '#7d9a55', roughness: 1 }),
-  metal: make('metal', { color: '#9ca2a8', roughness: 0.5, metalness: 0.5 }),
-  pavers: make('pavers', {
+  green: make('library-north-green', {
+    map: tiled('grass', 'color', 2),
+    color: '#7d9a55',
+    roughness: 1,
+  }),
+  metal: make('library-north-metal', { color: '#9ca2a8', roughness: 0.5, metalness: 0.5 }),
+  pavers: make('library-north-pavers', {
     map: tiled('sidewalk', 'color', 1.2),
     color: '#f4e6cc',
     roughness: 0.9,

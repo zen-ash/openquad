@@ -463,7 +463,7 @@ const PATH_WIDTH = { footway: 2.5, pedestrian: 5, path: 2, steps: 2.5, cycleway:
 
 // osm's outline for library north is from before the 2022 renovation (it still has the old
 // plaza stairs), so it's redone here from photos: the brick box, plus the curved glass lobby
-// on the side facing the greenway. the web app draws it by hand too (scene/LibraryNorth.tsx)
+// on the side facing the greenway. the web app draws it by hand too (campus/libraryNorth.ts)
 const LIBRARY_NORTH = {
   // corners of the brick box, n e s w. these are osm's own nodes for them
   box: [

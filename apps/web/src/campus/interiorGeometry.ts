@@ -1,9 +1,11 @@
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
-import { closestOnSegment, type Point, type Segment } from '../game/collision'
+import type { Point } from '../game/collision'
 import { CEILING, DOOR_HEIGHT, DOOR_WIDTH, type Interior } from '../game/interiors'
 import campus from './campus.json'
 import { planarUv, seedOf, styleOf } from './geometry'
+import { wallQuad } from './landmark'
+import { landmarkGeometry } from './landmarks'
 
 // + for one winding, - for the other. decides which way is "out"
 function signedArea(points: Point[]) {
@@ -13,41 +15,6 @@ function signedArea(points: Point[]) {
     a += p.x * q.z - q.x * p.z
   })
   return a / 2
-}
-
-// a vertical wall facing `into` (a unit vector on the ground), from y0 to y1
-export function wallQuad(a: Point, b: Point, y0: number, y1: number, into: Point) {
-  let corners = [
-    [a.x, y0, a.z],
-    [b.x, y0, b.z],
-    [b.x, y1, b.z],
-    [a.x, y1, a.z],
-  ]
-  // flip the winding if it would face the wrong way
-  const ex = b.x - a.x
-  const ez = b.z - a.z
-  // the front of (a, b, top) faces (b - a) x up = (-ez, 0, ex)
-  const facesInto = -ez * into.x + ex * into.z > 0
-  if (!facesInto) corners = [corners[1]!, corners[0]!, corners[3]!, corners[2]!]
-
-  const pos = [0, 1, 2, 0, 2, 3].flatMap((i) => corners[i]!)
-  const geo = new THREE.BufferGeometry()
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
-  geo.setAttribute(
-    'normal',
-    new THREE.Float32BufferAttribute(
-      [0, 0, 0, 0, 0, 0].flatMap(() => [into.x, 0, into.z]),
-      3,
-    ),
-  )
-  // u along the wall, v up, in meters
-  const len = Math.hypot(ex, ez)
-  const uv = [0, 1, 2, 0, 2, 3].flatMap((i) => {
-    const [x, y, z] = corners[i]!
-    return [((x! - a.x) * ex + (z! - a.z) * ez) / (len || 1), y!]
-  })
-  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2))
-  return geo
 }
 
 function withStyle(geo: THREE.BufferGeometry, style: number) {
@@ -60,21 +27,17 @@ function withStyle(geo: THREE.BufferGeometry, style: number) {
 export const NO_WINDOWS = -1
 export const ALL_GLASS = 3
 
-// library north's brick box really has no windows, and its lobby is all glass
-function landmarkStyle(w: Segment, box: number[][]) {
-  const mid = { x: (w.ax + w.bx) / 2, z: (w.az + w.bz) / 2 }
-  const onBox = box.some(([x, z], i) => {
-    const [nx, nz] = box[(i + 1) % box.length]!
-    const c = closestOnSegment(mid, { x: x!, z: z! }, { x: nx!, z: nz! })
-    return Math.hypot(c.x - mid.x, c.z - mid.z) < 0.2
-  })
-  return onBox ? NO_WINDOWS : ALL_GLASS
-}
-
 /** inside walls for every building you can walk into, window holes are done in the shader */
 export function interiorWallsGeometry(interiors: Interior[]) {
   const parts = interiors.flatMap((room) => {
     const b = campus.buildings[room.index]!
+    // the ones drawn by hand know where their windows are
+    const landmark = landmarkGeometry(b)
+    if (landmark)
+      return [
+        ...landmark.inside.solid.map((g) => withStyle(g.clone(), NO_WINDOWS)),
+        ...landmark.inside.glass.map((g) => withStyle(g.clone(), ALL_GLASS)),
+      ]
     const style = styleOf(b.height, seedOf(room.index))
     const flip = signedArea(room.points) > 0 ? -1 : 1
 
@@ -86,7 +49,7 @@ export function interiorWallsGeometry(interiors: Interior[]) {
       const into = { x: (dz / len) * flip, z: (-dx / len) * flip }
       return withStyle(
         wallQuad({ x: w.ax, z: w.az }, { x: w.bx, z: w.bz }, 0, CEILING, into),
-        b.landmark ? landmarkStyle(w, b.landmark.box) : style,
+        style,
       )
     })
 

@@ -1,14 +1,13 @@
-import * as THREE from 'three'
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import type { Point } from '../game/collision'
 import { CEILING, DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
-import { wallQuad } from './interiorGeometry'
+import { circle, flat, frame, insideWalls, parts as collect, pt, wallQuad } from './landmark'
 
 // library north, built by hand from photos of the real one (the builder's site has good
 // ones of the 2022 lobby). the footprint comes from the map data, see LIBRARY_NORTH in
 // scripts/build-campus.mjs. "a" is meters along the northeast wall from the north corner
 
 export type LibraryNorthData = {
+  points: number[][]
   height: number
   door?: number[]
   landmark?: { box: number[][]; front: number[][] }
@@ -41,46 +40,13 @@ export type Part =
   | 'metal'
   | 'pavers'
 
-const pt = ([x, z]: number[]) => ({ x: x!, z: z! })
-
-// a flat polygon at height y, uvs in meters
-function flat(points: Point[], y: number, up = true) {
-  const geo = new THREE.ShapeGeometry(
-    new THREE.Shape(points.map((p) => new THREE.Vector2(p.x, -p.z))),
-  ).toNonIndexed()
-  geo.rotateX(-Math.PI / 2)
-  const pos = geo.getAttribute('position')
-  const uv = geo.getAttribute('uv')
-  for (let i = 0; i < pos.count; i++) uv.setXY(i, pos.getX(i), pos.getZ(i))
-  if (!up) {
-    // flip each triangle so it faces down
-    for (let i = 0; i < pos.count; i += 3) {
-      const x = pos.getX(i + 1)
-      const z = pos.getZ(i + 1)
-      pos.setXYZ(i + 1, pos.getX(i + 2), 0, pos.getZ(i + 2))
-      pos.setXYZ(i + 2, x, 0, z)
-    }
-    geo.computeVertexNormals()
-  }
-  geo.translate(0, y, 0)
-  return geo
-}
-
 export function libraryNorthGeometry(b: LibraryNorthData) {
-  const parts = {} as Record<Part, THREE.BufferGeometry[]>
-  const add = (part: Part, geo: THREE.BufferGeometry) => (parts[part] ??= []).push(geo)
+  const { add, prism, block: box3, inside, merged } = collect<Part>()
 
   const box = b.landmark!.box.map(pt)
   const [n, e] = box as [Point, Point]
-  const len = Math.hypot(e.x - n.x, e.z - n.z)
-  const along = { x: (e.x - n.x) / len, z: (e.z - n.z) / len }
-  const out = { x: along.z, z: -along.x }
-  const at = (a: number, d = 0) => ({
-    x: n.x + along.x * a + out.x * d,
-    z: n.z + along.z * a + out.z * d,
-  })
-  const aOf = (p: Point) => (p.x - n.x) * along.x + (p.z - n.z) * along.z
-  const dOf = (p: Point) => (p.x - n.x) * out.x + (p.z - n.z) * out.z
+  const f = frame(n, e)
+  const { at, aOf, dOf, out } = f
 
   const H = b.height
   const top = H - CORNICE
@@ -110,20 +76,6 @@ export function libraryNorthGeometry(b: LibraryNorthData) {
       .reverse(),
     at(a0, depthAt(a0)),
   ]
-  // walls around a shape from y0 to y1, all facing away from its middle, and a lid
-  const prism = (part: Part, c: Point[], y0: number, y1: number, lid = true) => {
-    const mx = c.reduce((sum, p) => sum + p.x, 0) / c.length
-    const mz = c.reduce((sum, p) => sum + p.z, 0) / c.length
-    c.forEach((p, i) => {
-      const q = c[(i + 1) % c.length]!
-      const l = Math.hypot(q.x - p.x, q.z - p.z) || 1
-      let o = { x: (q.z - p.z) / l, z: -(q.x - p.x) / l }
-      if (o.x * ((p.x + q.x) / 2 - mx) + o.z * ((p.z + q.z) / 2 - mz) < 0) o = { x: -o.x, z: -o.z }
-      add(part, wallQuad(p, q, y0, y1, o))
-    })
-    if (lid) add(part, flat(c, y1))
-  }
-  // a box lined up with the building
   const block = (
     part: Part,
     a0: number,
@@ -132,7 +84,7 @@ export function libraryNorthGeometry(b: LibraryNorthData) {
     d1: number,
     y0: number,
     y1: number,
-  ) => prism(part, [at(a0, d0), at(a1, d0), at(a1, d1), at(a0, d1)], y0, y1)
+  ) => box3(part, f, a0, a1, d0, d1, y0, y1)
 
   // the brick box. the northeast wall is open behind the lobby up to the lobby's
   // mezzanine, since that's all one space inside
@@ -261,15 +213,9 @@ export function libraryNorthGeometry(b: LibraryNorthData) {
     ? { x: door.x + out.x * 0.3, y: 4.3, z: door.z + out.z * 0.3, rot: Math.atan2(out.x, out.z) }
     : null
 
-  const merged = Object.fromEntries(
-    Object.entries(parts).map(([k, v]) => [k, mergeGeometries(v)]),
-  ) as Record<Part, THREE.BufferGeometry>
-  return { parts: merged, sign }
-}
+  // inside, the brick walls have no windows and the lobby is all glass
+  const glassy = (p: Point) => glassRun.some((g) => Math.hypot(g.x - p.x, g.z - p.z) < 0.2)
+  insideWalls(inside, b.points.map(pt), door, (p, q) => glassy(p) && glassy(q))
 
-function circle(c: Point, r: number) {
-  return Array.from({ length: 24 }, (_, i) => {
-    const t = (i / 24) * Math.PI * 2
-    return { x: c.x + Math.cos(t) * r, z: c.z + Math.sin(t) * r }
-  })
+  return { parts: merged(), inside, signs: sign ? [{ ...sign, text: 'LIBRARY NORTH' }] : [] }
 }
