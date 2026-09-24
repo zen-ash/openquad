@@ -12,5 +12,13 @@ interface Window {
     faceYaw: (yaw: number) => void
     inside: () => string | null
     voice: () => Record<string, { state: string; heardAgo: number | null }>
+    tiles: () => {
+      visible: number
+      loaded: number
+      failed: number
+      settled: boolean
+      mb: number
+    } | null
+    tileHeightAt: (x: number, z: number) => number | null
   }
 }

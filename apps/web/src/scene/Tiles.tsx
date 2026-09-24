@@ -1,0 +1,159 @@
+import { TilesAttributionOverlay, TilesPlugin, TilesRenderer } from '3d-tiles-renderer/r3f'
+import { GoogleCloudAuthPlugin, ReorientationPlugin } from '3d-tiles-renderer/plugins'
+import type { TilesRenderer as TilesRendererImpl } from '3d-tiles-renderer/three'
+import { useFrame } from '@react-three/fiber'
+import * as THREE from 'three'
+import { night } from '../campus/facade'
+import { groundHeight } from '../campus/terrain'
+import { REORIENT, STRETCH } from '../campus/tilesFrame'
+import { TILES_KEY, useSettings } from '../settings'
+
+// the tiles are just below our ground so the two don't flicker through each other.
+// our streets and grass cover the tile ground, the tile buildings stick up through it
+const SINK = 0.15
+
+const DAY = new THREE.Color('#ffffff')
+const NIGHT = new THREE.Color('#1c2433')
+// every tile's material, to darken them at night. they're photos with the daylight
+// baked in, our lights do nothing to them
+const materials = new Set<THREE.MeshBasicMaterial>()
+
+// plugin settings. these have to stay the same objects: TilesPlugin makes a new plugin
+// whenever its args change, and a new google plugin starts a new session halfway through
+const AUTH = [{ apiToken: TILES_KEY ?? '', autoRefreshToken: true, useRecommendedSettings: false }]
+const FRAME = [REORIENT]
+
+// for window.quad (net/debug.ts)
+let renderer: TilesRendererImpl | null = null
+const ray = new THREE.Raycaster()
+const down = new THREE.Vector3(0, -1, 0)
+
+// TilesRenderer.stats and lruCache.cachedBytes are in the docs but not in its types
+type Stats = Record<'visible' | 'loaded' | 'failed' | 'queued' | 'downloading' | 'parsing', number>
+type Cache = { cachedBytes: number }
+
+// null without a key. settled = nothing left to download
+export function tilesStats() {
+  if (!TILES_KEY) return null
+  const stats = (renderer as unknown as { stats: Stats } | null)?.stats
+  if (!stats) return { visible: 0, loaded: 0, failed: 0, settled: false, mb: 0 }
+  const { visible, loaded, failed, queued, downloading, parsing } = stats
+  // what the tiles it's holding on to take up
+  const mb = Math.round((renderer!.lruCache as unknown as Cache).cachedBytes / 1e6)
+  return { visible, loaded, failed, settled: queued + downloading + parsing === 0, mb }
+}
+
+// height of the tiles at a spot, ground or roof. only the loaded ones count
+export function tileHeightAt(x: number, z: number) {
+  if (!renderer) return null
+  ray.set(new THREE.Vector3(x, 300, z), down)
+  return ray.intersectObject(renderer.group, true)[0]?.point.y ?? null
+}
+
+const floats = (a: THREE.BufferAttribute | THREE.InterleavedBufferAttribute) => {
+  const out = new Float32Array(a.count * 3)
+  for (let i = 0; i < a.count; i++) out.set([a.getX(i), a.getY(i), a.getZ(i)], i * 3)
+  return new THREE.BufferAttribute(out, 3)
+}
+
+const toWorld = new THREE.Matrix4()
+const toLocal = new THREE.Matrix4()
+const p = new THREE.Vector3()
+
+// the game is flat but downtown isn't, so every tile gets flattened as it loads: each
+// point goes down by how much higher the real ground is there than at hurt park. the
+// streets end up at y = 0 like ours and the buildings keep their shape
+class FlattenPlugin {
+  tiles: TilesRendererImpl | null = null
+
+  init(tiles: TilesRendererImpl) {
+    this.tiles = tiles
+  }
+
+  processTileModel(scene: THREE.Object3D) {
+    const group = this.tiles!.group
+    group.updateWorldMatrix(true, false)
+    // the tile isn't in the group yet, so this is its transform inside the group
+    scene.updateMatrixWorld(true)
+    scene.traverse((o) => {
+      const mesh = o as THREE.Mesh
+      if (!mesh.isMesh) return
+      toWorld.multiplyMatrices(group.matrixWorld, mesh.matrixWorld)
+      toLocal.copy(toWorld).invert()
+      let pos = mesh.geometry.getAttribute('position')
+      // google's are plain floats so far. quantized ones couldn't move far enough
+      if (!(pos.array instanceof Float32Array)) {
+        pos = floats(pos)
+        mesh.geometry.setAttribute('position', pos)
+      }
+      for (let i = 0; i < pos.count; i++) {
+        p.fromBufferAttribute(pos, i).applyMatrix4(toWorld)
+        p.y -= groundHeight(p.x, p.z)
+        p.applyMatrix4(toLocal)
+        pos.setXYZ(i, p.x, p.y, p.z)
+      }
+      pos.needsUpdate = true
+      mesh.geometry.computeBoundingBox()
+      mesh.geometry.computeBoundingSphere()
+      mesh.castShadow = true
+      materials.add(mesh.material as THREE.MeshBasicMaterial)
+    })
+  }
+}
+
+function Tint() {
+  useFrame(() => {
+    const k = 1 - night.value * 0.92
+    for (const m of materials) m.color.copy(NIGHT).lerp(DAY, k)
+  })
+  return null
+}
+
+export default function Tiles() {
+  const quality = useSettings((s) => s.quality)
+  if (!TILES_KEY) return null
+  return (
+    // our map is a little squeezed compared to real meters (campus/tilesFrame.ts)
+    <group scale={[STRETCH.x, 1, STRETCH.z]} position-y={-SINK}>
+      <TilesRenderer
+        // screen-space error in pixels: lower is sharper. up close a tile covers lots of
+        // pixels so it gets the detailed version, far away the falloff lets it stay coarse
+        errorTarget={quality === 'high' ? 6 : 12}
+        errorFalloff={quality === 'high' ? 10 : 20}
+        errorFalloffDensity={2e-3}
+        // keeps up to 430mb of tiles by default, a bit less here for weaker laptops. at
+        // 240mb the cache filled up and the far side of downtown stopped sharpening
+        lruCache-minBytesSize={(quality === 'high' ? 200 : 130) * 1e6}
+        lruCache-maxBytesSize={(quality === 'high' ? 300 : 200) * 1e6}
+        onDisposeModel={({ scene }: { scene: THREE.Object3D }) => {
+          scene.traverse((o) =>
+            materials.delete((o as THREE.Mesh).material as THREE.MeshBasicMaterial),
+          )
+        }}
+        onLoadError={({ tile }: { tile: unknown }) => {
+          // no root tileset means no tiles at all (bad key, no network): back to our own
+          if (!tile) useSettings.setState({ tiles: false, extruded: true })
+        }}
+        ref={(t: TilesRendererImpl | null) => {
+          renderer = t
+        }}
+      >
+        <TilesPlugin plugin={GoogleCloudAuthPlugin} args={AUTH} />
+        <TilesPlugin plugin={ReorientationPlugin} args={FRAME} />
+        <TilesPlugin plugin={FlattenPlugin} />
+        {/* google's terms: the data credits for whatever tiles are on screen */}
+        <TilesAttributionOverlay
+          // same look as the osm credit, bottom left under the chat box
+          style={{
+            left: 16,
+            bottom: 5,
+            padding: 0,
+            fontSize: 11,
+            textShadow: '0 1px 2px rgb(0 0 0 / 0.5)',
+          }}
+        />
+        <Tint />
+      </TilesRenderer>
+    </group>
+  )
+}

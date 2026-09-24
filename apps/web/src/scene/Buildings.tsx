@@ -6,6 +6,7 @@ import campus from '../campus/campus.json'
 import { buildingsGeometry, centroid } from '../campus/geometry'
 import { facadeMaterial } from '../campus/facade'
 import { localPlayer } from '../game/localPlayer'
+import { useSettings } from '../settings'
 
 const LABEL_DISTANCE = 120
 
@@ -54,10 +55,13 @@ function Labels() {
 
 export default function Buildings() {
   const geometry = useMemo(() => buildingsGeometry(campus.buildings), [])
+  // hidden when google's tiles are showing the real buildings. the walls you bump into,
+  // directions and insides don't use this mesh so they all still work
+  const extruded = useSettings((s) => s.extruded)
 
   return (
     <>
-      <mesh geometry={geometry} material={material} castShadow receiveShadow />
+      <mesh geometry={geometry} material={material} castShadow receiveShadow visible={extruded} />
       <Labels />
     </>
   )

@@ -1,6 +1,7 @@
 import { input } from '../game/input'
 import { interiors } from '../game/interiors'
 import { localPlayer } from '../game/localPlayer'
+import { tileHeightAt, tilesStats } from '../scene/Tiles'
 import { peers } from '../voice/voice'
 import { lastSound } from '../voice/VoiceUpdater'
 import { dropConnection } from './connection'
@@ -30,6 +31,10 @@ declare global {
       // per person we're in a call with: connection state, and how many ms ago we
       // last heard anything from them (null = never)
       voice: () => Record<string, { state: string; heardAgo: number | null }>
+      // google's 3d tiles, null if there's no key
+      tiles: typeof tilesStats
+      // height of the loaded tiles at a spot (y = 0 is our ground)
+      tileHeightAt: typeof tileHeightAt
     }
   }
 }
@@ -64,5 +69,7 @@ if (import.meta.env.DEV) {
       }
       return out
     },
+    tiles: tilesStats,
+    tileHeightAt,
   }
 }

@@ -6,6 +6,7 @@ import ChatPanel from './ChatPanel'
 import EmoteBar from './EmoteBar'
 import { keyMap } from './game/controls'
 import JoinScreen from './JoinScreen'
+import DebugLayers from './hud/DebugLayers'
 import Hud from './hud/Hud'
 import PhotoMode from './hud/PhotoMode'
 import Minimap from './hud/Minimap'
@@ -20,7 +21,7 @@ import JoinCamera from './scene/JoinCamera'
 import Player from './scene/Player'
 import RemotePlayers from './scene/RemotePlayers'
 import RouteLine from './scene/RouteLine'
-import { hideCity, useSettings } from './settings'
+import { hideCity, showDebug, useSettings } from './settings'
 import TimePicker from './TimePicker'
 import TouchControls, { isTouchScreen } from './TouchControls'
 import MicButton from './voice/MicButton'
@@ -86,6 +87,7 @@ export default function App() {
               <PlacesMenu />
               <NavBar />
               <TimePicker />
+              {showDebug && <DebugLayers />}
             </>
           )}
         </>

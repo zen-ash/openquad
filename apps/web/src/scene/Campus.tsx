@@ -21,8 +21,10 @@ import Fountain from './Fountain'
 import Furniture from './Furniture'
 import Interiors from './Interiors'
 import Landmarks from './Landmarks'
+import Outlines from './Outlines'
 import PantherQuad from './PantherQuad'
 import StreetFurniture from './StreetFurniture'
+import Tiles from './Tiles'
 import Trees from './Trees'
 
 const DAY_HAZE = new Color('#c9d6e0')
@@ -148,6 +150,8 @@ function Ground() {
 
 export default function Campus() {
   const sky = useSky()
+  const tiles = useSettings((s) => s.tiles)
+  const outlines = useSettings((s) => s.outlines)
   const sunAt = sky.dir.map((v) => v * 100) as [number, number, number]
   // not too much light from the sky, or shade looks nearly as bright as sun and the
   // whole city goes flat and hazy
@@ -181,6 +185,8 @@ export default function Campus() {
       <Fountain />
       <StreetFurniture />
       <Trees />
+      {tiles && <Tiles />}
+      {outlines && <Outlines />}
     </>
   )
 }

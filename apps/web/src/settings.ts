@@ -22,9 +22,30 @@ function startingTime(): TimeOfDay {
   return TIMES.includes(t as TimeOfDay) ? (t as TimeOfDay) : 'live'
 }
 
-export const useSettings = create<{ quality: Quality; time: TimeOfDay; photo: boolean }>(() => ({
+const params = new URLSearchParams(location.search)
+export const TILES_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined
+const tiles = Boolean(TILES_KEY) && !params.has('notiles')
+
+// the tiles/buildings/outlines checkboxes, in dev or with ?debug
+export const showDebug = import.meta.env.DEV || params.has('debug')
+
+export const useSettings = create<{
+  quality: Quality
+  time: TimeOfDay
+  photo: boolean
+  tiles: boolean
+  extruded: boolean
+  outlines: boolean
+}>(() => ({
   quality: startingQuality(),
   time: startingTime(),
   // everything on screen hidden, for screenshots
   photo: false,
+  // google's photorealistic 3d tiles (scene/Tiles.tsx). needs a key, ?notiles turns them off
+  tiles,
+  // our own box buildings. they're hidden under the tiles but still there for walls,
+  // directions and the insides. ?extruded draws them anyway
+  extruded: !tiles || params.has('extruded'),
+  // osm footprints drawn on top of everything, to check the tiles line up
+  outlines: params.has('outlines'),
 }))

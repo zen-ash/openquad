@@ -20,6 +20,8 @@ export default defineConfig({
               name: '3d',
               test: /node_modules[\\/](@react-three|postprocessing|n8ao|troika|three-)/,
             },
+            // google's 3d tiles renderer, after 3d so it doesn't take fiber with it
+            { name: 'tiles', test: /node_modules[\\/]3d-tiles-renderer[\\/]/ },
           ],
         },
       },
