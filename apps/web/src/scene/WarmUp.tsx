@@ -5,15 +5,14 @@ import type { Object3D } from 'three'
 import { AVATARS } from '../game/avatars'
 import { hideCity, useSettings } from '../settings'
 import Character from './Character'
-import Furniture, { sampleRooms } from './Furniture'
 import { effects } from './fx'
 
 // three builds a shader (and the gpu a pipeline) the first time something is drawn. that
 // took 50-200ms every time something new came into view while walking around (pnpm walk).
 // so while the join screen is up this draws everything once, with nothing left out for
 // being off screen, in each state that needs its own shaders: high quality, then low (so
-// dropping to it later doesn't rebuild anything), and back. plus every avatar and a
-// furnished room, under the ground. join waits for it
+// dropping to it later doesn't rebuild anything), and back. plus every avatar, under the
+// ground, and some furnished rooms (Furniture.tsx). join waits for it
 
 // frames per step: the first one builds, the others catch anything that showed up late
 const FRAMES = 3
@@ -28,16 +27,13 @@ export default function WarmUp() {
     <>
       {warming && <Warming />}
       {/* drawn while warming, then kept but hidden: three throws a shader away once
-          nothing uses it, and furniture and other people's avatars come and go */}
+          nothing uses it, and other people's avatars come and go */}
       {!hideCity && (
         <group position={[0, -50, 0]} visible={warming}>
           {AVATARS.map((a) => (
             <Suspense key={a.id} fallback={null}>
               <Character avatar={a} anim="Idle" />
             </Suspense>
-          ))}
-          {sampleRooms().map((room) => (
-            <Furniture key={room} fixed={room} />
           ))}
         </group>
       )}
