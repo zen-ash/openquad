@@ -111,9 +111,10 @@ footpaths and parks, in a 1km square around Hurt Park.
   discard pixels near the camera -> player line, with a dithered edge.
 - **Sun follows you** - the shadow map can't cover the whole map, so the light and its
   shadow area move with the player.
-- **Go to menu** - teleport spots are found by searching outward from each building's
-  middle for open ground. Other players' interpolation treats any jump over 10m as a
-  teleport instead of sliding them across the map.
+- **Places menu** (G) - directions or teleport. Teleport lands you in front of the
+  building's door (a couple of meters of random spread so a group doesn't stack up).
+  Other players' interpolation treats any jump over 10m as a teleport instead of sliding
+  them across the map.
 
 ## Polish (part 7)
 
@@ -149,6 +150,52 @@ footpaths and parks, in a 1km square around Hurt Park.
 - **Load test** - see [LOAD_TEST.md](LOAD_TEST.md). It found that bandwidth, not CPU, was the
   limit, which led to compact position updates, short ids and only sending updates about
   people within 200m. 200 players spread over campus went from 538 KB/s to 17 KB/s each.
+
+## Part 9 - making it feel real
+
+I didn't want it to turn into a game, just to make walking around campus feel more like
+being there.
+
+- **HUD** - where you are (building, park or street, worked out from your position in
+  `game/location.ts`), how many people are online and how many can hear you, a compass,
+  the time in Atlanta and a round minimap. H shows the controls.
+- **Location titles** - the name of a new place fades in at the bottom of the screen once
+  you've been there for a moment, so walking past a row of buildings doesn't spam it.
+- **Cinematic camera** - drag to orbit, scroll to zoom. The point the camera looks at
+  glides after you and the camera glides after that, which is what makes it feel filmed
+  instead of glued to you. It pulls back a bit when you run. Indoors it comes lower and
+  closer so it stays under the ceiling, and moves in front of bookshelves instead of
+  filming the back of one. P hides the interface for screenshots.
+- **GPS** - Directions in the places menu draws the route on the ground and on the
+  minimap. The walking graph is OSM sidewalks, footpaths and crosswalks. Roads are in it
+  too but cost 2.5x, so it only uses them where there's no sidewalk. Long segments get a
+  node every 5m, ends closer than 3m get joined, and only the biggest connected piece is
+  kept (OSM has little islands of path that don't connect to anything). A* with a binary
+  heap over ~14k nodes takes about 3ms. It reroutes if you get 10m off the route. There's
+  a test that routes from Hurt Park to every GSU door without going through a building.
+- **Going inside** - all 55 GSU buildings have a ground floor built from their real
+  outline. The map script puts a door on the side facing the nearest sidewalk, at least
+  2.4m from a corner so the sliding doors have room. The walls are line segments with a
+  gap at the door, so you just walk in. Windows are cut out of the inside walls with the
+  same grid the outside uses, so the street you see through them lines up. The glass doors
+  slide open for anyone within 3m.
+- **Furniture** - generated per building, the same every time. The floor is split into 5m
+  squares lined up with the front wall: study tables and chairs, armchairs around coffee
+  tables, plants, and rows of bookshelves in the libraries. The column straight in from the
+  door stays empty as a walkway and parking decks stay empty. Only the building you're in
+  (or at the door of) is drawn. Each shelf of books is one box, and a shader splits it
+  into books of random colors and heights. Library North has hundreds of shelves, so a box
+  per book was way too many.
+- **Light indoors** - the ceiling casts the shadow that keeps the sun out, except through
+  the windows. Inside, the sky light turns into warm ceiling light and the sky reflections
+  get turned down. That took a while: three.js ignores a material's `envMapIntensity`
+  when it uses `scene.environment`, so turning it down per material did nothing and every
+  room looked foggy.
+- **Walls muffle voices** - if you're in different places (different buildings, or one
+  in and one out) the other person goes through a 500Hz lowpass at half volume. Both
+  standing at the open door counts as the same place.
+- **Low quality** also turns off the blur behind the HUD panels. On CI (no gpu) it cost
+  about a third of the framerate and made the movement test flaky.
 
 ## Deployment
 
@@ -206,6 +253,8 @@ malformed.
    see-through buildings, go-to menu
 6. **Polish** - join screen with avatar picker, mobile controls, chat, minimap
 7. **Stretch** - emotes, day/night from real Atlanta time, load test with bots
+8. **Real life** - HUD, location titles, GPS directions, cinematic camera, going inside
+   buildings
 
 ## Testing
 
@@ -216,7 +265,8 @@ malformed.
   `window.quad` in dev builds so tests can read positions (it's all a canvas otherwise)
 - e2e pages load with `?quality=low&nocity`: the city isn't drawn (ci has no gpu and drawing it on
   the cpu made every test time out), but the map is still loaded for collisions. A separate
-  test (`e2e/city.spec.ts`) loads the full city and fails on any page or shader error
+  test (`e2e/city.spec.ts`) loads the full city and fails on any page or shader error. It
+  also walks into Library North, since the furniture and the inside only load near a door
 - walking takes small steps on long frames (`walk()` in movement.ts) instead of capping the
   frame time, otherwise slow laptops (and ci) walk in slow motion
 - to reproduce ci locally: run the e2e tests in the `mcr.microsoft.com/playwright` docker image

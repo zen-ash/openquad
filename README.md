@@ -2,6 +2,9 @@
 
 A multiplayer 3D campus in the browser with proximity voice chat. Walk up to someone and you can hear them, walk away and they fade out.
 
+It's the real Georgia State campus, built from OpenStreetMap. You can walk into any of the 55
+GSU buildings, get walking directions to one, and people inside sound muffled from the street.
+
 Final project for CSC 4370 (Web Programming) at Georgia State.
 
 **Try it: https://openquad.onrender.com** (open it in two windows, or send it to a friend)
@@ -82,11 +85,14 @@ See [docs/SPEC.md](docs/SPEC.md) for the plan.
 
 - WASD / arrow keys to walk
 - Shift to run
-- Q / E to turn the camera
+- Drag with the mouse (or Q / E) to turn the camera, scroll to zoom
+- G for places: walking directions to a building, or teleport there
+- Walk through a building's front door to go in
 - M to mute / unmute
-- "Go to..." in the top right to jump to a building
 - Enter to chat
 - 1-5 for emotes (wave, clap, cheer, laugh, shrug)
+- P for photo mode (hides everything on screen)
+- H to see all of these in the game
 - Time of day in the top right: follows the real time in Atlanta, or pick morning, noon,
   sunset or night. `?time=night` in the url works too
 - On a phone or tablet: joystick in the bottom left, drag anywhere else to turn
@@ -94,5 +100,5 @@ See [docs/SPEC.md](docs/SPEC.md) for the plan.
 ## Credits
 
 - Map data (c) [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, available under the Open Database License. `apps/web/src/campus/campus.json` is built from it with `pnpm campus`
-- Textures from [Poly Haven](https://polyhaven.com) (CC0)
+- Textures and furniture from [Poly Haven](https://polyhaven.com) (CC0)
 - People from Microsoft's [Rocketbox Avatar Library](https://github.com/microsoft/Microsoft-Rocketbox) (MIT, license in `apps/web/public/models/people/LICENSE.txt`)
