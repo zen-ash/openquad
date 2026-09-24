@@ -50,9 +50,11 @@ import { effects, fx, TONE_MAPPINGS } from './fx'
 // how far (meters) the ambient occlusion looks for things that block the sky
 const AO_RADIUS = 2
 
-// the scene is drawn at most this big and taa scales it up to the screen. a retina
-// laptop's screen is ~3000 pixels wide, drawing all of them costs twice as much and taa
-// gets most of it back anyway. settings.native draws them all
+// the scene is drawn at 1.2 pixels per css pixel (what it always was: 0.8 of a 1.5x
+// canvas) and never more than 1920x1200, and taa scales it up to the screen's own pixels.
+// a retina laptop's screen is ~3000 pixels wide, drawing all of them costs twice as much
+// and taa gets most of it back anyway. settings.native draws them all
+const DENSITY = 1.2
 const MAX_WIDTH = 1920
 const MAX_HEIGHT = 1200
 
@@ -237,7 +239,8 @@ export default function Effects() {
       return
     }
     gl.getDrawingBufferSize(size)
-    const scale = native ? 1 : Math.min(1, MAX_WIDTH / size.x, MAX_HEIGHT / size.y)
+    const most = Math.min(DENSITY / gl.getPixelRatio(), MAX_WIDTH / size.x, MAX_HEIGHT / size.y)
+    const scale = native ? 1 : Math.min(1, most)
     if (sized.current?.pipeline !== pipeline || sized.current.scale !== scale) {
       resize(scale)
       sized.current = { pipeline, scale }
