@@ -1,6 +1,9 @@
-import type { ServerMessage } from '@quad/shared'
+import { insideFence, type ServerMessage } from '@quad/shared'
 import { describe, expect, it } from 'vitest'
 import { Room } from './room'
+
+// the other end of campus from hurt park, further than VIEW_DISTANCE but inside the fence
+const FAR = { x: -300, y: 0, z: 10 }
 
 function fakeClient() {
   const inbox: ServerMessage[] = []
@@ -125,7 +128,7 @@ describe('Room', () => {
     const near = fakeClient()
     const far = fakeClient()
     room.join('near', 'Near', 'male_09', near.send, { x: 0, y: 0, z: 0 })
-    room.join('far', 'Far', 'male_09', far.send, { x: 400, y: 0, z: 0 })
+    room.join('far', 'Far', 'male_09', far.send, FAR)
     room.join('c', 'Cara', 'male_09', () => {}, { x: 0, y: 0, z: 0 })
     room.tick() // sorts out who can see who
     near.inbox.length = far.inbox.length = 0
@@ -145,7 +148,7 @@ describe('Room', () => {
     room.tick()
     a.inbox.length = 0
 
-    room.move('b', { x: 300, y: 0, z: 0 }, 0)
+    room.move('b', FAR, 0)
     room.tick()
     expect(a.inbox).toEqual([{ type: 'out-of-view', ids: ['b'] }])
 
@@ -160,11 +163,47 @@ describe('Room', () => {
 
   it('hides people who were already far away when you joined', () => {
     const room = new Room()
-    room.join('far', 'Far', 'male_09', () => {}, { x: 400, y: 0, z: 0 })
+    room.join('far', 'Far', 'male_09', () => {}, FAR)
     const a = fakeClient()
     room.join('a', 'Alice', 'male_09', a.send, { x: 0, y: 0, z: 0 })
     room.tick()
     expect(a.inbox).toContainEqual({ type: 'out-of-view', ids: ['far'] })
+  })
+
+  it('ignores moves past the fence', () => {
+    const room = new Room()
+    const a = fakeClient()
+    room.join('a', 'Alice', 'male_09', a.send, { x: 0, y: 0, z: 0 })
+    room.join('b', 'Bob', 'male_09', () => {}, { x: 0, y: 0, z: 0 })
+    room.move('b', { x: 0, y: 0, z: -20 }, 0)
+    room.tick()
+    a.inbox.length = 0
+
+    // across edgewood ave, then way off the map
+    expect(room.move('b', { x: 0, y: 0, z: -45 }, 0)).toBe(false)
+    expect(room.move('b', { x: 5000, y: 0, z: 5000 }, 0)).toBe(false)
+    room.tick()
+    expect(a.inbox).toEqual([])
+
+    // and walking around inside still works after that
+    expect(room.move('b', { x: 2, y: 0, z: -20 }, 0)).toBe(true)
+    room.tick()
+    expect(a.inbox).toEqual([{ type: 'state', players: [['b', 2, -20, 0]] }])
+  })
+
+  it('puts you back at spawn if you reconnect from past the fence', () => {
+    const room = new Room()
+    const info = room.join('a', 'Alice', 'male_09', () => {}, { x: 0, y: 0, z: -100 })
+    expect(insideFence(info.position.x, info.position.z)).toBe(true)
+    expect(Math.hypot(info.position.x, info.position.z)).toBeLessThan(5)
+  })
+
+  it('always spawns you inside the fence', () => {
+    const room = new Room()
+    for (let i = 0; i < 200; i++) {
+      const { position } = room.join(`p${i}`, 'P', 'male_09', () => {})
+      expect(insideFence(position.x, position.z)).toBe(true)
+    }
   })
 
   it('does not send you your own position', () => {

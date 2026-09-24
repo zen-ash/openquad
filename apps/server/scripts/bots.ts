@@ -5,7 +5,7 @@
 //
 // --spread is how far from hurt park they wander (meters). small = everyone crowded
 // together like a class demo, big = spread over campus
-import { AVATAR_IDS, TICK_RATE, type ServerMessage } from '@quad/shared'
+import { AVATAR_IDS, insideFence, TICK_RATE, type ServerMessage } from '@quad/shared'
 import { WebSocket } from 'ws'
 
 function arg(name: string, fallback: string) {
@@ -24,11 +24,19 @@ let measuring = false
 
 type Bot = { states: number; bytes: number; gaps: number[]; lastState: number; rtts: number[] }
 
+// somewhere random in the area, but inside the fence or the server ignores the moves
+function randomSpot() {
+  for (;;) {
+    const spot = { x: (Math.random() - 0.5) * 2 * AREA, z: (Math.random() - 0.5) * 2 * AREA }
+    if (insideFence(spot.x, spot.z)) return spot
+  }
+}
+
 function startBot(n: number, end: number): Promise<Bot> {
   const bot: Bot = { states: 0, bytes: 0, gaps: [], lastState: 0, rtts: [] }
   const ws = new WebSocket(URL)
   const pos = { x: 0, z: 0 }
-  let target = { x: (Math.random() - 0.5) * 2 * AREA, z: (Math.random() - 0.5) * 2 * AREA }
+  let target = randomSpot()
   let myId = ''
   let timers: ReturnType<typeof setInterval>[] = []
 
@@ -52,7 +60,7 @@ function startBot(n: number, end: number): Promise<Bot> {
           const dz = target.z - pos.z
           const dist = Math.hypot(dx, dz)
           if (dist < 1) {
-            target = { x: (Math.random() - 0.5) * 2 * AREA, z: (Math.random() - 0.5) * 2 * AREA }
+            target = randomSpot()
             return
           }
           const step = Math.min(dist, WALK_SPEED / TICK_RATE)

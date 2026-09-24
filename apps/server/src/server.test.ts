@@ -60,6 +60,31 @@ describe('server', () => {
     bob.socket.close()
   })
 
+  // what a modified client could do: send positions past the fence. nobody else sees them
+  it('ignores positions past the fence', async () => {
+    const alice = await connect('Alice')
+    const aliceId = (await alice.waitFor('welcome')).you.id
+    const bob = await connect('Bob')
+    await bob.waitFor('welcome')
+
+    // a few server ticks each, so every one of them would have gone out on its own
+    const move = async (x: number, z: number) => {
+      alice.socket.send(JSON.stringify({ type: 'move', position: { x, y: 0, z }, heading: 0 }))
+      await new Promise((r) => setTimeout(r, 150))
+    }
+    // across edgewood ave, then way off the map, then back inside
+    await move(0, -60)
+    await move(900, 900)
+    await move(3, 4)
+    const state = await bob.waitFor('state')
+    const seen = bob.inbox.flatMap((m) => (m.type === 'state' ? m.players : []))
+    expect(state.players).toContainEqual([aliceId, 3, 4, 0])
+    expect(seen.filter((p) => p[0] === aliceId)).toEqual([[aliceId, 3, 4, 0]])
+
+    alice.socket.close()
+    bob.socket.close()
+  })
+
   it('lets everyone know when a player disconnects', async () => {
     const alice = await connect('Alice')
     await alice.waitFor('welcome')
