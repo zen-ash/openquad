@@ -1,7 +1,11 @@
 import campus from '../campus/campus.json'
-import { polygon, type Point } from './collision'
+import { clearView } from './camera'
+import { pointInPolygon, polygon, type Point } from './collision'
 
-const shapes = campus.buildings.map((b) => polygon(b.points as [number, number][]))
+const shapes = campus.buildings.map((b) => ({
+  ...polygon(b.points as [number, number][]),
+  height: b.height,
+}))
 
 // do segments ab and cd cross
 function crosses(a: Point, b: Point, c: Point, d: Point) {
@@ -33,3 +37,33 @@ export function blocksView(camera: Point, player: Point) {
   }
   return false
 }
+
+/**
+ * Where the camera should go so it doesn't end up inside a building (the one you're in
+ * doesn't count). Walls in between are fine, the see-through cutout deals with those, but
+ * from inside a building you'd just see its insides. It comes in to just short of the
+ * wall instead, unless it's up over the roof anyway. Returns how far out to go, 0 to 1
+ */
+export function cameraReach(
+  look: Point,
+  camera: { x: number; y: number; z: number },
+  inside: Point[] | null,
+) {
+  for (const s of shapes) {
+    if (camera.x < s.minX || camera.x > s.maxX || camera.z < s.minZ || camera.z > s.maxZ) continue
+    if (camera.y > s.height + 0.5 || s.points === inside) continue
+    if (!pointInPolygon(camera, s.points)) continue
+    const walls = s.points.map((a, i) => {
+      const b = s.points[(i + 1) % s.points.length]!
+      return { ax: a.x, az: a.z, bx: b.x, bz: b.z }
+    })
+    const t = clearView(look, camera, walls)
+    const len = Math.hypot(camera.x - look.x, camera.z - look.z) || 1
+    // a little in front of the wall
+    return Math.max(0, t - 0.4 / len)
+  }
+  return 1
+}
+
+// the outline of the building you're in, for cameraReach
+export const outlineOf = (index: number) => (index >= 0 ? shapes[index]!.points : null)

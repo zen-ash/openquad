@@ -8,7 +8,7 @@ import type { Controls } from '../game/controls'
 import { avatarById } from '../game/avatars'
 import { clampDistance, clampPitch, clearView, orbit } from '../game/camera'
 import { interiorAt } from '../game/interiors'
-import { blocksView } from '../game/occlusion'
+import { blocksView, cameraReach, outlineOf } from '../game/occlusion'
 import { localPlayer } from '../game/localPlayer'
 import {
   headingFor,
@@ -38,6 +38,8 @@ const RUN_FOV = 56
 const INDOOR_DISTANCE = 4
 const INDOOR_PITCH = 0.2
 const CAMERA_TURN_SPEED = 2 // radians/sec
+// how close a wall behind you can pull the camera in
+const CLOSEST = 2.2
 const PLAYER_RADIUS = 0.4
 const SEND_INTERVAL = 1 / TICK_RATE
 
@@ -186,6 +188,14 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
       want.x = look.x + (want.x - look.x) * k
       want.y = look.y + (want.y - look.y) * k
       want.z = look.z + (want.z - look.z) * k
+    }
+    // and don't back into the building next door, all you'd see is its insides. unless
+    // that puts it right in your face, then it stays and the cutout sees through
+    const reach = cameraReach(look, want, outlineOf(localPlayer.inside))
+    if (reach < 1 && reach * Math.hypot(want.x - look.x, want.z - look.z) > CLOSEST) {
+      want.x = look.x + (want.x - look.x) * reach
+      want.y = look.y + (want.y - look.y) * reach
+      want.z = look.z + (want.z - look.z) * reach
     }
     if (snapCamera.current) camera.position.set(want.x, want.y, want.z)
     else camera.position.lerp(want, 1 - Math.exp(-7 * dt))

@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { cutoutShader } from './cutout'
 import { GROUND_WINDOW_WALL } from './facade'
 import { texture } from './textures'
 
@@ -14,6 +15,7 @@ export const floorMaterial = new THREE.MeshStandardMaterial({
 // brighter pools under each ceiling light (same 4m grid as the panels). without them the
 // light indoors is completely even, which just looks flat
 floorMaterial.onBeforeCompile = (shader) => {
+  cutoutShader(shader)
   shader.vertexShader = shader.vertexShader
     .replace('#include <common>', '#include <common>\nvarying vec3 vPos;')
     .replace(
@@ -36,6 +38,7 @@ export const ceilingMaterial = new THREE.MeshStandardMaterial({
   roughness: 0.9,
 })
 ceilingMaterial.onBeforeCompile = (shader) => {
+  cutoutShader(shader)
   shader.vertexShader = shader.vertexShader
     .replace('#include <common>', '#include <common>\nvarying vec3 vPos;')
     .replace(
@@ -59,6 +62,7 @@ ceilingMaterial.onBeforeCompile = (shader) => {
 // keepGlass flips it: the glass only keeps the window part
 function windows(keepGlass: boolean) {
   return (shader: THREE.WebGLProgramParametersWithUniforms) => {
+    cutoutShader(shader)
     shader.vertexShader = shader.vertexShader
       .replace(
         '#include <common>',
@@ -110,6 +114,7 @@ export const wallMaterial = new THREE.MeshStandardMaterial({
   roughness: 0.95,
 })
 wallMaterial.onBeforeCompile = windows(false)
+wallMaterial.customProgramCacheKey = () => 'interior-wall'
 
 // and a faint pane in each hole. mostly it's the sky reflection that sells it
 export const glassMaterial = new THREE.MeshStandardMaterial({
@@ -120,6 +125,7 @@ export const glassMaterial = new THREE.MeshStandardMaterial({
   depthWrite: false,
 })
 glassMaterial.onBeforeCompile = windows(true)
+glassMaterial.customProgramCacheKey = () => 'interior-glass'
 
 // a whole row of books on a shelf is one box. the shader splits it into books of random
 // colors and heights, way cheaper than a box per book (the big library has thousands)
