@@ -17,7 +17,7 @@ function drawCampus() {
   const ctx = canvas.getContext('2d')!
   const px = (v: number) => v + campus.halfSize
 
-  ctx.fillStyle = '#9fb28a'
+  ctx.fillStyle = '#cfcac0'
   ctx.fillRect(0, 0, full, full)
 
   const area = (points: number[][], color: string) => {
@@ -36,7 +36,9 @@ function drawCampus() {
   }
 
   campus.quad.pavers.forEach((p) => area(p, '#e2cfae'))
+  campus.lots.forEach((p) => area(p, '#8b8d90'))
   campus.parks.forEach((p) => area(p, '#7f9c69'))
+  campus.lawns.forEach((p) => area(p, '#7f9c69'))
   campus.plazas.forEach((p) => area(p, '#d8d4cb'))
   campus.roads.forEach((r) => line(r.points, r.width, '#6b6e73'))
   campus.paths.forEach((r) => line(r.points, r.width, '#d8d4cb'))

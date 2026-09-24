@@ -30,6 +30,10 @@ const query = `[out:json][timeout:90];
   relation["building"](${bbox});
   way["highway"](${bbox});
   way["leisure"="park"](${bbox});
+  way["landuse"="grass"](${bbox});
+  way["leisure"~"^(garden|pitch)$"](${bbox});
+  way["natural"="scrub"](${bbox});
+  way["amenity"="parking"](${bbox});
   node["natural"="tree"](${bbox});
   node["amenity"="fountain"](${bbox});
 );
@@ -626,6 +630,8 @@ function main(elements) {
   // named parks, for the "you're at Hurt Park" titles
   const areas = []
   const fountains = []
+  const lawns = []
+  const lots = []
   // crosswalks. not drawn as paths, but gps needs them to get across roads
   const crossings = []
   const plazas = []
@@ -650,6 +656,25 @@ function main(elements) {
         if (tags.building === 'parking' || tags.amenity === 'parking') b.deck = true
         buildings.push(b)
       }
+      continue
+    }
+
+    // smaller bits of grass. downtown is mostly paved, these are the green bits osm knows
+    if (
+      tags.landuse === 'grass' ||
+      tags.leisure === 'garden' ||
+      tags.leisure === 'pitch' ||
+      tags.natural === 'scrub'
+    ) {
+      const points = ring(el.geometry)
+      if (points && inside(centroid(points))) lawns.push(points)
+      continue
+    }
+
+    // surface parking lots
+    if (tags.amenity === 'parking' && !['multi-storey', 'underground'].includes(tags.parking)) {
+      const points = ring(el.geometry)
+      if (points && inside(centroid(points))) lots.push(points)
       continue
     }
 
@@ -745,6 +770,8 @@ function main(elements) {
     paths: walkPaths,
     crossings: walkCrossings,
     parks,
+    lawns,
+    lots,
     areas,
     plazas,
     trees,
@@ -767,7 +794,8 @@ const doors = campus.buildings.filter((b) => b.door).length
 console.log(
   `${campus.buildings.length} buildings (${gsu} gsu, ${doors} with doors), ${campus.roads.length} roads, ` +
     `${campus.crossings.length} crossings, ${campus.areas.length} named parks, ` +
-    `${campus.paths.length} paths, ${campus.parks.length} parks, ${campus.trees.length} trees`,
+    `${campus.paths.length} paths, ${campus.parks.length} parks, ${campus.lawns.length} lawns, ` +
+    `${campus.lots.length} parking lots, ${campus.trees.length} trees`,
 )
 if (campus.buildings.length < 100) throw new Error('way fewer buildings than expected')
 

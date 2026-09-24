@@ -5,7 +5,13 @@ import { Color, PlaneGeometry, type DirectionalLight, type HemisphereLight } fro
 import campus from '../campus/campus.json'
 import { areasGeometry, linesGeometry, planarUv } from '../campus/geometry'
 import { night } from '../campus/facade'
-import { grassMaterial, paversMaterial, roadMaterial, sidewalkMaterial } from '../campus/ground'
+import {
+  grassMaterial,
+  paversMaterial,
+  pavingMaterial,
+  roadMaterial,
+  sidewalkMaterial,
+} from '../campus/ground'
 import { localPlayer } from '../game/localPlayer'
 import { daylight, sunDirection, sunPosition, timeFor } from '../game/sun'
 import { useSettings } from '../settings'
@@ -115,8 +121,9 @@ function Ground() {
     const size = campus.halfSize * 6
     return {
       // goes well past the edge of the map so you don't see where it ends
-      lawn: planarUv(new PlaneGeometry(size, size).rotateX(-Math.PI / 2)),
-      parks: areasGeometry(campus.parks, 0.02),
+      ground: planarUv(new PlaneGeometry(size, size).rotateX(-Math.PI / 2)),
+      lots: areasGeometry(campus.lots, 0.012),
+      parks: areasGeometry([...campus.parks, ...campus.lawns], 0.02),
       plazas: areasGeometry(campus.plazas, 0.03),
       // under the lawns, which sit on top of it
       pavers: areasGeometry(campus.quad.pavers, 0.015),
@@ -127,7 +134,9 @@ function Ground() {
 
   return (
     <>
-      <mesh geometry={geos.lawn} material={grassMaterial} receiveShadow />
+      <mesh geometry={geos.ground} material={pavingMaterial} receiveShadow />
+      {/* parking lots are asphalt like the roads, the lane lines only go on roads */}
+      <mesh geometry={geos.lots} material={roadMaterial} receiveShadow />
       <mesh geometry={geos.parks} material={grassMaterial} receiveShadow />
       <mesh geometry={geos.plazas} material={sidewalkMaterial} receiveShadow />
       <mesh geometry={geos.pavers} material={paversMaterial} receiveShadow />
