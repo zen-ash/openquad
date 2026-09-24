@@ -24,7 +24,18 @@ function startingTime(): TimeOfDay {
 
 const params = new URLSearchParams(location.search)
 export const TILES_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined
-const tiles = Boolean(TILES_KEY) && !params.has('notiles')
+
+// localStorage.notiles = '1' works like ?notiles and sticks. the e2e tests start with it
+// set (playwright.config.ts): every page with the tiles on uses up one of the key's
+// sessions for the day, and there aren't many
+function tilesTurnedOff() {
+  try {
+    return localStorage.getItem('notiles') === '1'
+  } catch {
+    return false
+  }
+}
+const tiles = Boolean(TILES_KEY) && !params.has('notiles') && !tilesTurnedOff()
 
 // the tiles/buildings/outlines checkboxes, in dev or with ?debug
 export const showDebug = import.meta.env.DEV || params.has('debug')

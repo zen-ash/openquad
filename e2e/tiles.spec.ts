@@ -35,6 +35,9 @@ async function streetHeight(page: Page, x: number, z: number) {
 
 // google's 3d tiles stream in from google while you play. this loads them for real, so it
 // needs VITE_GOOGLE_MAPS_API_KEY in apps/web/.env (skipped without one, like on ci)
+// every other test has them off (playwright.config.ts)
+test.use({ storageState: { cookies: [], origins: [] } })
+
 test('google 3d tiles load and line up with our streets, no errors', async ({ page }) => {
   test.setTimeout(150_000)
   const errors: string[] = []

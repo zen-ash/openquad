@@ -13,6 +13,14 @@ export default defineConfig({
     // fewer pixels = much faster tests
     viewport: { width: 480, height: 270 },
     permissions: ['microphone'],
+    // google's 3d tiles off (see apps/web/src/settings.ts). every page with them on uses up
+    // one of the key's daily sessions, so only e2e/tiles.spec.ts turns them back on
+    storageState: {
+      cookies: [],
+      origins: [
+        { origin: 'http://localhost:5173', localStorage: [{ name: 'notiles', value: '1' }] },
+      ],
+    },
     launchOptions: {
       args: [
         // software webgl so it works on CI machines without a gpu

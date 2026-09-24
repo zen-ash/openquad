@@ -3,8 +3,8 @@ import { doorOf, teleport } from './fixtures'
 
 // the other tests skip drawing the city (?nocity) to stay fast. these make sure it
 // actually draws: a broken shader only shows up as a console error, the page itself loads fine.
-// night too, it has stars and lit windows that the day doesn't. without google's tiles
-// (tiles.spec.ts has those), so these don't depend on their servers
+// night too, it has stars and lit windows that the day doesn't. google's tiles are off for
+// all tests but tiles.spec.ts (playwright.config.ts), so these don't depend on their servers
 for (const time of ['noon', 'night']) {
   test(`the city renders without errors (${time})`, async ({ page }) => {
     const errors: string[] = []
@@ -13,7 +13,7 @@ for (const time of ['noon', 'night']) {
       if (m.type() === 'error') errors.push(m.text())
     })
 
-    await page.goto(`/?time=${time}&notiles`)
+    await page.goto(`/?time=${time}`)
     await expect(page.locator('canvas')).toBeVisible()
     // the flyover behind the join screen draws the whole city, give it a few frames
     await page.waitForTimeout(5000)
@@ -25,7 +25,7 @@ for (const time of ['noon', 'night']) {
 // the full city keeps the page busy while it loads. picking an avatar and hitting join
 // right away used to send the default avatar, because react hadn't caught up yet
 test('picking an avatar works even while the city is still loading', async ({ page }) => {
-  await page.goto('/?notiles')
+  await page.goto('/')
   await page.getByLabel("What's your name?").fill('Quick')
   await page.getByRole('radio', { name: 'green top' }).click()
   await page.getByRole('button', { name: 'Join' }).click()
@@ -43,7 +43,7 @@ test('the inside of a building renders without errors', async ({ page }) => {
     if (m.type() === 'error') errors.push(m.text())
   })
 
-  await page.goto('/?notiles')
+  await page.goto('/')
   await page.getByLabel("What's your name?").fill('Reader')
   await page.getByRole('button', { name: 'Join' }).click()
   await expect(page.getByText(/^\d+ online$/)).toBeVisible({ timeout: 30_000 })
