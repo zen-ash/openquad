@@ -3,20 +3,26 @@ import { useEffect, useMemo } from 'react'
 import { ACESFilmicToneMapping, SRGBColorSpace } from 'three'
 import { aerialPerspective } from '@takram/three-atmosphere/webgpu'
 import { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js'
-import { ao } from 'three/examples/jsm/tsl/display/GTAONode.js'
+import { ao as gtao } from 'three/examples/jsm/tsl/display/GTAONode.js'
 import { depthAwareBlur } from 'three/examples/jsm/tsl/display/depthAwareBlur.js'
 import { taau } from 'three/examples/jsm/tsl/display/TAAUNode.js'
 import { sharpen } from 'three/examples/jsm/tsl/display/SharpenNode.js'
+import { sss } from 'three/examples/jsm/tsl/display/SSSNode.js'
+import { boxBlur } from 'three/examples/jsm/tsl/display/boxBlur.js'
 import {
   builtinAOContext,
+  builtinShadowContext,
+  context,
   convertToTexture,
   distance,
   float,
   int,
+  mix,
   mrt,
   normalView,
   output,
   pass,
+  positionView,
   renderOutput,
   rtt,
   screenUV,
@@ -27,7 +33,7 @@ import {
   velocity,
 } from 'three/tsl'
 import { RenderPipeline, type Node, type WebGPURenderer } from 'three/webgpu'
-import { exposure } from './Atmosphere'
+import { exposure, sunlight } from './Atmosphere'
 
 // how far (meters) the ambient occlusion looks for things that block the sky
 const AO_RADIUS = 2
@@ -51,7 +57,7 @@ export default function Effects() {
     prePass.setResolutionScale(SCALE)
     prePass.setMRT(mrt({ output: normalView }))
     const preDepth = prePass.getTextureNode('depth')
-    const aoPass = ao(preDepth, prePass.getTextureNode(), camera)
+    const aoPass = gtao(preDepth, prePass.getTextureNode(), camera)
     aoPass.resolutionScale = 0.5
     aoPass.radius.value = AO_RADIUS
     aoPass.scale.value = 1
@@ -82,10 +88,31 @@ export default function Effects() {
     const scenePass = pass(scene, camera, { samples: 0 })
     scenePass.setResolutionScale(SCALE)
     scenePass.setMRT(mrt({ output, velocity }))
-    // (on top of the renderer's own context, which has the atmosphere in it)
-    const aoContext = builtinAOContext(blurY.sample(screenUV).r)
-    aoContext.value = { ...(gl.contextNode.value as object), ...(aoContext.value as object) }
-    scenePass.contextNode = aoContext
+    // contact shadows: the fine ones the shadow map is too coarse for, where a bench leg
+    // or a shoe meets the ground, by marching toward the sun through the depth buffer.
+    // they darken only the sun's light, like the shadow map (Atmosphere.tsx)
+    const contact = sss(preDepth, camera, sunlight)
+    contact.maxDistance.value = 0.3
+    contact.thickness.value = 0.02
+    contact.resolutionScale = 0.5
+    contact.useTemporalFiltering = false
+    // both on top of the renderer's own context, which has the atmosphere in it
+    const ao = builtinAOContext(blurY.sample(screenUV).r)
+    // only up close: far away the depth buffer is too coarse and things shadow themselves
+    const near = float(1).sub(smoothstep(12, 25, positionView.z.negate()))
+    const soft = rtt(
+      boxBlur(contact.getTextureNode(), { size: int(1), separation: int(1) }),
+      null,
+      null,
+      half,
+    )
+    const contactShadow = mix(1, soft.sample(screenUV).r, near)
+    const shadows = builtinShadowContext(contactShadow, sunlight)
+    scenePass.contextNode = context({
+      ...(gl.contextNode.value as object),
+      ...(ao.value as object),
+      ...(shadows.value as object),
+    })
     const depth = scenePass.getTextureNode('depth')
     let out = scenePass.getTextureNode('output') as Node<'vec4'>
 

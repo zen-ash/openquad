@@ -103,7 +103,7 @@ const MOONLIGHT = new Color(0.75, 0.87, 1.15)
 const environment = skyEnvironment()
 
 // the sun, through the atmosphere: redder and dimmer when it's low
-const sunlight = new AtmosphereLight(150)
+export const sunlight = new AtmosphereLight(150)
 sunlight.castShadow = true
 // shadows in cascades: a sharp map near you and bigger ones further out, blended into each
 // other, out to 400m (the old single map stopped 60m from you). soft edges up close
