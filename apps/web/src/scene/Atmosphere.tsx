@@ -25,7 +25,7 @@ import {
 } from 'three/tsl'
 import { Mesh, NodeMaterial, PlaneGeometry, type Node, type WebGPURenderer } from 'three/webgpu'
 import { eciToEcef, moonDirection } from '../game/celestial'
-import { localPlayer } from '../game/localPlayer'
+import { SoftCascades } from './softShadows'
 
 // takram's atmosphere (bruneton's precomputed scattering): the sky, sunlight colored by how
 // much air it came through, and the haze that turns far buildings paler and bluer. it's
@@ -99,15 +99,19 @@ const MOONLIGHT = new Color(0.75, 0.87, 1.15)
 // reflections and the soft light from the whole sky, redrawn when the camera moves far
 const environment = skyEnvironment()
 
-// the sun, through the atmosphere: redder and dimmer when it's low. it has the shadows, so
-// it follows you around like the old one (the target is where you are)
+// the sun, through the atmosphere: redder and dimmer when it's low
 const sunlight = new AtmosphereLight(150)
 sunlight.castShadow = true
+// shadows in cascades: a sharp map near you and bigger ones further out, blended into each
+// other, out to 400m (the old single map stopped 60m from you). soft edges up close
+// (softShadows.ts)
 sunlight.shadow.mapSize.set(2048, 2048)
-Object.assign(sunlight.shadow.camera, { left: -60, right: 60, top: 60, bottom: -60, far: 400 })
 // without these you get fine stripes all over the walls and grass (shadow acne)
-sunlight.shadow.bias = -0.001
-sunlight.shadow.normalBias = 0.2
+sunlight.shadow.bias = -0.0005
+sunlight.shadow.normalBias = 0.1
+const cascades = new SoftCascades(sunlight, { cascades: 3, maxFar: 400, lightMargin: 200 })
+cascades.fade = true
+sunlight.shadow.shadowNode = cascades
 // the light from the sky comes from the environment map, only the sun is direct
 sunlight.indirect.value = false
 
@@ -131,8 +135,6 @@ export default function Atmosphere({ sun, when, day }: { sun: number[]; when: Da
   useFrame(({ scene, camera }) => {
     atmosphere.camera = camera
     scene.environmentNode = environment as unknown as Node<'vec3'>
-    sunlight.target.position.set(localPlayer.x, 0, localPlayer.z)
-    sunlight.target.updateMatrixWorld()
   })
 
   return (
