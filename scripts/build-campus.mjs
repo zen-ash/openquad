@@ -216,10 +216,12 @@ function plantParkTrees(parks, lines, spacing = 14) {
 
 // gsu buildings too new to be on osm yet, traced from satellite images. meters from hurt park
 const NEW_BUILDINGS = [
-  // opened september 2026 next to petit. 9 floors of labs
+  // opened september 2026 next to petit. 9 floors of labs. drawn by hand from photos in
+  // the web app (campus/researchTower.ts)
   {
     name: 'Research Tower',
     height: 42,
+    landmark: {},
     points: [
       [0.8, 408],
       [19.7, 386.8],

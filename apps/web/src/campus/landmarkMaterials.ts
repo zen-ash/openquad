@@ -108,9 +108,14 @@ export function marble(key: string, color: string, slab = [1.6, 0.75], veins = 1
  * the corner and its size). pane is how big each piece of glass is, roughly. darkBottom
  * makes the bottom row a black panel like big storefront windows have
  */
-export function windowGlass(key: string, pane: [number, number], darkBottom = false) {
+export function windowGlass(
+  key: string,
+  pane: [number, number],
+  darkBottom = false,
+  color = '#34444e',
+) {
   const [pw, ph] = pane.map((n) => n.toFixed(2))
-  return make(key, { color: '#34444e', roughness: 0.05, metalness: 0.6 }, (shader) => {
+  return make(key, { color, roughness: 0.05, metalness: 0.6 }, (shader) => {
     withUv(
       shader,
       `vec2 n = max(vec2(1.0), floor(vPane.xy / vec2(${pw}, ${ph}) + 0.5));
@@ -151,4 +156,40 @@ export function windowGlass(key: string, pane: [number, number], darkBottom = fa
         totalEmissiveRadiance += vec3(1.0, 0.8, 0.55) * lit * uNight * (0.5 + 0.4 * fract(vPane.z * 7.3)) * (1.0 - bar) * (1.0 - panel);`,
       )
   })
+}
+
+/**
+ * Flat panels in a grid with lighter joints, each panel a little different. for metal or
+ * fibre cement cladding
+ */
+export function cladding(key: string, color: string, panel = [1.5, 1.25], joint = 1.35) {
+  const [w, h] = panel.map((n) => n.toFixed(2))
+  return make(key, { color, roughness: 0.55, metalness: 0.2 }, (shader) => {
+    withUv(
+      shader,
+      `vec2 size = vec2(${w}, ${h});
+      vec2 g = mod(vMeters, size);
+      float e = min(min(g.x, size.x - g.x), min(g.y, size.y - g.y));
+      float px = length(fwidth(vMeters));
+      float joint = mLine(e, 0.012, px);
+      vec2 id = floor(vMeters / size);
+      diffuseColor.rgb *= (0.96 + 0.06 * mHash(id)) * mix(1.0, ${joint.toFixed(2)}, joint);`,
+    )
+    shader.fragmentShader = shader.fragmentShader.replace(
+      'uniform float uNight;',
+      `uniform float uNight;\n${NOISE}\n${LINE}`,
+    )
+  })
+}
+
+// corrugated or ribbed metal, grooves running up and down every `pitch` meters
+export function ribbed(key: string, color: string, pitch: number) {
+  return make(key, { color, roughness: 0.45, metalness: 0.5 }, (shader) =>
+    withUv(
+      shader,
+      `float r = fract(vMeters.x / ${pitch.toFixed(2)});
+      float fade = 1.0 - smoothstep(0.02, 0.08, length(fwidth(vMeters)));
+      diffuseColor.rgb *= 1.0 - 0.22 * fade * smoothstep(0.35, 0.5, abs(r - 0.5) * 1.0 + 0.2);`,
+    ),
+  )
 }

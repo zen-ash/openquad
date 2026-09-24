@@ -5,11 +5,13 @@ import { artsHumanitiesMaterials } from '../campus/artsHumanitiesMaterials'
 import { dahlbergMaterials } from '../campus/dahlbergMaterials'
 import { landmarkGeometry, type Sign } from '../campus/landmarks'
 import { libraryNorthMaterials } from '../campus/libraryNorthMaterials'
+import { researchTowerMaterials } from '../campus/researchTowerMaterials'
 
 const materials: Record<string, Record<string, THREE.Material>> = {
   'Library North': libraryNorthMaterials,
   'Dahlberg Hall': dahlbergMaterials,
   'Arts & Humanities': artsHumanitiesMaterials,
+  'Research Tower': researchTowerMaterials,
 }
 
 // white sign with the name in gsu blue. the real ones have the logo where the blue
