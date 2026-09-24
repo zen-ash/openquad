@@ -3,7 +3,15 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { BRICK, CONCRETE, GLASS } from './facade'
 
 type Pt = number[] // [x, z]
-export type BuildingData = { points: Pt[]; height: number; name?: string; gsu?: boolean; door?: Pt }
+export type BuildingData = {
+  points: Pt[]
+  height: number
+  name?: string
+  gsu?: boolean
+  door?: Pt
+  // drawn by hand instead (scene/LibraryNorth.tsx)
+  landmark?: unknown
+}
 export type LineData = { width: number; points: Pt[] }
 
 // anything taller than ~14 floors (in real life) is a glass tower
@@ -33,7 +41,8 @@ function fill(count: number, value: number) {
 }
 
 export function buildingsGeometry(buildings: BuildingData[]) {
-  const parts = buildings.map((b, i) => {
+  const parts = buildings.flatMap((b, i) => {
+    if (b.landmark) return []
     const geo = new THREE.ExtrudeGeometry(shape(b.points), { depth: b.height, bevelEnabled: false })
     geo.rotateX(-Math.PI / 2)
     geo.clearGroups()
@@ -55,7 +64,7 @@ export function buildingsGeometry(buildings: BuildingData[]) {
     const door = new Float32Array(count * 4)
     if (b.door) for (let v = 0; v < count; v++) door.set(b.door.slice(0, 4), v * 4)
     geo.setAttribute('aDoor', new THREE.BufferAttribute(door, 4))
-    return geo
+    return [geo]
   })
   return mergeGeometries(parts)
 }

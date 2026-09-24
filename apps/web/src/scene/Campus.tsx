@@ -13,6 +13,7 @@ import Buildings from './Buildings'
 import Doors from './Doors'
 import Furniture from './Furniture'
 import Interiors from './Interiors'
+import LibraryNorth from './LibraryNorth'
 import Trees from './Trees'
 
 const DAY_HAZE = new Color('#c9d6e0')
@@ -155,6 +156,7 @@ export default function Campus() {
       <Sun dir={sky.light} day={sky.day} />
       <Ground />
       <Buildings />
+      <LibraryNorth />
       <Interiors />
       <Furniture />
       <Doors />

@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
-import type { Point } from '../game/collision'
+import { closestOnSegment, type Point, type Segment } from '../game/collision'
 import { CEILING, DOOR_HEIGHT, DOOR_WIDTH, type Interior } from '../game/interiors'
 import campus from './campus.json'
 import { planarUv, seedOf, styleOf } from './geometry'
@@ -16,7 +16,7 @@ function signedArea(points: Point[]) {
 }
 
 // a vertical wall facing `into` (a unit vector on the ground), from y0 to y1
-function wallQuad(a: Point, b: Point, y0: number, y1: number, into: Point) {
+export function wallQuad(a: Point, b: Point, y0: number, y1: number, into: Point) {
   let corners = [
     [a.x, y0, a.z],
     [b.x, y0, b.z],
@@ -56,6 +56,21 @@ function withStyle(geo: THREE.BufferGeometry, style: number) {
   return geo
 }
 
+// styles for the window shader besides the facade ones (interiorMaterials.ts)
+export const NO_WINDOWS = -1
+export const ALL_GLASS = 3
+
+// library north's brick box really has no windows, and its lobby is all glass
+function landmarkStyle(w: Segment, box: number[][]) {
+  const mid = { x: (w.ax + w.bx) / 2, z: (w.az + w.bz) / 2 }
+  const onBox = box.some(([x, z], i) => {
+    const [nx, nz] = box[(i + 1) % box.length]!
+    const c = closestOnSegment(mid, { x: x!, z: z! }, { x: nx!, z: nz! })
+    return Math.hypot(c.x - mid.x, c.z - mid.z) < 0.2
+  })
+  return onBox ? NO_WINDOWS : ALL_GLASS
+}
+
 /** inside walls for every building you can walk into, window holes are done in the shader */
 export function interiorWallsGeometry(interiors: Interior[]) {
   const parts = interiors.flatMap((room) => {
@@ -71,7 +86,7 @@ export function interiorWallsGeometry(interiors: Interior[]) {
       const into = { x: (dz / len) * flip, z: (-dx / len) * flip }
       return withStyle(
         wallQuad({ x: w.ax, z: w.az }, { x: w.bx, z: w.bz }, 0, CEILING, into),
-        style,
+        b.landmark ? landmarkStyle(w, b.landmark.box) : style,
       )
     })
 
@@ -86,7 +101,7 @@ export function interiorWallsGeometry(interiors: Interior[]) {
       CEILING,
       { x: -nx, z: -nz },
     )
-    return [...walls, withStyle(above, -1)] // -1 = never has a window
+    return [...walls, withStyle(above, NO_WINDOWS)]
   })
   return mergeGeometries(parts)
 }

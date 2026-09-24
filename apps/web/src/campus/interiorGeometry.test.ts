@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { CEILING, interiors } from '../game/interiors'
-import { ceilingsGeometry, floorsGeometry, interiorWallsGeometry } from './interiorGeometry'
+import {
+  ALL_GLASS,
+  ceilingsGeometry,
+  floorsGeometry,
+  interiorWallsGeometry,
+  NO_WINDOWS,
+} from './interiorGeometry'
 
 const room = interiors.find((r) => r.name === 'Library North')!
 
@@ -65,5 +71,10 @@ describe('interior geometry', () => {
     expect(up(tri(ceiling))).toBeLessThan(0)
     ceiling.computeBoundingBox()
     expect(ceiling.boundingBox!.max.y).toBeCloseTo(CEILING)
+  })
+
+  it('library north has no windows except its glass lobby', () => {
+    const styles = new Set(interiorWallsGeometry([room]).getAttribute('aStyle').array)
+    expect([...styles].sort()).toEqual([NO_WINDOWS, ALL_GLASS])
   })
 })

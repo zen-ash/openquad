@@ -92,6 +92,8 @@ function windows(keepGlass: boolean) {
           vec2 cell = fract(vec2(u / col, vPos.y / ${FLOOR_HEIGHT.toFixed(1)}));
           vec4 rect = glass ? ${vec4(GROUND_WINDOW_GLASS)} : ${vec4(GROUND_WINDOW_WALL)};
           isWindow = cell.x > rect.x && cell.x < rect.z && cell.y > rect.y && cell.y < rect.w;
+          // a glass wall, just thin frames
+          if (vStyle > 2.5) isWindow = vPos.y > 0.3 && fract(u / 1.5) > 0.05;
         }
         if (isWindow != ${keepGlass}) discard;`,
       )
