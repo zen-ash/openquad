@@ -508,6 +508,52 @@ function libraryNorth(b) {
   b.landmark = { box, front }
 }
 
+// dahlberg hall, the old municipal auditorium. the marble front on courtland street is from
+// 1943 and is drawn by hand in the web app (campus/dahlberg.ts). osm's outline is right,
+// it just has no height
+const DAHLBERG = {
+  // ends of the courtland street front: the gilmer street corner, then auditorium place
+  front: [
+    { lat: 33.7534609, lon: -84.3851526 },
+    { lat: 33.754076, lon: -84.3844935 },
+  ],
+  // the corner block and the entrance going by photos, the wing past them is lower
+  height: 18,
+  // the front doors are in the middle of the entrance block, meters along the front
+  door: 30.2,
+}
+
+function dahlberg(b) {
+  // snap to osm's own corners
+  const [from, to] = DAHLBERG.front.map((c) => {
+    const [x, z] = toLocal(c)
+    return b.points.reduce((best, p) =>
+      Math.hypot(p[0] - x, p[1] - z) < Math.hypot(best[0] - x, best[1] - z) ? p : best,
+    )
+  })
+  const len = Math.hypot(to[0] - from[0], to[1] - from[1])
+  const along = [(to[0] - from[0]) / len, (to[1] - from[1]) / len]
+  const out = [along[1], -along[0]]
+  const aOf = (p) => (p[0] - from[0]) * along[0] + (p[1] - from[1]) * along[1]
+  const dOf = (p) => (p[0] - from[0]) * out[0] + (p[1] - from[1]) * out[1]
+
+  b.height = DAHLBERG.height
+  b.landmark = { front: [from, to] }
+  // the bit of the front wall the door is on
+  b.points.forEach((p, i) => {
+    const q = b.points[(i + 1) % b.points.length]
+    const [a0, a1] = [aOf(p), aOf(q)]
+    if (a0 > DAHLBERG.door || a1 < DAHLBERG.door || dOf(p) < -3) return
+    const t = (DAHLBERG.door - a0) / (a1 - a0)
+    b.door = [
+      round(p[0] + (q[0] - p[0]) * t),
+      round(p[1] + (q[1] - p[1]) * t),
+      Math.round(out[0] * 100) / 100,
+      Math.round(out[1] * 100) / 100,
+    ]
+  })
+}
+
 function main(elements) {
   const buildings = []
   const roads = []
@@ -582,6 +628,8 @@ function main(elements) {
 
   const lib = buildings.find((b) => b.name === 'Library North')
   if (lib) libraryNorth(lib)
+  const hall = buildings.find((b) => b.name === 'Dahlberg Hall')
+  if (hall) dahlberg(hall)
   for (const b of NEW_BUILDINGS) buildings.push({ ...b, height: b.height * SCALE, gsu: true })
 
   trees.push(...plantParkTrees(parks, [...roads, ...paths]))

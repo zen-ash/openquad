@@ -1,4 +1,5 @@
 import type * as THREE from 'three'
+import { dahlbergGeometry, type DahlbergData } from './dahlberg'
 import { libraryNorthGeometry, type LibraryNorthData } from './libraryNorth'
 
 // buildings drawn by hand from photos instead of the regular buildings mesh, by name
@@ -12,9 +13,10 @@ export type LandmarkGeometry = {
 }
 
 // each one wants its own bits of the map data, the json doesn't know which is which
-type Data = LibraryNorthData
+type Data = LibraryNorthData & DahlbergData
 const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Library North': libraryNorthGeometry,
+  'Dahlberg Hall': dahlbergGeometry,
 }
 
 // the scene and the interiors both need it, only build it once

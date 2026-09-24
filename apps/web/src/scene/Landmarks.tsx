@@ -1,11 +1,13 @@
 import { Text } from '@react-three/drei'
 import type * as THREE from 'three'
 import campus from '../campus/campus.json'
+import { dahlbergMaterials } from '../campus/dahlbergMaterials'
 import { landmarkGeometry, type Sign } from '../campus/landmarks'
 import { libraryNorthMaterials } from '../campus/libraryNorthMaterials'
 
 const materials: Record<string, Record<string, THREE.Material>> = {
   'Library North': libraryNorthMaterials,
+  'Dahlberg Hall': dahlbergMaterials,
 }
 
 // white sign with the name in gsu blue. the real ones have the logo where the blue

@@ -3,7 +3,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import type { Point } from '../game/collision'
 import { CEILING, DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
 
-// shared bits for the buildings drawn by hand from photos (library north for now).
+// shared bits for the buildings drawn by hand from photos (library north, dahlberg hall).
 // they're mostly laid out as (a, d): meters along the front wall, and meters out from it
 
 export const pt = ([x, z]: number[]) => ({ x: x!, z: z! })
@@ -120,6 +120,26 @@ export function solidPieces(len: number, y0: number, y1: number, holes: Hole[]):
   return pieces
 }
 
+// a window's glass. uvs start at its bottom left corner, and aPane is its size plus a
+// random number for it, so the shader can draw the mullions and light some up at night
+function pane(a: Point, b: Point, y0: number, y1: number, into: Point) {
+  const geo = wallQuad(a, b, y0, y1, into)
+  const uv = geo.getAttribute('uv')
+  for (let i = 0; i < uv.count; i++) uv.setY(i, uv.getY(i) - y0)
+  const n = Math.sin((a.x + b.x) * 12.9898 + (a.z + b.z) * 78.233 + y0 * 37.719) * 43758.5453
+  const size = [Math.hypot(b.x - a.x, b.z - a.z), y1 - y0, n - Math.floor(n)]
+  geo.setAttribute(
+    'aPane',
+    new THREE.Float32BufferAttribute(
+      [0, 1, 2, 3, 4, 5].flatMap(() => size),
+      3,
+    ),
+  )
+  return geo
+}
+
+export type Opening<P> = { hole: Hole; glass?: P; sides?: P }
+
 // collects the geometry of a building by material, merged into one mesh each at the end
 export function parts<P extends string>() {
   const all = {} as Record<P, THREE.BufferGeometry[]>
@@ -153,12 +173,74 @@ export function parts<P extends string>() {
     y1: number,
   ) => prism(part, [f.at(a0, d0), f.at(a1, d0), f.at(a1, d1), f.at(a0, d1)], y0, y1)
 
+  /**
+   * An outside wall from p to q facing o, with openings set `depth` back into it: the
+   * wall around them, their sides, and the glass (none for a doorway). A wall that
+   * starts at the ground also gets its inside, with the same holes
+   */
+  const wall = (
+    part: P,
+    p: Point,
+    q: Point,
+    y0: number,
+    y1: number,
+    o: Point,
+    openings: Opening<P>[] = [],
+    depth = 0.3,
+  ) => {
+    const len = Math.hypot(q.x - p.x, q.z - p.z)
+    const dir = { x: (q.x - p.x) / len, z: (q.z - p.z) / len }
+    const at = (u: number, d = 0) => ({
+      x: p.x + dir.x * u - o.x * d,
+      z: p.z + dir.z * u - o.z * d,
+    })
+    const holes = openings.map((w) => w.hole)
+    for (const [u0, u1, v0, v1] of solidPieces(len, y0, y1, holes))
+      add(part, wallQuad(at(u0), at(u1), v0, v1, o, u0))
+
+    for (const { hole, glass, sides = part } of openings) {
+      const [u0, u1, v0, v1] = hole
+      add(sides, wallQuad(at(u0), at(u0, depth), v0, v1, dir))
+      add(sides, wallQuad(at(u1), at(u1, depth), v0, v1, { x: -dir.x, z: -dir.z }))
+      const rim = [at(u0), at(u1), at(u1, depth), at(u0, depth)]
+      if (v0 > 0.01) add(sides, flat(rim, v0))
+      add(sides, flat(rim, v1, false))
+      if (glass) add(glass, pane(at(u0, depth), at(u1, depth), v0, v1, o))
+    }
+
+    if (y0 > 0.01) return
+    const into = { x: -o.x, z: -o.z }
+    for (const [u0, u1, v0, v1] of solidPieces(len, 0, CEILING, holes))
+      inside.solid.push(wallQuad(at(u0), at(u1), v0, v1, into))
+    for (const { hole, glass } of openings) {
+      const [u0, u1, v0, v1] = hole
+      if (glass && v0 < CEILING)
+        inside.glass.push(wallQuad(at(u0), at(u1), v0, Math.min(v1, CEILING), into))
+    }
+  }
+
   const merged = () =>
     Object.fromEntries(
       Object.entries<THREE.BufferGeometry[]>(all).map(([k, v]) => [k, mergeGeometries(v)]),
     ) as Record<P, THREE.BufferGeometry>
 
-  return { add, prism, block, inside, merged }
+  return { add, prism, block, wall, inside, merged }
+}
+
+/** the part of a shape where side(point) >= 0, for a straight cut through it */
+export function clip(points: Point[], side: (p: Point) => number) {
+  const kept: Point[] = []
+  points.forEach((p, i) => {
+    const q = points[(i + 1) % points.length]!
+    const sp = side(p)
+    const sq = side(q)
+    if (sp >= 0) kept.push(p)
+    if (sp >= 0 !== sq >= 0) {
+      const t = sp / (sp - sq)
+      kept.push({ x: p.x + (q.x - p.x) * t, z: p.z + (q.z - p.z) * t })
+    }
+  })
+  return kept
 }
 
 // each edge of an outline with its direction and the normal pointing out of the shape

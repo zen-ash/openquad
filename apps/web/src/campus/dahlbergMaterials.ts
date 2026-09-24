@@ -1,0 +1,16 @@
+import type * as THREE from 'three'
+import type { Part } from './dahlberg'
+import { make, marble, tiled, windowGlass } from './landmarkMaterials'
+
+export const dahlbergMaterials: Record<Part, THREE.Material> = {
+  marble: marble('dahlberg-marble', '#e9e6df'),
+  // the base is a darker grey stone
+  base: marble('dahlberg-base', '#a9a8a3', [1.2, 0.9]),
+  // the big windows have a black panel along the bottom, the strips over the doors don't
+  bigGlass: windowGlass('dahlberg-big-glass', [1.25, 1.3], true),
+  stripGlass: windowGlass('dahlberg-strip-glass', [0.8, 1.15]),
+  glass: windowGlass('dahlberg-glass', [1.1, 1.1]),
+  canopy: make('dahlberg-canopy', { color: '#2f2c28', roughness: 0.45, metalness: 0.6 }),
+  roof: make('dahlberg-roof', { map: tiled('roof', 'color', 8), color: '#b4b4b0', roughness: 0.9 }),
+  metal: make('dahlberg-metal', { color: '#b9bcbe', roughness: 0.5, metalness: 0.4 }),
+}
