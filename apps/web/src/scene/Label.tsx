@@ -1,8 +1,8 @@
 import type { ThreeElements } from '@react-three/fiber'
 import { useEffect, useMemo, useState } from 'react'
 import * as THREE from 'three'
-import { float, fwidth, max, mix, smoothstep, texture, uniform, vec4 } from 'three/tsl'
-import { MeshBasicNodeMaterial } from 'three/webgpu'
+import { float, fwidth, materialReference, max, mix, smoothstep, vec4 } from 'three/tsl'
+import { MeshBasicNodeMaterial, type Node } from 'three/webgpu'
 
 // text on a quad, drawn from a distance field so it stays sharp at any size. it replaces
 // drei's <Text> (troika), which does the same thing but only works by patching webgl
@@ -27,6 +27,35 @@ const SPREAD = 8
 // noto sans goes 1.069 em above the baseline and 0.293 below. troika's "normal" line height
 const ASCENT = 1.069
 const DESCENT = 0.293
+
+// one shader for every label. each label's own letters, colors and outline come from its
+// material (materialReference reads whichever material is being drawn). a graph per label
+// made three build a new shader for each label that came into view, a hitch every time
+const ref = <T extends string>(name: string, type: string) =>
+  materialReference(name, type) as unknown as Node<T>
+const field = ref<'vec4'>('field', 'texture')
+const fill = ref<'vec3'>('fill', 'color')
+const edge = ref<'vec3'>('edge', 'color')
+// fill and outline opacity
+const alpha = ref<'vec2'>('alpha', 'vec2')
+// how far out the outline goes, in pixels of the canvas
+const outline = ref<'float'>('outline', 'float')
+// pixels (of the canvas) outside the letters' edge, antialiased over one screen pixel
+const d = float(0.5)
+  .sub(field.r)
+  .mul(2 * SPREAD)
+const aa = max(fwidth(d).mul(0.5), 0.001)
+const inLetter = float(1).sub(smoothstep(aa.negate(), aa, d))
+const inOutline = float(1).sub(smoothstep(aa.negate().add(outline), aa.add(outline), d))
+const letters = vec4(mix(edge, fill, inLetter), mix(inOutline.mul(alpha.y), alpha.x, inLetter))
+
+type LabelMaterial = MeshBasicNodeMaterial & {
+  field: THREE.Texture
+  fill: THREE.Color
+  edge: THREE.Color
+  alpha: THREE.Vector2
+  outline: number
+}
 
 type Layout = { fontSize: number; fontWeight: number; lineHeight?: number; textAlign: string }
 
@@ -163,43 +192,35 @@ export default function Label({
   )
   useEffect(() => () => label?.field.dispose(), [label])
 
-  // colors and opacity are uniforms, so a name tag turning green doesn't redraw anything
-  const look = useMemo(() => {
+  // colors and opacity are material values, so a name tag turning green doesn't redraw
+  // anything
+  const material = useMemo(() => {
     if (!label) return null
-    const fill = uniform(new THREE.Color())
-    const edge = uniform(new THREE.Color())
-    // fill and outline opacity
-    const alpha = uniform(new THREE.Vector2(1, 1))
-    // pixels (of the canvas) outside the letters' edge, antialiased over one screen pixel
-    const d = float(0.5)
-      .sub(texture(label.field).r)
-      .mul(2 * SPREAD)
-    const aa = max(fwidth(d).mul(0.5), 0.001)
-    const inLetter = float(1).sub(smoothstep(aa.negate(), aa, d))
-    // troika's outlines came out a bit wider than the width it was given, this matches
-    // them (pnpm visual)
-    const outline = (outlineWidth / fontSize) * PX * 1.25
-    const inOutline = float(1).sub(smoothstep(aa.negate().add(outline), aa.add(outline), d))
-    const material = new MeshBasicNodeMaterial({ transparent: true, side: THREE.DoubleSide })
-    material.colorNode = vec4(
-      mix(edge, fill, inLetter),
-      mix(inOutline.mul(alpha.y), alpha.x, inLetter),
-    )
-    return { material, fill, edge, alpha }
+    const m = new MeshBasicNodeMaterial({ transparent: true, side: THREE.DoubleSide })
+    m.colorNode = letters
+    return Object.assign(m, {
+      field: label.field,
+      fill: new THREE.Color(),
+      edge: new THREE.Color(),
+      alpha: new THREE.Vector2(1, 1),
+      // troika's outlines came out a bit wider than the width it was given, this matches
+      // them (pnpm visual)
+      outline: (outlineWidth / fontSize) * PX * 1.25,
+    }) as LabelMaterial
   }, [label, outlineWidth, fontSize])
-  useEffect(() => () => look?.material.dispose(), [look])
+  useEffect(() => () => material?.dispose(), [material])
 
   useEffect(() => {
-    if (!look) return
-    look.fill.value.set(color)
+    if (!material) return
+    material.fill.set(color)
     // no outline: the edge is the letters' own color, or it'd get a dark fringe
-    look.edge.value.set(outlineWidth > 0 ? outlineColor : color)
-    look.alpha.value.set(fillOpacity, outlineOpacity)
-  }, [look, color, outlineColor, outlineWidth, fillOpacity, outlineOpacity])
+    material.edge.set(outlineWidth > 0 ? outlineColor : color)
+    material.alpha.set(fillOpacity, outlineOpacity)
+  }, [material, color, outlineColor, outlineWidth, fillOpacity, outlineOpacity])
 
-  if (!label || !look) return null
+  if (!label || !material) return null
   return (
-    <mesh {...props} material={look.material}>
+    <mesh {...props} material={material}>
       <planeGeometry args={[label.width, label.height]} />
     </mesh>
   )

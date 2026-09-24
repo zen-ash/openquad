@@ -32,8 +32,22 @@ const fenceOn = uniform(1)
 // inside the fence it's our own buildings and streets (see packages/shared/src/fence.ts),
 // so the tiles throw away everything there. in the strip just past it (the far sidewalk)
 // they keep their ground and buildings but not their trees, cars and lamp posts. the
-// shadow pass uses the same mask, or the tile buildings inside would still cast shadows
+// shadow pass uses the same mask, or the tile buildings inside would still cast shadows.
+// one mask shared by every tile: a graph per tile made three build a new shader for each
+// tile that loaded, a hitch every time new ones came in (pnpm walk). made with the first
+// tile, working out the fence map takes a moment
+let tileMask: ReturnType<typeof mask> | null = null
+function mask() {
+  const distance = fenceDistanceAt(positionWorld.xz)
+  const clutter = distance
+    .greaterThan(-BAND)
+    .and(positionWorld.y.greaterThan(0.4))
+    .and(onBuildingAt(positionWorld.xz).not())
+  return fenceOn.lessThan(0.5).or(distance.lessThanEqual(0).and(clutter.not()))
+}
+
 function fenced(tile: THREE.MeshBasicMaterial) {
+  tileMask ??= mask()
   const m = new MeshBasicNodeMaterial()
   m.setValues({
     map: tile.map,
@@ -43,12 +57,7 @@ function fenced(tile: THREE.MeshBasicMaterial) {
     transparent: tile.transparent,
     opacity: tile.opacity,
   })
-  const d = fenceDistanceAt(positionWorld.xz)
-  const clutter = d
-    .greaterThan(-BAND)
-    .and(positionWorld.y.greaterThan(0.4))
-    .and(onBuildingAt(positionWorld.xz).not())
-  m.maskNode = fenceOn.lessThan(0.5).or(d.lessThanEqual(0).and(clutter.not()))
+  m.maskNode = tileMask
   return m
 }
 
