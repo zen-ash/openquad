@@ -1,5 +1,5 @@
 import { VOICE_MAX_DISTANCE } from '@quad/shared'
-import { Billboard, Html, Text } from '@react-three/drei'
+import { Billboard, Html } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useRef, useState } from 'react'
 import type { Group } from 'three'
@@ -12,6 +12,7 @@ import { snapshots, useGame, type Person } from '../net/store'
 import { useVoice } from '../voice/store'
 import Character, { type Anim } from './Character'
 import ChatBubble from './ChatBubble'
+import Label from './Label'
 
 function RemotePlayer({ id, person }: { id: string; person: Person }) {
   const body = useRef<Group>(null)
@@ -75,17 +76,16 @@ function RemotePlayer({ id, person }: { id: string; person: Person }) {
       />
       <ChatBubble id={id} />
       <Billboard position-y={2.2}>
-        <Text
+        <Label
           fontSize={0.35}
           color={speaking ? '#7dff6a' : 'white'}
           // faded when they're too far away to hear you
-          fillOpacity={inRange ? 1 : 0.45}
-          outlineOpacity={inRange ? 1 : 0.45}
+          opacity={inRange ? 1 : 0.45}
           outlineWidth={0.03}
           outlineColor="black"
         >
           {person.name}
-        </Text>
+        </Label>
       </Billboard>
       {alert > 0 && inRange && (
         // a quick "!" when someone comes close enough to talk. key restarts the css animation

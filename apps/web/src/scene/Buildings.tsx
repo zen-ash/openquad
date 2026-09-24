@@ -1,5 +1,5 @@
 import { insideFence } from '@quad/shared'
-import { Billboard, Text } from '@react-three/drei'
+import { Billboard } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
@@ -8,6 +8,7 @@ import { buildingsGeometry, centroid } from '../campus/geometry'
 import { facadeMaterial } from '../campus/facade'
 import { localPlayer } from '../game/localPlayer'
 import { useSettings } from '../settings'
+import Label from './Label'
 
 const LABEL_DISTANCE = 120
 
@@ -44,15 +45,9 @@ function Labels({ outside }: { outside: boolean }) {
           }}
           position={[l.x, l.height + 4, l.z]}
         >
-          <Text
-            fontSize={2.4}
-            color="white"
-            outlineWidth={0.14}
-            outlineColor="#111"
-            fillOpacity={0.95}
-          >
+          <Label fontSize={2.4} outlineWidth={0.14} outlineColor="#111" opacity={0.95}>
             {l.name}
-          </Text>
+          </Label>
         </Billboard>
       ))}
     </>
