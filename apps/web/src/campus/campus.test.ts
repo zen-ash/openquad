@@ -69,6 +69,8 @@ describe('gsu buildings', () => {
       '75 Piedmont Avenue',
       'College of Law',
       'Piedmont North A',
+      // too new for osm, added by hand
+      'Research Tower',
     ]) {
       expect(gsuNames.has(name), name).toBe(true)
     }

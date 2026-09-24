@@ -194,6 +194,21 @@ function plantParkTrees(parks, lines, spacing = 14) {
   return trees
 }
 
+// gsu buildings too new to be on osm yet, traced from satellite images. meters from hurt park
+const NEW_BUILDINGS = [
+  // opened september 2026 next to petit. 9 floors of labs
+  {
+    name: 'Research Tower',
+    height: 42,
+    points: [
+      [0.8, 408],
+      [19.7, 386.8],
+      [57.6, 422],
+      [40.7, 443.5],
+    ],
+  },
+]
+
 // the panther quad. sparks hall came down at the end of 2025 and this stretch of gilmer
 // street closed, so hurt park, the sparks hall site and the greenway are one big quad now.
 // osm doesn't have it yet, so it's laid out by eye from gsu's campus map. meters from hurt
@@ -547,6 +562,7 @@ function main(elements) {
 
   const lib = buildings.find((b) => b.name === 'Library North')
   if (lib) libraryNorth(lib)
+  for (const b of NEW_BUILDINGS) buildings.push({ ...b, height: b.height * SCALE, gsu: true })
 
   trees.push(...plantParkTrees(parks, [...roads, ...paths]))
   const quad = pantherQuad([...roads, ...paths], crossings)

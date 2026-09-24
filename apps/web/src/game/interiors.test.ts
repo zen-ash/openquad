@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import campus from '../campus/campus.json'
 import { pointInPolygon, type World } from './collision'
 import {
   DOOR_WIDTH,
@@ -54,7 +55,7 @@ describe('wallsWithDoorway', () => {
 
 describe('campus interiors', () => {
   it('every gsu building can be walked into', () => {
-    expect(interiors).toHaveLength(55)
+    expect(interiors).toHaveLength(campus.buildings.filter((b) => b.gsu).length)
   })
 
   it.each(interiors.map((i) => [i.name, i]))('%s: walking in through the door works', (_, room) => {
