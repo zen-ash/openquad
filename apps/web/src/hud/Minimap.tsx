@@ -15,7 +15,10 @@ function drawCampus() {
   const full = campus.halfSize * 2
   const canvas = document.createElement('canvas')
   canvas.width = canvas.height = full
-  const ctx = canvas.getContext('2d')!
+  // both minimap canvases are drawn on the cpu (willReadFrequently keeps chrome off the gpu
+  // for them). on the gpu they froze the game for a minute right after joining in ci, where
+  // the gpu is software
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })!
   const px = (v: number) => v + campus.halfSize
 
   ctx.fillStyle = '#cfcac0'
@@ -55,13 +58,14 @@ function drawCampus() {
   line([...FENCE, FENCE[0]!], 2, 'rgba(255, 255, 255, 0.85)')
   return canvas
 }
+// while the page loads, not when you join: on the cpu it's ~30ms
+const map = drawCampus()
 
 export default function Minimap() {
   const ref = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
-    const map = drawCampus()
-    const ctx = ref.current!.getContext('2d')!
+    const ctx = ref.current!.getContext('2d', { willReadFrequently: true })!
     const dpr = window.devicePixelRatio || 1
     ref.current!.width = ref.current!.height = SIZE * dpr
 
