@@ -32,7 +32,14 @@ import {
   vec4,
   velocity,
 } from 'three/tsl'
-import { RenderPipeline, type Node, type TextureNode, type WebGPURenderer } from 'three/webgpu'
+import {
+  RenderPipeline,
+  RTTNode,
+  TextureNode,
+  type Node,
+  type NodeBuilder,
+  type WebGPURenderer,
+} from 'three/webgpu'
 import { sunlight } from './Atmosphere'
 import { adapt, exposure, meter } from './autoExposure'
 
@@ -48,6 +55,22 @@ const GLARE = 0.04
 const GLARE_SPREAD = 0.2
 // color fringes: how far the red and blue move per pixel away from the middle
 const ABERRATION = 0.001
+
+// three's rtt() and sss() reset their own shader every time a material that uses them gets
+// built. the ambient occlusion and contact shadows are used by every material in the scene
+// (through the lighting), so each new thing coming into view (a tile, a tree) rebuilt them
+// too: 5 shaders and pipelines, a 100-150ms hitch every few seconds (pnpm walk). once is
+// enough. an rtt still does the texture part of its setup for every material that uses it
+function buildOnce<T>(node: T): T {
+  const n = node as unknown as { setup(builder: NodeBuilder): unknown }
+  const first = n.setup
+  let built: { out: unknown } | null = null
+  n.setup = function (builder) {
+    if (!built) return (built = { out: first.call(this, builder) }).out
+    return this instanceof RTTNode ? TextureNode.prototype.setup.call(this, builder) : built.out
+  }
+  return node
+}
 
 // only mounted on high quality (see App). webgpu only, the webgl2 fallback is always low
 export default function Effects() {
@@ -76,17 +99,11 @@ export default function Effects() {
     const raw = aoPass.getTextureNode()
     const texel = vec2(1).div(vec2(textureSize(raw, int(0)) as unknown as Node<'ivec2'>))
     const half = { resolutionScale: 0.5 }
-    const blurX = rtt(
-      depthAwareBlur(raw, preDepth, texel.mul(vec2(1, 0)), camera),
-      null,
-      null,
-      half,
+    const blurX = buildOnce(
+      rtt(depthAwareBlur(raw, preDepth, texel.mul(vec2(1, 0)), camera), null, null, half),
     )
-    const blurY = rtt(
-      depthAwareBlur(blurX, preDepth, texel.mul(vec2(0, 1)), camera),
-      null,
-      null,
-      half,
+    const blurY = buildOnce(
+      rtt(depthAwareBlur(blurX, preDepth, texel.mul(vec2(0, 1)), camera), null, null, half),
     )
 
     // the scene is drawn smaller than the screen, a bit off center every frame, and taau
@@ -98,7 +115,7 @@ export default function Effects() {
     // contact shadows: the fine ones the shadow map is too coarse for, where a bench leg
     // or a shoe meets the ground, by marching toward the sun through the depth buffer.
     // they darken only the sun's light, like the shadow map (Atmosphere.tsx)
-    const contact = sss(preDepth, camera, sunlight)
+    const contact = buildOnce(sss(preDepth, camera, sunlight))
     contact.maxDistance.value = 0.3
     contact.thickness.value = 0.02
     contact.resolutionScale = 0.5
@@ -107,11 +124,13 @@ export default function Effects() {
     const ao = builtinAOContext(blurY.sample(screenUV).r)
     // only up close: far away the depth buffer is too coarse and things shadow themselves
     const near = float(1).sub(smoothstep(12, 25, positionView.z.negate()))
-    const soft = rtt(
-      boxBlur(contact.getTextureNode(), { size: int(1), separation: int(1) }),
-      null,
-      null,
-      half,
+    const soft = buildOnce(
+      rtt(
+        boxBlur(contact.getTextureNode(), { size: int(1), separation: int(1) }),
+        null,
+        null,
+        half,
+      ),
     )
     const contactShadow = mix(1, soft.sample(screenUV).r, near)
     const shadows = builtinShadowContext(contactShadow, sunlight)
