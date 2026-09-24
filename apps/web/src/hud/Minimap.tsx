@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
-import campus from './campus/campus.json'
-import { localPlayer } from './game/localPlayer'
-import { snapshots } from './net/store'
+import campus from '../campus/campus.json'
+import { localPlayer } from '../game/localPlayer'
+import { snapshots } from '../net/store'
 
 const SIZE = 170 // px on screen
 const VIEW = 260 // meters across
@@ -89,6 +89,19 @@ export default function Minimap() {
       ctx.fill()
       ctx.stroke()
       ctx.restore()
+
+      // N on the rim, since the map turns with the camera
+      const r = SIZE / 2 - 12
+      const nx = SIZE / 2 + Math.sin(cameraYaw) * r
+      const ny = SIZE / 2 - Math.cos(cameraYaw) * r
+      ctx.font = 'bold 12px system-ui, sans-serif'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.lineWidth = 3
+      ctx.strokeStyle = 'rgba(0,0,0,0.6)'
+      ctx.strokeText('N', nx, ny)
+      ctx.fillStyle = '#ffffff'
+      ctx.fillText('N', nx, ny)
     }, 100)
     return () => clearInterval(timer)
   }, [])

@@ -6,7 +6,8 @@ import ChatPanel from './ChatPanel'
 import EmoteBar from './EmoteBar'
 import { keyMap } from './game/controls'
 import JoinScreen from './JoinScreen'
-import Minimap from './Minimap'
+import Hud from './hud/Hud'
+import Minimap from './hud/Minimap'
 import { useGame } from './net/store'
 import Campus from './scene/Campus'
 import Effects from './scene/Effects'
@@ -23,7 +24,6 @@ import VoiceUpdater from './voice/VoiceUpdater'
 export default function App() {
   const status = useGame((s) => s.status)
   const me = useGame((s) => s.me)
-  const online = useGame((s) => Object.keys(s.players).length + 1)
   // stay in the game while reconnecting, it only goes back to the join screen if
   // you never got in at all
   const inGame = me && (status === 'connected' || status === 'reconnecting')
@@ -59,11 +59,7 @@ export default function App() {
       {inGame ? (
         <>
           {status === 'reconnecting' && <div className="banner">Reconnecting...</div>}
-          <div className="hud">
-            <h1>OpenQuad</h1>
-            <p className="online">{online} online</p>
-            <p>WASD to walk, shift to run, Q/E to turn the camera</p>
-          </div>
+          <Hud />
           <ChatPanel />
           <Minimap />
           <EmoteBar />
