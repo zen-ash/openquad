@@ -25,7 +25,7 @@ Realistic downtown Atlanta, as close as a browser on a school laptop can do.
 - **Ground** - asphalt with lane lines drawn in the shader (dashed yellow down the middle,
   white near the edges, only on wider roads), concrete sidewalks, grass.
 - **Effects** - ambient occlusion (N8AO, soft shadows in corners and where walls meet the
-  ground), SMAA, a light vignette, AgX tone mapping.
+  ground), SMAA, a light vignette, ACES tone mapping (was AgX, see part 11).
 - **Quality** - drei's `PerformanceMonitor` drops to low quality if the framerate stays bad:
   no shadows, no effects, 1x resolution. `?quality=low` forces it (the e2e tests use this).
 - Textures are CC0 from Poly Haven, shrunk to 512px webp (700kb for all of them instead of
@@ -238,6 +238,72 @@ by hand from photos, one at a time. Library North is the first.
   library's materials share one wrapper function, so without a `customProgramCacheKey` each
   they could end up sharing a shader.
 
+## Part 11 - more of the real campus
+
+Library North on its own didn't make the rest look like GSU, so this part redoes the things
+you see first: everything around Hurt Park and the quad.
+
+- **Dahlberg Hall** (`campus/dahlberg.ts`) - the old Municipal Auditorium, next to spawn. The
+  white marble front is from 1943: a corner block with three huge windows on each side,
+  pairs of ribs down the piers between them and a row of little windows above, then the
+  entrance with the dark canopy and three tall strips of windows, then a lower wing along
+  Courtland. 18m at the corner, 14m past the entrance, going by photos. OSM's outline was
+  already right. The door is moved to the real entrance.
+- **Arts & Humanities** (`campus/artsHumanities.ts`) - big white marble boxes with hardly any
+  windows, three long bands of them on Peachtree Center, and the glass entrance to the
+  Kopleff Recital Hall with the blue glass canopy at the Gilmer corner. The side on the
+  greenway is grey panels. GSU is putting a new front on it in 2027, this is it before that.
+- **Research Tower** (`campus/researchTower.ts`) - opened Sept 22 2026. Dark grey panels,
+  thin slots of windows, a wide band of blue glass slanting up the side toward Decatur St, a
+  light metal screen around the top, ribbed metal by the doors. From GSU's and Urbanize
+  Atlanta's photos of the opening.
+- **Shared code for hand-built buildings** (`campus/landmark.ts`, `landmarks.ts`) - walls with
+  real holes in them for windows (the glass is set back and has mullions drawn by a shader,
+  the sides of the hole are real faces), and the inside of the ground floor walls comes
+  from the same holes, so from inside you see out of the real windows. The white marble is
+  a shader too (slabs, clouds, faint veins), Poly Haven doesn't have one like it. A shared
+  test checks every hand-built building: triangles face out, and the inside walls go all
+  the way round except for the doorway (that one caught a doorway in the wrong wall).
+- **Hurt Park's fountain** (`campus/fountain.ts`) - at OSM's fountain node. Raised marble basin
+  with eight stepped blocks round the rim and the jet rings, a pool painted pale blue, a ring
+  of cannas and flowers, and the curved memorial wall to Joel Hurt with its inscription. It
+  hasn't run in years, so there's just some water sitting in the basin. Paved all round.
+- **Trees** - the blobs are gone. Three kinds made with EZ-Tree (willow oak, magnolia, a
+  younger street tree), about 3-7k triangles each, bark from Poly Haven and leaves I drew as
+  SVG (a twig with leaves on it, rendered into a texture). The canopy normals point out from
+  the middle of the tree, so the light falls on it like one soft shape instead of on every
+  card. Instanced, one draw call per kind and part. They sway a little. Past 80m from the
+  camera they switch to a ~1.3k triangle version with no shadow. All full detail was 1.4M
+  triangles, fine on a real GPU but the full-city e2e tests timed out on CI's cpu rendering.
+- **Benches, bins, lamp posts, street lights** (`game/streetFurniture.ts`) - OSM doesn't map
+  them, so they go every so often along the park paths (off to the side, facing the path)
+  and both sides of the bigger roads. You bump into benches. The lamps come on at night
+  with a pool of light on the ground.
+- **Real facades for more GSU buildings** (`campus/facades.ts`) - the window shader used to
+  have one grid for everything. Now each building has its own wall color, window size and
+  spacing and frame color: buff brick and big windows on Aderhold, strips of windows on the
+  Science Annex, red brick with white frames on Haas-Howell, and so on, from photos. The
+  rest get random but plausible ones. Parking decks (38 of them, tagged on OSM) get open
+  floors behind a concrete wall instead of windows.
+- **Heights** - Aderhold, 58 Edgewood, the Science Annex and both Student Centers had the 14m
+  default, now from Overture's lidar or floors counted in photos.
+- **Ground** - downtown is paved, not a lawn. The ground is concrete now, with OSM's grass,
+  gardens and pitches on top, and surface parking lots in asphalt. With more different
+  layers the ground started flickering from far away (the join screen), they're only a few
+  cm apart. Each layer gets a polygon offset now and the camera's near plane went from 0.1
+  to 0.3, which gives the depth buffer three times the precision.
+- **Light** - less light from the sky and more from the sun, and ACES tone mapping. Before,
+  shade was nearly as bright as sun and everything looked hazy and flat.
+- **Camera** - it used to back into the building behind you and show its insides. Now it
+  stops just short of the wall, unless it's up over the roof (then there's nothing to hide
+  behind) or that would put it in your face (then the see-through cutout does it).
+  `cameraReach` in `game/occlusion.ts`, tested. The insides of buildings get the cutout too.
+- **Dev tools** - `window.quad.lookFrom([x, y, z], [x, y, z])` puts the camera anywhere, for
+  lining up a screenshot with a photo.
+- References (none in the repo): Wikimedia Commons photos of Dahlberg, Hurt Park, the Student
+  Center and more, GSU's news and event pages, Urbanize Atlanta's July and September 2026
+  articles, Esri's August 2026 satellite images.
+
 ## Deployment
 
 - One Docker image: build the web app and bundle the server into a single file with esbuild
@@ -297,6 +363,8 @@ malformed.
 8. **Real life** - HUD, location titles, GPS directions, cinematic camera, going inside
    buildings
 9. **Real buildings** - Library North rebuilt from photos, more to come
+10. **More of the real campus** - Dahlberg, Arts & Humanities, Research Tower, the fountain,
+    real trees, benches and lights, per-building facades
 
 ## Testing
 
