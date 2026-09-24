@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { test as base, expect, type BrowserContext, type Page } from '@playwright/test'
 
 type Fixtures = {
@@ -35,3 +36,14 @@ export const test = base.extend<Fixtures>({
 export { expect }
 
 export const myId = (page: Page) => page.evaluate(() => window.quad!.me()!)
+
+const campus = JSON.parse(
+  readFileSync(new URL('../apps/web/src/campus/campus.json', import.meta.url), 'utf8'),
+) as { buildings: { name?: string; door?: number[] }[] }
+
+// [x, z, normal x, normal z] of a building's front door, the normal points outside
+export const doorOf = (name: string) =>
+  campus.buildings.find((b) => b.name === name)!.door as [number, number, number, number]
+
+export const teleport = (page: Page, x: number, z: number) =>
+  page.evaluate(([x, z]) => window.quad!.teleport(x!, z!), [x, z])

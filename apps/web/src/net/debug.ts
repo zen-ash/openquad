@@ -1,3 +1,5 @@
+import { input } from '../game/input'
+import { interiors } from '../game/interiors'
 import { localPlayer } from '../game/localPlayer'
 import { peers } from '../voice/voice'
 import { lastSound } from '../voice/VoiceUpdater'
@@ -17,6 +19,12 @@ declare global {
       person: (id: string) => Person | undefined
       dropConnection: () => void
       emoteOf: (id: string) => string | undefined
+      // jump straight to a spot, no random spread like the places menu
+      teleport: (x: number, z: number) => void
+      // turn the camera to face this way (0 = north), so W walks that way
+      faceYaw: (yaw: number) => void
+      // name of the building you're inside, or null
+      inside: () => string | null
       // per person we're in a call with: connection state, and how many ms ago we
       // last heard anything from them (null = never)
       voice: () => Record<string, { state: string; heardAgo: number | null }>
@@ -33,6 +41,13 @@ if (import.meta.env.DEV) {
     person: (id) => useGame.getState().players[id],
     dropConnection,
     emoteOf: (id) => useEmotes.getState().playing[id]?.name,
+    teleport: (x, z) => {
+      localPlayer.teleport = { x, z }
+    },
+    faceYaw: (yaw) => {
+      input.turn += yaw - localPlayer.cameraYaw
+    },
+    inside: () => interiors.find((r) => r.index === localPlayer.inside)?.name ?? null,
     voice: () => {
       const out: Record<string, { state: string; heardAgo: number | null }> = {}
       for (const [id, peer] of peers) {

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { doorOf, teleport } from './fixtures'
 
 // the other tests skip drawing the city (?nocity) to stay fast. these make sure it
 // actually draws: a broken shader only shows up as a console error, the page itself loads fine.
@@ -30,4 +31,26 @@ test('picking an avatar works even while the city is still loading', async ({ pa
 
   await expect(page.getByText(/^\d+ online$/)).toBeVisible({ timeout: 30_000 })
   expect(await page.evaluate(() => window.quad!.myAvatar())).toBe('female_17')
+})
+
+// the inside of a building (furniture, books, the sliding doors) only loads when you
+// get close, so the tests above never draw it
+test('the inside of a building renders without errors', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+
+  await page.goto('/')
+  await page.getByLabel("What's your name?").fill('Reader')
+  await page.getByRole('button', { name: 'Join' }).click()
+  await expect(page.getByText(/^\d+ online$/)).toBeVisible({ timeout: 30_000 })
+
+  const [x, z, nx, nz] = doorOf('Library North')
+  await teleport(page, x - nx * 6, z - nz * 6)
+  await expect.poll(() => page.evaluate(() => window.quad!.inside())).toBe('Library North')
+  await page.waitForTimeout(5000)
+
+  expect(errors).toEqual([])
 })

@@ -8,6 +8,9 @@ interface Window {
     person: (id: string) => { name: string; avatar: string } | undefined
     dropConnection: () => void
     emoteOf: (id: string) => string | undefined
+    teleport: (x: number, z: number) => void
+    faceYaw: (yaw: number) => void
+    inside: () => string | null
     voice: () => Record<string, { state: string; heardAgo: number | null }>
   }
 }
