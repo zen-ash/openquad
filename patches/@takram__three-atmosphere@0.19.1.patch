@@ -1,0 +1,41 @@
+diff --git a/build/webgpu.js b/build/webgpu.js
+index 1ce72679646fb617bb62b52dc7f62bf3aebc208a..35af1bedc50b33f3994e0a7e8311498482b84c39 100644
+--- a/build/webgpu.js
++++ b/build/webgpu.js	
+@@ -16,8 +16,8 @@ const H = "float", Ao = "float", q = "float", Fs = "float", Fo = "float", en = "
+   "DensityProfileLayer"
+ ), te = /* @__PURE__ */ ut(
+   {
+-    layer0: Re.layout.name,
+-    layer1: Re.layout.name
++    layer0: Re.name,
++    layer1: Re.name
+   },
+   "DensityProfile"
+ ), os = {
+@@ -26,13 +26,13 @@ const H = "float", Ao = "float", q = "float", Fs = "float", Fo = "float", en = "
+   sunAngularRadius: Ao,
+   bottomRadius: H,
+   topRadius: H,
+-  rayleighDensity: te.layout.name,
++  rayleighDensity: te.name,
+   rayleighScattering: At,
+-  mieDensity: te.layout.name,
++  mieDensity: te.name,
+   mieScattering: At,
+   mieExtinction: At,
+   miePhaseFunctionG: q,
+-  absorptionDensity: te.layout.name,
++  absorptionDensity: te.name,
+   absorptionExtinction: At,
+   groundAlbedo: qt,
+   minCosLight: q,
+@@ -2110,7 +2110,7 @@ class yi extends Qt {
+           )
+         ), m.assign(
+           a.transpose().mul(w(h, 0)).xyz
+-        ), l.assign(On(m.xzy));
++        ), l.assign(On(m.xzy.toConst()));
+       });
+       const p = Ns(l).toConst(), y = bs(l).toConst(), g = Ns(m).toConst(), S = bs(m).toConst(), x = w(0).toVar();
+       return D(c.lessThan(r), () => {

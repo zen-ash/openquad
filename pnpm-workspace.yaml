@@ -1,6 +1,10 @@
 packages:
-  - 'apps/*'
-  - 'packages/*'
+  - apps/*
+  - packages/*
 
 onlyBuiltDependencies:
   - esbuild
+
+patchedDependencies:
+  '@takram/three-atmosphere@0.19.1': patches/@takram__three-atmosphere@0.19.1.patch
+  '@takram/three-geospatial@0.9.1': patches/@takram__three-geospatial@0.9.1.patch

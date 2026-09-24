@@ -1,0 +1,17 @@
+diff --git a/build/webgpu.js b/build/webgpu.js
+index 30408f0256a1d08e53e2b7fbdbc54e6624fdfeae..a02529284d129364c969f305748801aea0ca1838 100644
+--- a/build/webgpu.js
++++ b/build/webgpu.js	
+@@ -334,6 +334,12 @@ function Je(s) {
+       throw new Error("Struct name is required.");
+     return s.layout.name;
+   }
++  // three r186: struct() is a proxy onto its StructTypeNode, there's no .layout anymore
++  if (s.isStructTypeNode === true) {
++    if (s.name == null)
++      throw new Error("Struct name is required.");
++    return s.name;
++  }
+   throw new Error(`Unsupported layout type: ${s}`);
+ }
+ function V({
