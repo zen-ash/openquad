@@ -102,4 +102,5 @@ See [docs/SPEC.md](docs/SPEC.md) for the plan.
 
 - Map data (c) [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, available under the Open Database License. `apps/web/src/campus/campus.json` is built from it with `pnpm campus`
 - Textures and furniture from [Poly Haven](https://polyhaven.com) (CC0)
+- Heights for some GSU buildings from [Overture Maps](https://overturemaps.org) (USGS lidar and Microsoft building footprints, ODbL)
 - People from Microsoft's [Rocketbox Avatar Library](https://github.com/microsoft/Microsoft-Rocketbox) (MIT, license in `apps/web/public/models/people/LICENSE.txt`)

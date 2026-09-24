@@ -122,11 +122,31 @@ const GSU_NAMES = {
 
 const isGsu = (tags) => GSU_BUILDINGS.has(tags.name)
 
+// heights for gsu buildings osm has none for, from overture maps. mostly usgs lidar,
+// the ones with decimals are microsoft's estimates from aerial photos
+const MEASURED_HEIGHTS = {
+  '148 Edgewood': 17.2,
+  'GSU Parking A Deck': 4.2,
+  'Alumni Center': 7.9,
+  'Centennial Hall': 13.5,
+  'Courtland Building': 16.8,
+  'Greek Housing': 9.6,
+  'J Deck': 13.9,
+  'Langdale Hall': 28.8,
+  'M Deck': 25.7,
+  'One Park Place': 21.2,
+  'Patton Hall': 16.5,
+  'Piedmont North Dining Hall': 18.2,
+  'Sports Annex': 27.5,
+  'Loft Parking': 12.3,
+}
+
 function heightOf(tags) {
   const h = parseFloat(tags.height)
   if (h > 0) return h
   const levels = parseFloat(tags['building:levels'])
   if (levels > 0) return levels * 3.5
+  if (MEASURED_HEIGHTS[tags.name]) return MEASURED_HEIGHTS[tags.name]
   if (tags.building === 'house' || tags.building === 'kiosk') return 6
   return 14 // most of downtown is bigger than a house, 4 floors is a decent guess
 }
