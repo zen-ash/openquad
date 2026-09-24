@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { pointInPolygon, polygon } from '../game/collision'
 import campus from './campus.json'
 
-const gsu = campus.buildings.filter((b) => b.gsu)
+// whole gsu buildings, not the unnamed pieces of them
+const gsu = campus.buildings.filter((b) => b.gsu && !b.part)
 const shapes = campus.buildings.map((b) => polygon(b.points as [number, number][]))
 
 function distToOutline(x: number, z: number, points: number[][]) {

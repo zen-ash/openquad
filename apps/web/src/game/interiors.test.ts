@@ -55,7 +55,7 @@ describe('wallsWithDoorway', () => {
 
 describe('campus interiors', () => {
   it('every gsu building can be walked into', () => {
-    expect(interiors).toHaveLength(campus.buildings.filter((b) => b.gsu).length)
+    expect(interiors).toHaveLength(campus.buildings.filter((b) => b.gsu && !b.part).length)
   })
 
   it.each(interiors.map((i) => [i.name, i]))('%s: walking in through the door works', (_, room) => {

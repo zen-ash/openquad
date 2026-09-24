@@ -127,6 +127,13 @@ const GSU_NAMES = {
 
 const isGsu = (tags) => GSU_BUILDINGS.has(tags.name)
 
+// osm pieces of gsu buildings that have no name of their own. all of them are 3d on gsu's
+// campus map, and osm has the first four as building=university: 140 decatur st next to
+// urban life, the library bridge over decatur st, a wing of classroom south and a corner of
+// library south. then a corner of student center east and the link between petit science
+// and the research science center. way ids. they're gsu but don't get their own door
+const GSU_PARTS = new Set([252608874, 301958707, 840362899, 841030081, 801359976, 802046231])
+
 // heights for gsu buildings osm has none for (or only a floor count), from overture maps.
 // mostly usgs lidar, the ones with decimals are microsoft's estimates from aerial photos.
 // the ones marked floors are counted from photos
@@ -652,6 +659,7 @@ function main(elements) {
         const b = { height: round(heightOf(tags) * SCALE), points }
         if (tags.name) b.name = GSU_NAMES[tags.name] ?? tags.name
         if (isGsu(tags)) b.gsu = true
+        if (el.type === 'way' && GSU_PARTS.has(el.id)) b.gsu = b.part = true
         // parking decks look different, open floors and no windows
         if (tags.building === 'parking' || tags.amenity === 'parking') b.deck = true
         buildings.push(b)
@@ -761,7 +769,8 @@ function main(elements) {
 
   // doors face the main connected walking network, not some path that doesn't lead anywhere
   const walkable = mainNetwork([...walkPaths, ...walkCrossings, ...walkRoads])
-  for (const b of buildings) if (b.gsu && !b.door) b.door = findDoor(b, buildings, walkable)
+  for (const b of buildings)
+    if (b.gsu && !b.part && !b.door) b.door = findDoor(b, buildings, walkable)
 
   return {
     halfSize,

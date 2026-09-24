@@ -8,6 +8,8 @@ export type BuildingData = {
   height: number
   name?: string
   gsu?: boolean
+  // a piece of a gsu building with no name of its own, no door
+  part?: boolean
   deck?: boolean
   door?: Pt
   // drawn by hand instead (campus/landmarks.ts)
