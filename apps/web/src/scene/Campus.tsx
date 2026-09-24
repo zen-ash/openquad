@@ -16,6 +16,7 @@ import Furniture from './Furniture'
 import Interiors from './Interiors'
 import Landmarks from './Landmarks'
 import PantherQuad from './PantherQuad'
+import StreetFurniture from './StreetFurniture'
 import Trees from './Trees'
 
 const DAY_HAZE = new Color('#c9d6e0')
@@ -167,6 +168,7 @@ export default function Campus() {
       <Doors />
       <PantherQuad />
       <Fountain />
+      <StreetFurniture />
       <Trees />
     </>
   )

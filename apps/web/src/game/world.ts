@@ -3,6 +3,7 @@ import { BED, memorialWall } from '../campus/fountain'
 import { polygon, type Segment, type World } from './collision'
 import { footprint, furnish } from './furniture'
 import { enterable, interiors } from './interiors'
+import { benches, bins } from './streetFurniture'
 
 const TREE_RADIUS = 0.8
 const { quad } = campus
@@ -20,6 +21,15 @@ export const world: World = {
   circles: [
     ...campus.trees.map(([x, z]) => ({ x: x!, z: z!, radius: TREE_RADIUS })),
     { x: quad.monument[0]!, z: quad.monument[1]!, radius: 1 },
+    // benches are two circles along their length
+    ...benches.flatMap((b) =>
+      [-0.5, 0.5].map((k) => ({
+        x: b.x + Math.cos(b.rot) * k,
+        z: b.z - Math.sin(b.rot) * k,
+        radius: 0.4,
+      })),
+    ),
+    ...bins.map((b) => ({ x: b.x, z: b.z, radius: 0.3 })),
     // the fountain, out to the edge of its flower beds
     { x: campus.fountain[0]!, z: campus.fountain[1]!, radius: BED },
     ...quad.flags.map(([x, z]) => ({ x: x!, z: z!, radius: 0.2 })),
