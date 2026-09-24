@@ -59,7 +59,7 @@ export function make(params: THREE.MeshStandardMaterialParameters, extra?: (m: M
 // the uvs, which landmark.ts makes in meters along the wall and up
 export const meters = uv()
 
-const mHash = (p: Vec2) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453))
+export const mHash = (p: Vec2) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453))
 
 function mNoise(p: Vec2) {
   const i = floor(p)
