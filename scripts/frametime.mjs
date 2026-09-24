@@ -5,6 +5,7 @@
 //
 //   pnpm frametime                 median ms per frame at a few spots
 //   pnpm frametime "&quality=low"  extra url params
+//   BASE=http://localhost:5174 pnpm frametime   another dev server (like main, to compare)
 /* global document, requestAnimationFrame -- used inside page.evaluate, in the browser */
 import { chromium } from '@playwright/test'
 
@@ -33,7 +34,9 @@ const page = await browser.newPage({
 const errors = []
 page.on('pageerror', (e) => errors.push(e.message))
 page.on('console', (m) => m.type() === 'error' && errors.push(m.text()))
-await page.goto(`http://localhost:5173/?time=09:00&date=2026-09-24&still&notiles${extra}`)
+await page.goto(
+  `${process.env.BASE ?? 'http://localhost:5173'}/?time=09:00&date=2026-09-24&still&notiles${extra}`,
+)
 await page.getByLabel("What's your name?").fill('Timer')
 await page.getByRole('button', { name: 'Join' }).click()
 await page.getByText(/^\d+ online$/).waitFor({ timeout: 90_000 })
