@@ -70,6 +70,8 @@ test('emotes show up for other people', async ({ join }) => {
   const alice = await join('Alice')
   const bob = await join('Bob')
   const aliceId = await myId(alice)
+  // emotes only go to people who can see you, which the server works out on its next tick
+  await expect.poll(() => bob.evaluate((id) => window.quad!.positionOf(id), aliceId)).toBeTruthy()
 
   await alice.keyboard.press('2')
   await expect.poll(() => bob.evaluate((id) => window.quad!.emoteOf(id), aliceId)).toBe('Clap')
