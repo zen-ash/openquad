@@ -11,11 +11,11 @@ const SPOTS: [string, string][] = [
   ['Student Center East', 'Student Center East'],
   ['Langdale Hall', 'Langdale Hall'],
   ['Classroom South', 'Classroom South'],
-  ['Aderhold', 'Helen M. Aderhold Learning Center'],
   ['Urban Life', 'Urban Life Building'],
   ['Petit Science Center', 'Petit Science Center'],
-  ['Rialto Center', 'Rialto Center for the Arts'],
-  ['College of Law', 'College of Law'],
+  ['Research Tower', 'Research Tower'],
+  ['Dahlberg Hall', 'Dahlberg Hall'],
+  ['Sports Arena', 'GSU Sports Arena'],
   ['Rec Center', 'Student Recreation Center'],
 ]
 

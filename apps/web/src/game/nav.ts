@@ -1,7 +1,8 @@
+import { fenceDistance, lineInsideFence } from '@quad/shared'
 import { create } from 'zustand'
 import campus from '../campus/campus.json'
 import type { Point } from './collision'
-import { buildGraph, mainNetwork, route, routeLength, type Graph } from './navgraph'
+import { buildGraph, mainNetwork, route, routeLength, subgraph, type Graph } from './navgraph'
 
 // walking speed for the "3 min" estimate, a normal pace rather than our brisk one
 const PACE = 1.3
@@ -19,22 +20,30 @@ type Nav = {
 
 export const useNav = create<Nav>(() => ({ goal: null, path: [], meters: 0, arrived: null }))
 
+// directions keep at least this far inside the fence. the streets it runs down the middle
+// of get their near sidewalk instead
+const FENCE_MARGIN = 1.5
+
 // built the first time someone asks for directions, not on page load
 let graph: Graph | null = null
-function getGraph() {
+export function campusGraph() {
   graph ??= mainNetwork(
-    buildGraph([
-      ...campus.paths,
-      ...campus.crossings,
-      // you can walk on roads, but sidewalks and crosswalks are preferred
-      ...campus.roads.map((r) => ({ ...r, cost: 2.5 })),
-    ]),
+    subgraph(
+      buildGraph([
+        ...campus.paths,
+        ...campus.crossings,
+        // you can walk on roads, but sidewalks and crosswalks are preferred
+        ...campus.roads.map((r) => ({ ...r, cost: 2.5 })),
+      ]),
+      (p) => fenceDistance(p.x, p.z) >= FENCE_MARGIN,
+      (a, b) => lineInsideFence(a.x, a.z, b.x, b.z, FENCE_MARGIN),
+    ),
   )
   return graph
 }
 
 export function navigateTo(label: string, point: Point, from: Point) {
-  const path = route(getGraph(), from, point) ?? [from, point]
+  const path = route(campusGraph(), from, point) ?? [from, point]
   useNav.setState({ goal: { label, point }, path, meters: routeLength(path), arrived: null })
 }
 

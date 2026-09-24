@@ -122,6 +122,30 @@ export function mainNetwork(g: Graph): Graph {
   return { nodes, edges }
 }
 
+/** just the nodes keepNode likes, joined by the edges keepEdge likes */
+export function subgraph(
+  g: Graph,
+  keepNode: (p: Point) => boolean,
+  keepEdge: (a: Point, b: Point) => boolean,
+): Graph {
+  const keep = new Map<number, number>()
+  const nodes: Point[] = []
+  g.nodes.forEach((n, i) => {
+    if (!keepNode(n)) return
+    keep.set(i, nodes.length)
+    nodes.push(n)
+  })
+  const edges = nodes.map(() => [] as { to: number; cost: number }[])
+  for (const [old, now] of keep) {
+    for (const e of g.edges[old]!) {
+      const to = keep.get(e.to)
+      if (to !== undefined && keepEdge(nodes[now]!, nodes[to]!))
+        edges[now]!.push({ to, cost: e.cost })
+    }
+  }
+  return { nodes, edges }
+}
+
 export function nearestNode(g: Graph, p: Point) {
   let best = 0
   let bestDist = Infinity

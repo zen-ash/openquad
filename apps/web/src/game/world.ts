@@ -1,3 +1,4 @@
+import { FENCE } from '@quad/shared'
 import campus from '../campus/campus.json'
 import { BED, memorialWall } from '../campus/fountain'
 import { polygon, type Segment, type World } from './collision'
@@ -8,6 +9,13 @@ import { benches, bins } from './streetFurniture'
 const TREE_RADIUS = 0.8
 const { quad } = campus
 
+// the edge of the part of campus you can walk around in (packages/shared/src/fence.ts).
+// it's just walls, so you slide along it like any other wall
+export const fenceWalls: Segment[] = FENCE.map(([ax, az], i) => {
+  const [bx, bz] = FENCE[(i + 1) % FENCE.length]!
+  return { ax, az, bx, bz }
+})
+
 export const world: World = {
   // buildings you can walk into are just their walls (with a doorway), the rest are solid
   buildings: [
@@ -17,6 +25,7 @@ export const world: World = {
   walls: [
     ...interiors.flatMap((i) => i.walls),
     ...memorialWall({ x: campus.fountain[0]!, z: campus.fountain[1]! }),
+    ...fenceWalls,
   ],
   circles: [
     ...campus.trees.map(([x, z]) => ({ x: x!, z: z!, radius: TREE_RADIUS })),
