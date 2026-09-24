@@ -90,6 +90,14 @@ button {
   font-weight: 500;
 }
 
+.hud .fps {
+  margin-left: auto;
+  padding-left: 14px;
+  color: var(--muted);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
 .compass {
   position: fixed;
   top: 16px;

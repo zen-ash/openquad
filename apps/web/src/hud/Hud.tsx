@@ -1,6 +1,8 @@
 import { useGame } from '../net/store'
+import { showDebug } from '../settings'
 import Clock from './Clock'
 import Compass from './Compass'
+import Fps from './Fps'
 import Help from './Help'
 import LocationTitle from './LocationTitle'
 import { usePlace } from './usePlace'
@@ -18,6 +20,7 @@ export default function Hud() {
           <span className="dot" />
           <span>{online} online</span>
           {nearby > 0 && <span className="nearby">&middot; {nearby} can hear you</span>}
+          {showDebug && <Fps />}
         </div>
       </div>
       <Compass />
