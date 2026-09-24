@@ -179,7 +179,15 @@ for (const mode of modes) {
 
     const base = `visual/baseline/${BASELINE_OF[mode]}/${v.name}.png`
     if (!existsSync(base)) {
-      results.push({ mode, view: v.name, diff: 'no baseline' })
+      results.push({
+        mode,
+        view: v.name,
+        diff: 'no baseline',
+        ...pacing,
+        ok: pacing.hitches > 0 ? 'HITCH' : '',
+        renderer: me.backend,
+        errors: me.errors.length,
+      })
       continue
     }
     const a = PNG.sync.read(readFileSync(base))
