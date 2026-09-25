@@ -7,6 +7,6 @@ playwright-report
 e2e
 CLAUDE.md
 .claude
-# keys come in as build args (see Dockerfile), not from a local .env
+# nothing secret goes into the web build, and a local .env shouldn't sneak in
 **/.env
 **/.env.*
