@@ -7,8 +7,7 @@ GSU buildings, get walking directions to one, and people inside sound muffled fr
 Library North, Dahlberg Hall, Arts & Humanities, the new Research Tower and Hurt Park's
 fountain are rebuilt by hand from photos of the real ones. You can walk anywhere in the
 middle of campus (the fence is in `packages/shared/src/fence.ts`, the server checks it
-too), and past that the rest of downtown is Google's Photorealistic 3D Tiles, lined up
-with the map.
+too), and past that you can see the rest of downtown, built from the same map.
 
 Final project for CSC 4370 (Web Programming) at Georgia State.
 
@@ -28,10 +27,6 @@ Needs Node 22 and pnpm.
 pnpm install
 pnpm dev
 ```
-
-For the real buildings, get a Google Maps Platform key with the Map Tiles API turned on,
-copy `apps/web/.env.example` to `apps/web/.env` and put it there. Without one it draws its
-own box buildings instead.
 
 Web runs on http://localhost:5173 and the server on port 2567. Open it in two browser
 windows side by side to see multiplayer working. Walk them close together and you can hear
@@ -69,7 +64,6 @@ pnpm visual      # screenshots from fixed spots vs a baseline, for any rendering
 pnpm frametime   # how long a frame takes at 1920x1200
 pnpm walk        # 2 minute walk around campus in chrome: 1% lows, hitches and what caused them
 pnpm bots        # load test with fake players, see docs/LOAD_TEST.md
-pnpm terrain     # ground heights for flattening google's tiles (usgs lidar)
 pnpm typecheck
 pnpm lint
 pnpm build
@@ -85,9 +79,7 @@ Render's free tier from the `Dockerfile`, set up by `render.yaml`.
    server (free, Cloudflare dashboard > Realtime > TURN Server > Create). Without them voice
    still works on most networks, but not on ones that block direct connections, which
    includes a lot of school wifi.
-3. It also asks for `VITE_GOOGLE_MAPS_API_KEY`. That one gets built into the page, so anyone
-   can read it: in Google Cloud, restrict it to the Map Tiles API and your site's address.
-4. Deploy. After that it redeploys on its own whenever CI passes on `main`.
+3. Deploy. After that it redeploys on its own whenever CI passes on `main`.
 
 The free tier sleeps after 15 minutes with nobody on it and takes about a minute to wake
 up, so open it a couple of minutes before showing it to anyone.
@@ -95,7 +87,7 @@ up, so open it a couple of minutes before showing it to anyone.
 To try the production build locally:
 
 ```sh
-docker build --build-arg VITE_GOOGLE_MAPS_API_KEY=your-key -t openquad .
+docker build -t openquad .
 docker run -p 8080:2567 openquad
 ```
 
@@ -108,8 +100,7 @@ apps/
 packages/
   shared/    shared types and helpers
 docs/        design notes
-scripts/     build-campus.mjs pulls the campus from OpenStreetMap, build-terrain.mjs the
-             ground heights from USGS
+scripts/     build-campus.mjs pulls the campus from OpenStreetMap
 ```
 
 See [docs/SPEC.md](docs/SPEC.md) for the plan.
@@ -133,8 +124,6 @@ See [docs/SPEC.md](docs/SPEC.md) for the plan.
 ## Credits
 
 - Map data (c) [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, available under the Open Database License. `apps/web/src/campus/campus.json` is built from it with `pnpm campus`
-- 3D buildings from Google's [Photorealistic 3D Tiles](https://developers.google.com/maps/documentation/tile/3d-tiles), streamed live and never stored. Their credits are shown in the game. Drawn with [3DTilesRendererJS](https://github.com/NASA-AMMOS/3DTilesRendererJS) (Apache 2.0)
-- Ground heights from the USGS [3D Elevation Program](https://www.usgs.gov/3d-elevation-program) (public domain), `apps/web/src/campus/terrain.json` is built from it with `pnpm terrain`
 - Textures, furniture and tree bark from [Poly Haven](https://polyhaven.com) (CC0)
 - Trees made with [EZ-Tree](https://github.com/dgreenheck/ez-tree) by Daniel Greenheck (MIT), the leaves are drawn by me
 - Heights for some GSU buildings from [Overture Maps](https://overturemaps.org) (USGS lidar and Microsoft building footprints, ODbL)
