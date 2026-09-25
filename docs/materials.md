@@ -81,9 +81,9 @@ const stone = (color: string) =>
 ### When a family can't do it
 
 - **A new option** for a family (say, a second joint direction): add a number to the
-  family's `userData`, read it in its nodes with `f('name')` (`v2()` for pairs, `rgb()` for
-  colors) and give it a default that changes nothing. Every material of the family gets it
-  and it's still one shader.
+  family's `userData`, read it in its nodes with `f('name')` (`v2()` for pairs, `v3()` and
+  `rgb()` for three numbers and colors) and give it a default that changes nothing. Every
+  material of the family gets it and it's still one shader.
 - **A unique surface**: make it from the closest family and change one node, like the wavy
   panel: `panel.colorNode = panel.colorNode!.mul(wave)`. That's one more shader, so only
   when nothing else works.
@@ -139,33 +139,46 @@ shadow passes).
 
 ## Textures
 
-All textures are from [Poly Haven](https://polyhaven.com) (CC0). The list is
-`apps/web/src/campus/textures.json`, the name is the material, not the building:
+All textures are from [Poly Haven](https://polyhaven.com) (CC0), or made from noise by
+`pnpm textures`. The list is `apps/web/src/campus/textures.json`, the name is the material,
+not the building:
 
-| name       | Poly Haven asset       | real size | maps               | read as   | size (kb)      |
-| ---------- | ---------------------- | --------- | ------------------ | --------- | -------------- |
-| `brick`    | `red_brick`            | 1.4 m     | color, normal, arm | courses   | 73 / 132 / 109 |
-| `precast`  | `granular_concrete`    | 2.4 m     | color, normal, arm | irregular | 69 / 131 / 123 |
-| `concrete` | `concrete_wall_004`    | 2 m       | color, normal, arm | tiled     | 55 / 126 / 110 |
-| `roof`     | `gravel_concrete`      | 2.1 m     | color, normal      | irregular | 71 / 134       |
-| `sidewalk` | `concrete_pavement`    | 1.8 m     | color, normal      | tiled     | 70 / 130       |
-| `asphalt`  | `asphalt_02`           | 3 m       | color, normal      | irregular | 74 / 133       |
-| `grass`    | `grass_ground`         | 2.5 m     | color, normal      | irregular | 70 / 136       |
-| `floor`    | `laminate_floor_02`    | 1.7 m     | color, normal      | tiled     | 64 / 45        |
-| `plaster`  | `painted_plaster_wall` | 2 m       | color, normal      | irregular | 62 / 118       |
+| name       | from                        | one repeat | maps               | used by           | px   | size (kb)       |
+| ---------- | --------------------------- | ---------- | ------------------ | ----------------- | ---- | --------------- |
+| `brick`    | `red_brick`                 | 1.4 m      | color, normal, arm | brick, facades    | 512  | 73 / 131 / 109  |
+| `precast`  | `granular_concrete`, varied | 2 x 2.4 m  | color, normal, arm | precast, marble   | 1024 | 196 / 387 / 288 |
+| `concrete` | `concrete_wall_004`         | 2 m        | color, normal, arm | concrete, facades | 512  | 54 / 125 / 109  |
+| `roof`     | `gravel_concrete`           | 2.1 m      | color, normal      | facades           | 512  | 70 / 134        |
+| `gravel`   | `gravel_concrete`, varied   | 2 x 2.1 m  | color, normal      | gravelRoof        | 512  | 64 / 125        |
+| `sidewalk` | `concrete_pavement`         | 1.8 m      | color, normal      | paving, ground    | 512  | 70 / 129        |
+| `asphalt`  | `asphalt_02`                | 3 m        | color, normal      | ground            | 512  | 74 / 133        |
+| `grass`    | `grass_ground`              | 2.5 m      | color, normal      | ground            | 512  | 70 / 135        |
+| `lawn`     | `grass_ground`, varied      | 2 x 2.5 m  | color, normal      | lawn              | 512  | 65 / 129        |
+| `floor`    | `laminate_floor_02`         | 1.7 m      | color, normal      | wood, interiors   | 512  | 63 / 45         |
+| `plaster`  | `painted_plaster_wall`      | 2 m        | color, normal      | interiors         | 512  | 62 / 118        |
+| `marble`   | made here                   | 8 m        | mask               | marble            | 1024 | 182             |
+| `grime`    | made here                   | 40 m       | mask               | every family      | 512  | 84              |
 
-Marble uses precast's normal and arm for its grain, the color is done in the shader (Poly
-Haven has nothing like gsu's white georgia marble). Metal and glass are all shader.
+Poly Haven has nothing like gsu's white georgia marble, so its clouds and veins are made
+from noise in `scripts/textures.mjs` (the math the shader used to do, see below), and its
+grain is precast's normal and arm. Metal and glass have no textures except the grime.
+
+"varied" is baked as 2 x 2 repeats of the Poly Haven texture without the repeat inside
+(`vary` in the list, see "Baked and live" below). `roof` and `grass` are the same pictures
+as `gravel` and `lawn` kept as they were, for the generic buildings and the ground, which
+read them their own way.
 
 ### KTX2
 
 The files are `apps/web/public/textures/<name>_<map>.ktx2`: basis universal ETC1S, which
 stays compressed on the GPU (a quarter to an eighth of the memory of a png) and turns into
 whatever format the GPU has when it loads: BC7 or ETC2 on WebGPU, ETC2/BC/ASTC on the
-WebGL2 fallback, plain RGBA where there's none of those (CI's SwiftShader). Everything is
-512 x 512 with its mipmaps made when it's encoded. Mapped at their real size that's 200-370
-texture pixels per meter, more than you see from where people walk. All 21 files are about
-2 MB, plus three's transcoder (0.6 MB, 0.26 MB gzipped) in `public/basis`.
+WebGL2 fallback, plain RGBA where there's none of those (CI's SwiftShader). They're 512 x
+512 unless the list says `size` (the ones that cover more ground), with their mipmaps made
+when they're encoded. Mapped at their real size that's 128-370 texture pixels per meter,
+more than you see from where people walk. All 27 files are 3.5 MB, plus three's
+transcoder (0.6 MB, 0.26 MB gzipped) in `public/basis`. On the GPU the whole city's
+textures (these, the trees, people and furniture) are about 158 MB.
 
 - `color` is sRGB, quality 80 (a fifth smaller than 100 and I couldn't see a difference).
 - `normal` (OpenGL style, Poly Haven's `nor_gl`) keeps x in rgb and y in alpha, since
@@ -174,6 +187,8 @@ texture pixels per meter, more than you see from where people walk. All 21 files
   `normalMap`. Quality 100.
 - `arm` keeps ambient occlusion in rgb and roughness in alpha, same reason. Metalness is
   left out, these are all stone and paint.
+- `mask` is two numbers that aren't colors, in rgb and alpha like `arm`: marble's clouds
+  and veins, grime's blotches and brick batches.
 - They're flipped at encode time so the uvs line up with the images three used to load.
 
 To rebuild them, or after adding one to `textures.json`:
@@ -183,11 +198,14 @@ brew install basis_universal   # basisu, once
 pnpm textures                  # all of them, or: pnpm textures brick grass
 ```
 
-It downloads the 1k jpgs from Poly Haven into `~/.cache/openquad/textures` (only once),
-encodes them with basisu and copies three's transcoder into `public/basis`. After a three
-upgrade run it again, the transcoder has to come from the same three version
-(`textures.test.ts` checks). `textures.test.ts` also checks there's a file for every map in
-the list and nothing else, and that each one is 512 square ETC1S with its mipmaps.
+It downloads the 1k maps from Poly Haven into `~/.cache/openquad/textures` (only once; pngs
+for the ones it bakes), bakes the varied and made ones there, encodes everything with
+basisu and copies three's transcoder into `public/basis`. Running it again gives the same
+files for anything that didn't change. It also writes `textureAverages.json` (below).
+After a three upgrade run it again, the transcoder has to come from the same three
+version (`textures.test.ts` checks). `textures.test.ts` also checks there's a file for
+every map in the list and nothing else, that each one is square ETC1S at its size with
+its mipmaps, and that every color and arm map has its average.
 
 `texture(name, map)` gives the one texture object for a file, shared by everything that
 uses it, so never change its `repeat` or `offset`: scale the uvs instead. The materials
@@ -205,10 +223,11 @@ drawn on a canvas or with `Label`.
   occlusion is for). Real surfaces sit between about 30 and 240 in sRGB: asphalt and dark
   paint 30-50, old concrete 110-140, new concrete 150-180, white marble 220-235. Never pure
   black or white.
-- The library divides each texture by its own average (its 1x1 mipmap), so the material's
-  `color` is what the surface comes out as, whatever color the photo on Poly Haven was.
-  `saturation` decides how much of the texture's own hue variation stays (a red brick
-  texture on a brown brick wall wants little of it).
+- The library divides each texture by its own average (its 1x1 mipmap, which
+  `pnpm textures` reads back out of the ktx2 file into `textureAverages.json`), so the
+  material's `color` is what the surface comes out as, whatever color the photo on Poly
+  Haven was. `saturation` decides how much of the texture's own hue variation stays (a
+  red brick texture on a brown brick wall wants little of it).
 - **Metalness** is 0 for stone, brick, concrete, paint, wood and glass, 1 for bare metal.
   The window glass uses 0.6 to get the dark, strongly reflecting look of insulated windows
   from the street; keep using it for windows so they match. Some of the older metal parts
@@ -216,23 +235,59 @@ drawn on a canvas or with `Label`.
 - Surfaces without textures (metal, glass) still get their roughness on purpose. The
   default of 1 is almost never right.
 
-## Hiding the repeat
+## Baked and live
 
-A texture repeating every couple of meters makes a grid you can see from far away. Each
-texture in the list says how it's read:
+Everything that doesn't change from one building to the next is baked into the textures
+by `pnpm textures`. The shaders do one read per map and only cheap things per pixel. When
+it was all live (Sept 2026), a library wall filling the screen cost about 1.5 ms more than
+a flat color. Baking it took about 1 ms off the close up of Student Center West's grilles
+(a precast wall filling the screen), and a precast wall is now a bit cheaper per pixel than
+the generic building shader.
 
-- **irregular** (concrete, gravel, grass, plaster): `untiled()`, Inigo Quilez's noise
-  method. Each patch of about one repeat reads the texture at its own random offset, and
-  neighbouring patches blend where they meet. Two reads per map instead of one.
-- **courses** (brick): `coursed()`. Every pair of courses reads a random pair of the
-  texture's courses, shifted a random amount along. The cuts are in the mortar so they don't
-  show. `courses` in the list is how many the texture has and where its first bed joint is.
-- **tiled** (paving slabs, formwork, planks): read as it is, the pattern has to line up.
-  Add variety in the family: a tone per panel or slab (`mHash(id)`, like precast and
-  marble), and low-frequency variation with `mFbm()`.
+Baked, in `scripts/textures.mjs`:
+
+- **The repeat inside a texture** (`vary: 2`): 2 x 2 repeats of the Poly Haven texture,
+  each patch of about one repeat read at its own random offset and blended into the next
+  (Inigo Quilez's "texture repetition", the noise version). The shader used to do that for
+  every pixel, two reads per map. Now it's one read of a texture twice the size.
+- **Marble's clouds and veins** (`marble_mask`): 4 octaves of noise three times over, per
+  pixel, before. Baked 8 m across, tileable (the vein directions are whole waves across it).
+- **The weathering** (`grime_mask`): the dark blotches of `dirt` and brick's slow drift in
+  tone between batches, two octaves each per pixel before. 40 m across, so it never shows
+  a repeat on one wall. Metal reads it too, squashed, for its smudges.
+- **Each texture's average** (`textureAverages.json`): the shaders used to read the 1x1
+  mipmap for every pixel. It goes on the material (`average`, `armAverage`), not in the
+  shader as a constant, so the surfaces that only differ in their texture (paving and
+  wood) still come out as the same shader code and pipeline.
+
+Live, because it's cheap and depends on the building:
+
+- **One spot per panel or slab**: `scatter(mHash(id))` gives each precast panel and each
+  marble slab its own random offset into the texture (and turns half the marble slabs on
+  their side), from the one hash that also gives its tone. Neighbours never show the same
+  bit, so the repeat can't line up across a wall. The cut is in the joint.
+- **Brick courses**: `coursed()`. Every pair of courses reads a random pair of the
+  texture's courses, shifted a random amount along, cut in the mortar. Two hashes and one
+  read per map. `courses` in the list is how many the texture has and where its first bed
+  joint is.
+- **Joints, grids, windows, ribs, uplights, the ground band of `dirt`**: they depend on the
+  building's numbers (panel size, joint width...), and they're a few multiplies each.
+- **tiled** textures (paving slabs, formwork, planks) are read as they are, the pattern
+  has to line up.
 
 Thin lines (joints, mullions) fade to their average once they're thinner than a pixel or
 they flicker (`joint()`, `mLine()`).
+
+### A new baked texture or variant
+
+- A Poly Haven texture with no repeat inside: add it to `textures.json` with `"vary": 2`
+  (and `"size": 1024` if it's seen close up and should keep its detail), read it with
+  `repeats(name, size)`, which knows it covers two repeats.
+- Something made from noise: a function in `MADE` in `scripts/textures.mjs` that draws two
+  numbers per pixel into r and g, an entry in the list without `polyhaven`, with `meters`
+  and `"maps": ["mask"]`. Make it tile: whole numbers of noise cells (and waves) across it.
+- Then `pnpm textures <name>` (or plain `pnpm textures`), check `textureAverages.json`
+  changed only where you meant, and run `pnpm visual` and `pnpm frametime`.
 
 ## Lights at night
 
