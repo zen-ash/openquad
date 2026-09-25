@@ -39,6 +39,7 @@ const VIEWS = [
   { name: 'dahlberg', from: [22, 3, 42], at: [55, 10, 70], player: [20, 40] },
   { name: 'arts-humanities', from: [-84, 2.5, -4], at: [-108, 7, 22], player: [-82, -6] },
   { name: 'research-tower', from: [36, 3, 465], at: [25, 20, 415], player: [37, 468] },
+  { name: 'student-center-east', from: [8, 3, 100], at: [30, 5, 145], player: [6, 97] },
   {
     name: 'library-north-inside',
     from: [-93.8, 1.7, 142.9],
