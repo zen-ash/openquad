@@ -29,6 +29,11 @@ export type LandmarkGeometry = {
   // inside of the ground floor walls, with holes where the windows really are
   inside: { solid: THREE.BufferGeometry[]; glass: THREE.BufferGeometry[] }
   signs: Sign[]
+  // parts drawn before everything else while you're close: big walls you walk right past.
+  // three sorts by the middle of each mesh, and the campus wide ones (ground, buildings,
+  // interiors) have theirs behind you there, so they went first and all of them behind
+  // the wall got shaded for nothing (the cutout's discard stops the gpu skipping it)
+  first?: string[]
 }
 
 // each one wants its own bits of the map data, the json doesn't know which is which
