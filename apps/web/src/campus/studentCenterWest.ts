@@ -39,10 +39,12 @@ export type Part = 'marble' | 'stone' | 'shade' | 'glass' | 'cream' | 'frame' | 
 export const TALL = 1.7
 export const SHORT = 0.82
 export const BOTTOM = 0.42
-// the block on the roof: set back from courtland street, 3.7m higher (the 2019 photo of
-// the decatur street corner; on the satellite its roof shows 7m further along, it leans)
-export const UPPER: [number, number, number, number] = [16, 55.6, -5.5, -28.3]
-export const RISE = 3.7
+// the block on the roof, [a from, a to, d front, d back] and how much higher. solved from
+// both 2019 photos at once: the corner one sees its ends and top, the one from the
+// bookstore end only its top peeking over the parapet. the satellite has it a bit further
+// along and closer to the street, it leans
+export const UPPER: [number, number, number, number] = [18.5, 61, -7, -29.7]
+export const RISE = 4
 // the cast stone grilles along courtland street, centers, and how high they go
 export const GRILLES = [21.6, 29.95, 38.3, 46.65, 55]
 const GRILLE_WIDTH = 6.6
@@ -101,7 +103,7 @@ function wallOf(p: Point, q: Point, o: Point): Wall {
 }
 
 const flip = (o: Point) => ({ x: -o.x, z: -o.z })
-const PLATE = { plate: '#c4c5c3', color: '#45474a' }
+const PLATE = { plate: '#a4a5a3', color: '#3a3c3f' }
 const span = (m: number, n: number) => [Math.min(m, n), Math.max(m, n)] as [number, number]
 
 // a hole in a marble wall, with glass at the back or left open (filled in separately)
@@ -250,16 +252,16 @@ export function studentCenterWestGeometry(b: StudentCenterWestData) {
 
     // the sign by the doors (a blue square where gsu's logo is) and the number
     const rot = Math.atan2(w.o.x, w.o.z)
-    const s = w.at(u(66.9), 0.03)
-    // the real ones are brushed aluminium with dark grey letters
+    const s = w.at(u(65.7), 0.03)
+    // the real ones are brushed aluminium with dark grey letters. this one is 4.7 by 1m in
+    // the 2019 photo, the plate can't be that long and thin, so a bit shorter and taller
     signs.push({
       x: s.x,
-      y: 3.35,
+      y: 3.3,
       z: s.z,
       rot,
       text: 'STUDENT CENTER\nWEST',
-      // 3 by 0.9m (the 2019 and 2023 photos)
-      scale: 0.75,
+      scale: 0.9,
       ...PLATE,
     })
     const n = w.at(u(74.3), 0.01)

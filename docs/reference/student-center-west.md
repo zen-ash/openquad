@@ -59,9 +59,11 @@ and #!m/1096640):
   12.2 all round). The old campus.json height was 13 m, a guess from "about 3 floors"; the
   photos say 12.2. No floor lines outside. GSU's plans have 4 levels: the lowest opens onto
   Decatur St under the bridge, so from Courtland St it's 3 floors of about 4 m. A block
-  3.7 m higher sits on the roof, set back 5.5 m from Courtland St, from 16 to 55.6 m along
-  it (fit to the 2019 corner photo; on the 2023 satellite its roof shows about 6 m further
-  toward the bookstore, I went with the photo).
+  4 m higher sits on the roof, set back 7 m from Courtland St, from 18.5 to 61 m along it
+  (from the Decatur St corner). Solved from both 2019 photos at once: the corner one sees
+  its ends and top, the one from the bookstore end only its top peeking over the parapet.
+  The 2023 satellite has it about 3 m further along and 1 m closer to the street (the
+  image leans).
 - **Courtland St** (78 m): almost blind. A side door with a small square window over it at
   the Decatur St end (it was Cinefest's), a band of five cast stone grilles (6.6 by 2.05 m,
   2.35 m up, 8.35 m apart) in frames that stick out 0.25 m, with a lattice of bars, little
@@ -100,16 +102,22 @@ and #!m/1096640):
 
 Measured in one browser, going back and forth between a dev server at the commit before
 and this one, frame times at 1920x1200 (median of 4-6 rounds each, the laptop was busy so
-the absolute numbers are higher than usual):
+the absolute numbers are higher than usual; the first, coolest round is about 2 ms lower):
 
 | view                                              | before | marble() walls | precast() walls | metal() walls |
 | ------------------------------------------------- | ------ | -------------- | --------------- | ------------- |
-| the new visual/frametime view                     | 11.2   | 12.5           | 11.8            | 11.1          |
+| the new visual/frametime view, player far away    | 11.2   | 12.5           | 11.8            | 11.1          |
 | close up of a grille, the wall filling the screen | 12.5   | 15.8           | 14.8            | 13.6          |
 
 The walls are precast(): marble()'s veins cost a millisecond more when the wall fills the
 screen and hardly show from the street, and metal() has no normal or roughness maps. The
 first version had 11 materials, now 8 (every material is a draw call in 5 passes).
+
+Final, precast walls, with the player where the views put them: the park 10.7 -> 10.6,
+SCE 10.1 -> 10.4, the SCW view 9.9 -> 11.6 (the player is next to SCW's door there, so
+SCW's furniture is drawn instead of the bookstore's), the Decatur St corner 9.3 -> 9.9,
+the grille close up 11.6 -> 14.2 (12.2 in the coolest round). No new shaders: the warm-up
+still builds 877 shaders and 790 pipelines.
 
 ## Building 237 (the bridge)
 
