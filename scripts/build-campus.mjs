@@ -486,6 +486,10 @@ function minHeightOf(tags) {
   const level = parseFloat(tags['building:min_level'] ?? (Number(tags.layer) >= 1 && tags.level))
   return level > 0 ? level * FLOOR : 0
 }
+// bridges osm only gives layer=1, way ids. the bridge from student center east toward urban
+// life, over the walk to sce's back door (gsu's student center map calls it the bridge). in
+// gsu's photo of that door the walkway starts a floor up
+const BRIDGES = new Set([801359974])
 
 const ROAD_WIDTH = {
   primary: 12,
@@ -786,7 +790,7 @@ function main(elements) {
       for (const points of rings) {
         if (!points || !inside(centroid(points))) continue
         const b = { height: round(heightOf(tags) * SCALE), points }
-        const minHeight = minHeightOf(tags)
+        const minHeight = el.type === 'way' && BRIDGES.has(el.id) ? FLOOR : minHeightOf(tags)
         if (minHeight > 0) {
           b.minHeight = round(minHeight * SCALE)
           // a bridge is a floor tall unless osm says how tall it is

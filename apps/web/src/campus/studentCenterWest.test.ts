@@ -118,4 +118,12 @@ describe('student center west', () => {
     for (const g of Object.values(parts)) triangles += g.getAttribute('position').count / 3
     expect(triangles).toBeLessThan(60_000)
   })
+
+  it('leaves the walk under the bridge from student center east open', () => {
+    // osm's way 801359974, between sce, the bookstore and urban life
+    const bridge = campus.buildings.find(
+      (b) => !b.name && b.points.some(([x, z]) => Math.hypot(x! - 14.7, z! - 174.2) < 0.2),
+    )!
+    expect(bridge.minHeight).toBeGreaterThan(3)
+  })
 })

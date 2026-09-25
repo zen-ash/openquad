@@ -110,3 +110,13 @@ the absolute numbers are higher than usual):
 The walls are precast(): marble()'s veins cost a millisecond more when the wall fills the
 screen and hardly show from the street, and metal() has no normal or roughness maps. The
 first version had 11 materials, now 8 (every material is a draw call in 5 passes).
+
+## Building 237 (the bridge)
+
+osm way 801359974, next to SCE, between SCE, the bookstore and Urban Life: building=yes,
+building:levels=2, layer=1, no name. It's the raised link from SCE's west side over the
+walk and the dock to Urban Life (the "BRIDGE" on SCE's 3rd floor plan, "to bridge & Urban
+Life" on SCW's 3rd floor plan). GSU's 2026 photo of SCE's back door has it starting about a
+floor up, over the door's canopy, and GSU's dock photo has a white box over the dock
+canopy. So build-campus gives it minHeight 3.5 (BRIDGES), like the Library Link: drawn from
+3.5 to 7 m, no collision, you walk under it to SCE's back door and the dock.
