@@ -1,15 +1,41 @@
 {
-  "brick": { "polyhaven": "red_brick", "meters": 1.4, "maps": ["color", "normal", "arm"] },
+  "brick": {
+    "polyhaven": "red_brick",
+    "meters": 1.4,
+    "courses": [20, 0.07],
+    "maps": ["color", "normal", "arm"]
+  },
   "precast": {
     "polyhaven": "granular_concrete",
     "meters": 2.4,
+    "irregular": true,
     "maps": ["color", "normal", "arm"]
   },
   "concrete": { "polyhaven": "concrete_wall_004", "meters": 2, "maps": ["color", "normal", "arm"] },
-  "roof": { "polyhaven": "gravel_concrete", "meters": 2.1, "maps": ["color", "normal"] },
+  "roof": {
+    "polyhaven": "gravel_concrete",
+    "meters": 2.1,
+    "irregular": true,
+    "maps": ["color", "normal"]
+  },
   "sidewalk": { "polyhaven": "concrete_pavement", "meters": 1.8, "maps": ["color", "normal"] },
-  "asphalt": { "polyhaven": "asphalt_02", "meters": 3, "maps": ["color", "normal"] },
-  "grass": { "polyhaven": "grass_ground", "meters": 2.5, "maps": ["color", "normal"] },
+  "asphalt": {
+    "polyhaven": "asphalt_02",
+    "meters": 3,
+    "irregular": true,
+    "maps": ["color", "normal"]
+  },
+  "grass": {
+    "polyhaven": "grass_ground",
+    "meters": 2.5,
+    "irregular": true,
+    "maps": ["color", "normal"]
+  },
   "floor": { "polyhaven": "laminate_floor_02", "meters": 1.7, "maps": ["color", "normal"] },
-  "plaster": { "polyhaven": "painted_plaster_wall", "meters": 2, "maps": ["color", "normal"] }
+  "plaster": {
+    "polyhaven": "painted_plaster_wall",
+    "meters": 2,
+    "irregular": true,
+    "maps": ["color", "normal"]
+  }
 }

@@ -10,7 +10,13 @@ import list from './textures.json'
 export type TextureName = keyof typeof list
 export type MapKind = 'color' | 'normal' | 'arm'
 
-export const textureList: Record<TextureName, { meters: number; maps: string[] }> = list
+// meters is how big one repeat of it is in real life. irregular ones (no pattern, like
+// concrete or grass) and ones in courses (brick) are read so the repeat doesn't show, see
+// untiled() and coursed() in materials.ts
+export const textureList: Record<
+  TextureName,
+  { meters: number; maps: string[]; irregular?: boolean; courses?: number[] }
+> = list
 
 export const textureUrl = (name: TextureName, kind: MapKind) => `/textures/${name}_${kind}.ktx2`
 
