@@ -36,7 +36,7 @@ const errors = []
 page.on('pageerror', (e) => errors.push(e.message))
 page.on('console', (m) => m.type() === 'error' && errors.push(m.text()))
 await page.goto(
-  `${process.env.BASE ?? 'http://localhost:5173'}/?debug&time=09:00&date=2026-09-24&still&notiles${extra}`,
+  `${process.env.BASE ?? 'http://localhost:5173'}/?debug&time=09:00&date=2026-09-24&still${extra}`,
 )
 await page.getByLabel("What's your name?").fill('Timer')
 await page.getByRole('button', { name: 'Join' }).click({ timeout: 120_000 })

@@ -1,5 +1,4 @@
 import type { WebGPURenderer } from 'three/webgpu'
-import { tilesStats } from '../scene/Tiles'
 
 // what went on in each frame, for scripts/walk.mjs: how long it took and how many shaders
 // were built, pipelines made and textures/buffers uploaded in it (the usual causes of a
@@ -74,8 +73,8 @@ let loafs: Loaf[] = []
 let names: string[][] = []
 let observer: PerformanceObserver | null = null
 
-// one row per frame: time, frame ms, then the counts above for that frame, tiles loaded
-// and the js heap in mb (a drop is a garbage collection)
+// one row per frame: time, frame ms, then the counts above for that frame and the js
+// heap in mb (a drop is a garbage collection)
 export function startRecording() {
   for (const k of Object.keys(count) as (keyof typeof count)[]) count[k] = 0
   built.length = 0
@@ -83,11 +82,9 @@ export function startRecording() {
   loafs = []
   names = []
   let last = performance.now()
-  let tiles = tilesStats()?.loaded ?? 0
   const tick = (now: number) => {
     const rows = frames
     if (!rows) return
-    const loaded = tilesStats()?.loaded ?? 0
     const heap = (performance as { memory?: { usedJSHeapSize: number } }).memory
     rows.push([
       now,
@@ -99,13 +96,11 @@ export function startRecording() {
       count.textures,
       count.textureMs,
       count.bufferKb,
-      loaded - tiles,
       (heap?.usedJSHeapSize ?? 0) / 1048576,
     ])
     names.push(built.splice(0))
     for (const k of Object.keys(count) as (keyof typeof count)[]) count[k] = 0
     last = now
-    tiles = loaded
     requestAnimationFrame(tick)
   }
   requestAnimationFrame(tick)

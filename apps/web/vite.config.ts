@@ -21,8 +21,6 @@ export default defineConfig({
               name: '3d',
               test: /node_modules[\\/](@react-three|three-)/,
             },
-            // google's 3d tiles renderer, after 3d so it doesn't take fiber with it
-            { name: 'tiles', test: /node_modules[\\/]3d-tiles-renderer[\\/]/ },
             // the sky (takram's atmosphere and the star/moon math)
             { name: 'atmosphere', test: /node_modules[\\/](@takram|astronomy-engine)[\\/]/ },
           ],

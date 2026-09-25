@@ -1,4 +1,3 @@
-import { insideFence } from '@quad/shared'
 import { Billboard } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
@@ -7,21 +6,17 @@ import campus from '../campus/campus.json'
 import { buildingsGeometry, centroid } from '../campus/geometry'
 import { facadeMaterial } from '../campus/facade'
 import { localPlayer } from '../game/localPlayer'
-import { useSettings } from '../settings'
 import Label from './Label'
 
 const LABEL_DISTANCE = 120
 
 const material = facadeMaterial()
 
-// buildings are all the way in or all the way out (there's a test), one corner is enough
-const inside = (b: { points: number[][] }) => insideFence(b.points[0]![0]!, b.points[0]![1]!)
-
 const labels = campus.buildings
   .filter((b) => b.gsu && b.name)
-  .map((b) => ({ name: b.name!, height: b.height, inside: inside(b), ...centroid(b.points) }))
+  .map((b) => ({ name: b.name!, height: b.height, ...centroid(b.points) }))
 
-function Labels({ outside }: { outside: boolean }) {
+function Labels() {
   const refs = useRef<(THREE.Group | null)[]>([])
 
   // only show names for buildings nearby, otherwise it's a wall of text
@@ -29,9 +24,7 @@ function Labels({ outside }: { outside: boolean }) {
     labels.forEach((l, i) => {
       const group = refs.current[i]
       if (group)
-        group.visible =
-          (l.inside || outside) &&
-          Math.hypot(l.x - localPlayer.x, l.z - localPlayer.z) < LABEL_DISTANCE
+        group.visible = Math.hypot(l.x - localPlayer.x, l.z - localPlayer.z) < LABEL_DISTANCE
     })
   })
 
@@ -55,27 +48,12 @@ function Labels({ outside }: { outside: boolean }) {
 }
 
 export default function Buildings() {
-  const geos = useMemo(
-    () => ({
-      inside: buildingsGeometry(campus.buildings, inside),
-      outside: buildingsGeometry(campus.buildings, (b) => !inside(b)),
-    }),
-    [],
-  )
-  // outside the fence google's tiles show the real buildings, so ours are hidden there
-  const extruded = useSettings((s) => s.extruded)
+  const geometry = useMemo(() => buildingsGeometry(campus.buildings), [])
 
   return (
     <>
-      <mesh geometry={geos.inside} material={material} castShadow receiveShadow />
-      <mesh
-        geometry={geos.outside}
-        material={material}
-        castShadow
-        receiveShadow
-        visible={extruded}
-      />
-      <Labels outside={extruded} />
+      <mesh geometry={geometry} material={material} castShadow receiveShadow />
+      <Labels />
     </>
   )
 }

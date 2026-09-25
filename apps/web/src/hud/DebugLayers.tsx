@@ -1,16 +1,10 @@
 import { useState } from 'react'
 import { fx, TONE_MAPPINGS } from '../scene/fx'
-import { TILES_KEY, useSettings } from '../settings'
+import { useSettings } from '../settings'
 
-type Layer = 'tiles' | 'extruded' | 'tilesInside' | 'outlines' | 'fenceLine'
+type Layer = 'fenceLine'
 
-const LAYERS: [Layer, string][] = [
-  ['tiles', 'Google 3D tiles'],
-  ['extruded', 'Our buildings outside'],
-  ['tilesInside', 'Tiles inside the fence'],
-  ['outlines', 'OSM outlines'],
-  ['fenceLine', 'Fence line'],
-]
+const LAYERS: [Layer, string][] = [['fenceLine', 'Fence line']]
 
 const EFFECTS: [keyof typeof fx, string][] = [
   ['ao', 'Ambient occlusion'],
@@ -24,9 +18,7 @@ const EFFECTS: [keyof typeof fx, string][] = [
   ['exposure', 'Auto exposure'],
 ]
 
-// dev (or ?debug): turn the tiles and our own buildings on and off separately, to compare
-// them and check they line up. inside the fence it's always our buildings. and each of
-// the effects, to see what it does
+// dev (or ?debug): where the fence is, and each of the effects on and off to see what it does
 export default function DebugLayers() {
   const atmosphere = useSettings((s) => s.atmosphere)
   return (
@@ -47,7 +39,6 @@ function Layers() {
           <input
             type="checkbox"
             checked={settings[layer]}
-            disabled={(layer === 'tiles' || layer === 'tilesInside') && !TILES_KEY}
             onChange={(e) => {
               useSettings.setState({ [layer]: e.target.checked })
               e.currentTarget.blur() // so walking keys don't flip it

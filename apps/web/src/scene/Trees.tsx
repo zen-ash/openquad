@@ -1,4 +1,3 @@
-import { fenceDistance } from '@quad/shared'
 import { useGLTF } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { Suspense, useLayoutEffect, useMemo, useRef } from 'react'
@@ -6,8 +5,7 @@ import * as THREE from 'three'
 import { attribute, positionLocal, sin, uniform } from 'three/tsl'
 import { MeshStandardNodeMaterial, type NodeBuilder } from 'three/webgpu'
 import campus from '../campus/campus.json'
-import { BAND } from '../campus/fenceShader'
-import { still, useSettings } from '../settings'
+import { still } from '../settings'
 
 // made with ez-tree and poly haven's bark, see docs/SPEC.md. one model each
 const VARIANTS = ['oak', 'magnolia', 'street'] as const
@@ -166,20 +164,16 @@ function Variant({ name, spots }: { name: Variant; spots: number[][] }) {
   )
 }
 
-// every tree on the map, one instanced mesh per kind of tree and part of it. with google's
-// tiles on, just the ones inside the fence and on the far sidewalk, past that it's theirs
+// every tree on the map, one instanced mesh per kind of tree and part of it
 export default function Trees() {
-  const tiles = useSettings((s) => s.tiles)
   const byVariant = useMemo(() => {
     const out = Object.fromEntries(VARIANTS.map((v) => [v, [] as number[][]])) as Record<
       Variant,
       number[][]
     >
-    for (const t of campus.trees) {
-      if (!tiles || fenceDistance(t[0]!, t[1]!) > -BAND) out[variantOf(t[0]!, t[1]!)].push(t)
-    }
+    for (const t of campus.trees) out[variantOf(t[0]!, t[1]!)].push(t)
     return out
-  }, [tiles])
+  }, [])
 
   useFrame((_, dt) => {
     if (!still) wind.value += dt

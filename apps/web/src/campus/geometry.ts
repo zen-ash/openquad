@@ -31,13 +31,9 @@ function fill(count: number, value: number) {
   return new THREE.BufferAttribute(new Float32Array(count).fill(value), 1)
 }
 
-// keep picks which ones. the index still counts all of them, the facades go by it
-export function buildingsGeometry(
-  buildings: BuildingData[],
-  keep: (b: BuildingData) => boolean = () => true,
-) {
+export function buildingsGeometry(buildings: BuildingData[]) {
   const parts = buildings.flatMap((b, i) => {
-    if (b.landmark || !keep(b)) return []
+    if (b.landmark) return []
     const bottom = b.minHeight ?? 0
     const geo = new THREE.ExtrudeGeometry(shape(b.points), {
       depth: b.height - bottom,

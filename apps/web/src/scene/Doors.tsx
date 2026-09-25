@@ -1,4 +1,3 @@
-import { insideFence } from '@quad/shared'
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
@@ -6,7 +5,6 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { DOOR_HEIGHT, DOOR_WIDTH, doorOpens, doorPanels, interiors } from '../game/interiors'
 import { localPlayer } from '../game/localPlayer'
 import { snapshots } from '../net/store'
-import { useSettings } from '../settings'
 
 const W = DOOR_WIDTH / 2
 const H = DOOR_HEIGHT
@@ -39,23 +37,17 @@ const q = new THREE.Quaternion()
 const pos = new THREE.Vector3()
 const one = new THREE.Vector3(1, 1, 1)
 
-// automatic sliding doors on every building you can walk into. past the fence only when
-// our buildings are drawn there, otherwise they'd hang in front of google's
+// automatic sliding doors on every building you can walk into
 export default function Doors() {
   const glass = useRef<THREE.InstancedMesh>(null)
   const frames = useRef<THREE.InstancedMesh>(null)
-  const extruded = useSettings((s) => s.extruded)
-  const shown = useMemo(
-    () => interiors.filter((r) => extruded || insideFence(r.door.x, r.door.z)),
-    [extruded],
-  )
-  const open = useMemo(() => new Float32Array(shown.length), [shown])
+  const open = useMemo(() => new Float32Array(interiors.length), [])
 
   useFrame((_, dt) => {
     if (!glass.current || !frames.current) return
     // everyone counts, so a door opens for other people walking in too
     const people = [localPlayer, ...[...snapshots.values()].flatMap((s) => s.slice(-1))]
-    shown.forEach((room, i) => {
+    interiors.forEach((room, i) => {
       const target = doorOpens(room.door, people) ? 1 : 0
       open[i]! += (target - open[i]!) * Math.min(1, dt * 5)
       doorPanels(room.door, open[i]!).forEach((p, side) => {
@@ -68,7 +60,7 @@ export default function Doors() {
     frames.current.instanceMatrix.needsUpdate = true
   })
 
-  const count = shown.length * 2
+  const count = interiors.length * 2
   return (
     <>
       <instancedMesh

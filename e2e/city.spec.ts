@@ -3,8 +3,7 @@ import { doorOf, teleport } from './fixtures'
 
 // the other tests skip drawing the city (?nocity) to stay fast. these make sure it
 // actually draws: a broken shader only shows up as a console error, the page itself loads fine.
-// night too, it has stars and lit windows that the day doesn't. google's tiles are off for
-// all tests but tiles.spec.ts (playwright.config.ts), so these don't depend on their servers
+// night too, it has stars and lit windows that the day doesn't
 for (const time of ['noon', 'night']) {
   test(`the city renders without errors (${time})`, async ({ page }) => {
     const errors: string[] = []

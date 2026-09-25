@@ -2,7 +2,6 @@ import { input } from '../game/input'
 import { interiors } from '../game/interiors'
 import { localPlayer } from '../game/localPlayer'
 import { exposureStats } from '../scene/autoExposure'
-import { tileHeightAt, tilesStats } from '../scene/Tiles'
 import { showDebug, useSettings } from '../settings'
 import { peers } from '../voice/voice'
 import { lastSound } from '../voice/VoiceUpdater'
@@ -35,10 +34,6 @@ declare global {
       // per person we're in a call with: connection state, and how many ms ago we
       // last heard anything from them (null = never)
       voice: () => Record<string, { state: string; heardAgo: number | null }>
-      // google's 3d tiles, null if there's no key
-      tiles: typeof tilesStats
-      // height of the loaded tiles at a spot (y = 0 is our ground)
-      tileHeightAt: typeof tileHeightAt
       // webgpu, or the webgl2 fallback
       backend: () => 'webgpu' | 'webgl2' | null
       // auto exposure: log2 of the measured brightness, and the exposure in stops
@@ -81,8 +76,6 @@ if (showDebug) {
       }
       return out
     },
-    tiles: tilesStats,
-    tileHeightAt,
     backend: () => useSettings.getState().backend,
     exposure: exposureStats,
     set: (patch) => useSettings.setState(patch),

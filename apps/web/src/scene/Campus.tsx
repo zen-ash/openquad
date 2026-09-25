@@ -5,7 +5,6 @@ import campus from '../campus/campus.json'
 import { areasGeometry, linesGeometry, planarUv } from '../campus/geometry'
 import { night } from '../campus/facade'
 import {
-  fadeGroundAtFence,
   grassMaterial,
   paversMaterial,
   pavingMaterial,
@@ -18,15 +17,14 @@ import { today, useSettings } from '../settings'
 import Buildings from './Buildings'
 import Doors from './Doors'
 import FenceHaze from './FenceHaze'
+import FenceLine from './FenceLine'
 import Fountain from './Fountain'
 import Furniture from './Furniture'
 import Interiors from './Interiors'
 import Landmarks from './Landmarks'
-import Outlines, { FenceLine } from './Outlines'
 import PantherQuad from './PantherQuad'
 import { SkyDome, SkyEnvironment, Stars } from './Sky'
 import StreetFurniture from './StreetFurniture'
-import Tiles from './Tiles'
 import Trees from './Trees'
 
 // only loaded on high quality (App loads it first thing when it starts on high)
@@ -125,9 +123,7 @@ function SkyLight({ intensity, environment }: { intensity: number; environment: 
   return <hemisphereLight ref={light} args={[SKY_LIGHT, GROUND_LIGHT]} intensity={intensity} />
 }
 
-function Ground({ tiles }: { tiles: boolean }) {
-  // with google's tiles on, the ground fades out at the fence and theirs takes over
-  useEffect(() => fadeGroundAtFence(tiles), [tiles])
+function Ground() {
   const geos = useMemo(() => {
     const size = campus.halfSize * 6
     return {
@@ -143,29 +139,25 @@ function Ground({ tiles }: { tiles: boolean }) {
     }
   }, [])
 
-  // with the tiles on the ground is see-through at the fence, so it's drawn with the
-  // transparent things. renderOrder keeps the layers in order, bottom first
   return (
     <>
-      <mesh geometry={geos.ground} material={pavingMaterial} receiveShadow renderOrder={-10} />
+      <mesh geometry={geos.ground} material={pavingMaterial} receiveShadow />
       {/* parking lots are asphalt like the roads, the lane lines only go on roads */}
-      <mesh geometry={geos.lots} material={roadMaterial} receiveShadow renderOrder={-9} />
-      <mesh geometry={geos.pavers} material={paversMaterial} receiveShadow renderOrder={-8} />
-      <mesh geometry={geos.parks} material={grassMaterial} receiveShadow renderOrder={-7} />
-      <mesh geometry={geos.roads} material={roadMaterial} receiveShadow renderOrder={-6} />
-      <mesh geometry={geos.plazas} material={sidewalkMaterial} receiveShadow renderOrder={-5} />
-      <mesh geometry={geos.paths} material={sidewalkMaterial} receiveShadow renderOrder={-4} />
+      <mesh geometry={geos.lots} material={roadMaterial} receiveShadow />
+      <mesh geometry={geos.pavers} material={paversMaterial} receiveShadow />
+      <mesh geometry={geos.parks} material={grassMaterial} receiveShadow />
+      <mesh geometry={geos.roads} material={roadMaterial} receiveShadow />
+      <mesh geometry={geos.plazas} material={sidewalkMaterial} receiveShadow />
+      <mesh geometry={geos.paths} material={sidewalkMaterial} receiveShadow />
     </>
   )
 }
 
 export default function Campus() {
   const sky = useSky()
-  const tiles = useSettings((s) => s.tiles)
   // the real atmosphere when the visit started on high quality with webgpu (it stays if it
   // drops to low), otherwise the old sky (it's cheaper and runs on webgl2)
   const high = useSettings((s) => s.atmosphere)
-  const outlines = useSettings((s) => s.outlines)
   const fenceLine = useSettings((s) => s.fenceLine)
   const sunAt = sky.dir.map((v) => v * 100) as [number, number, number]
   // not too much light from the sky, or shade looks nearly as bright as sun and the
@@ -200,7 +192,7 @@ export default function Campus() {
         intensity={high ? 0.12 * (1 - sky.day) : 0.12 + 0.16 * sky.day}
         environment={high ? 1 : environment}
       />
-      <Ground tiles={tiles} />
+      <Ground />
       <Buildings />
       <Landmarks />
       <Interiors />
@@ -211,8 +203,6 @@ export default function Campus() {
       <StreetFurniture />
       <Trees />
       <FenceHaze />
-      {tiles && <Tiles />}
-      {outlines && <Outlines />}
       {fenceLine && <FenceLine />}
     </>
   )

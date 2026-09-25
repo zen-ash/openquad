@@ -77,7 +77,7 @@ const size = new Vector2()
 
 // three's rtt() and sss() reset their own shader every time a material that uses them gets
 // built. the ambient occlusion and contact shadows are used by every material in the scene
-// (through the lighting), so each new thing coming into view (a tile, a tree) rebuilt them
+// (through the lighting), so each new thing coming into view (a tree, a bench) rebuilt them
 // too: 5 shaders and pipelines, a 100-150ms hitch every few seconds (pnpm walk). once is
 // enough. an rtt still does the texture part of its setup for every material that uses it
 function buildOnce<T>(node: T): T {

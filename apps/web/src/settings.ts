@@ -37,21 +37,8 @@ export const today = () => (pinnedDay ? new Date(`${pinnedDay}T12:00:00-04:00`) 
 // ?still: nothing moves by itself (wind in the trees, the route arrows). for screenshots
 // that get compared pixel by pixel (scripts/visual.mjs)
 export const still = params.has('still')
-export const TILES_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined
 
-// localStorage.notiles = '1' works like ?notiles and sticks. the e2e tests start with it
-// set (playwright.config.ts): every page with the tiles on uses up one of the key's
-// sessions for the day, and there aren't many
-function tilesTurnedOff() {
-  try {
-    return localStorage.getItem('notiles') === '1'
-  } catch {
-    return false
-  }
-}
-const tiles = Boolean(TILES_KEY) && !params.has('notiles') && !tilesTurnedOff()
-
-// the tiles/buildings/outlines checkboxes, in dev or with ?debug
+// the debug panel (hud/DebugLayers.tsx) and window.quad, in dev or with ?debug
 export const showDebug = import.meta.env.DEV || params.has('debug')
 
 // full resolution, remembered between visits (the resolution button)
@@ -83,10 +70,6 @@ export const useSettings = create<{
   toneMapping: 'neutral' | 'aces' | 'agx' | 'none'
   time: string
   photo: boolean
-  tiles: boolean
-  extruded: boolean
-  outlines: boolean
-  tilesInside: boolean
   fenceLine: boolean
 }>(() => ({
   quality: startingQuality(),
@@ -101,15 +84,6 @@ export const useSettings = create<{
   time: startingTime(),
   // everything on screen hidden, for screenshots
   photo: false,
-  // google's photorealistic 3d tiles (scene/Tiles.tsx). needs a key, ?notiles turns them off
-  tiles,
-  // our own box buildings outside the fence, where the tiles are. the ones inside are
-  // always drawn. ?extruded draws them anyway
-  extruded: !tiles || params.has('extruded'),
-  // osm footprints drawn on top of everything, to check the tiles line up
-  outlines: params.has('outlines'),
-  // where the fence is, as a yellow line on the ground
+  // where the fence is, as a yellow curtain
   fenceLine: params.has('fence'),
-  // the tiles inside the fence too, on top of our buildings. for comparing
-  tilesInside: params.has('tilesinside'),
 }))

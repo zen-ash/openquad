@@ -1,4 +1,3 @@
-import { insideFence } from '@quad/shared'
 import { useMemo } from 'react'
 import { ceilingsGeometry, floorsGeometry, interiorWallsGeometry } from '../campus/interiorGeometry'
 import {
@@ -8,21 +7,18 @@ import {
   wallMaterial,
 } from '../campus/interiorMaterials'
 import { interiors } from '../game/interiors'
-import { useSettings } from '../settings'
 
 // the ground floor of every building you can walk into. all of them in three meshes,
-// they're mostly hidden inside the buildings anyway. past the fence only when our
-// buildings are drawn there
+// they're mostly hidden inside the buildings anyway
 export default function Interiors() {
-  const extruded = useSettings((s) => s.extruded)
-  const geos = useMemo(() => {
-    const shown = interiors.filter((r) => extruded || insideFence(r.door.x, r.door.z))
-    return {
-      floors: floorsGeometry(shown),
-      ceilings: ceilingsGeometry(shown),
-      walls: interiorWallsGeometry(shown),
-    }
-  }, [extruded])
+  const geos = useMemo(
+    () => ({
+      floors: floorsGeometry(interiors),
+      ceilings: ceilingsGeometry(interiors),
+      walls: interiorWallsGeometry(interiors),
+    }),
+    [],
+  )
   return (
     <>
       <mesh geometry={geos.floors} material={floorMaterial} receiveShadow />

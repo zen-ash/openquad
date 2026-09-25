@@ -1,19 +1,18 @@
 // Runs a player around campus for 2 minutes in real Chrome, fullscreen on the laptop's own
 // screen with vsync on, and records every frame. Medians hide stutter, so this reports the
 // 1% and 0.1% lows (the average of the slowest 1% / 0.1% of frames) and the number of
-// spikes, says what happened in each spike (shaders built, pipelines made, textures or
-// tiles uploaded, garbage collection, other main thread work) and draws a frame time graph.
+// spikes, says what happened in each spike (shaders built, pipelines made, textures
+// uploaded, garbage collection, other main thread work) and draws a frame time graph.
 //
 //   pnpm build && PORT=5173 node apps/server/dist/index.js   the production build
 //   pnpm walk --label before                 walk/before.{json,png}
 //   pnpm walk --label before --trace         also a chrome trace (open it in devtools)
-//   pnpm walk --label x --params "&notiles"  extra url params
+//   pnpm walk --label x --params "&time=23:00"  extra url params
 //   pnpm walk --label x --viewport 1470x835  that page size instead of fullscreen
 //   pnpm walk --label x --chromium       playwright's chromium (own shader cache)
 //   BASE=http://localhost:5173 pnpm walk     another server
 //
-// Port 5173 because google's tile key only works there. Needs a real screen, it takes it
-// over for the walk. walk/ is ignored by git.
+// Needs a real screen, it takes it over for the walk. walk/ is ignored by git.
 /* global document, requestAnimationFrame, innerWidth, innerHeight, devicePixelRatio */
 import { chromium } from '@playwright/test'
 import { mkdirSync, writeFileSync } from 'node:fs'
@@ -174,14 +173,13 @@ const round = (v) => Math.round(v * 10) / 10
 const spikes = []
 rows.forEach((r, i) => {
   if (r[1] < SPIKE) return
-  const [t, dt, builds, buildMs, pipelines, pipelineMs, textures, textureMs, bufferKb, tiles] = r
-  const heapDrop = i > 0 ? rows[i - 1][10] - r[10] : 0
+  const [t, dt, builds, buildMs, pipelines, pipelineMs, textures, textureMs, bufferKb, heap] = r
+  const heapDrop = i > 0 ? rows[i - 1][9] - heap : 0
   const loaf = loafs.filter((l) => l.start < t && l.start + l.ms > t - dt)
   const causes = []
   if (builds) causes.push(`${builds} shader builds ${round(buildMs)}ms`)
   if (pipelines) causes.push(`${pipelines} pipelines ${round(pipelineMs)}ms`)
   if (textures) causes.push(`${textures} texture uploads ${round(textureMs)}ms`)
-  if (tiles > 0) causes.push(`${tiles} tiles loaded`)
   if (bufferKb > 256) causes.push(`${Math.round(bufferKb)}kb of buffers`)
   if (heapDrop > 2) causes.push(`gc (${round(heapDrop)}mb freed)`)
   const scripts = loaf.flatMap((l) => l.scripts).slice(0, 3)
@@ -227,7 +225,7 @@ const y = (v) => H - 40 - (Math.min(v, maxMs) / maxMs) * (H - 80)
 const color = (s) =>
   /shader|pipeline/.test(s.causes[0])
     ? '#d9480f'
-    : /tile|buffer|texture/.test(s.causes[0])
+    : /buffer|texture/.test(s.causes[0])
       ? '#1971c2'
       : /gc/.test(s.causes[0])
         ? '#9c36b5'
@@ -246,7 +244,7 @@ ${rows
   )
   .join('')}
 <text x="50" y="20" font-size="15">${label}: median ${result.medianMs}ms, 1% low ${result.low1Ms}ms, 0.1% low ${result.low01Ms}ms, ${result.spikes} frames over ${SPIKE}ms (${result.bigSpikes} over ${BIG}ms), ${screen.canvas} canvas</text>
-<text x="50" y="${H - 12}">${result.seconds}s of running &#8212; orange: shaders/pipelines, blue: tiles/buffers/textures, purple: gc, grey: other</text>
+<text x="50" y="${H - 12}">${result.seconds}s of running &#8212; orange: shaders/pipelines, blue: buffers/textures, purple: gc, grey: other</text>
 </svg>`
 writeFileSync(`walk/${label}.svg`, svg)
 await browser.close()

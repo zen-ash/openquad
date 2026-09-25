@@ -1,16 +1,6 @@
 import * as THREE from 'three'
-import {
-  abs,
-  attribute,
-  fract,
-  materialColor,
-  positionWorld,
-  select,
-  smoothstep,
-  vec3,
-} from 'three/tsl'
-import { MeshStandardNodeMaterial, type Node } from 'three/webgpu'
-import { BAND, fenceDistanceAt } from './fenceShader'
+import { abs, attribute, fract, materialColor, select, vec3 } from 'three/tsl'
+import { MeshStandardNodeMaterial } from 'three/webgpu'
 import { texture } from './textures'
 
 // the ground is layers a few cm apart. from far away (the join screen) that's too close
@@ -58,22 +48,4 @@ export const roadMaterial = textured('asphalt', '#9a9a9a', 0.9, 3)
     vec3(0.82),
     select(middle, vec3(0.85, 0.68, 0.18), materialColor.rgb),
   )
-}
-
-// with google's tiles on, the ground fades out across the far sidewalk past the fence and
-// their ground shows through underneath (campus/fenceShader.ts). that makes it see-through, which is a lot
-// slower on macs (the gpu can't skip ground hidden behind buildings anymore), so with the
-// tiles off it's the plain opaque ground like before
-const ground = [grassMaterial, sidewalkMaterial, pavingMaterial, paversMaterial, roadMaterial]
-let fade: Node<'float'> | null = null
-
-export function fadeGroundAtFence(on: boolean) {
-  if (on) fade ??= smoothstep(-BAND, 0, fenceDistanceAt(positionWorld.xz))
-  for (const m of ground) {
-    if (m.transparent === on) continue
-    m.transparent = on
-    m.opacityNode = on ? fade : null
-    m.maskNode = on ? fade!.greaterThanEqual(0.01) : null
-    m.needsUpdate = true
-  }
 }

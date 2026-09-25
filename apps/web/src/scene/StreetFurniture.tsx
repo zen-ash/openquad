@@ -1,11 +1,9 @@
-import { fenceDistance } from '@quad/shared'
 import { useFrame } from '@react-three/fiber'
 import { useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { night } from '../campus/facade'
 import { benches, bins, parkLamps, streetLights, type Spot } from '../game/streetFurniture'
-import { BAND } from '../campus/fenceShader'
 import { useSettings } from '../settings'
 
 // black powder coated metal like the benches round campus, and gsu blue bins
@@ -128,23 +126,9 @@ function Instances({
   )
 }
 
-// with google's tiles on, only inside the fence and on the far sidewalk (past that the
-// tiles have their own)
-const insideOnly = (spots: Spot[]) => spots.filter((s) => fenceDistance(s.x, s.z) > -BAND)
-
 // benches, bins, lamp posts and street lights (game/streetFurniture.ts)
 export default function StreetFurniture() {
-  const tiles = useSettings((s) => s.tiles)
   const quality = useSettings((s) => s.quality)
-  const spots = useMemo(() => {
-    const pick = tiles ? insideOnly : (s: Spot[]) => s
-    return {
-      benches: pick(benches),
-      bins: pick(bins),
-      parkLamps: pick(parkLamps),
-      streetLights: pick(streetLights),
-    }
-  }, [tiles])
   const geos = useMemo(
     () => ({
       bench: benchGeometry(),
@@ -177,32 +161,22 @@ export default function StreetFurniture() {
 
   return (
     <>
-      <Instances geometry={geos.bench} material={black} spots={spots.benches} />
-      <Instances geometry={geos.bin} material={blue} spots={spots.bins} />
-      <Instances geometry={geos.park.pole} material={black} spots={spots.parkLamps} />
-      <Instances
-        geometry={geos.park.glass}
-        material={lampGlass}
-        spots={spots.parkLamps}
-        shadow={false}
-      />
-      <Instances
-        geometry={poolGeos.park}
-        material={pools.park}
-        spots={spots.parkLamps}
-        shadow={false}
-      />
-      <Instances geometry={geos.street.pole} material={grey} spots={spots.streetLights} />
+      <Instances geometry={geos.bench} material={black} spots={benches} />
+      <Instances geometry={geos.bin} material={blue} spots={bins} />
+      <Instances geometry={geos.park.pole} material={black} spots={parkLamps} />
+      <Instances geometry={geos.park.glass} material={lampGlass} spots={parkLamps} shadow={false} />
+      <Instances geometry={poolGeos.park} material={pools.park} spots={parkLamps} shadow={false} />
+      <Instances geometry={geos.street.pole} material={grey} spots={streetLights} />
       <Instances
         geometry={geos.street.glass}
         material={lampGlass}
-        spots={spots.streetLights}
+        spots={streetLights}
         shadow={false}
       />
       <Instances
         geometry={poolGeos.street}
         material={pools.street}
-        spots={spots.streetLights}
+        spots={streetLights}
         offset={2.35}
         shadow={false}
       />

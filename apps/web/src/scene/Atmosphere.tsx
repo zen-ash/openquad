@@ -34,7 +34,7 @@ import { SoftCascades } from './softShadows'
 const HURT_PARK = { lat: 33.75419, lon: -84.3854, height: 305 }
 
 // the model works in real units, direct sun about 1. everything else here (lit windows,
-// the ceiling panels, google's tiles, the old lights) was made for a sun of about 3.5 to 5,
+// the ceiling panels, the old lights) was made for a sun of about 3.5 to 5,
 // so the atmosphere is turned up to match instead. auto exposure goes on top of that
 const BRIGHTNESS = 5
 const parameters = new AtmosphereParameters()

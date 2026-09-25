@@ -20,7 +20,7 @@ import { PNG } from 'pngjs'
 
 const URL = process.env.BASE ?? 'http://localhost:5173'
 // same day every time so the sun is in the same place
-const DAY = '&date=2026-09-24&still&notiles'
+const DAY = '&date=2026-09-24&still'
 // share of pixels that can differ before a view counts as changed. a missing shader or
 // texture changes way more than this
 const LIMIT = 0.005
