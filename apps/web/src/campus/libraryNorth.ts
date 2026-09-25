@@ -1,6 +1,15 @@
 import type { Point } from '../game/collision'
 import { CEILING, DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
-import { circle, flat, frame, insideWalls, parts as collect, pt, wallQuad } from './landmark'
+import {
+  circle,
+  flat,
+  frame,
+  glassQuad,
+  insideWalls,
+  parts as collect,
+  pt,
+  wallQuad,
+} from './landmark'
 
 // library north, built by hand from photos of the real one (the builder's site has good
 // ones of the 2022 lobby). the footprint comes from the map data, see LIBRARY_NORTH in
@@ -103,11 +112,11 @@ export function libraryNorthGeometry(b: LibraryNorthData) {
       add('brick', wallQuad(at(end), q, 0, top, o))
       // dark window slot by the corner, glass under the panel, the row of little
       // windows along the top, and the old ground floor glass east of the lobby
-      add('darkGlass', wallQuad(at(1.6, 0.04), at(2.8, 0.04), 3, top - 0.3, o))
-      add('darkGlass', wallQuad(at(PANEL[0], 0.04), at(PANEL[1], 0.04), LOBBY, PANEL_BOTTOM, o))
+      add('darkGlass', glassQuad(at(1.6, 0.04), at(2.8, 0.04), 3, top - 0.3, o))
+      add('darkGlass', glassQuad(at(PANEL[0], 0.04), at(PANEL[1], 0.04), LOBBY, PANEL_BOTTOM, o))
       add('panel', wallQuad(at(PANEL[0], 0.05), at(PANEL[1], 0.05), PANEL_BOTTOM, top - 1, o))
-      add('windows', wallQuad(at(PANEL[0], 0.05), at(PANEL[1], 0.05), top - 1, top - 0.3, o))
-      add('darkGlass', wallQuad(at(end, 0.04), off(q, 0.04), 0.3, 3, o))
+      add('windows', glassQuad(at(PANEL[0], 0.05), at(PANEL[1], 0.05), top - 1, top - 0.3, o))
+      add('darkGlass', glassQuad(at(end, 0.04), off(q, 0.04), 0.3, 3, o))
       add('stone', wallQuad(at(end, 0.06), off(q, 0.06), 3, 3.8, o))
     } else {
       add('brick', wallQuad(p, q, 0, top, o))
@@ -117,7 +126,7 @@ export function libraryNorthGeometry(b: LibraryNorthData) {
     if (i === 3) {
       for (const s of [8, 18, 28, 38]) {
         const f = (t: number) => off({ x: p.x + (dx / l) * t, z: p.z + (dz / l) * t }, 0.04)
-        add('darkGlass', wallQuad(f(s), f(s + 1.2), 3, top - 1, o))
+        add('darkGlass', glassQuad(f(s), f(s + 1.2), 3, top - 1, o))
       }
     }
 

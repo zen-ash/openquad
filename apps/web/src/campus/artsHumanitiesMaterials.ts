@@ -1,36 +1,27 @@
 import * as THREE from 'three'
-import { abs, float, fwidth, length, min, mix, mod, smoothstep, vec2, vec3 } from 'three/tsl'
 import type { Part } from './artsHumanities'
-import { make, marble, meters, textured, windowGlass } from './landmarkMaterials'
-
-// the grey wall on the greenway side: big light panels in a grid on a darker wall
-const panels = make({ color: '#ffffff', roughness: 0.7 }, (m) => {
-  const cell = vec2(3.2, 2.6)
-  const g = mod(meters.sub(vec2(0, 0.9)), cell)
-  const e = min(min(g.x, cell.x.sub(g.x)), min(g.y, cell.y.sub(g.y)))
-  const px = length(fwidth(meters))
-  const inside = smoothstep(0.2, px.add(0.2), e)
-  const reveal = float(1).sub(smoothstep(0.02, px.add(0.02), abs(e.sub(0.2))))
-  m.colorNode = mix(vec3(0.36, 0.38, 0.4), vec3(0.62, 0.64, 0.66), inside).mul(
-    float(1).sub(reveal.mul(0.35)),
-  )
-})
+import { clearGlass, glass, gravelRoof, marble, metal, plain, precast } from './materials'
 
 export const artsHumanitiesMaterials: Record<Part, THREE.Material> = {
   // the panels on this one line up in a straight grid
-  marble: marble('#e7e5e0', [1.5, 1.5], 0.8, 0),
-  base: marble('#aeaca6', [1.5, 0.8], 0.6, 0),
-  panels,
-  glass: windowGlass([1.2, 1.3]),
-  bandGlass: windowGlass([1, 1.6]),
-  metal: make({ color: '#5d6166', roughness: 0.45, metalness: 0.6 }),
-  blueGlass: make({
-    color: '#2f63c8',
-    roughness: 0.1,
-    metalness: 0.2,
-    transparent: true,
-    opacity: 0.75,
+  marble: marble({ color: '#e7e5e0', slab: [1.5, 1.5], veins: 0.8, bond: 0 }),
+  base: marble({ color: '#aeaca6', slab: [1.5, 0.8], veins: 0.6, bond: 0 }),
+  // the grey wall on the greenway side: big light panels in a grid on a darker wall
+  panels: precast({
+    color: '#ced1d4',
+    panel: [3.2, 2.6],
+    offset: [0, 0.9],
+    joint: 0.4,
+    shade: 0.59,
+    reveal: 0.35,
+    tone: 0,
+    roughness: 0.7,
   }),
-  banner: make({ color: '#1f4fb8', roughness: 0.85, side: THREE.DoubleSide }),
-  roof: textured({ color: '#b8b8b4', roughness: 0.9 }, 'roof', 8),
+  glass: glass({ pane: [1.2, 1.3] }),
+  bandGlass: glass({ pane: [1, 1.6] }),
+  metal: metal({ color: '#5d6166', roughness: 0.45, metalness: 0.6 }),
+  blueGlass: clearGlass({ color: '#2f63c8', opacity: 0.75, roughness: 0.1, metalness: 0.2 }),
+  // the banners are cloth
+  banner: plain({ color: '#1f4fb8', roughness: 0.85, side: THREE.DoubleSide }),
+  roof: gravelRoof({ color: '#695e50', size: 8, saturation: 1 }),
 }

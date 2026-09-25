@@ -120,9 +120,10 @@ export function solidPieces(len: number, y0: number, y1: number, holes: Hole[]):
   return pieces
 }
 
-// a window's glass. uvs start at its bottom left corner, and aPane is its size plus a
-// random number for it, so the shader can draw the mullions and light some up at night
-function pane(a: Point, b: Point, y0: number, y1: number, into: Point) {
+// a window's glass, for glass() in materials.ts. uvs start at its bottom left corner, and
+// aPane is its size plus a random number for it, so the shader can draw the mullions and
+// light some up at night
+export function glassQuad(a: Point, b: Point, y0: number, y1: number, into: Point) {
   const geo = wallQuad(a, b, y0, y1, into)
   const uv = geo.getAttribute('uv')
   for (let i = 0; i < uv.count; i++) uv.setY(i, uv.getY(i) - y0)
@@ -205,7 +206,7 @@ export function parts<P extends string>() {
       const rim = [at(u0), at(u1), at(u1, depth), at(u0, depth)]
       if (v0 > 0.01) add(sides, flat(rim, v0))
       add(sides, flat(rim, v1, false))
-      if (glass) add(glass, pane(at(u0, depth), at(u1, depth), v0, v1, o))
+      if (glass) add(glass, glassQuad(at(u0, depth), at(u1, depth), v0, v1, o))
     }
 
     if (y0 > 0.01) return

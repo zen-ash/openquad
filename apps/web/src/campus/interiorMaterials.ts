@@ -27,7 +27,7 @@ import { outsideCutout } from './cutout'
 import { GROUND_WINDOW_WALL } from './facade'
 import { packedNormalMap, texture } from './textures'
 
-// like make() in landmarkMaterials.ts: the see-through hole, but not in the shadows
+// like the ones in materials.ts: the see-through hole, but not in the shadows
 function material(params: THREE.MeshStandardMaterialParameters) {
   const m = new MeshStandardNodeMaterial(params)
   m.maskNode = outsideCutout()

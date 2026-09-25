@@ -10,7 +10,7 @@ export const cutout = {
   uCutoutRadius: uniform(0),
 }
 
-// false inside the hole. for a material's maskNode (see landmarkMaterials.ts make())
+// false inside the hole. for a material's maskNode (see materials.ts material())
 export const outsideCutout = Fn(() => {
   const { uCutoutPlayer: player, uCutoutCamera: camera, uCutoutRadius: radius } = cutout
   const seg = player.sub(camera)

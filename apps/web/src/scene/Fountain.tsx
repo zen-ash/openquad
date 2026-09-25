@@ -3,17 +3,18 @@ import { Suspense, useMemo } from 'react'
 import * as THREE from 'three'
 import campus from '../campus/campus.json'
 import { bedPlantsGeometry, fountainGeometry, inscription, type Part } from '../campus/fountain'
-import { make, marble } from '../campus/landmarkMaterials'
+import { concrete, marble, metal, plain, precast } from '../campus/materials'
 
 const materials: Record<Part, THREE.Material> = {
-  marble: marble('#dcdcd8', [1.2, 0.55]),
+  marble: marble({ color: '#dcdcd8', slab: [1.2, 0.55] }),
   // the basin is the blue-grey marble with the heavy veins
-  basin: marble('#c3c9ce', [0.9, 0.9], 2.5),
-  paint: make({ color: '#a6d6d8', roughness: 0.75 }),
-  water: make({ color: '#38503f', roughness: 0.04, metalness: 0.4 }),
-  soil: make({ color: '#4a2e22', roughness: 1 }),
-  concrete: make({ color: '#b9b5ab', roughness: 0.9 }),
-  bronze: make({ color: '#6f7d62', roughness: 0.5, metalness: 0.6 }),
+  basin: marble({ color: '#c3c9ce', slab: [0.9, 0.9], veins: 2.5 }),
+  // pale blue paint on concrete
+  paint: precast({ color: '#a6d6d8', shade: 1, tone: 0, saturation: 0, roughness: 0.75 }),
+  water: plain({ color: '#38503f', roughness: 0.04, metalness: 0.4 }),
+  soil: plain({ color: '#4a2e22', roughness: 1 }),
+  concrete: concrete({ color: '#b9b5ab', roughness: 0.9 }),
+  bronze: metal({ color: '#6f7d62', roughness: 0.5, metalness: 0.6 }),
 }
 
 const TEXT = 'THIS PARK IS DEDICATED TO THE MEMORY OF JOEL HURT'
