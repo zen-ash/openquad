@@ -146,10 +146,11 @@ function mNoise(p: Vec2) {
   return mix(a, b, t.y)
 }
 
-export function mFbm(p: Vec2) {
+// octaves of noise added up. each one is four hashes, so the big soft ones only use two
+export function mFbm(p: Vec2, octaves = 4) {
   let v: Float = float(0)
   let q = p
-  for (let i = 0, a = 0.5; i < 4; i++, a *= 0.5) {
+  for (let i = 0, a = 0.5; i < octaves; i++, a *= 0.5) {
     v = v.add(mNoise(q).mul(a))
     q = q.mul(2.03).add(1.7)
   }
@@ -237,7 +238,7 @@ function read(name: TextureName, at: Vec2, saturation: Float, contrast: Float) {
 
 // weathering: darker streaks and blotches, more near the ground. dirt 0 is clean
 const grime = once(() => {
-  const blotch = mFbm(meters.mul(vec2(0.35, 0.12)))
+  const blotch = mFbm(meters.mul(vec2(0.35, 0.12)), 2).mul(1.33)
   const ground = exp(meters.y.div(-1.2))
   return float(1).sub(f('dirt').mul(blotch.mul(0.35).add(ground.mul(0.25))))
 })
@@ -314,7 +315,8 @@ const brickNodes = once(() => {
   const [spacing, strength] = [v2('uplight').x, v2('uplight').y]
   // bricks from different batches: a slow drift in tone, so the repeat doesn't show as
   // a grid of the same light and dark bricks
-  const batches = mFbm(meters.mul(vec2(0.3, 0.6)))
+  const batches = mFbm(meters.mul(vec2(0.3, 0.6)), 2)
+    .mul(1.33)
     .mul(0.14)
     .add(0.93)
   return {
@@ -511,7 +513,7 @@ const metalNodes = once(() => {
   const groove = smoothstep(0.35, 0.5, abs(r.sub(0.5)).add(0.2))
   const ribs = float(1).sub(fade.mul(groove).mul(depth))
   // never quite even: a little blotchy, smudges change how shiny it is
-  const blotch = mFbm(meters.mul(0.6))
+  const blotch = mFbm(meters.mul(0.6), 2).mul(1.33)
   return {
     colorNode: materialColor.rgb.mul(panels).mul(ribs).mul(blotch.mul(0.08).add(0.96)),
     roughnessNode: f('roughness').mul(blotch.mul(0.3).add(0.85)),
