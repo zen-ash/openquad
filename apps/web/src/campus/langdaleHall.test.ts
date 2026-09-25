@@ -116,9 +116,20 @@ describe('langdale hall', () => {
   })
 
   it('has a roof under the fascia, the penthouse sticking up over it', () => {
-    parts.roof.computeBoundingBox()
-    expect(parts.roof.boundingBox!.min.y).toBeCloseTo(ROOF)
-    expect(parts.roof.boundingBox!.max.y).toBeGreaterThan(lh.height)
+    // the flat parts facing up, over most of the outline
+    const pos = parts.precast.getAttribute('position')
+    const normal = parts.precast.getAttribute('normal')
+    const tops = new Map<number, number>()
+    for (let i = 0; i < pos.count; i += 3) {
+      if (normal.getY(i) < 0.99) continue
+      const [a, b, c] = [0, 1, 2].map((k) => [pos.getX(i + k), pos.getZ(i + k)] as const)
+      const area =
+        Math.abs((b![0] - a![0]) * (c![1] - a![1]) - (c![0] - a![0]) * (b![1] - a![1])) / 2
+      const y = Math.round(pos.getY(i) * 10) / 10
+      tops.set(y, (tops.get(y) ?? 0) + area)
+    }
+    expect(tops.get(Math.round(ROOF * 10) / 10)).toBeGreaterThan(1500)
+    expect(Math.max(...tops.keys())).toBeGreaterThan(lh.height)
   })
 
   it('is left out of the regular buildings mesh', () => {

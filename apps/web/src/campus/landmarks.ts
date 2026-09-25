@@ -35,6 +35,9 @@ export type LandmarkGeometry = {
   // interiors) have theirs behind you there, so they went first and all of them behind
   // the wall got shaded for nothing (the cutout's discard stops the gpu skipping it)
   first?: string[]
+  // parts that don't cast shadows: glass and frames deep in the walls, nothing behind them
+  // shows the difference and each part is three more draws (the cascades)
+  noShadow?: string[]
 }
 
 // each one wants its own bits of the map data, the json doesn't know which is which

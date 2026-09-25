@@ -107,7 +107,7 @@ export default function Landmarks() {
                   geometry={g}
                   material={mats[part]}
                   // see-through glass doesn't cast shadows
-                  castShadow={!mats[part]!.transparent}
+                  castShadow={!mats[part]!.transparent && !geo.noShadow?.includes(part)}
                   receiveShadow
                 />
               ),

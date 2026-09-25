@@ -30,7 +30,9 @@ export type LangdaleData = {
   landmark?: { front: number[][] }
 }
 
-export type Part = 'precast' | 'brick' | 'grey' | 'glass' | 'spandrel' | 'frame' | 'roof'
+// few parts: each is a draw call in every pass (the shadow cascades too). the roof and the
+// white panels under the slot windows are precast as well, they cost 0.1-0.2ms as their own
+export type Part = 'precast' | 'brick' | 'grey' | 'glass' | 'frame'
 
 // the ground floor is taller than the rest. floor n (1 is the ground floor) starts at level(n)
 export const GROUND = 4.25
@@ -389,7 +391,7 @@ export function langdaleHallGeometry(b: LangdaleData) {
         const base = level(n) + shift
         const sill = Math.min(base + 1.1, end)
         const head = Math.min(level(n + 1) + shift, end)
-        face('spandrel', w, x0, x0 + col, base, sill, -back)
+        face('precast', w, x0, x0 + col, base, sill, -back)
         glass(w, x0, x0 + col, sill, head, -back)
       }
       if (k === n - 1) break
@@ -727,7 +729,7 @@ export function langdaleHallGeometry(b: LangdaleData) {
       const s = (-(c2.x - c1.x) * l2.dir.z + (c2.z - c1.z) * l2.dir.x) / det
       return { x: c1.x + l1.dir.x * s, z: c1.z + l1.dir.z * s }
     })
-    add('roof', flat(roof, ROOF))
+    add('precast', flat(roof, ROOF))
     // a long penthouse in the same dark brick, a metal duct and a small box beside it (2018
     // photo from the south, the satellite)
     const box = (a0: number, a1: number, d0: number, d1: number) => [
@@ -739,7 +741,7 @@ export function langdaleHallGeometry(b: LangdaleData) {
     const house = box(5, 50, -14, -21)
     prism('brick', house, ROOF, ROOF + 5.3, false)
     prism('precast', house, ROOF + 5.3, ROOF + 5.8, false)
-    add('roof', flat(house, ROOF + 5.8))
+    add('precast', flat(house, ROOF + 5.8))
     prism('precast', box(2, 14, -12.5, -16.5), ROOF, ROOF + 3.2)
     prism('frame', box(0.5, 5, -18, -23), ROOF, ROOF + 3.4)
     for (const [a, d, wa, wd, h] of [
@@ -787,5 +789,7 @@ export function langdaleHallGeometry(b: LangdaleData) {
     for (const [u0, u1, v0, v1] of glassy) inside.glass.push(wallQuad(at(u0), at(u1), v0, v1, into))
   }
 
-  return { parts: merged(), inside, signs }
+  // the glass and the frames are set into the walls (and the rooftop units are low), their
+  // shadows don't show
+  return { parts: merged(), inside, signs, noShadow: ['glass', 'frame'] }
 }
