@@ -19,7 +19,6 @@
     "frametime": "node scripts/frametime.mjs",
     "walk": "node scripts/walk.mjs",
     "campus": "node scripts/build-campus.mjs",
-    "terrain": "node scripts/build-terrain.mjs",
     "bots": "pnpm --filter @quad/server bots"
   },
   "devDependencies": {
