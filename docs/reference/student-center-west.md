@@ -51,8 +51,13 @@ and #!m/1096640):
 
 - **Material**: white Georgia marble, grey veined and streaked. Rows of tall slabs (1.7 m,
   about 0.85 m wide) with a row of short wide slabs (0.82 m) between them, stacked straight
-  up, no bond. Thin joints. The carved and cast pieces (grilles, columns, copings) are a
-  shade darker. The side on the Urban Life plaza is smooth cream panels, not marble.
+  up, no bond. Thin dark joints that still show from across the street. Up close (the
+  2023 grille photo) it's clouded grey in big soft patches with a few dark streaks and some
+  brown staining; from across the street (2019) an even light grey. The game's marble()
+  has clouds 0.35, veins 0.35 (its baked veins are loops, the real ones streaks, so they're
+  kept faint) and joints 12 mm at 45% darker. The carved and cast pieces (grilles,
+  columns, copings) are a shade darker. The side on the Urban Life plaza is smooth cream
+  panels, not marble.
 - **Height and floors**: at the bookstore end 5 tall and 4 short rows above what shows of
   the bottom short one: 12.2 m. Courtland St is a bridge over Decatur St and climbs toward
   it, so at the Decatur St corner only about 10 m shows (the game's ground is flat, it's
@@ -68,7 +73,8 @@ and #!m/1096640):
   the Decatur St end (it was Cinefest's), a band of five cast stone grilles (6.6 by 2.05 m,
   2.35 m up, 8.35 m apart) in frames that stick out 0.25 m, with a lattice of bars, little
   blocks with holes (the holes are left out, a few cm across) and five big blocks
-  (square, octagon, square, octagon, square), dark windows behind. Then the main entrance 6.5 m from the bookstore end: a 3.5 by 5.1 m
+  (square, octagon, square, octagon, square), dark windows behind. The lattice is drawn
+  as one height field, so no piece hides inside another (see Cost). Then the main entrance 6.5 m from the bookstore end: a 3.5 by 5.1 m
   recess, glass doors in dark bronze, a bronze panel of square ornaments over them, a
   three pane transom. "66" to the left, a small window above, the name plate to the right.
   Six blue GSU banners hang from arms along the top.
@@ -100,24 +106,38 @@ and #!m/1096640):
 
 ## Cost
 
-Measured in one browser, going back and forth between a dev server at the commit before
-and this one, frame times at 1920x1200 (median of 4-6 rounds each, the laptop was busy so
-the absolute numbers are higher than usual; the first, coolest round is about 2 ms lower):
+The walls started out as precast(), because marble()'s veins cost a millisecond more with
+the wall filling the screen. Since the library bakes its noise into the textures (Sept 25)
+marble is about as cheap as precast, so they're marble again.
 
-| view                                              | before | marble() walls | precast() walls | metal() walls |
-| ------------------------------------------------- | ------ | -------------- | --------------- | ------------- |
-| the new visual/frametime view, player far away    | 11.2   | 12.5           | 11.8            | 11.1          |
-| close up of a grille, the wall filling the screen | 12.5   | 15.8           | 14.8            | 13.6          |
+What was left at the close up of the grilles was mostly draw order. three sorts opaque
+meshes by the middle of each one's bounding sphere, before dividing by w, and the campus
+wide meshes (ground, the other buildings, the interiors, trees) have theirs behind you
+almost everywhere, so they're drawn first. Next to the Courtland wall everything behind it
+was shaded, then covered. The library's cutout discards, so the gpu can't skip those
+pixels. Drawing the marble and the stone first while you're within 20 m of the building
+(LandmarkGeometry.first) took 1.0-1.2 ms off there. Always first cost 0.5 ms at Library
+North, where the building is behind others. The grille lattice is drawn as one height
+field now, so no piece hides inside another (13% of a grille was drawn twice before),
+with frame and recess as one piece and no wall under the frame. That didn't change the
+frame time within the noise: the lattice's ~0.6 ms is its own pixels.
 
-The walls are precast(): marble()'s veins cost a millisecond more when the wall fills the
-screen and hardly show from the street, and metal() has no normal or roughness maps. The
-first version had 11 materials, now 8 (every material is a draw call in 5 passes).
+Prod build against the one from before the library (546ae05), in one browser, taking turns,
+2 rounds thrown away and the median of 4 (ms at 1920x1200):
 
-Final, precast walls, with the player where the views put them: the park 10.7 -> 10.6,
-SCE 10.1 -> 10.4, the SCW view 9.9 -> 11.6 (the player is next to SCW's door there, so
-SCW's furniture is drawn instead of the bookstore's), the Decatur St corner 9.3 -> 9.9,
-the grille close up 11.6 -> 14.2 (12.2 in the coolest round). No new shaders: the warm-up
-still builds 877 shaders and 790 pipelines.
+| spot          | before | now  | +    |
+| ------------- | ------ | ---- | ---- |
+| park          | 8.6    | 8.8  | 0.2  |
+| library north | 8.8    | 9.1  | 0.3  |
+| dahlberg      | 9.8    | 9.0  | -0.8 |
+| sce           | 8.0    | 8.5  | 0.5  |
+| scw view      | 8.9    | 9.7  | 0.8  |
+| scw grilles   | 10.3   | 10.7 | 0.4  |
+
+That run was on battery, the charger was out; an earlier run of nearly the same build
+(before the last joint and cloud values) started on AC: grilles +0.4, scw view +0.3,
+library north +0.7, sce +1.0. 8 parts, 13.8k triangles (the grilles went from 1054 to
+1360 triangles each). No new shaders.
 
 ## Building 237 (the bridge)
 
