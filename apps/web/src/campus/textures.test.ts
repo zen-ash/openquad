@@ -1,7 +1,14 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import * as THREE from 'three'
 import { describe, expect, it } from 'vitest'
-import { texture, textureList, textureUrl, type MapKind, type TextureName } from './textures'
+import {
+  texture,
+  textureAverage,
+  textureList,
+  textureUrl,
+  type MapKind,
+  type TextureName,
+} from './textures'
 
 const pub = new URL('../../public/', import.meta.url)
 const files = Object.entries(textureList).flatMap(([name, t]) =>
@@ -15,13 +22,23 @@ describe('textures', () => {
   })
 
   // basisu writes the mipmaps, nothing makes them later. etc1s is basis lz (scheme 1)
-  it.each(files)('%s %s is 512 square etc1s with all its mipmaps', (name, kind) => {
+  it.each(files)('%s %s is square etc1s with all its mipmaps', (name, kind) => {
     const file = readFileSync(new URL(`textures/${name}_${kind}.ktx2`, pub))
     expect(file.subarray(1, 7).toString()).toBe('KTX 20')
     const header = (at: number) => file.readUInt32LE(at)
-    expect([header(20), header(24)]).toEqual([512, 512])
-    expect(header(40)).toBe(10)
+    const size = textureList[name].size ?? 512
+    expect([header(20), header(24)]).toEqual([size, size])
+    expect(header(40)).toBe(Math.log2(size) + 1)
     expect(header(44)).toBe(1)
+  })
+
+  it('knows the average of every color and arm map', () => {
+    for (const [name, kind] of files) {
+      if (kind !== 'color' && kind !== 'arm') continue
+      const average = textureAverage[name]?.[kind]
+      expect(average, `${name} ${kind}`).toHaveLength(kind === 'color' ? 3 : 2)
+      for (const v of average!) expect(v).toBeGreaterThan(0)
+    }
   })
 
   it('serves the transcoder from the same three version', () => {
@@ -41,6 +58,7 @@ describe('textures', () => {
     expect(texture('precast', 'color').colorSpace).toBe(THREE.SRGBColorSpace)
     expect(texture('precast', 'normal').colorSpace).toBe(THREE.NoColorSpace)
     expect(texture('precast', 'arm').colorSpace).toBe(THREE.NoColorSpace)
+    expect(texture('marble', 'mask').colorSpace).toBe(THREE.NoColorSpace)
   })
 
   it("won't make a texture that isn't in the list", () => {

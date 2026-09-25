@@ -2,21 +2,28 @@ import * as THREE from 'three'
 import { dot, materialReference, max, normalMap, sqrt, vec2, vec3 } from 'three/tsl'
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js'
 import type { Node, WebGPURenderer } from 'three/webgpu'
+import averages from './textureAverages.json'
 import list from './textures.json'
 
 // the textures from poly haven (CC0), as ktx2 files that stay compressed on the gpu. made by
 // `pnpm textures` from textures.json, see docs/materials.md
 
 export type TextureName = keyof typeof list
-export type MapKind = 'color' | 'normal' | 'arm'
+// mask is two numbers that aren't colors, like arm (r and alpha)
+export type MapKind = 'color' | 'normal' | 'arm' | 'mask'
 
-// meters is how big one repeat of it is in real life. irregular ones (no pattern, like
-// concrete or grass) and ones in courses (brick) are read so the repeat doesn't show, see
-// untiled() and coursed() in materials.ts
+// meters is how big one repeat of it is in real life. vary ones were baked as that many
+// repeats across without the repeat showing (scripts/textures.mjs), ones in courses (brick)
+// are read so it doesn't show, see coursed() in materials.ts
 export const textureList: Record<
   TextureName,
-  { meters: number; maps: string[]; irregular?: boolean; courses?: number[] }
+  { meters: number; maps: string[]; vary?: number; size?: number; courses?: number[] }
 > = list
+
+// each texture's average color (linear) and ao/roughness, what its 1x1 mipmap comes out as.
+// written by pnpm textures
+export const textureAverage: Partial<Record<TextureName, { color: number[]; arm?: number[] }>> =
+  averages
 
 export const textureUrl = (name: TextureName, kind: MapKind) => `/textures/${name}_${kind}.ktx2`
 

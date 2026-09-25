@@ -18,6 +18,7 @@ import {
   mix,
   mod,
   normalMap,
+  select,
   sin,
   smoothstep,
   step,
@@ -31,7 +32,14 @@ import {
 import { MeshStandardNodeMaterial, type Node, type WebGPURenderer } from 'three/webgpu'
 import { outsideCutout } from './cutout'
 import { night } from './facade'
-import { texture, textureList, unpackNormal, type MapKind, type TextureName } from './textures'
+import {
+  texture,
+  textureAverage,
+  textureList,
+  unpackNormal,
+  type MapKind,
+  type TextureName,
+} from './textures'
 
 // The material library. Every hand-built building takes its surfaces from here, how to use
 // it is in docs/materials.md. Each family (brick, precast, marble...) is one node graph,
@@ -60,6 +68,7 @@ const fromMaterial =
     material?.userData[name]
 const f = (name: string) => uniform(0).onObjectUpdate(fromMaterial(name))
 const v2 = (name: string) => uniform(new THREE.Vector2()).onObjectUpdate(fromMaterial(name))
+const v3 = (name: string) => uniform(new THREE.Vector3()).onObjectUpdate(fromMaterial(name))
 const rgb = (name: string) => uniform(new THREE.Color()).onObjectUpdate(fromMaterial(name))
 
 const once = <T>(make: () => T) => {
@@ -137,26 +146,6 @@ export function shareShadowShaders(renderer: WebGPURenderer) {
 
 export const mHash = (p: Vec2) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453))
 
-function mNoise(p: Vec2) {
-  const i = floor(p)
-  const f0 = fract(p)
-  const t = f0.mul(f0).mul(float(3).sub(f0.mul(2)))
-  const a = mix(mHash(i), mHash(i.add(vec2(1, 0))), t.x)
-  const b = mix(mHash(i.add(vec2(0, 1))), mHash(i.add(vec2(1, 1))), t.x)
-  return mix(a, b, t.y)
-}
-
-// octaves of noise added up. each one is four hashes, so the big soft ones only use two
-export function mFbm(p: Vec2, octaves = 4) {
-  let v: Float = float(0)
-  let q = p
-  for (let i = 0, a = 0.5; i < octaves; i++, a *= 0.5) {
-    v = v.add(mNoise(q).mul(a))
-    q = q.mul(2.03).add(1.7)
-  }
-  return v
-}
-
 // how much of a thin line at distance e (meters) shows, fading out far away where it
 // would just flicker
 export const mLine = (e: Float, width: number, px: Float) =>
@@ -164,24 +153,10 @@ export const mLine = (e: Float, width: number, px: Float) =>
     .sub(smoothstep(width, px.add(width), e))
     .mul(float(1).sub(smoothstep(0.02, 0.06, px)))
 
-/**
- * Reads maps at `at` (in repeats) without the repeat showing, for irregular surfaces
- * (inigo quilez, "texture repetition", the noise version): each patch of about one repeat
- * reads at its own random offset and neighbouring patches blend where they meet. Two reads
- * per map instead of one. Every map read with the same one lines up
- */
-export function untiled(at: Vec2) {
-  const l = mNoise(at.mul(1.3)).mul(8)
-  const k = floor(l)
-  const oa = sin(vec2(3, 7).mul(k))
-  const ob = sin(vec2(3, 7).mul(k.add(1)))
-  const blend = smoothstep(0.2, 0.8, fract(l))
-  // the gradients of the real uv, or there'd be seams where the offset jumps
-  const dx = dFdx(at)
-  const dy = dFdy(at)
-  return (map: THREE.Texture) =>
-    mix(sample(map, at.add(oa)).grad(dx, dy), sample(map, at.add(ob)).grad(dx, dy), blend)
-}
+// where a texture repeats `size` meters (its real size by default). the ones baked as
+// several repeats (vary in textures.json) cover that many more
+const repeats = (name: TextureName, size: Float) =>
+  meters.div(size.mul(textureList[name].vary ?? 1))
 
 /**
  * Reads maps at `at` (in repeats) for textures laid in courses, like brick: every pair of
@@ -199,48 +174,53 @@ export function coursed(at: Vec2, [count, first]: number[]) {
   return (map: THREE.Texture) => sample(map, at.add(shift)).grad(dx, dy)
 }
 
+// a random offset into a texture for each panel or slab, so neighbours never show the
+// same bit of it. from the one hash the panel already has, no new ones
+const scatter = (r: Float) => fract(vec2(r, r).mul(vec2(17.3, 31.7)))
+
 const lum = (c: Vec3) => dot(c, vec3(0.3, 0.59, 0.11))
-// a texture's average, its 1x1 mipmap. the max is for before it's loaded
-const average = (map: THREE.Texture) => max(sample(map, vec2(0.5)).level(float(16)), 0.01)
 
 /**
- * One of the textures at `at` (in repeats). Everything comes back relative to the
- * texture's own average: color 1 is the material's color, so a color picked from a photo
- * is what the wall comes out as, and ao/roughness 1 is the material's number. contrast is
- * how strong the texture's light and dark is, saturation how much of its own color
- * variation to keep (0 is just light and dark)
+ * One of the textures at `at` (in repeats), one read per map. Everything comes back
+ * relative to the texture's own average: color 1 is the material's color, so a color
+ * picked from a photo is what the wall comes out as, and ao/roughness 1 is the material's
+ * number. contrast is how strong the texture's light and dark is, saturation how much of
+ * its own color variation to keep (0 is just light and dark)
  */
 function read(name: TextureName, at: Vec2, saturation: Float, contrast: Float) {
   const t = textureList[name]
   const maps = t.maps as MapKind[]
-  const reader = t.irregular ? untiled(at) : t.courses ? coursed(at, t.courses) : null
-  const get = (kind: MapKind) => {
-    const map = texture(name, kind)
-    return { value: reader ? reader(map) : sample(map, at), average: average(map) }
-  }
-  const c = get('color')
-  const detail = mix(
-    vec3(lum(c.value.rgb).div(lum(c.average.rgb))),
-    c.value.rgb.div(c.average.rgb),
-    saturation,
-  )
+  const reader = t.courses ? coursed(at, t.courses) : (map: THREE.Texture) => sample(map, at)
+  const get = (kind: MapKind) => reader(texture(name, kind))
+  const average = v3('average')
+  const c = get('color').rgb
+  const detail = mix(vec3(lum(c).div(lum(average))), c.div(average), saturation)
   const color = mix(vec3(1), detail, contrast)
-  const normal = unpackNormal(get('normal').value)
+  const normal = unpackNormal(get('normal'))
   if (!maps.includes('arm')) return { color, normal, ao: float(1), rough: float(1) }
   const arm = get('arm')
-  return {
-    color,
-    normal,
-    ao: arm.value.r.div(arm.average.r),
-    rough: arm.value.a.div(arm.average.a),
-  }
+  const armAverage = v2('armAverage')
+  return { color, normal, ao: arm.r.div(armAverage.x), rough: arm.a.div(armAverage.y) }
 }
 
-// weathering: darker streaks and blotches, more near the ground. dirt 0 is clean
+// a texture's averages, worked out by pnpm textures (textureAverages.json). they go on the
+// material like everything else, so surfaces that only differ in their texture (paving and
+// wood) still come out as the same shader code
+function averages(name: TextureName) {
+  const { color, arm = [1, 1] } = textureAverage[name]!
+  return { average: new THREE.Vector3(...color), armAverage: vec(arm as Pair) }
+}
+
+// the big soft weathering, baked (grime.ktx2, 40 m across): r is dark blotches, alpha a
+// slow drift in tone. one read for everything that uses it
+const weathering = once(() =>
+  sample(texture('grime', 'mask'), meters.div(textureList.grime.meters)),
+)
+
+// weathering: darker blotches, more near the ground. dirt 0 is clean
 const grime = once(() => {
-  const blotch = mFbm(meters.mul(vec2(0.35, 0.12)), 2).mul(1.33)
   const ground = exp(meters.y.div(-1.2))
-  return float(1).sub(f('dirt').mul(blotch.mul(0.35).add(ground.mul(0.25))))
+  return float(1).sub(f('dirt').mul(weathering().r.mul(0.35).add(ground.mul(0.25))))
 })
 
 type Common = {
@@ -261,6 +241,7 @@ type Common = {
 }
 
 const common = (name: TextureName, p: Common, roughness: number, contrast = 1, bump = 1) => ({
+  ...averages(name),
   size: p.size ?? textureList[name].meters,
   roughness: p.roughness ?? roughness,
   contrast: p.contrast ?? contrast,
@@ -270,8 +251,8 @@ const common = (name: TextureName, p: Common, roughness: number, contrast = 1, b
 })
 
 // the basic textured surface: color, normal and roughness from a texture set
-function surfaceNodes(name: TextureName) {
-  const s = read(name, meters.div(f('size')), f('saturation'), f('contrast'))
+function surfaceNodes(name: TextureName, at = repeats(name, f('size'))) {
+  const s = read(name, at, f('saturation'), f('contrast'))
   return {
     s,
     nodes: {
@@ -294,8 +275,8 @@ export function surface(name: TextureName, p: Common) {
   return material(name, nodes, p.color, common(name, p, 0.9))
 }
 export const paving = (p: Common) => surface('sidewalk', p)
-export const lawn = (p: Common) => surface('grass', p)
-export const gravelRoof = (p: Common) => surface('roof', p)
+export const lawn = (p: Common) => surface('lawn', p)
+export const gravelRoof = (p: Common) => surface('gravel', p)
 export const wood = (p: Common) => surface('floor', p)
 
 // warm light shining up a wall from fittings along the bottom every `spacing` meters, on
@@ -315,10 +296,7 @@ const brickNodes = once(() => {
   const [spacing, strength] = [v2('uplight').x, v2('uplight').y]
   // bricks from different batches: a slow drift in tone, so the repeat doesn't show as
   // a grid of the same light and dark bricks
-  const batches = mFbm(meters.mul(vec2(0.3, 0.6)), 2)
-    .mul(1.33)
-    .mul(0.14)
-    .add(0.93)
+  const batches = weathering().a.mul(0.14).add(0.93)
   return {
     ...nodes,
     colorNode: materialColor.rgb.mul(s.color).mul(batches).mul(grime()),
@@ -359,9 +337,11 @@ function joint(e: Float, width: Float, cell: Vec2) {
 }
 
 const precastNodes = once(() => {
-  const { s, nodes } = surfaceNodes('precast')
   const cell = v2('panel')
   const { e, id } = grid(cell, v2('offset'))
+  const r = mHash(id)
+  // each panel its own bit of the concrete
+  const { s, nodes } = surfaceNodes('precast', repeats('precast', f('size')).add(scatter(r)))
   const width = f('joint')
   const inJoint = joint(e, width, cell)
   // a dark line where the panel's edge drops into the joint
@@ -369,7 +349,7 @@ const precastNodes = once(() => {
   const edge = float(1)
     .sub(smoothstep(0.015, px.add(0.015), abs(e.sub(width.mul(0.5)))))
     .mul(float(1).sub(smoothstep(0.03, 0.09, px)))
-  const tone = mHash(id).sub(0.5).mul(f('tone')).add(1)
+  const tone = r.sub(0.5).mul(f('tone')).add(1)
   const shade = mix(tone, f('shade'), inJoint).mul(float(1).sub(edge.mul(f('reveal'))))
   return { ...nodes, colorNode: materialColor.rgb.mul(s.color).mul(shade).mul(grime()) }
 })
@@ -430,45 +410,29 @@ export function concrete(p: Common & { boards?: Pair }) {
 }
 
 const marbleNodes = once(() => {
-  // the stone's own grain: the fine concrete's bumps and roughness, turned down
-  const s = read('precast', meters.div(2.4), float(0), float(0))
   const slab = v2('slab')
   const [w, h] = [slab.x, slab.y]
   const row = floor(meters.y.div(h))
   const sx = meters.x.add(mod(row, 2).mul(w).mul(f('bond')))
   const id = vec2(floor(sx.div(w)), row)
-  const q = meters.add(id.mul(3.1))
-  const vein = abs(
-    sin(
-      q.x
-        .mul(1.1)
-        .add(q.y.mul(0.6))
-        .add(mFbm(q.mul(1.4)).mul(6)),
-    ),
-  )
-  const vein2 = abs(
-    sin(
-      q.x
-        .mul(0.4)
-        .sub(q.y.mul(1.7))
-        .add(mFbm(q.mul(2.3).add(4)).mul(5)),
-    ),
-  )
-  const stone = materialColor.rgb
-    .mul(mHash(id).mul(0.12).add(0.88))
-    .mul(mFbm(q.mul(0.8)).mul(0.2).add(0.86))
+  const r = mHash(id)
+  // each slab is cut from its own part of the stone: a random spot in the baked clouds and
+  // veins (marble.ktx2), turned on its side for half of them
+  const spot = scatter(r)
+  const q = meters.div(textureList.marble.meters).add(spot)
+  const m = sample(texture('marble', 'mask'), select(fract(r.mul(5.1)).greaterThan(0.5), q.yx, q))
+  // the stone's grain: the fine concrete's bumps and roughness, turned down
+  const s = read('precast', repeats('precast', float(2.4)).add(spot), float(0), float(0))
+  const stone = materialColor.rgb.mul(r.mul(0.12).add(0.88)).mul(m.r.mul(0.2).add(0.86))
   // grey clouds and veins, a little bluer than the stone
   const grey = stone.mul(vec3(0.74, 0.76, 0.79))
-  const veined = float(1).sub(
-    smoothstep(0, 0.14, vein).mul(mix(0.55, 1, smoothstep(0, 0.06, vein2))),
-  )
   // the joints between slabs
   const jx = fract(sx.div(w)).mul(w)
   const jy = fract(meters.y.div(h)).mul(h)
   const px = length(fwidth(meters))
   const joints = max(mLine(min(jx, w.sub(jx)), 0.006, px), mLine(min(jy, h.sub(jy)), 0.006, px))
   return {
-    colorNode: mix(stone, grey, min(1, veined.mul(f('veins'))))
+    colorNode: mix(stone, grey, min(1, m.a.mul(f('veins'))))
       .mul(float(1).sub(joints.mul(0.25)))
       .mul(grime()),
     normalNode: normalMap(s.normal, f('bump')),
@@ -479,14 +443,16 @@ const marbleNodes = once(() => {
 
 /**
  * Marble in slabs: each slab a slightly different tone, cloudy, with faint grey veins.
- * Poly Haven doesn't have one like gsu's white georgia marble, so the color is done in the
- * shader. bond is how far each row of slabs is shifted (0.5 like bricks, 0 for a
- * straight grid)
+ * Poly Haven doesn't have one like gsu's white georgia marble, so the clouds and veins are
+ * made by scripts/textures.mjs. bond is how far each row of slabs is shifted (0.5 like
+ * bricks, 0 for a straight grid)
  */
 export function marble(
   p: Omit<Common, 'size' | 'saturation'> & { slab?: Pair; veins?: number; bond?: number },
 ) {
   return material('marble', marbleNodes(), p.color, {
+    // its grain is the precast texture's
+    ...averages('precast'),
     roughness: p.roughness ?? 0.4,
     bump: p.bump ?? 0.3,
     dirt: p.dirt ?? 0,
@@ -512,8 +478,12 @@ const metalNodes = once(() => {
   const fade = float(1).sub(smoothstep(0.02, 0.08, px))
   const groove = smoothstep(0.35, 0.5, abs(r.sub(0.5)).add(0.2))
   const ribs = float(1).sub(fade.mul(groove).mul(depth))
-  // never quite even: a little blotchy, smudges change how shiny it is
-  const blotch = mFbm(meters.mul(0.6), 2).mul(1.33)
+  // never quite even: a little blotchy, smudges change how shiny it is. the batches in
+  // the weathering texture (grime.ktx2), squashed to round blotches
+  const blotch = sample(
+    texture('grime', 'mask'),
+    meters.mul(vec2(2, 1)).div(textureList.grime.meters),
+  ).a
   return {
     colorNode: materialColor.rgb.mul(panels).mul(ribs).mul(blotch.mul(0.08).add(0.96)),
     roughnessNode: f('roughness').mul(blotch.mul(0.3).add(0.85)),
