@@ -159,8 +159,6 @@ const MEASURED_HEIGHTS = {
   '58 Edgewood': 16.5,
   // floors: 5
   'Science Annex': 18,
-  // floors: the marble box on courtland is about 3
-  'Student Center West': 13,
 }
 
 function heightOf(tags) {
@@ -717,6 +715,44 @@ function studentCenterEast(b, lobby) {
   ]
 }
 
+// student center west, the old university center (1963). a white marble box on courtland
+// street, drawn in campus/studentCenterWest.ts. osm's outline is right, it just has no
+// height and findDoor picks a side door
+const STUDENT_CENTER_WEST = {
+  // ends of the courtland street front: the decatur street corner, then the bookstore end
+  front: [
+    { lat: 33.7523165, lon: -84.3864048 },
+    { lat: 33.7528475, lon: -84.3858484 },
+  ],
+  // 5 rows of tall marble slabs and 4 of short ones, counted at the bookstore end. courtland
+  // street is on a bridge and climbs toward decatur street, the wall is 2m shorter there
+  height: 12.2,
+  // the doors under "66", meters from the bookstore end
+  door: 6.5,
+}
+
+function studentCenterWest(b) {
+  const [from, to] = STUDENT_CENTER_WEST.front.map((c) => {
+    const [x, z] = toLocal(c)
+    return b.points.reduce((best, p) =>
+      Math.hypot(p[0] - x, p[1] - z) < Math.hypot(best[0] - x, best[1] - z) ? p : best,
+    )
+  })
+  const len = Math.hypot(to[0] - from[0], to[1] - from[1])
+  const along = [(to[0] - from[0]) / len, (to[1] - from[1]) / len]
+  // out of the front, toward courtland street
+  const out = [along[1], -along[0]]
+  const a = len - STUDENT_CENTER_WEST.door
+  b.height = STUDENT_CENTER_WEST.height
+  b.landmark = { front: [from, to] }
+  b.door = [
+    round(from[0] + along[0] * a),
+    round(from[1] + along[1] * a),
+    Math.round(out[0] * 100) / 100,
+    Math.round(out[1] * 100) / 100,
+  ]
+}
+
 function main(elements) {
   const buildings = []
   const roads = []
@@ -838,6 +874,8 @@ function main(elements) {
   if (hall) dahlberg(hall)
   const arts = buildings.find((b) => b.name === 'Arts & Humanities')
   if (arts) artsHumanities(arts)
+  const scw = buildings.find((b) => b.name === 'Student Center West')
+  if (scw) studentCenterWest(scw)
   for (const b of NEW_BUILDINGS) buildings.push({ ...b, height: b.height * SCALE, gsu: true })
   const sce = buildings.find((b) => b.name === 'Student Center East')
   const lobby = buildings.find((b) => b.lobby)

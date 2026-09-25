@@ -6,6 +6,7 @@ import { landmarkGeometry, type Sign } from '../campus/landmarks'
 import { libraryNorthMaterials } from '../campus/libraryNorthMaterials'
 import { researchTowerMaterials } from '../campus/researchTowerMaterials'
 import { studentCenterEastMaterials } from '../campus/studentCenterEastMaterials'
+import { studentCenterWestMaterials } from '../campus/studentCenterWestMaterials'
 import Label from './Label'
 
 const materials: Record<string, Record<string, THREE.Material>> = {
@@ -14,6 +15,7 @@ const materials: Record<string, Record<string, THREE.Material>> = {
   'Arts & Humanities': artsHumanitiesMaterials,
   'Research Tower': researchTowerMaterials,
   'Student Center East': studentCenterEastMaterials,
+  'Student Center West': studentCenterWestMaterials,
 }
 
 // white sign with the name in gsu blue. the real ones have the logo where the blue
@@ -33,18 +35,27 @@ function NameSign({ sign }: { sign: Sign }) {
         {sign.text}
       </Label>
     )
-  const width = 0.8 + sign.text.length * 0.23
+  // two lines on some of them (student center west)
+  const lines = sign.text.split('\n')
+  const width = 0.8 + Math.max(...lines.map((l) => l.length)) * 0.23
+  const height = 0.75 + (lines.length - 1) * 0.45
   return (
     <group position={[sign.x, sign.y, sign.z]} rotation-y={sign.rot} scale={sign.scale ?? 1}>
       <mesh>
-        <planeGeometry args={[width, 0.75]} />
-        <meshStandardMaterial color="#f4f4f2" />
+        <planeGeometry args={[width, height]} />
+        <meshStandardMaterial color={sign.plate ?? '#f4f4f2'} />
       </mesh>
       <mesh position={[-width / 2 + 0.35, 0, 0.01]}>
         <planeGeometry args={[0.55, 0.55]} />
         <meshStandardMaterial color="#1f4b99" />
       </mesh>
-      <Label position={[0.25, 0, 0.02]} fontSize={0.36} color="#1f3f86" fontWeight={700}>
+      <Label
+        position={[0.25, 0, 0.02]}
+        fontSize={0.36}
+        lineHeight={1.25}
+        color={sign.color ?? '#1f3f86'}
+        fontWeight={700}
+      >
         {sign.text}
       </Label>
     </group>
