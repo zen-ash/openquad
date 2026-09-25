@@ -40,6 +40,7 @@ const VIEWS = [
   { name: 'arts-humanities', from: [-84, 2.5, -4], at: [-108, 7, 22], player: [-82, -6] },
   { name: 'research-tower', from: [36, 3, 465], at: [25, 20, 415], player: [37, 468] },
   { name: 'student-center-east', from: [8, 3, 100], at: [30, 5, 145], player: [6, 97] },
+  { name: 'student-center-west', from: [-53, 3, 146.4], at: [-71.7, 6, 185.8], player: [-51, 144] },
   {
     name: 'library-north-inside',
     from: [-93.8, 1.7, 142.9],
