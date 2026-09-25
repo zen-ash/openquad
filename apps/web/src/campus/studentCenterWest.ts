@@ -49,6 +49,9 @@ export const RISE = 4
 export const GRILLES = [21.6, 29.95, 38.3, 46.65, 55]
 const GRILLE_WIDTH = 6.6
 const GRILLE: [number, number] = [2.35, 4.4]
+// the frame round each grille, [sides, below, above], and how far it sticks out
+const RIM: [number, number, number] = [0.3, 0.22, 0.2]
+const RIM_OUT = 0.25
 // the doors under "66" (the door is in the middle of them) and the side door under the
 // window at the decatur street end, which was cinefest's
 const ENTRANCE: [number, number] = [69.84, 73.34]
@@ -223,9 +226,14 @@ export function studentCenterWestGeometry(b: StudentCenterWestData) {
       { hole: [5.45, 6.7, 5.55, 6.75], depth: 0.2, glass: true },
       { hole: [71.17, 72.56, 8.1, 9.5], depth: 0.2, glass: true },
       { hole: [...ENTRANCE, 0, ENTRANCE_TOP], depth: 0.35, open: true },
+      // the hole takes in the frame round the grille, the frame covers it
       ...GRILLES.map((c): Opening => ({
-        hole: [c - GRILLE_WIDTH / 2, c + GRILLE_WIDTH / 2, ...GRILLE],
-        depth: 0.45,
+        hole: [
+          c - GRILLE_WIDTH / 2 - RIM[0],
+          c + GRILLE_WIDTH / 2 + RIM[0],
+          GRILLE[0] - RIM[1],
+          GRILLE[1] + RIM[2],
+        ],
         open: true,
       })),
     ].map((o) => ({
@@ -286,10 +294,24 @@ export function studentCenterWestGeometry(b: StudentCenterWestData) {
   }
 
   // the sides and top of a shallow opening that's filled in separately
-  function recess(w: Wall, u0: number, u1: number, v0: number, v1: number, depth: number) {
-    add('stone', wallQuad(w.at(u0), w.at(u0, -depth), v0, v1, w.dir))
-    add('stone', wallQuad(w.at(u1), w.at(u1, -depth), v0, v1, flip(w.dir)))
-    add('stone', flat([w.at(u0), w.at(u1), w.at(u1, -depth), w.at(u0, -depth)], v1, false))
+  function recess(
+    w: Wall,
+    u0: number,
+    u1: number,
+    v0: number,
+    v1: number,
+    depth: number,
+    front = 0,
+  ) {
+    add('stone', wallQuad(w.at(u0, front), w.at(u0, -depth), v0, v1, w.dir))
+    add('stone', wallQuad(w.at(u1, front), w.at(u1, -depth), v0, v1, flip(w.dir)))
+    const rim = (v: number, up: boolean) =>
+      add(
+        'stone',
+        flat([w.at(u0, front), w.at(u1, front), w.at(u1, -depth), w.at(u0, -depth)], v, up),
+      )
+    rim(v1, false)
+    if (v0 > 0.01) rim(v0, true)
   }
 
   // dark bronze jambs and head round a door
@@ -299,75 +321,194 @@ export function studentCenterWestGeometry(b: StudentCenterWestData) {
     lump('frame', w, u0, u1, top - 0.1, top, d + 0.06, d)
   }
 
-  // a grille of cast stone in a recess, the dark windows behind it. a band of little
-  // blocks along the top and the bottom, each with a hole in it, and in the middle bars
-  // with five big blocks on a rail: square, octagon, square, octagon, square
+  // a grille of cast stone in a deep frame, the dark windows behind it. a band of little
+  // blocks along the top and the bottom, and in the middle bars with five big blocks on a
+  // rail: square, octagon, square, octagon, square (gsu's 2023 photo along the wall)
   function grille(w: Wall, u0: number, u1: number) {
     const [y0, y1] = GRILLE
-    const depth = 0.45
-    recess(w, u0, u1, y0, y1, depth)
-    add('stone', flat([w.at(u0), w.at(u1), w.at(u1, -depth), w.at(u0, -depth)], y0))
-    add('glass', glassQuad(w.at(u0, -depth), w.at(u1, -depth), y0, y1, w.o))
-    // the frame round it and the lattice stick out of the wall (gsu's 2023 photo along it)
-    const out = 0.25
-    lump('stone', w, u0 - 0.3, u1 + 0.3, y0 - 0.22, y0, out)
-    lump('stone', w, u0 - 0.3, u1 + 0.3, y1, y1 + 0.2, out)
-    lump('stone', w, u0 - 0.3, u0, y0, y1, out)
-    lump('stone', w, u1, u1 + 0.3, y0, y1, out)
-    const [front, back] = [0.1, -0.1]
+    const [side, below, above] = RIM
+    recess(w, u0, u1, y0, y1, 0.45, RIM_OUT)
+    add('glass', glassQuad(w.at(u0, -0.45), w.at(u1, -0.45), y0, y1, w.o))
+    // the frame: its face and its outside edges. the recess is its inside
+    const f0 = [u0 - side, u1 + side, y0 - below, y1 + above] as const
+    for (const [a, b, c, d] of [
+      [f0[0], f0[1], f0[2], y0],
+      [f0[0], f0[1], y1, f0[3]],
+      [f0[0], u0, y0, y1],
+      [u1, f0[1], y0, y1],
+    ] as const)
+      add('stone', wallQuad(w.at(a, RIM_OUT), w.at(b, RIM_OUT), c, d, w.o, a))
+    add('stone', wallQuad(w.at(f0[0]), w.at(f0[0], RIM_OUT), f0[2], f0[3], flip(w.dir)))
+    add('stone', wallQuad(w.at(f0[1]), w.at(f0[1], RIM_OUT), f0[2], f0[3], w.dir))
+    const edge = (y: number, up: boolean) =>
+      add(
+        'stone',
+        flat([w.at(f0[0]), w.at(f0[1]), w.at(f0[1], RIM_OUT), w.at(f0[0], RIM_OUT)], y, up),
+      )
+    edge(f0[3], true)
+    edge(f0[2], false)
+
+    // the lattice, as [u0, u1, y0, y1, how far out]. it all goes back to `back`
+    const front = 0.1
+    const back = -0.1
     const band = 0.34
     const cy = (y0 + y1) / 2
-    for (const [a, b] of [
-      [y0, y0 + 0.08],
-      [y0 + band, y0 + band + 0.09],
-      [y1 - band - 0.09, y1 - band],
-      [y1 - 0.08, y1],
-    ])
-      lump('stone', w, u0, u1, a!, b!, front, back)
-    lump('stone', w, u0, u1, cy - 0.08, cy + 0.08, front + 0.03, back)
-    const n = Math.round((u1 - u0) / 0.33)
-    const step = (u1 - u0) / n
-    // the little blocks, and bars between them in the middle
+    const pieces: number[][] = [
+      [u0, u1, y0, y0 + 0.08, front],
+      [u0, u1, y0 + band, y0 + band + 0.09, front],
+      [u0, u1, y1 - band - 0.09, y1 - band, front],
+      [u0, u1, y1 - 0.08, y1, front],
+      [u0, u1, cy - 0.08, cy + 0.08, front + 0.03],
+    ]
     const block = (c: number, y: number) =>
-      lump('stone', w, c - 0.1, c + 0.1, y - 0.1, y + 0.1, front + 0.02, back)
+      pieces.push([c - 0.1, c + 0.1, y - 0.1, y + 0.1, front + 0.02])
+    const n = Math.round((u1 - u0) / 0.33)
     for (let i = 0; i < n; i++) {
-      const c = u0 + step * (i + 0.5)
+      const c = u0 + ((u1 - u0) * (i + 0.5)) / n
       block(c, y0 + 0.08 + (band - 0.08) / 2)
       block(c, y1 - 0.08 - (band - 0.08) / 2)
-      lump('stone', w, c - 0.035, c + 0.035, y0 + band + 0.09, y1 - band - 0.09, front - 0.02, back)
+      pieces.push([c - 0.035, c + 0.035, y0 + band + 0.09, y1 - band - 0.09, front - 0.02])
     }
-    const m = 5
-    for (let i = 0; i < m; i++) {
-      const c = u0 + ((u1 - u0) * (i + 0.5)) / m
-      if (i % 2) {
-        octagon(w, c, cy, 0.42, front + 0.12, back)
-        octagon(w, c, cy, 0.15, front + 0.22, front + 0.12)
-      } else {
-        lump('stone', w, c - 0.34, c + 0.34, cy - 0.4, cy + 0.4, front + 0.12, back)
-        lump('stone', w, c - 0.2, c + 0.1, cy - 0.12, cy + 0.2, front + 0.22, front + 0.12)
-      }
+    // the octagons are drawn on their own, the lattice leaves a cross shaped gap for each
+    const octagons: number[] = []
+    for (let i = 0; i < 5; i++) {
+      const c = u0 + ((u1 - u0) * (i + 0.5)) / 5
+      if (i % 2) octagons.push(c)
+      else
+        pieces.push(
+          [c - 0.34, c + 0.34, cy - 0.4, cy + 0.4, front + 0.12],
+          [c - 0.2, c + 0.1, cy - 0.12, cy + 0.2, front + 0.22],
+        )
       // and the little blocks either side of the big ones
       for (const k of [-1, 1])
         for (const y of [cy - 0.3, cy + 0.3]) block(c + k * (u1 - u0) * 0.1, y)
     }
+    const R = 0.42
+    const K = R * Math.tan(Math.PI / 8)
+    for (const c of octagons) {
+      pieces.push([c - K, c + K, cy - R, cy + R, NaN], [c - R, c + R, cy - K, cy + K, NaN])
+      octagon(w, c, cy, R, front + 0.12, back, 0.15)
+      octagon(w, c, cy, 0.15, front + 0.22, front + 0.12)
+    }
+    lattice(w, u0, u1, y0, y1, pieces, back)
   }
 
-  // an eight sided block sticking out of a wall
-  function octagon(w: Wall, c: number, cy: number, r: number, d1: number, d0: number) {
-    const k = r * Math.tan(Math.PI / 8)
-    const ring = [
-      [-k, -r],
-      [k, -r],
-      [r, -k],
-      [r, k],
-      [k, r],
-      [-k, r],
-      [-r, k],
-      [-r, -k],
-    ].map(([du, dy]) => [c + du!, cy + dy!] as const)
-    ring.forEach(([pu, py], i) => {
-      const [qu, qy] = ring[(i + 1) % ring.length]!
-      // each side faces away from the middle, the face is a fan from the middle
+  /**
+   * Pieces sticking out of a wall, drawn as one height field: the grid of cells between all
+   * their edges, each as far out as the piece in front there, NaN for a gap left for
+   * something drawn on its own. Every face is where it shows and none hides behind another
+   * piece. The library's cutout discards, so the gpu can't skip pixels that end up hidden
+   */
+  function lattice(
+    w: Wall,
+    u0: number,
+    u1: number,
+    y0: number,
+    y1: number,
+    pieces: number[][],
+    back: number,
+  ) {
+    const cut = (k: number, lo: number, hi: number) =>
+      [...new Set([lo, hi, ...pieces.map((p) => Math.round(p[k]! * 1e4) / 1e4)])]
+        .filter((x) => x >= lo && x <= hi)
+        .sort((a, b) => a - b)
+    const us = [...new Set([...cut(0, u0, u1), ...cut(1, u0, u1)])].sort((a, b) => a - b)
+    const ys = [...new Set([...cut(2, y0, y1), ...cut(3, y0, y1)])].sort((a, b) => a - b)
+    const [nu, ny] = [us.length - 1, ys.length - 1]
+    // how far out each cell is, back for a hole
+    const out = (i: number, j: number) => {
+      const [u, y] = [(us[i]! + us[i + 1]!) / 2, (ys[j]! + ys[j + 1]!) / 2]
+      let d = back
+      for (const p of pieces)
+        if (u > p[0]! && u < p[1]! && y > p[2]! && y < p[3]!)
+          d = Number.isNaN(p[4]) || Number.isNaN(d) ? NaN : Math.max(d, p[4]!)
+      return d
+    }
+    const d = us.slice(1).map((_, i) => ys.slice(1).map((_, j) => out(i, j)))
+    const at = (i: number, j: number) => d[i]![j]!
+
+    // the faces: greedy rectangles of cells that match
+    const used = d.map((col) => col.map(() => false))
+    for (let j = 0; j < ny; j++)
+      for (let i = 0; i < nu; i++) {
+        const v = at(i, j)
+        if (used[i]![j] || !(v > back)) continue
+        let i1 = i
+        while (i1 + 1 < nu && at(i1 + 1, j) === v && !used[i1 + 1]![j]) i1++
+        let j1 = j
+        const rowMatches = (jj: number) => {
+          for (let k = i; k <= i1; k++) if (at(k, jj) !== v || used[k]![jj]) return false
+          return true
+        }
+        while (j1 + 1 < ny && rowMatches(j1 + 1)) j1++
+        for (let k = i; k <= i1; k++) for (let jj = j; jj <= j1; jj++) used[k]![jj] = true
+        add(
+          'stone',
+          wallQuad(w.at(us[i]!, v), w.at(us[i1 + 1]!, v), ys[j]!, ys[j1 + 1]!, w.o, us[i]!),
+        )
+      }
+
+    // the sides where neighbouring cells stick out different amounts, joined up along the
+    // line. none along the edges of the grille, the frame's there
+    const step = (a: number, b: number) =>
+      Number.isNaN(a) || Number.isNaN(b) || a === b ? null : `${a},${b}`
+    for (let i = 1; i < nu; i++)
+      for (let j = 0; j < ny;) {
+        const key = step(at(i - 1, j), at(i, j))
+        let j1 = j
+        while (j1 + 1 < ny && step(at(i - 1, j1 + 1), at(i, j1 + 1)) === key) j1++
+        if (key) {
+          const [a, b] = [at(i - 1, j), at(i, j)]
+          const u = us[i]!
+          add(
+            'stone',
+            wallQuad(
+              w.at(u, Math.min(a, b)),
+              w.at(u, Math.max(a, b)),
+              ys[j]!,
+              ys[j1 + 1]!,
+              a > b ? w.dir : flip(w.dir),
+            ),
+          )
+        }
+        j = j1 + 1
+      }
+    for (let j = 1; j < ny; j++)
+      for (let i = 0; i < nu;) {
+        const key = step(at(i, j - 1), at(i, j))
+        let i1 = i
+        while (i1 + 1 < nu && step(at(i1 + 1, j - 1), at(i1 + 1, j)) === key) i1++
+        if (key) {
+          const [a, b] = [at(i, j - 1), at(i, j)]
+          const [lo, hi] = [Math.min(a, b), Math.max(a, b)]
+          const [p, q] = [us[i]!, us[i1 + 1]!]
+          add('stone', flat([w.at(p, lo), w.at(q, lo), w.at(q, hi), w.at(p, hi)], ys[j]!, a > b))
+        }
+        i = i1 + 1
+      }
+  }
+
+  // an eight sided block sticking out of a wall, a ring round a hole `inner` across if
+  // something else sits in the middle
+  function octagon(w: Wall, c: number, cy: number, r: number, d1: number, d0: number, inner = 0) {
+    const ring = (rr: number) => {
+      const k = rr * Math.tan(Math.PI / 8)
+      return [
+        [-k, -rr],
+        [k, -rr],
+        [rr, -k],
+        [rr, k],
+        [k, rr],
+        [-k, rr],
+        [-rr, k],
+        [-rr, -k],
+      ].map(([du, dy]) => [c + du!, cy + dy!] as const)
+    }
+    const outer = ring(r)
+    const hole = inner ? ring(inner) : null
+    outer.forEach(([pu, py], i) => {
+      const [qu, qy] = outer[(i + 1) % outer.length]!
+      // each side faces away from the middle
       const side = [pu + qu - 2 * c, 0, py + qy - 2 * cy]
       add(
         'stone',
@@ -393,18 +534,45 @@ export function studentCenterWestGeometry(b: StudentCenterWestData) {
           side,
         ),
       )
-      add(
-        'stone',
-        triangles(
-          w,
-          [
-            [c, cy, d1],
-            [pu, py, d1],
-            [qu, qy, d1],
-          ],
-          [0, 1, 0],
-        ),
-      )
+      if (hole) {
+        const [[hu, hy], [ku, ky]] = [hole[i]!, hole[(i + 1) % hole.length]!]
+        add(
+          'stone',
+          triangles(
+            w,
+            [
+              [pu, py, d1],
+              [qu, qy, d1],
+              [ku, ky, d1],
+            ],
+            [0, 1, 0],
+          ),
+        )
+        add(
+          'stone',
+          triangles(
+            w,
+            [
+              [pu, py, d1],
+              [ku, ky, d1],
+              [hu, hy, d1],
+            ],
+            [0, 1, 0],
+          ),
+        )
+      } else
+        add(
+          'stone',
+          triangles(
+            w,
+            [
+              [c, cy, d1],
+              [pu, py, d1],
+              [qu, qy, d1],
+            ],
+            [0, 1, 0],
+          ),
+        )
     })
   }
 
@@ -700,5 +868,7 @@ export function studentCenterWestGeometry(b: StudentCenterWestData) {
     }
   }
 
-  return { parts: merged(), inside, signs }
+  // the marble wall and the stone on it drawn first while you're close: at the grilles
+  // that's a millisecond (docs/reference/student-center-west.md)
+  return { parts: merged(), inside, signs, first: ['marble', 'stone'] }
 }

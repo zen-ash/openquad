@@ -119,6 +119,42 @@ describe('student center west', () => {
     expect(triangles).toBeLessThan(60_000)
   })
 
+  it('draws each bit of a grille once, nothing hidden behind another piece', () => {
+    // the cutout's discard means the gpu shades every face it's given, even ones behind
+    // others. look along the wall at the first grille: count the stone faces facing the
+    // street over each spot
+    const len = Math.hypot(ne.x - sw.x, ne.z - sw.z)
+    const along = { x: (ne.x - sw.x) / len, z: (ne.z - sw.z) / len }
+    const out = { x: along.z, z: -along.x }
+    const pos = parts.stone.getAttribute('position')
+    const normal = parts.stone.getAttribute('normal')
+    const tris: number[][][] = []
+    for (let i = 0; i < pos.count; i += 3) {
+      if (normal.getX(i) * out.x + normal.getZ(i) * out.z < 0.99) continue
+      tris.push(
+        [0, 1, 2].map((k) => {
+          const [x, z] = [pos.getX(i + k) - sw.x, pos.getZ(i + k) - sw.z]
+          return [x * along.x + z * along.z, pos.getY(i + k)]
+        }),
+      )
+    }
+    const inside = ([px, py]: [number, number], [a, b, c]: number[][]) => {
+      const s = (p: number[], q: number[]) =>
+        (q[0]! - p[0]!) * (py - p[1]!) - (q[1]! - p[1]!) * (px - p[0]!)
+      const [d0, d1, d2] = [s(a!, b!), s(b!, c!), s(c!, a!)]
+      return (d0 > 0 && d1 > 0 && d2 > 0) || (d0 < 0 && d1 < 0 && d2 < 0)
+    }
+    let twice = 0
+    let spots = 0
+    for (let u = GRILLES[0]! - 3.2; u < GRILLES[0]! + 3.2; u += 0.0237)
+      for (let y = 2.4; y < 4.35; y += 0.0231) {
+        spots++
+        if (tris.filter((t) => inside([u, y], t)).length > 1) twice++
+      }
+    // only the corners of the octagons, where they're drawn over the lattice
+    expect(twice / spots).toBeLessThan(0.01)
+  })
+
   it('leaves the walk under the bridge from student center east open', () => {
     // osm's way 801359974, between sce, the bookstore and urban life
     const bridge = campus.buildings.find(
