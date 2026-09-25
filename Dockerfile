@@ -9,6 +9,8 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json apps/web/
 COPY apps/server/package.json apps/server/
 COPY packages/shared/package.json packages/shared/
+# the patched libraries (pnpm-workspace.yaml patchedDependencies)
+COPY patches patches/
 RUN pnpm install --frozen-lockfile
 
 COPY . .
