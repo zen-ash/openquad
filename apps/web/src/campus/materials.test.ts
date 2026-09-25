@@ -37,7 +37,10 @@ const families = {
     precast({ color: '#333', panel: [3, 1], joint: 0, shade: 1, tone: 0, roughness: 0.2 }),
   ],
   concrete: [concrete({ color: '#aaa' }), concrete({ color: '#999', boards: [0.2, 1] })],
-  marble: [marble({ color: '#eee' }), marble({ color: '#aaa', veins: 0, bond: 0, dirt: 1 })],
+  marble: [
+    marble({ color: '#eee' }),
+    marble({ color: '#aaa', veins: 0, clouds: 0.6, bond: 0, dirt: 1, joint: [0.02, 0.6] }),
+  ],
   metal: [
     metal({ color: '#888' }),
     metal({ color: '#222', metalness: 1, roughness: 0, joint: 1.3, ribs: [0.2, 0.3] }),

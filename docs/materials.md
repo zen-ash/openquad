@@ -54,16 +54,16 @@ The textured families (brick, precast, concrete, paving, lawn, gravelRoof, wood)
 
 and on top of that:
 
-| family                              | for                                                | its own options                                                                |
-| ----------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `brick`                             | brick walls                                        | `uplight` [spacing, strength]: lights along the bottom at night                |
-| `precast`                           | precast panels, cut stone, smooth concrete         | `panel` [w, h], `offset`, `joint` (m), `shade`, `reveal`, `tone`               |
-| `concrete`                          | concrete cast in place (formwork lines)            | `boards` [height, strength] for board formed                                   |
-| `marble`                            | gsu's white marble and the darker bases            | `slab` [w, h], `veins`, `bond` (0.5 like bricks, 0 a grid)                     |
-| `metal`                             | painted panels, frames, mullions, bare metal       | `metalness` (0 paint, 1 bare), `panel`, `joint`, `tone`, `ribs` [pitch, depth] |
-| `glass`                             | windows, one quad each from `glassQuad()`          | `pane` [w, h], `mullion`, `frame`, `frameColor`, `darkBottom`, `lit`           |
-| `clearGlass`                        | glass you see through: lobbies, railings, canopies | `opacity`, `grid` [w, h], `mullion`, `transom`, `from`, `base`, `glow`, `side` |
-| `paving` `lawn` `gravelRoof` `wood` | flat things on and around buildings                | the common ones                                                                |
+| family                              | for                                                | its own options                                                                         |
+| ----------------------------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `brick`                             | brick walls                                        | `uplight` [spacing, strength]: lights along the bottom at night                         |
+| `precast`                           | precast panels, cut stone, smooth concrete         | `panel` [w, h], `offset`, `joint` (m), `shade`, `reveal`, `tone`                        |
+| `concrete`                          | concrete cast in place (formwork lines)            | `boards` [height, strength] for board formed                                            |
+| `marble`                            | gsu's white marble and the darker bases            | `slab` [w, h], `veins`, `clouds`, `bond` (0.5 like bricks, 0 a grid), `joint` [w, dark] |
+| `metal`                             | painted panels, frames, mullions, bare metal       | `metalness` (0 paint, 1 bare), `panel`, `joint`, `tone`, `ribs` [pitch, depth]          |
+| `glass`                             | windows, one quad each from `glassQuad()`          | `pane` [w, h], `mullion`, `frame`, `frameColor`, `darkBottom`, `lit`                    |
+| `clearGlass`                        | glass you see through: lobbies, railings, canopies | `opacity`, `grid` [w, h], `mullion`, `transom`, `from`, `base`, `glow`, `side`          |
+| `paving` `lawn` `gravelRoof` `wood` | flat things on and around buildings                | the common ones                                                                         |
 
 The comments on each function in `materials.ts` say what every option means. Walls built
 with `landmark.ts` have uvs in meters, which is what every family expects. Glass needs the

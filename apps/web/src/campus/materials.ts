@@ -148,7 +148,7 @@ export const mHash = (p: Vec2) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(4375
 
 // how much of a thin line at distance e (meters) shows, fading out far away where it
 // would just flicker
-export const mLine = (e: Float, width: number, px: Float) =>
+export const mLine = (e: Float, width: number | Float, px: Float) =>
   float(1)
     .sub(smoothstep(width, px.add(width), e))
     .mul(float(1).sub(smoothstep(0.02, 0.06, px)))
@@ -423,17 +423,20 @@ const marbleNodes = once(() => {
   const m = sample(texture('marble', 'mask'), select(fract(r.mul(5.1)).greaterThan(0.5), q.yx, q))
   // the stone's grain: the fine concrete's bumps and roughness, turned down
   const s = read('precast', repeats('precast', float(2.4)).add(spot), float(0), float(0))
-  const stone = materialColor.rgb.mul(r.mul(0.12).add(0.88)).mul(m.r.mul(0.2).add(0.86))
+  const stone = materialColor.rgb
+    .mul(r.mul(0.12).add(0.88))
+    .mul(m.r.sub(0.7).mul(f('clouds')).add(1))
   // grey clouds and veins, a little bluer than the stone
   const grey = stone.mul(vec3(0.74, 0.76, 0.79))
   // the joints between slabs
   const jx = fract(sx.div(w)).mul(w)
   const jy = fract(meters.y.div(h)).mul(h)
   const px = length(fwidth(meters))
-  const joints = max(mLine(min(jx, w.sub(jx)), 0.006, px), mLine(min(jy, h.sub(jy)), 0.006, px))
+  const [width, dark] = [v2('joint').x, v2('joint').y]
+  const joints = max(mLine(min(jx, w.sub(jx)), width, px), mLine(min(jy, h.sub(jy)), width, px))
   return {
     colorNode: mix(stone, grey, min(1, m.a.mul(f('veins'))))
-      .mul(float(1).sub(joints.mul(0.25)))
+      .mul(float(1).sub(joints.mul(dark)))
       .mul(grime()),
     normalNode: normalMap(s.normal, f('bump')),
     roughnessNode: f('roughness').mul(mix(1, s.rough, 0.5)),
@@ -444,11 +447,18 @@ const marbleNodes = once(() => {
 /**
  * Marble in slabs: each slab a slightly different tone, cloudy, with faint grey veins.
  * Poly Haven doesn't have one like gsu's white georgia marble, so the clouds and veins are
- * made by scripts/textures.mjs. bond is how far each row of slabs is shifted (0.5 like
- * bricks, 0 for a straight grid)
+ * made by scripts/textures.mjs. clouds is how strong the grey clouding is, veins the
+ * veins, bond how far each row of slabs is shifted (0.5 like bricks, 0 for a straight grid)
+ * and joint [width (m), how much darker]
  */
 export function marble(
-  p: Omit<Common, 'size' | 'saturation'> & { slab?: Pair; veins?: number; bond?: number },
+  p: Omit<Common, 'size' | 'saturation'> & {
+    slab?: Pair
+    veins?: number
+    clouds?: number
+    bond?: number
+    joint?: Pair
+  },
 ) {
   return material('marble', marbleNodes(), p.color, {
     // its grain is the precast texture's
@@ -458,7 +468,9 @@ export function marble(
     dirt: p.dirt ?? 0,
     slab: vec(p.slab ?? [1.6, 0.75]),
     veins: p.veins ?? 1,
+    clouds: p.clouds ?? 0.2,
     bond: p.bond ?? 0.5,
+    joint: vec(p.joint ?? [0.006, 0.25]),
   })
 }
 
