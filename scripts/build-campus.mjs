@@ -130,8 +130,9 @@ const isGsu = (tags) => GSU_BUILDINGS.has(tags.name)
 // osm pieces of gsu buildings that have no name of their own. all of them are 3d on gsu's
 // campus map, and osm has the first four as building=university: 140 decatur st next to
 // urban life, the library bridge over decatur st, a wing of classroom south and a corner of
-// library south. then a corner of student center east and the link between petit science
-// and the research science center. way ids. they're gsu but don't get their own door
+// library south. then a corner of student center east (its lobby, joined onto it in
+// studentCenterEast() below) and the link between petit science and the research science
+// center. way ids. they're gsu but don't get their own door
 const GSU_PARTS = new Set([252608874, 301958707, 840362899, 841030081, 801359976, 802046231])
 
 // heights for gsu buildings osm has none for (or only a floor count), from overture maps.
@@ -160,7 +161,6 @@ const MEASURED_HEIGHTS = {
   'Science Annex': 18,
   // floors: the marble box on courtland is about 3
   'Student Center West': 13,
-  'Student Center East': 15,
 }
 
 function heightOf(tags) {
@@ -645,6 +645,78 @@ function artsHumanities(b) {
   ]
 }
 
+// student center east (1998). split face block in tan and white bands, 3 floors, a low
+// curved wing on the plaza and the glass lobby next to it. drawn in
+// campus/studentCenterEast.ts. osm has the lobby as its own way (one of GSU_PARTS), but it's
+// the main entrance, so it gets joined onto the building here
+const STUDENT_CENTER_EAST = {
+  lobby: 801359976,
+  // corners of the 3 floor block, n e s w (gilmer st is n to e, piedmont ave e to s)
+  corners: [
+    { lat: 33.7529588, lon: -84.3848036 },
+    { lat: 33.7526032, lon: -84.3843282 },
+    { lat: 33.7521817, lon: -84.384769 },
+    { lat: 33.7525435, lon: -84.3852531 },
+  ],
+  // 14 bands of block, 5 courses each, from the plaza up (counted in photos)
+  height: 14.3,
+  // the lobby doors, facing unity plaza
+  door: { lat: 33.7530108, lon: -84.3850332 },
+}
+
+function studentCenterEast(b, lobby) {
+  // the lobby shares a stretch of wall with the building. swap that stretch for the
+  // lobby's own outside walls
+  const ring = (pts) => [...pts, pts[0]]
+  const onLobby = b.points.map((p) => distToLine(p, ring(lobby.points)) < 0.2)
+  const onBuilding = lobby.points.map((p) => distToLine(p, ring(b.points)) < 0.2)
+  const n = b.points.length
+  const m = lobby.points.length
+  const start = onLobby.findIndex((s, i) => s && !onLobby[(i + n - 1) % n])
+  const end = onLobby.findIndex((s, i) => s && !onLobby[(i + 1) % n])
+  const first = onBuilding.findIndex((s, j) => !s && onBuilding[(j + m - 1) % m])
+  const own = []
+  for (let j = first; !onBuilding[j]; j = (j + 1) % m) own.push(lobby.points[j])
+  // the two outlines can go round opposite ways
+  const [sx, sz] = b.points[start]
+  const [px, pz] = lobby.points[(first + m - 1) % m]
+  if (Math.hypot(px - sx, pz - sz) > 0.2) own.reverse()
+  const rest = []
+  for (let i = end; ; i = (i + 1) % n) {
+    rest.push(b.points[i])
+    if (i === start) break
+  }
+  b.points = [...rest, ...own]
+
+  const snap = (c) => {
+    const [x, z] = toLocal(c)
+    return b.points.reduce((best, p) =>
+      Math.hypot(p[0] - x, p[1] - z) < Math.hypot(best[0] - x, best[1] - z) ? p : best,
+    )
+  }
+  b.height = STUDENT_CENTER_EAST.height
+  b.landmark = { corners: STUDENT_CENTER_EAST.corners.map(snap), lobby: lobby.points }
+  // the door on the closest wall, facing out
+  const at = toLocal(STUDENT_CENTER_EAST.door)
+  const flip = signedArea(b.points) > 0 ? -1 : 1
+  let best = null
+  b.points.forEach((p, i) => {
+    const q = b.points[(i + 1) % b.points.length]
+    const l = Math.hypot(q[0] - p[0], q[1] - p[1])
+    const d = [(q[0] - p[0]) / l, (q[1] - p[1]) / l]
+    const t = Math.max(0, Math.min(l, (at[0] - p[0]) * d[0] + (at[1] - p[1]) * d[1]))
+    const c = [p[0] + d[0] * t, p[1] + d[1] * t]
+    const dist = Math.hypot(c[0] - at[0], c[1] - at[1])
+    if (!best || dist < best.dist) best = { dist, c, n: [-d[1] * flip, d[0] * flip] }
+  })
+  b.door = [
+    round(best.c[0]),
+    round(best.c[1]),
+    Math.round(best.n[0] * 100) / 100,
+    Math.round(best.n[1] * 100) / 100,
+  ]
+}
+
 function main(elements) {
   const buildings = []
   const roads = []
@@ -688,6 +760,7 @@ function main(elements) {
         if (tags.name) b.name = GSU_NAMES[tags.name] ?? tags.name
         if (isGsu(tags)) b.gsu = true
         if (el.type === 'way' && GSU_PARTS.has(el.id)) b.gsu = b.part = true
+        if (el.type === 'way' && el.id === STUDENT_CENTER_EAST.lobby) b.lobby = true
         // parking decks look different, open floors and no windows
         if (tags.building === 'parking' || tags.amenity === 'parking') b.deck = true
         buildings.push(b)
@@ -766,6 +839,16 @@ function main(elements) {
   const arts = buildings.find((b) => b.name === 'Arts & Humanities')
   if (arts) artsHumanities(arts)
   for (const b of NEW_BUILDINGS) buildings.push({ ...b, height: b.height * SCALE, gsu: true })
+  const sce = buildings.find((b) => b.name === 'Student Center East')
+  const lobby = buildings.find((b) => b.lobby)
+  if (lobby) delete lobby.lobby
+  if (sce && lobby) {
+    studentCenterEast(sce, lobby)
+    // the last one takes the lobby's place, so nobody else's index changes (the made up
+    // facades are picked by index). that's the research tower, which is drawn by hand anyway
+    const last = buildings.pop()
+    if (last !== lobby) buildings[buildings.indexOf(lobby)] = last
+  }
 
   // hurt park's fountain. it hasn't worked in years, the memorial wall to joel hurt curves
   // round the south side of it. drawn in scene/Fountain.tsx

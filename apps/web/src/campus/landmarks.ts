@@ -3,10 +3,12 @@ import { artsHumanitiesGeometry, type ArtsData } from './artsHumanities'
 import { dahlbergGeometry, type DahlbergData } from './dahlberg'
 import { libraryNorthGeometry, type LibraryNorthData } from './libraryNorth'
 import { researchTowerGeometry, type TowerData } from './researchTower'
+import { studentCenterEastGeometry, type StudentCenterData } from './studentCenterEast'
 
 // buildings drawn by hand from photos instead of the regular buildings mesh, by name
 
-// letters are cut-out metal letters on the wall, the rest are white signs
+// letters are cut-out metal letters on the wall (size in meters, color), the rest are
+// white signs (scale makes a small plate of one)
 export type Sign = {
   x: number
   y: number
@@ -14,6 +16,9 @@ export type Sign = {
   rot: number
   text: string
   letters?: boolean
+  size?: number
+  color?: string
+  scale?: number
 }
 export type LandmarkGeometry = {
   parts: Record<string, THREE.BufferGeometry>
@@ -23,12 +28,13 @@ export type LandmarkGeometry = {
 }
 
 // each one wants its own bits of the map data, the json doesn't know which is which
-type Data = LibraryNorthData & DahlbergData & ArtsData & TowerData
+type Data = LibraryNorthData & DahlbergData & ArtsData & TowerData & StudentCenterData
 const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Library North': libraryNorthGeometry,
   'Dahlberg Hall': dahlbergGeometry,
   'Arts & Humanities': artsHumanitiesGeometry,
   'Research Tower': researchTowerGeometry,
+  'Student Center East': studentCenterEastGeometry,
 }
 
 // the scene and the interiors both need it, only build it once

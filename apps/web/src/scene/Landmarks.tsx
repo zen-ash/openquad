@@ -5,6 +5,7 @@ import { dahlbergMaterials } from '../campus/dahlbergMaterials'
 import { landmarkGeometry, type Sign } from '../campus/landmarks'
 import { libraryNorthMaterials } from '../campus/libraryNorthMaterials'
 import { researchTowerMaterials } from '../campus/researchTowerMaterials'
+import { studentCenterEastMaterials } from '../campus/studentCenterEastMaterials'
 import Label from './Label'
 
 const materials: Record<string, Record<string, THREE.Material>> = {
@@ -12,6 +13,7 @@ const materials: Record<string, Record<string, THREE.Material>> = {
   'Dahlberg Hall': dahlbergMaterials,
   'Arts & Humanities': artsHumanitiesMaterials,
   'Research Tower': researchTowerMaterials,
+  'Student Center East': studentCenterEastMaterials,
 }
 
 // white sign with the name in gsu blue. the real ones have the logo where the blue
@@ -22,17 +24,17 @@ function NameSign({ sign }: { sign: Sign }) {
       <Label
         position={[sign.x, sign.y, sign.z]}
         rotation-y={sign.rot}
-        fontSize={0.3}
+        fontSize={sign.size ?? 0.3}
         lineHeight={1.25}
         textAlign="center"
-        color="#3b3d40"
+        color={sign.color ?? '#3b3d40'}
       >
         {sign.text}
       </Label>
     )
   const width = 0.8 + sign.text.length * 0.23
   return (
-    <group position={[sign.x, sign.y, sign.z]} rotation-y={sign.rot}>
+    <group position={[sign.x, sign.y, sign.z]} rotation-y={sign.rot} scale={sign.scale ?? 1}>
       <mesh>
         <planeGeometry args={[width, 0.75]} />
         <meshStandardMaterial color="#f4f4f2" />
