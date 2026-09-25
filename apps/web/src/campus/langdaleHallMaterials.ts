@@ -3,23 +3,23 @@ import { brick, glass, gravelRoof, marble, metal, precast } from './materials'
 import { FLOOR, type Part } from './langdaleHall'
 
 // few materials: every part is a draw call in every pass, look-alike things share one.
-// colors from gsu's 2022 photo (sun on the new front, the rest in shade) and the 2019
-// mapillary photos (overcast): the brick is 0.5-0.6 as bright as the precast and about the
-// same hue, the grey brick 0.8
+// colors from gsu's 2026 photo of the plaza doors in the sun and the 2019 mapillary photos
+// (overcast): the precast is a light grey, barely warm, the brick 0.5-0.6 as bright and
+// about the same hue. the game's sun is warmer than those photos, so both lean cool here
 
 export const langdaleHallMaterials: Record<Part, THREE.Material> = {
-  // the light precast: piers, the band round the top, the fins, the new front. a light warm
-  // grey, panels a floor high
+  // the light precast: piers, the band round the top, the fins, the new front. panels a
+  // floor high
   precast: precast({
-    color: '#cac7c0',
+    color: '#bfbdb8',
     panel: [3, FLOOR],
     joint: 0.012,
     tone: 0.03,
     roughness: 0.8,
     dirt: 0.35,
   }),
-  // the tall panels: a dull grey brown brick, a little purple in the shade
-  brick: brick({ color: '#6d6767', saturation: 0.1 }),
+  // the tall panels: a dull grey brown brick
+  brick: brick({ color: '#55545a', saturation: 0.1 }),
   // the new front where kell hall was: a light grey brick, lots of light and dark ones mixed
   grey: brick({ color: '#a39b93', saturation: 0.25, contrast: 1.6 }),
   // all the windows. they're deep in the walls and read as dark

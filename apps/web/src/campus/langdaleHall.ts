@@ -50,9 +50,9 @@ export const ROOF = level(12)
 // far enough to throw a shadow line across the windows (2018 photo)
 export const OUT = 0.8
 export const LEDGE = OUT + 0.4
-// how far the windows in the band sit back from its piers. not much: the 2022 photo sees
-// the glass between the fins from far along the wall
-const DEEP = 0.3
+// how far the windows in the band sit back from its piers, between thin deep fins (the
+// 2018 photo has the sun on their sides)
+const DEEP = 0.55
 // how far the brick panels sit back from the piers. the brick is on osm's outline and the
 // piers stand out in front of it: anything set back behind the outline would be behind the
 // interior's walls (interiorGeometry.ts), which cast shadows on it and hide it
@@ -66,8 +66,9 @@ export const BAY_UP = 1.4
 // from the decatur street corner (docs/reference/langdale-hall.md)
 export type Side = {
   groups: number[][]
-  // how many columns of windows in each slot
+  // how many columns of windows in each slot, and how wide
   columns: number
+  column: number
   pier: number
   left: number
   right: number
@@ -83,6 +84,7 @@ export const SIDES = {
     groups: [5.3, 13.45, 21.6, 29.8, 37.95, 46.1].map((u) => [u, u + 3.4]),
     pier: 1,
     columns: 2,
+    column: 0.3,
     left: 0.5,
     right: 1.6,
     from: 1.3,
@@ -94,7 +96,8 @@ export const SIDES = {
       [23, 27.9],
     ],
     pier: 1.25,
-    columns: 3,
+    columns: 2,
+    column: 0.7,
     left: 1.3,
     right: 2.5,
     from: 1.3,
@@ -105,6 +108,7 @@ export const SIDES = {
     groups: [10.1, 18.4, 26.6, 34.3, 42.5, 49.8].map((c) => [c - 1.45, c + 1.45]),
     pier: 0.8,
     columns: 2,
+    column: 0.3,
     left: 2.6,
     right: 0.8,
     from: 1.3,
@@ -344,7 +348,7 @@ export function langdaleHallGeometry(b: LangdaleData) {
       side('precast', w, u1, 0, -RECESS, 0, BAND, flip(w.dir))
     }
     for (const [u0, u1, pier = s.pier] of s.groups) {
-      group(w, u0!, u1!, pier, s.columns, s.pylons ? H + 0.3 : BAND)
+      group(w, u0!, u1!, pier, s, s.pylons ? H + 0.3 : BAND)
       if (s.pylons) continue
       if (u0! > 0.1) corbel(w, u0! + pier / 2)
       corbel(w, u1! - pier / 2)
@@ -358,7 +362,7 @@ export function langdaleHallGeometry(b: LangdaleData) {
    * panel under every window, a bit higher in each column (stairs behind them). pylons go
    * on up through the band to the roof, out as far as its ledges
    */
-  function group(w: Wall, u0: number, u1: number, pier: number, n: number, top: number) {
+  function group(w: Wall, u0: number, u1: number, pier: number, s: Side, top: number) {
     const [s0, s1] = [u0 + pier, u1 - pier]
     const back = 0.45
     const low = Math.min(top, BAND)
@@ -375,7 +379,7 @@ export function langdaleHallGeometry(b: LangdaleData) {
       shelf('precast', w, s0, s1, top, 0, LEDGE, true)
     }
     const slot = s1 - s0
-    const col = 0.3
+    const [n, col] = [s.columns, s.column]
     const fin = (slot - n * col) / (n - 1)
     const end = pylon ? top - 0.6 : top
     for (let k = 0; k < n; k++) {
@@ -464,38 +468,33 @@ export function langdaleHallGeometry(b: LangdaleData) {
     for (const [g0, g1] of gaps) {
       side('precast', w, g0, OUT, OUT - DEEP, y0, y1, w.dir)
       side('precast', w, g1, OUT, OUT - DEEP, y0, y1, flip(w.dir))
-      const count = Math.max(1, Math.round((g1 - g0) / 1.3))
-      const fin = 0.5
+      const count = Math.max(1, Math.round((g1 - g0) / 1.25))
+      const fin = 0.16
       const pane = (g1 - g0 - (count - 1) * fin) / count
       for (let k = 0; k < count; k++) {
         const a = g0 + k * (pane + fin)
         glass(w, a, a + pane, y0, y1, OUT - DEEP)
-        if (k < count - 1) wedge(w, a + pane, a + pane + fin, y0, y1)
+        if (k < count - 1) finAt(w, a + pane, a + pane + fin, y0, y1)
       }
     }
   }
 
-  // a fin between two windows in the band: wide at the glass, narrow at the front
-  function wedge(w: Wall, a: number, z: number, y0: number, y1: number) {
-    const back = OUT - DEEP
-    const front = OUT - 0.1
-    const mid = (a + z) / 2
-    const [f0, f1] = [mid - 0.05, mid + 0.05]
-    face('precast', w, f0, f1, y0, y1, front)
-    const normal = (du: number, dd: number) => {
-      const l = Math.hypot(du, dd)
-      return { x: (w.dir.x * du + w.o.x * dd) / l, z: (w.dir.z * du + w.o.z * dd) / l }
-    }
-    const depth = front - back
-    add('precast', wallQuad(w.at(a, back), w.at(f0, front), y0, y1, normal(-depth, f0 - a)))
-    add('precast', wallQuad(w.at(f1, front), w.at(z, back), y0, y1, normal(depth, z - f1)))
+  // a fin between two windows in the band, from the glass nearly out to the front
+  function finAt(w: Wall, a: number, z: number, y0: number, y1: number) {
+    const [back, front] = [OUT - DEEP, OUT - 0.05]
+    face('precast', w, a, z, y0, y1, front)
+    side('precast', w, a, back, front, y0, y1, flip(w.dir))
+    side('precast', w, z, back, front, y0, y1, w.dir)
   }
 
   const pierSpans = (s: Side) => s.groups.map(([u0, u1]) => [u0!, u1!])
-  band(nw, pierSpans(SIDES.nw))
+  // the solid bits in the band are about a meter narrower than the piers under them, the
+  // windows reach out over the slot's piers (2018 photo)
+  const solidSpans = (s: Side) => s.groups.map(([u0, u1]) => [u0! + 0.5, u1! - 0.5])
+  band(nw, solidSpans(SIDES.nw))
   // over the first pier from the south corner the band is solid a lot wider (2018 photo),
   // and so are its last 5m, since the new fronts (2023 photo)
-  const [first, ...rest] = pierSpans(SIDES.se)
+  const [first, ...rest] = solidSpans(SIDES.se)
   band(se, [[first![0]! - 2.5, first![1]! + 2], ...rest, [se.len - 5.3, se.len + 1]])
   // on decatur street the two piers go up through the band
   band(sw, [], pierSpans(SIDES.sw))
