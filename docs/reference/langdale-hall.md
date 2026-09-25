@@ -54,11 +54,13 @@ GSU links (the files behind https://map.concept3d.com/?id=1108#!m/295227 and #!m
 - **Plan**: a box 56 by 36m (osm's outline, the brick panels are on it and the piers stand
   0.3m in front), plus a 21 by 5m bay on the north east side where Kell Hall was built
   against it until 2019.
-- **Materials**: light grey precast, barely warm (piers, base, band), a dull grey brown
-  brick in the recessed panels (0.5-0.6 as bright as the precast in the 2019 and 2026
-  photos), a lighter grey brick on the new front, small white marble panels under the slot
-  windows (drawn with the precast, see Cost), dark bronze frames. Flat white roof, a long
-  penthouse in the dark brick.
+- **Materials**: light precast, a warm beige grey in the sun and a neutral grey in the shade
+  (piers, base, band), a dull grey brown brick in the recessed panels, a lighter grey brown
+  brick on the new front, small white marble panels under the slot windows (drawn with the
+  precast, see Cost), dark bronze frames. Flat white roof, a long penthouse in the dark
+  brick. Picked by comparing ratios inside each photo: the brick is about 0.5 as bright as
+  the precast beside it in the same light (2018, 2019, 2022 shade), 0.63 in the 2026 close
+  up, the grey brick about 0.75 (2022).
 - **Old sides (Peachtree Center Ave, Decatur St, the plaza)**: tall brick panels set 0.3m
   back between precast piers, a 1.3m precast base under the brick. Each pier is really two
   piers with a slot between them: narrow windows one per floor, two columns (three on
