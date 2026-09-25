@@ -2,3 +2,5 @@ pnpm-lock.yaml
 dist
 coverage
 apps/web/src/campus/campus.json
+# three's basis transcoder, copied in by pnpm textures
+apps/web/public/basis

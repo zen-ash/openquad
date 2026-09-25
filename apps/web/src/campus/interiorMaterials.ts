@@ -25,7 +25,7 @@ import {
 import { MeshStandardNodeMaterial, type Node } from 'three/webgpu'
 import { outsideCutout } from './cutout'
 import { GROUND_WINDOW_WALL } from './facade'
-import { texture } from './textures'
+import { packedNormalMap, texture } from './textures'
 
 // like make() in landmarkMaterials.ts: the see-through hole, but not in the shadows
 function material(params: THREE.MeshStandardMaterialParameters) {
@@ -39,6 +39,7 @@ function material(params: THREE.MeshStandardMaterialParameters) {
 export const floorMaterial = material({
   map: texture('floor', 'color'),
   normalMap: texture('floor', 'normal'),
+  normalNode: packedNormalMap,
   color: '#e2c6a6',
   roughness: 0.6,
 })
@@ -106,6 +107,7 @@ function windowHole() {
 export const wallMaterial = material({
   map: texture('plaster', 'color'),
   normalMap: texture('plaster', 'normal'),
+  normalNode: packedNormalMap,
   color: '#efe6d8',
   roughness: 0.95,
 })

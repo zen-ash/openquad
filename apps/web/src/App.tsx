@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber'
 import { lazy, Suspense, useEffect } from 'react'
 import { NeutralToneMapping, PCFShadowMap } from 'three'
 import { WebGPURenderer, type WebGPURendererParameters } from 'three/webgpu'
+import { loadTextures } from './campus/textures'
 import ChatPanel from './ChatPanel'
 import EmoteBar from './EmoteBar'
 import { keyMap } from './game/controls'
@@ -39,6 +40,9 @@ async function startRenderer(props: object) {
   const renderer = new WebGPURenderer({ ...(props as WebGPURendererParameters), forceWebGL })
   await renderer.init()
   if (showDebug) instrument(renderer)
+  // the ktx2 textures turn into whatever compressed format this gpu has, so they can only
+  // start loading now
+  loadTextures(renderer)
   // same tone mapping as the effects use, so low quality (no effects) looks the same. a bit
   // brighter: unlike three's aces, neutral doesn't brighten what goes into it
   renderer.toneMapping = NeutralToneMapping

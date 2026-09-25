@@ -27,7 +27,7 @@ import {
 import { MeshStandardNodeMaterial, type Node } from 'three/webgpu'
 import { DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
 import { outsideCutout } from './cutout'
-import { texture as load } from './textures'
+import { texture as load, unpackNormal } from './textures'
 
 // facade styles, stored per vertex in the aStyle attribute
 export const GLASS = 0
@@ -203,8 +203,10 @@ export function facadeMaterial() {
 
   // bumps from the brick/concrete normal maps, in the wall's own directions moved into
   // view space since that's what the normal is in there
-  const bump = select(brick, texture(brickNormal, wallUv), texture(concreteNormal, wallUv.mul(0.5)))
-    .xyz.mul(2)
+  const bump = unpackNormal(
+    select(brick, texture(brickNormal, wallUv), texture(concreteNormal, wallUv.mul(0.5))),
+  )
+    .mul(2)
     .sub(1)
   const t = normalize(cameraViewMatrix.mul(vec4(along.x, 0, along.y, 0)).xyz)
   const b = normalize(cameraViewMatrix.mul(vec4(0, 1, 0, 0)).xyz)

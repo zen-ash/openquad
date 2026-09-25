@@ -1,13 +1,13 @@
 import * as THREE from 'three'
 import { abs, attribute, fract, materialColor, select, vec3 } from 'three/tsl'
 import { MeshStandardNodeMaterial } from 'three/webgpu'
-import { texture } from './textures'
+import { packedNormalMap, texture, type TextureName } from './textures'
 
 // the ground is layers a few cm apart. from far away (the join screen) that's too close
 // for the depth buffer and they flicker through each other, so each layer also gets
 // pulled toward the camera a bit more than the one under it
 function textured(
-  name: string,
+  name: TextureName,
   color: THREE.ColorRepresentation,
   roughness: number,
   layer: number,
@@ -15,6 +15,7 @@ function textured(
   return new MeshStandardNodeMaterial({
     map: texture(name, 'color'),
     normalMap: texture(name, 'normal'),
+    normalNode: packedNormalMap,
     color,
     roughness,
     polygonOffset: layer > 0,

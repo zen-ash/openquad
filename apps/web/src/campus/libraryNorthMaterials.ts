@@ -7,6 +7,7 @@ import {
   fract,
   materialColor,
   mix,
+  normalMap,
   select,
   sin,
   smoothstep,
@@ -14,19 +15,19 @@ import {
   vec4,
 } from 'three/tsl'
 import { night } from './facade'
-import { make, meters, tiled } from './landmarkMaterials'
+import { make, meters, textured, tiled } from './landmarkMaterials'
+import { unpackNormal } from './textures'
 import type { Part } from './libraryNorth'
 
 // the texture is a warm red brick, the real one is a duller brown
 const brick = make(
   {
-    map: tiled('brick', 'color', 4),
-    normalMap: tiled('brick', 'normal', 4),
     color: '#aa9c98',
     roughness: 0.9,
   },
   (m) => {
-    const c = materialColor.rgb
+    const c = tiled('brick', 'color', 4).rgb.mul(materialColor.rgb)
+    m.normalNode = normalMap(unpackNormal(tiled('brick', 'normal', 4)))
     m.colorNode = mix(vec3(dot(c, vec3(0.3, 0.59, 0.11))), c, 0.38)
     // at night lights along the bottom shine up the walls, every 6m
     const beam = float(1).sub(
@@ -42,12 +43,15 @@ const brick = make(
 
 // concrete texture comes out dark, brightened into a light stone
 const stoneLike = (color: string) =>
-  make({ map: tiled('concrete', 'color', 3), color, roughness: 0.8 }, (m) => {
+  make({ color, roughness: 0.8 }, (m) => {
     // joints between the stone slabs
     const joint = fract(meters.y.div(0.9))
       .lessThan(0.02)
       .or(fract(meters.x.div(1.8)).lessThan(0.012))
-    m.colorNode = materialColor.rgb.mul(1.8).mul(select(joint, 0.8, 1))
+    m.colorNode = tiled('concrete', 'color', 3)
+      .rgb.mul(materialColor.rgb)
+      .mul(1.8)
+      .mul(select(joint, 0.8, 1))
   })
 
 // the wavy white panel: rows of waves in low relief. just shading, no real bumps
@@ -101,10 +105,10 @@ export const libraryNorthMaterials: Record<Part, THREE.Material> = {
     depthWrite: false,
   }),
   white: make({ color: '#f1f0eb', roughness: 0.6 }),
-  wood: make({ map: tiled('floor', 'color', 2), color: '#d9a878', roughness: 0.7 }),
+  wood: textured({ color: '#d9a878', roughness: 0.7 }, 'floor', 2),
   roof: make({ color: '#2e3c5c', roughness: 0.85 }),
-  terrace: make({ map: tiled('sidewalk', 'color', 1.5), color: '#e6e2da', roughness: 0.9 }),
-  green: make({ map: tiled('grass', 'color', 2), color: '#7d9a55', roughness: 1 }),
+  terrace: textured({ color: '#e6e2da', roughness: 0.9 }, 'sidewalk', 1.5),
+  green: textured({ color: '#7d9a55', roughness: 1 }, 'grass', 2),
   metal: make({ color: '#9ca2a8', roughness: 0.5, metalness: 0.5 }),
-  pavers: make({ map: tiled('sidewalk', 'color', 1.2), color: '#f4e6cc', roughness: 0.9 }),
+  pavers: textured({ color: '#f4e6cc', roughness: 0.9 }, 'sidewalk', 1.2),
 }

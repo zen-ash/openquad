@@ -1,5 +1,5 @@
 import type * as THREE from 'three'
-import { cladding, make, ribbed, tiled, windowGlass } from './landmarkMaterials'
+import { cladding, make, ribbed, textured, windowGlass } from './landmarkMaterials'
 import type { Part } from './researchTower'
 
 export const researchTowerMaterials: Record<Part, THREE.Material> = {
@@ -9,5 +9,5 @@ export const researchTowerMaterials: Record<Part, THREE.Material> = {
   screen: ribbed('#b8bbbe', 0.18),
   ribbed: ribbed('#c9ccce', 0.3),
   metal: make({ color: '#8d9195', roughness: 0.45, metalness: 0.6 }),
-  roof: make({ map: tiled('roof', 'color', 8), color: '#e2e3e0', roughness: 0.9 }),
+  roof: textured({ color: '#e2e3e0', roughness: 0.9 }, 'roof', 8),
 }

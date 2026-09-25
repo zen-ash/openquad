@@ -4,7 +4,8 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['**/dist', '**/coverage', '**/node_modules'] },
+  // public/basis is three's texture transcoder, copied in by pnpm textures
+  { ignores: ['**/dist', '**/coverage', '**/node_modules', 'apps/web/public/basis'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

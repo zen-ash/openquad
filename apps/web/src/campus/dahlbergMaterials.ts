@@ -1,6 +1,6 @@
 import type * as THREE from 'three'
 import type { Part } from './dahlberg'
-import { make, marble, tiled, windowGlass } from './landmarkMaterials'
+import { make, marble, textured, windowGlass } from './landmarkMaterials'
 
 export const dahlbergMaterials: Record<Part, THREE.Material> = {
   marble: marble('#e9e6df'),
@@ -11,6 +11,6 @@ export const dahlbergMaterials: Record<Part, THREE.Material> = {
   stripGlass: windowGlass([0.8, 1.15]),
   glass: windowGlass([1.1, 1.1]),
   canopy: make({ color: '#2f2c28', roughness: 0.45, metalness: 0.6 }),
-  roof: make({ map: tiled('roof', 'color', 8), color: '#b4b4b0', roughness: 0.9 }),
+  roof: textured({ color: '#b4b4b0', roughness: 0.9 }, 'roof', 8),
   metal: make({ color: '#b9bcbe', roughness: 0.5, metalness: 0.4 }),
 }

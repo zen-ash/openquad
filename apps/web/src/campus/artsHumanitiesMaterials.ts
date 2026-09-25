@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { abs, float, fwidth, length, min, mix, mod, smoothstep, vec2, vec3 } from 'three/tsl'
 import type { Part } from './artsHumanities'
-import { make, marble, meters, tiled, windowGlass } from './landmarkMaterials'
+import { make, marble, meters, textured, windowGlass } from './landmarkMaterials'
 
 // the grey wall on the greenway side: big light panels in a grid on a darker wall
 const panels = make({ color: '#ffffff', roughness: 0.7 }, (m) => {
@@ -32,5 +32,5 @@ export const artsHumanitiesMaterials: Record<Part, THREE.Material> = {
     opacity: 0.75,
   }),
   banner: make({ color: '#1f4fb8', roughness: 0.85, side: THREE.DoubleSide }),
-  roof: make({ map: tiled('roof', 'color', 8), color: '#b8b8b4', roughness: 0.9 }),
+  roof: textured({ color: '#b8b8b4', roughness: 0.9 }, 'roof', 8),
 }

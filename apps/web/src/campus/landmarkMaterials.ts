@@ -30,7 +30,7 @@ import {
 import { MeshStandardNodeMaterial, type Node } from 'three/webgpu'
 import { outsideCutout } from './cutout'
 import { night } from './facade'
-import { texture } from './textures'
+import { texture, unpackNormal, type MapKind, type TextureName } from './textures'
 
 // material helpers for the buildings drawn by hand (landmark.ts). the conventions for
 // writing new ones are in docs/materials.md
@@ -39,12 +39,19 @@ type Material = MeshStandardNodeMaterial
 type Float = Node<'float'>
 type Vec2 = Node<'vec2'>
 
-// uvs are in meters, this makes a texture repeat every `meters`
-export function tiled(name: string, kind: 'color' | 'normal', meters: number) {
-  const t = texture(name, kind)
-  t.repeat.set(1 / meters, 1 / meters)
-  return t
-}
+// a texture that repeats every `size` meters of uv
+export const tiled = (name: TextureName, kind: MapKind, size: number) =>
+  sample(texture(name, kind), meters.div(size))
+
+// a material with a color texture on it, times its color
+export const textured = (
+  params: THREE.MeshStandardMaterialParameters,
+  name: TextureName,
+  size: number,
+) =>
+  make(params, (m) => {
+    m.colorNode = tiled(name, 'color', size).rgb.mul(materialColor.rgb)
+  })
 
 // the see-through hole like every other building, plus whatever else the material needs
 export function make(params: THREE.MeshStandardMaterialParameters, extra?: (m: Material) => void) {
@@ -100,14 +107,13 @@ export function untiled(map: THREE.Texture, at: Vec2) {
 // a full set of maps from poly haven on a material: <name>_color, _normal and _arm, one
 // repeat every `size` meters of uv, without the repeat showing. the material's color tints
 // the color map (docs/materials.md)
-export function surface(m: Material, name: string, size: number) {
+export function surface(m: Material, name: TextureName, size: number) {
   const at = meters.div(size)
   const arm = untiled(texture(name, 'arm'), at)
   m.colorNode = untiled(texture(name, 'color'), at).rgb.mul(materialColor.rgb)
-  m.normalNode = normalMap(untiled(texture(name, 'normal'), at).rgb)
+  m.normalNode = normalMap(unpackNormal(untiled(texture(name, 'normal'), at)))
   m.aoNode = arm.r
-  m.roughnessNode = arm.g
-  m.metalnessNode = arm.b
+  m.roughnessNode = arm.a
 }
 
 // how much of a thin line at distance e (meters) shows, fading out far away where it
