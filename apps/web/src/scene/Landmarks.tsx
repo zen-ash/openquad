@@ -25,6 +25,7 @@ function NameSign({ sign }: { sign: Sign }) {
         position={[sign.x, sign.y, sign.z]}
         rotation-y={sign.rot}
         fontSize={sign.size ?? 0.3}
+        fontWeight={sign.weight}
         lineHeight={1.25}
         textAlign="center"
         color={sign.color ?? '#3b3d40'}

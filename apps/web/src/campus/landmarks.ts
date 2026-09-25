@@ -7,8 +7,8 @@ import { studentCenterEastGeometry, type StudentCenterData } from './studentCent
 
 // buildings drawn by hand from photos instead of the regular buildings mesh, by name
 
-// letters are cut-out metal letters on the wall (size in meters, color), the rest are
-// white signs (scale makes a small plate of one)
+// letters are cut-out metal letters on the wall (size in meters, color, weight), the rest
+// are white signs (scale makes a small plate of one)
 export type Sign = {
   x: number
   y: number
@@ -18,6 +18,7 @@ export type Sign = {
   letters?: boolean
   size?: number
   color?: string
+  weight?: number
   scale?: number
 }
 export type LandmarkGeometry = {

@@ -4,9 +4,18 @@ import { BAND, type Part } from './studentCenterEast'
 
 // split face concrete block, 16 by 8 inch, 5 courses to a band. marble's slabs in a running
 // bond are the right shape, with the veins off and a rougher face. colors from gsu's 2024
-// photos and mapillary (2019), sunlit: the tan is a warm grey brown, the white a light grey
+// photos and mapillary (2019), sunlit: the tan is a warm grey brown, the white a light grey.
+// it's 1998 block and it shows: dark streaks down it and grime along the bottom
 const block = (color: string) =>
-  marble({ color, slab: [0.4, BAND / 5], veins: 0, bond: 0.5, roughness: 0.9, bump: 1.2 })
+  marble({
+    color,
+    slab: [0.4, BAND / 5],
+    veins: 0,
+    bond: 0.5,
+    roughness: 0.9,
+    bump: 1.2,
+    dirt: 1,
+  })
 
 const white = '#e4e4e0'
 
@@ -24,22 +33,24 @@ export const studentCenterEastMaterials: Record<Part, THREE.Material> = {
     frame: 0.035,
     frameColor: '#d6d8d8',
   }),
-  // the lobby's glass you can see into, in white frames
+  // the lobby's glass in white frames. in the photos it's mostly reflections, the inside
+  // only shows close up. dark and reflective like the window glass (glass() numbers)
   storefront: clearGlass({
-    color: '#3f5654',
-    opacity: 0.76,
+    color: '#2c3b40',
+    opacity: 0.94,
     grid: [1.55, 1.4],
     mullion: 0.028,
     transom: 0.035,
     from: 2.82,
     frameColor: white,
     glow: 0.5,
-    metalness: 0.3,
+    roughness: 0.05,
+    metalness: 0.6,
   }),
   // white frames, and the sign box on the wing
   frame: metal({ color: white, roughness: 0.4, metalness: 0.3 }),
-  // the metal copings, and the steel doors (a dark brown grey)
-  coping: metal({ color: '#645c55', roughness: 0.5, metalness: 0.4 }),
+  // the metal copings and the steel doors, dark brown
+  coping: metal({ color: '#54463d', roughness: 0.5, metalness: 0.3 }),
   // the ceilings of the arcade and recesses, white paint in the shade
   soffit: metal({ color: '#a8a7a2', roughness: 0.8 }),
   roof: gravelRoof({ color: '#55524e', size: 8, saturation: 0.5 }),

@@ -77,6 +77,18 @@ const ARCADE: [number, number][] = [
 ]
 const ARCADE_TOP = 3 * BAND
 const ARCADE_DEPTH = 3
+// in the back walls, [kind, meters along the curve, width]. the first bay is from gsu's
+// photos (glass doors by the lobby, brown doors at the other end), the rest are unverified
+const ARCADE_DOORS: ['glass' | 'steel' | 'window', number, number][] = [
+  ['glass', 3.7, 2],
+  ['steel', 6.9, 1.8],
+  ['steel', 14.3, 1.8],
+  ['window', 16.9, 2.4],
+  ['glass', 19.1, 2],
+  ['glass', 24.3, 2],
+  ['window', 26.4, 1.6],
+  ['steel', 30.4, 1],
+]
 // the sign along the top toward courtland st, from 22m to a bit past the tip, the welcome
 // banner over the first bay and the blue banners on the piers
 const FASCIA: [number, number] = [21.9, 32.4]
@@ -225,8 +237,9 @@ export function studentCenterEastGeometry(b: StudentCenterData) {
   // gilmer st: windows by the north end, the curved glass wall, the block with the stair
   // windows, and the corner cut away under the second floor
   const gl = gilmer.len
-  const notch: [number, number] = [gl - 5, gl - 0.3]
-  const stairs = [gl - 9.8, gl - 7.6]
+  const notch: [number, number] = [gl - 4.5, gl - 0.3]
+  // the two columns of stair windows, lined up in both 2019 photos of this end
+  const stairs = [gl - 11.7, gl - 8.8]
   blockWall(N, E, 0, H, gilmer.out, [
     ...windows([4, 8, 12], 2),
     ...topRow(1, gl - 1),
@@ -269,7 +282,7 @@ export function studentCenterEastGeometry(b: StudentCenterData) {
   const [b0, b1, bd] = BALLROOM
   blockWall(E, piedmont.at(b0), 0, H, piedmont.out, [
     { hole: [ENTRY[0], ENTRY[1], 0, CURTAIN_TOP], glass: 'curtain', depth: 2.6, top: 'soffit' },
-    ...windows([5.7, 12], TOP_ROW),
+    ...windows([3.9, 11], TOP_ROW),
   ])
   blockWall(piedmont.at(b0), piedmont.at(b1), 0, BALLROOM_TOP, piedmont.out, [], b0)
   const sl = pl - b1
@@ -490,7 +503,7 @@ export function studentCenterEastGeometry(b: StudentCenterData) {
         add('soffit', flat(cell, ARCADE_TOP, false))
         add('paving', flat(cell, 0.08))
       }
-      // the piers either side, facing into the arcade, and double doors in the back wall
+      // the piers either side, facing into the arcade
       const e = ss.length - 1
       const toward = (x: Point, y: Point) => {
         const l = Math.hypot(y.x - x.x, y.z - x.z)
@@ -500,27 +513,39 @@ export function studentCenterEastGeometry(b: StudentCenterData) {
         add(deep(part), wallQuad(front[0]!, rear[0]!, y0, y1, toward(front[0]!, curveAt(s0 + 0.2))))
         add(deep(part), wallQuad(front[e]!, rear[e]!, y0, y1, toward(front[e]!, curveAt(s1 - 0.2))))
       }
-      // glass doors in the back wall, in white frames
-      const mid = (s0 + s1) / 2
-      const o = outAt(mid)
-      const inWall = (s: number, d = 0) => offsetAt(s, -ARCADE_DEPTH + d)
-      add('curtain', glassQuad(inWall(mid - 1, 0.03), inWall(mid + 1, 0.03), 0, 2.4, o))
-      const jamb = (s: number) =>
-        box(
-          'frame',
-          [inWall(s - 0.05), inWall(s + 0.05), inWall(s + 0.05, 0.1), inWall(s - 0.05, 0.1)],
-          0,
-          2.4,
-        )
-      jamb(mid - 1)
-      jamb(mid)
-      jamb(mid + 1)
+    }
+
+    // what's in the back walls of the arcade: glass doors in white frames, brown steel
+    // doors and a window, where the photos show them
+    const inWall = (s: number, d = 0) => offsetAt(s, -ARCADE_DEPTH + d)
+    const jamb = (part: Part, s: number, w: number, y0: number, y1: number) =>
       box(
-        'frame',
-        [inWall(mid - 1.05), inWall(mid + 1.05), inWall(mid + 1.05, 0.1), inWall(mid - 1.05, 0.1)],
-        2.4,
-        2.55,
+        part,
+        [inWall(s - w / 2), inWall(s + w / 2), inWall(s + w / 2, 0.1), inWall(s - w / 2, 0.1)],
+        y0,
+        y1,
       )
+    for (const [kind, s, w] of ARCADE_DOORS) {
+      const o = outAt(s)
+      const [a, c] = [s - w / 2, s + w / 2]
+      if (kind === 'steel') {
+        add('coping', wallQuad(inWall(a, 0.04), inWall(s - 0.01, 0.04), 0, 2.3, o))
+        add('coping', wallQuad(inWall(s + 0.01, 0.04), inWall(c, 0.04), 0, 2.3, o))
+        for (const u of [a - 0.04, c + 0.04]) jamb('coping', u, 0.08, 0, 2.38)
+        box(
+          'coping',
+          [inWall(a - 0.08), inWall(c + 0.08), inWall(c + 0.08, 0.1), inWall(a - 0.08, 0.1)],
+          2.3,
+          2.38,
+        )
+      } else {
+        const y0 = kind === 'glass' ? 0 : 0.6
+        add('curtain', glassQuad(inWall(a, 0.03), inWall(c, 0.03), y0, 2.4, o))
+        add('curtain', glassQuad(inWall(a, 0.03), inWall(c, 0.03), 2.52, 2.95, o))
+        for (const u of kind === 'glass' ? [a, s, c] : [a, c]) jamb('frame', u, 0.1, y0, 2.95)
+        for (const y of [2.4, 2.95]) jamb('frame', s, w + 0.1, y, y + 0.12)
+        if (y0 > 0) jamb('frame', s, w + 0.1, y0 - 0.1, y0)
+      }
     }
 
     // the sign band along the top toward courtland st: gsu's name, a blue square where the
@@ -539,7 +564,17 @@ export function studentCenterEastGeometry(b: StudentCenterData) {
     const facing = (s: number) => Math.atan2(outAt(s).x, outAt(s).z)
     const word = (text: string, s: number, y: number, size: number, color: string, d = 0.32) => {
       const p = curveAt(s, d)
-      signs.push({ x: p.x, y, z: p.z, rot: facing(s), text, letters: true, size, color })
+      signs.push({
+        x: p.x,
+        y,
+        z: p.z,
+        rot: facing(s),
+        text,
+        letters: true,
+        size,
+        color,
+        weight: 700,
+      })
     }
     const logo = f0 + 0.7
     const side = (s: number) => ({ x: -outAt(s).z, z: outAt(s).x })
@@ -553,10 +588,11 @@ export function studentCenterEastGeometry(b: StudentCenterData) {
       6.02,
       6.9,
     )
-    word('GEORGIA', f0 + 2.8, 6.5, 0.58, '#3d4146')
-    word('STATE', f0 + 5.5, 6.5, 0.58, '#3d4146')
-    word('UNIVERSITY', f0 + 8.7, 6.5, 0.58, '#3d4146')
-    word('STUDENT CENTER\nEAST', f0 + 5.3, 5.35, 0.36, '#4a3f33', 0.03)
+    // letter colors from gsu's 2024 photo: dark grey on the sign, near black bronze under it
+    word('GEORGIA', f0 + 2.8, 6.5, 0.58, '#44464a')
+    word('STATE', f0 + 5.5, 6.5, 0.58, '#44464a')
+    word('UNIVERSITY', f0 + 8.7, 6.5, 0.58, '#44464a')
+    word('STUDENT CENTER\nEAST', f0 + 5.3, 5.35, 0.36, '#34302c', 0.03)
 
     // gsu's welcome banner on the wall over the first bay (a vinyl sign, it was up in 2023
     // and 2024). the panther on it is a trademark, so it's just the words
@@ -693,6 +729,8 @@ export function studentCenterEastGeometry(b: StudentCenterData) {
           text: 'STUDENT CENTER\nEAST',
           letters: true,
           size: 0.28,
+          // white letters on the glass
+          color: '#e6e6e2',
         })
       } else {
         add('storefront', wallQuad(p, q, 0.12, BEAM, out))

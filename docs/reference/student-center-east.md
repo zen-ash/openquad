@@ -57,7 +57,8 @@ https://map.concept3d.com/?id=1108#!m/1193004 and #!m/885408):
 - **Material**: split face concrete block, 8 inch courses, in horizontal bands of 5
   courses (1.02 m): a light grey "white" and a warm grey brown "tan". The bands start
   with a white one at the plaza and alternate all the way up. A thin dark metal coping on
-  top. No other cladding on the block parts.
+  top. No other cladding on the block parts. It's weathered: grey streaks down the white
+  bands and darker block along the bottom.
 - **Height and floors**: three floors, 14 bands = 14.3 m from the plaza. The east corner
   (Gilmer and Piedmont) shows 15 bands because the street drops toward Piedmont. The old
   campus.json height was 15 m (a guess from floors); the photos give 14.3. Floors are
@@ -66,12 +67,14 @@ https://map.concept3d.com/?id=1108#!m/1193004 and #!m/885408):
 - **Windows**: very few. A row of small square windows (about 1 x 0.85 m, light frames,
   one pane) in the 4th band from the top, every 3.6 m, all the way round the three floor
   part. Small windows in the 3rd band at the north end of Gilmer, two columns of them up
-  the stair block by the east corner. Recessed about 0.2 m.
+  the stair block by the east corner (8.8 and 11.7 m from it, lined up in both 2019
+  photos of that end). Recessed about 0.2 m.
 - **Gilmer St**: north corner, then a two floor (8 band) curved glass wall with white
   mullions (about 1.45 x 1.3 m panes) from 16 m to 44.5 m, bowing out toward the middle
-  and set back under the wall above at its ends. Then the stair block and the corner,
-  which is cut away under the second floor (a 1.4 m deep notch) with a small blue name
-  plate on the wall next to it.
+  and set back under the wall above at its ends (1.8 m at the east end, the side of that
+  recess is the plain strip next to the glass in the Gilmer photo). Then the stair block
+  and the corner, which is cut away under the second floor (a 1.4 m deep notch, 4.2 m
+  wide) with a small blue name plate on the wall next to it.
 - **Piedmont Ave**: a glass entrance tucked 2.6 m in under the east corner (8 bands),
   then a long blank wall. The middle (18 to 41.5 m from the east corner) is the ballroom:
   its roof is lower (10 bands), the three floors wrap around it in a U. A service recess
@@ -79,15 +82,19 @@ https://map.concept3d.com/?id=1108#!m/1193004 and #!m/885408):
 - **Back (toward Urban Life)**: raised loading dock with two roll up doors, a steel door,
   top row of windows. Mostly unseen (the Concept3D dock description and the satellite).
 - **Plaza side (Unity Plaza)**: a one and a half floor (7 band) wing with a curved front,
-  31.7 m around. Three bays of arcade under it (3 bands tall, about 3 m deep, double glass
-  doors at the back), piers in between, a fourth bay at the tip that wraps round the
-  corner. On the wall: GSU's big "WELCOME PANTHERS" banner over the first bay (blue, the
+  31.7 m around (re-measured in the 2024 photo: the height to length is right, the wall's
+  foot is hidden behind people there). Three bays of arcade under it (3 bands tall, about
+  3 m deep), piers in between, a fourth bay at the tip that wraps round the corner. In the
+  back walls: glass doors in white frames and big brown steel doors (the first bay has
+  both, glass by the lobby end, from GSU's photos), a window in the others. On the wall: GSU's big "WELCOME PANTHERS" banner over the first bay (blue, the
   panther left out, it's a trademark), four blue banners on brackets, and at the tip end
   a white sign box with the GSU logo (a plain blue square here) and GEORGIA STATE
-  UNIVERSITY, with STUDENT CENTER / EAST in bronze letters under it.
+  UNIVERSITY in bold dark grey letters, with STUDENT CENTER / EAST in near black bronze
+  letters under it.
 - **Lobby (main entrance)**: a glass box in white frames between the wing and Gilmer St,
-  5 bands tall. Doors facing the plaza with STUDENT CENTER EAST on the glass over them, a
-  white beam at 3.6 m and dark glass above it. The part along Gilmer has "55 GILMER
+  5 bands tall. Two pairs of doors facing the plaza with STUDENT CENTER EAST in white on
+  the glass over them, a white beam at 3.6 m and dark glass above it. From outside the
+  glass is mostly reflection, the inside only shows close up. The part along Gilmer has "55 GILMER
   STREET" on the glass. The side next to the wing is glass all the way up.
 - **Roof**: flat, dark membrane. Rooftop units where the satellite shows them; a few on
   the ballroom roof and on the wing.
@@ -97,6 +104,7 @@ https://map.concept3d.com/?id=1108#!m/1193004 and #!m/885408):
 - The back (toward Urban Life) and most of Piedmont Ave between the corners: no photos
   newer than the 2019 drive-bys, and those only show the ends. Windows and doors there
   follow the rest (top row of windows, dock from the Concept3D dock page).
+- What's in the back walls of the arcade past the first bay (doors, window) is a guess.
 - The second arcade bay (12.5 to 20.5 m along the curve) is behind a tree in the only
   photo of it.
 - The unnamed 7 m osm building between SCE, SCW and Urban Life (index 237 in
