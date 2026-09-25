@@ -18,6 +18,7 @@ const SPOTS = [
   { name: 'edgewood', from: [60, 4, -30], at: [-300, 10, -45], player: [62, -30] },
   { name: 'student-center-east', from: [8, 3, 100], at: [30, 5, 145], player: [6, 97] },
   { name: 'student-center-west', from: [-53, 3, 146.4], at: [-71.7, 6, 185.8], player: [-51, 144] },
+  { name: 'langdale-hall', from: [-222, 3, 133], at: [-172, 16, 108], player: [-225, 135] },
 ]
 
 const browser = await chromium.launch({
