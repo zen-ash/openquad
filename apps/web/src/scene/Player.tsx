@@ -161,7 +161,7 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
     // ease back while jogging, back in when you stop
     pull.current += ((running && dir ? 1 : 0) - pull.current) * (1 - Math.exp(-2 * dt))
     const cam = camera as THREE.PerspectiveCamera
-    const fov = WALK_FOV + (RUN_FOV - WALK_FOV) * pull.current
+    const fov = localPlayer.shot?.fov ?? WALK_FOV + (RUN_FOV - WALK_FOV) * pull.current
     if (Math.abs(cam.fov - fov) > 0.01) {
       cam.fov = fov
       cam.updateProjectionMatrix()

@@ -27,8 +27,9 @@ declare global {
       teleport: (x: number, z: number) => void
       // turn the camera to face this way (0 = north), so W walks that way
       faceYaw: (yaw: number) => void
-      // put the camera at a spot looking at another one, [x, y, z]. null goes back
-      lookFrom: (from: number[] | null, at?: number[]) => void
+      // put the camera at a spot looking at another one, [x, y, z], with a photo's vertical
+      // fov if it's given. null goes back
+      lookFrom: (from: number[] | null, at?: number[], fov?: number) => void
       // name of the building you're inside, or null
       inside: () => string | null
       // per person we're in a call with: connection state, and how many ms ago we
@@ -61,8 +62,8 @@ if (showDebug) {
     faceYaw: (yaw) => {
       input.turn += yaw - localPlayer.cameraYaw
     },
-    lookFrom: (from, at) => {
-      localPlayer.shot = from && at ? { from, at } : null
+    lookFrom: (from, at, fov) => {
+      localPlayer.shot = from && at ? { from, at, fov } : null
     },
     inside: () => interiors.find((r) => r.index === localPlayer.inside)?.name ?? null,
     voice: () => {
