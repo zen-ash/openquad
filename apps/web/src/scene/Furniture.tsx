@@ -29,7 +29,9 @@ function capacity(kind: Kind | 'books') {
   return most[kind]
 }
 
-function Piece({ mesh, kind, items }: { mesh: THREE.Mesh; kind: Kind; items: Item[] }) {
+type Pieces = { kind: Kind; items: Item[]; shadows: boolean }
+
+function Piece({ mesh, kind, items, shadows }: Pieces & { mesh: THREE.Mesh }) {
   const ref = useRef<THREE.InstancedMesh>(null)
 
   useLayoutEffect(() => {
@@ -51,7 +53,7 @@ function Piece({ mesh, kind, items }: { mesh: THREE.Mesh; kind: Kind; items: Ite
     <instancedMesh
       ref={ref}
       args={[mesh.geometry, mesh.material, capacity(kind)]}
-      castShadow
+      castShadow={shadows}
       receiveShadow
     />
   )
@@ -100,7 +102,7 @@ function Books({ shelves }: { shelves: Item[] }) {
 }
 
 // one instanced mesh per part of the model, a couple of them have two materials
-function Model({ kind, items }: { kind: Kind; items: Item[] }) {
+function Model({ kind, items, shadows }: Pieces) {
   const { scene } = useGLTF(`/models/furniture/${kind}.glb`)
   const meshes = useMemo(() => {
     scene.updateMatrixWorld(true)
@@ -111,7 +113,9 @@ function Model({ kind, items }: { kind: Kind; items: Item[] }) {
     return out
   }, [scene])
 
-  return meshes.map((m) => <Piece key={m.uuid} mesh={m} kind={kind} items={items} />)
+  return meshes.map((m) => (
+    <Piece key={m.uuid} mesh={m} kind={kind} items={items} shadows={shadows} />
+  ))
 }
 
 // rooms that between them have one of everything, for the warm-up (WarmUp.tsx)
@@ -136,9 +140,13 @@ function sampleRooms() {
 export default function Furniture() {
   const warming = useSettings((s) => s.warming)
   const [near, setNear] = useState(-1)
+  const [inside, setInside] = useState(false)
 
   useEffect(() => {
-    const timer = setInterval(() => setNear(interiorNear(localPlayer)?.index ?? -1), 500)
+    const timer = setInterval(() => {
+      setNear(interiorNear(localPlayer)?.index ?? -1)
+      setInside(localPlayer.inside >= 0)
+    }, 500)
     return () => clearInterval(timer)
   }, [])
 
@@ -150,7 +158,14 @@ export default function Furniture() {
   return (
     <Suspense fallback={null}>
       {KINDS.map((kind) => (
-        <Model key={kind} kind={kind} items={items.filter((i) => i.kind === kind)} />
+        <Model
+          key={kind}
+          kind={kind}
+          items={items.filter((i) => i.kind === kind)}
+          // from outside you can't see their shadows through the windows, but they'd still
+          // be drawn into all three shadow maps (a big building's chairs cost 0.5 ms)
+          shadows={warming || inside}
+        />
       ))}
       <Books shelves={items.filter((i) => i.kind === 'shelf')} />
     </Suspense>
