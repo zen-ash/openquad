@@ -146,7 +146,6 @@ const MEASURED_HEIGHTS = {
   'Courtland Building': 16.8,
   'Greek Housing': 9.6,
   'J Deck': 13.9,
-  'Langdale Hall': 28.8,
   'M Deck': 25.7,
   'One Park Place': 21.2,
   'Patton Hall': 16.5,
@@ -757,6 +756,44 @@ function studentCenterWest(b) {
   ]
 }
 
+// langdale hall (1971, the old general classroom building). dark brick panels between
+// precast piers, and the top three floors in a band of deep set windows that sticks out.
+// drawn in campus/langdaleHall.ts. osm's outline is right, but overture's 28.8m is way off:
+// 11 floors, 44m to the top of that band going by gsu's photos
+const LANGDALE = {
+  // ends of the peachtree center ave front: the decatur street corner, then the north
+  // corner. osm's own nodes
+  front: [
+    { lat: 33.7531389, lon: -84.387512 },
+    { lat: 33.7535172, lon: -84.3871116 },
+  ],
+  height: 44,
+  // the main doors under the canopy on peachtree center ave, meters from decatur street.
+  // in the panel under the south end of the long canopy (2019 mapillary photo)
+  door: 28.5,
+}
+
+function langdaleHall(b) {
+  const [from, to] = LANGDALE.front.map((c) => {
+    const [x, z] = toLocal(c)
+    return b.points.reduce((best, p) =>
+      Math.hypot(p[0] - x, p[1] - z) < Math.hypot(best[0] - x, best[1] - z) ? p : best,
+    )
+  })
+  const len = Math.hypot(to[0] - from[0], to[1] - from[1])
+  const along = [(to[0] - from[0]) / len, (to[1] - from[1]) / len]
+  // out of the front, toward peachtree center ave
+  const out = [along[1], -along[0]]
+  b.height = LANGDALE.height
+  b.landmark = { front: [from, to] }
+  b.door = [
+    round(from[0] + along[0] * LANGDALE.door),
+    round(from[1] + along[1] * LANGDALE.door),
+    Math.round(out[0] * 100) / 100,
+    Math.round(out[1] * 100) / 100,
+  ]
+}
+
 function main(elements) {
   const buildings = []
   const roads = []
@@ -880,6 +917,8 @@ function main(elements) {
   if (arts) artsHumanities(arts)
   const scw = buildings.find((b) => b.name === 'Student Center West')
   if (scw) studentCenterWest(scw)
+  const langdale = buildings.find((b) => b.name === 'Langdale Hall')
+  if (langdale) langdaleHall(langdale)
   for (const b of NEW_BUILDINGS) buildings.push({ ...b, height: b.height * SCALE, gsu: true })
   const sce = buildings.find((b) => b.name === 'Student Center East')
   const lobby = buildings.find((b) => b.lobby)

@@ -4,6 +4,7 @@ import type * as THREE from 'three'
 import campus from '../campus/campus.json'
 import { artsHumanitiesMaterials } from '../campus/artsHumanitiesMaterials'
 import { dahlbergMaterials } from '../campus/dahlbergMaterials'
+import { langdaleHallMaterials } from '../campus/langdaleHallMaterials'
 import { landmarkGeometry, type Sign } from '../campus/landmarks'
 import { libraryNorthMaterials } from '../campus/libraryNorthMaterials'
 import { researchTowerMaterials } from '../campus/researchTowerMaterials'
@@ -18,6 +19,7 @@ const materials: Record<string, Record<string, THREE.Material>> = {
   'Research Tower': researchTowerMaterials,
   'Student Center East': studentCenterEastMaterials,
   'Student Center West': studentCenterWestMaterials,
+  'Langdale Hall': langdaleHallMaterials,
 }
 
 // white sign with the name in gsu blue. the real ones have the logo where the blue

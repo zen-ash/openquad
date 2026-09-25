@@ -1,6 +1,7 @@
 import type * as THREE from 'three'
 import { artsHumanitiesGeometry, type ArtsData } from './artsHumanities'
 import { dahlbergGeometry, type DahlbergData } from './dahlberg'
+import { langdaleHallGeometry, type LangdaleData } from './langdaleHall'
 import { libraryNorthGeometry, type LibraryNorthData } from './libraryNorth'
 import { researchTowerGeometry, type TowerData } from './researchTower'
 import { studentCenterEastGeometry, type StudentCenterData } from './studentCenterEast'
@@ -42,7 +43,8 @@ type Data = LibraryNorthData &
   ArtsData &
   TowerData &
   StudentCenterData &
-  StudentCenterWestData
+  StudentCenterWestData &
+  LangdaleData
 const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Library North': libraryNorthGeometry,
   'Dahlberg Hall': dahlbergGeometry,
@@ -50,6 +52,7 @@ const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Research Tower': researchTowerGeometry,
   'Student Center East': studentCenterEastGeometry,
   'Student Center West': studentCenterWestGeometry,
+  'Langdale Hall': langdaleHallGeometry,
 }
 
 // the scene and the interiors both need it, only build it once
