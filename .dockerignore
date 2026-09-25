@@ -7,6 +7,9 @@ playwright-report
 e2e
 CLAUDE.md
 .claude
+# screenshots and frame time recordings from pnpm visual / pnpm walk, a gb or more
+visual
+walk
 # nothing secret goes into the web build, and a local .env shouldn't sneak in
 **/.env
 **/.env.*
