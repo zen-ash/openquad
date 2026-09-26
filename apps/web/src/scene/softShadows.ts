@@ -1,4 +1,4 @@
-import type { LightShadow } from 'three'
+import type { Camera, LightShadow, Material, Object3D, Scene } from 'three'
 import { CSMShadowNode } from 'three/examples/jsm/csm/CSMShadowNode.js'
 import {
   float,
@@ -15,7 +15,7 @@ import {
   texture,
   vogelDiskSample,
 } from 'three/tsl'
-import type { Node, NodeBuilder, Texture } from 'three/webgpu'
+import type { Node, NodeBuilder, Texture, WebGPURenderer } from 'three/webgpu'
 
 // the sun is half a degree across, so a shadow's edge gets softer the further the ground is
 // from what's casting it: about 9mm per meter. a bench leg's shadow is sharp, the end of
@@ -88,5 +88,36 @@ export class SoftCascades extends CSMShadowNode {
       builder,
     )
     ;(this.lights[0]!.shadow as LightShadow & { filterNode?: unknown }).filterNode = pcss
+  }
+}
+
+type Draw = (object: Object3D, scene: Scene, camera: Camera, ...rest: unknown[]) => void
+
+// three draws every caster into a shadow map with one shared material, and copies the
+// caster's alphaTest onto it first. going from one with an alpha test (leaves, hair) to one
+// without bumps that material's version, and then every shadow draw after it worked out its
+// whole cache key again to see if it needed a new shader. it never does (no caster's
+// alphaTest ever changes), and it was 1.5ms of cpu a frame at library north. so the shadow
+// materials keep the value without the version bump
+function keepVersion(material: Material) {
+  let value = material.alphaTest
+  Object.defineProperty(material, 'alphaTest', {
+    get: () => value,
+    set: (v: number) => (value = v),
+  })
+}
+
+// once, when the renderer starts on high (Atmosphere.tsx)
+export function lighterShadowPasses(renderer: WebGPURenderer) {
+  const r = renderer as unknown as { renderObject: Draw }
+  const draw = r.renderObject.bind(renderer)
+  const kept = new WeakSet<Material>()
+  r.renderObject = (object, scene, camera, ...rest) => {
+    const shadow = scene.overrideMaterial as (Material & { isShadowPassMaterial?: true }) | null
+    if (shadow?.isShadowPassMaterial && !kept.has(shadow)) {
+      kept.add(shadow)
+      keepVersion(shadow)
+    }
+    draw(object, scene, camera, ...rest)
   }
 }

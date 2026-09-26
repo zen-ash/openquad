@@ -25,7 +25,7 @@ import {
 } from 'three/tsl'
 import { Mesh, NodeMaterial, PlaneGeometry, type Node, type WebGPURenderer } from 'three/webgpu'
 import { eciToEcef, moonDirection } from '../game/celestial'
-import { SoftCascades } from './softShadows'
+import { lighterShadowPasses, SoftCascades } from './softShadows'
 
 // takram's atmosphere (bruneton's precomputed scattering): the sky, sunlight colored by how
 // much air it came through, and the haze that turns far buildings paler and bluer. it's
@@ -66,6 +66,7 @@ export function addAtmosphere(renderer: WebGPURenderer) {
   })
   // takram's types and three's don't quite agree on the light node
   renderer.library.addLight(AtmosphereLightNode as never, AtmosphereLight)
+  lighterShadowPasses(renderer)
 }
 
 // the sky: a quad over the whole screen at the far plane, drawn after everything solid so
