@@ -794,6 +794,94 @@ function langdaleHall(b) {
   ]
 }
 
+// classroom south (1966). a slab of white marble on decatur street, 6 floors, drawn in
+// campus/classroomSouth.ts with its west wing. its main doors are in the glass lobby of
+// 2020, in the corner where it meets the wing. osm draws the lobby as part of the wing (one
+// of GSU_PARTS), so that bit moves over to classroom south here. the wing keeps its place
+// in the list (the made up facades are picked by index)
+const CLASSROOM_SOUTH = {
+  way: 840362899,
+  // ends of the decatur street front: the central ave corner, then the library south end
+  front: [
+    { lat: 33.7529099, lon: -84.3875976 },
+    { lat: 33.7525476, lon: -84.3871031 },
+  ],
+  // the top of the parapet, over the band of low windows and six rows of small windows
+  // (mapillary 2019 at the central ave end, 20-21m: decatur st climbs toward library south,
+  // where it's about 16m in commons' 2025 photo). osm says 6 floors, overture has no height
+  height: 20.2,
+  // the lobby goes back from decatur street as far as the wing's own front, this far
+  // behind the slab's front (meters)
+  lobby: 22.3,
+  // the revolving door, meters along decatur street back from the slab's corner (2020 photo)
+  door: 5.2,
+  // the wing's parapet, from mapillary's 2019 photo of it from central ave
+  wing: 14.5,
+}
+
+function classroomSouth(b, wing) {
+  const [from, to] = CLASSROOM_SOUTH.front.map((c) => {
+    const [x, z] = toLocal(c)
+    return b.points.reduce((best, p) =>
+      Math.hypot(p[0] - x, p[1] - z) < Math.hypot(best[0] - x, best[1] - z) ? p : best,
+    )
+  })
+  const len = Math.hypot(to[0] - from[0], to[1] - from[1])
+  const along = [(to[0] - from[0]) / len, (to[1] - from[1]) / len]
+  // out of the front, toward decatur street
+  const out = [along[1], -along[0]]
+  const aOf = (p) => (p[0] - from[0]) * along[0] + (p[1] - from[1]) * along[1]
+  const dOf = (p) => (p[0] - from[0]) * out[0] + (p[1] - from[1]) * out[1]
+
+  // cut the wing's way at the line of its front: in front of it is the lobby
+  const cut = (pts, keep) => {
+    const kept = []
+    pts.forEach((p, i) => {
+      const q = pts[(i + 1) % pts.length]
+      const [sp, sq] = [dOf(p) + CLASSROOM_SOUTH.lobby, dOf(q) + CLASSROOM_SOUTH.lobby]
+      if (keep(sp)) kept.push(p)
+      if (keep(sp) !== keep(sq)) {
+        const t = sp / (sp - sq)
+        kept.push([round(p[0] + (q[0] - p[0]) * t), round(p[1] + (q[1] - p[1]) * t)])
+      }
+    })
+    // drop points that landed on top of each other
+    return kept.filter((p, i) => {
+      const q = kept[(i + 1) % kept.length]
+      return Math.hypot(q[0] - p[0], q[1] - p[1]) > 0.15
+    })
+  }
+  const lobby = cut(wing.points, (s) => s >= 0)
+  wing.points = cut(wing.points, (s) => s <= 0)
+
+  // the lobby shares a wall with the slab's end, from the slab's corner (a point of both)
+  // back. go round the lobby the long way from that corner and put it in there. the two
+  // ways go round opposite ways, or the lobby would go in backwards
+  if (signedArea(b.points) * signedArea(lobby) > 0) throw new Error('the lobby way turned round')
+  const shared = b.points.findIndex((p) => lobby.some((q) => q[0] === p[0] && q[1] === p[1]))
+  const start = lobby.findIndex((q) => q[0] === b.points[shared][0] && q[1] === b.points[shared][1])
+  const ring = lobby.map((_, i) => lobby[(start + i) % lobby.length])
+  b.points.splice(shared, 0, ...ring.slice(1).reverse())
+
+  b.height = CLASSROOM_SOUTH.height
+  b.landmark = { front: [from, to], lobby, wing: wing.points }
+  // the wing is drawn with it, not as a building of its own
+  wing.height = CLASSROOM_SOUTH.wing
+  wing.landmark = { with: 'Classroom South' }
+  // the revolving door, on the lobby's front
+  const a = -CLASSROOM_SOUTH.door
+  const [p, q] = lobby
+    .map((p, i) => [p, lobby[(i + 1) % lobby.length]])
+    .find(([p, q]) => dOf(p) > -9 && dOf(q) > -9 && (aOf(p) - a) * (aOf(q) - a) < 0)
+  const t = (a - aOf(p)) / (aOf(q) - aOf(p))
+  b.door = [
+    round(p[0] + (q[0] - p[0]) * t),
+    round(p[1] + (q[1] - p[1]) * t),
+    Math.round(out[0] * 100) / 100,
+    Math.round(out[1] * 100) / 100,
+  ]
+}
+
 function main(elements) {
   const buildings = []
   const roads = []
@@ -838,6 +926,7 @@ function main(elements) {
         if (isGsu(tags)) b.gsu = true
         if (el.type === 'way' && GSU_PARTS.has(el.id)) b.gsu = b.part = true
         if (el.type === 'way' && el.id === STUDENT_CENTER_EAST.lobby) b.lobby = true
+        if (el.type === 'way' && el.id === CLASSROOM_SOUTH.way) b.wing = true
         // parking decks look different, open floors and no windows
         if (tags.building === 'parking' || tags.amenity === 'parking') b.deck = true
         buildings.push(b)
@@ -919,6 +1008,10 @@ function main(elements) {
   if (scw) studentCenterWest(scw)
   const langdale = buildings.find((b) => b.name === 'Langdale Hall')
   if (langdale) langdaleHall(langdale)
+  const classroom = buildings.find((b) => b.name === 'Classroom South')
+  const wing = buildings.find((b) => b.wing)
+  if (wing) delete wing.wing
+  if (classroom && wing) classroomSouth(classroom, wing)
   for (const b of NEW_BUILDINGS) buildings.push({ ...b, height: b.height * SCALE, gsu: true })
   const sce = buildings.find((b) => b.name === 'Student Center East')
   const lobby = buildings.find((b) => b.lobby)

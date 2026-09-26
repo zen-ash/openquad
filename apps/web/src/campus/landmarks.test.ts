@@ -3,8 +3,9 @@ import { DOOR_WIDTH } from '../game/interiors'
 import campus from './campus.json'
 import { landmarkGeometry } from './landmarks'
 
-// checks every building drawn by hand has to pass
-const landmarks = campus.buildings.filter((b) => b.landmark)
+// checks every building drawn by hand has to pass. the ones drawn with another (classroom
+// south's wing) have no name of their own
+const landmarks = campus.buildings.filter((b) => b.landmark && b.name)
 
 describe.each(landmarks.map((b) => [b.name!, b] as const))('%s', (_, b) => {
   const geo = landmarkGeometry(b)!

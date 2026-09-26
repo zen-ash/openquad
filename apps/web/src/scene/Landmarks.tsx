@@ -3,6 +3,7 @@ import { useRef } from 'react'
 import type * as THREE from 'three'
 import campus from '../campus/campus.json'
 import { artsHumanitiesMaterials } from '../campus/artsHumanitiesMaterials'
+import { classroomSouthMaterials } from '../campus/classroomSouthMaterials'
 import { dahlbergMaterials } from '../campus/dahlbergMaterials'
 import { langdaleHallMaterials } from '../campus/langdaleHallMaterials'
 import { landmarkGeometry, type Sign } from '../campus/landmarks'
@@ -20,6 +21,7 @@ const materials: Record<string, Record<string, THREE.Material>> = {
   'Student Center East': studentCenterEastMaterials,
   'Student Center West': studentCenterWestMaterials,
   'Langdale Hall': langdaleHallMaterials,
+  'Classroom South': classroomSouthMaterials,
 }
 
 // white sign with the name in gsu blue. the real ones have the logo where the blue
