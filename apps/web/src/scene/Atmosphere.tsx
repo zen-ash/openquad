@@ -66,7 +66,7 @@ export function addAtmosphere(renderer: WebGPURenderer) {
   })
   // takram's types and three's don't quite agree on the light node
   renderer.library.addLight(AtmosphereLightNode as never, AtmosphereLight)
-  lighterShadowPasses(renderer)
+  lighterShadowPasses(renderer, cascades)
 }
 
 // the sky: a quad over the whole screen at the far plane, drawn after everything solid so

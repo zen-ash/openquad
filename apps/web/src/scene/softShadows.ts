@@ -1,4 +1,19 @@
-import type { Camera, LightShadow, Material, Object3D, Scene } from 'three'
+import {
+  Frustum,
+  Matrix4,
+  Plane,
+  Sphere,
+  Vector3,
+  WebGPUCoordinateSystem,
+  type BufferGeometry,
+  type Camera,
+  type DirectionalLight,
+  type LightShadow,
+  type Material,
+  type Object3D,
+  type PerspectiveCamera,
+  type Scene,
+} from 'three'
 import { CSMShadowNode } from 'three/examples/jsm/csm/CSMShadowNode.js'
 import {
   float,
@@ -15,7 +30,7 @@ import {
   texture,
   vogelDiskSample,
 } from 'three/tsl'
-import type { Node, NodeBuilder, Texture, WebGPURenderer } from 'three/webgpu'
+import type { Node, NodeBuilder, NodeFrame, Texture, WebGPURenderer } from 'three/webgpu'
 
 // the sun is half a degree across, so a shadow's edge gets softer the further the ground is
 // from what's casting it: about 9mm per meter. a bench leg's shadow is sharp, the end of
@@ -82,6 +97,11 @@ export const pcss = Fn(({ depthTexture, shadowCoord, shadow, depthLayer }: Args)
 // afterwards, so soft edges in all three cost 3.5ms. further out plain filtering is fine,
 // a penumbra there is about a pixel wide anyway
 export class SoftCascades extends CSMShadowNode {
+  // the part of the view each cascade's map is used for (by its shadow camera) and the way
+  // the light goes, for castsInto(). redone every frame
+  slices = new Map<Camera, Plane[]>()
+  toward = new Vector3()
+
   _init(builder: NodeBuilder) {
     ;(CSMShadowNode.prototype as unknown as { _init(b: NodeBuilder): void })._init.call(
       this,
@@ -89,6 +109,72 @@ export class SoftCascades extends CSMShadowNode {
     )
     ;(this.lights[0]!.shadow as LightShadow & { filterNode?: unknown }).filterNode = pcss
   }
+
+  updateBefore(frame: NodeFrame) {
+    const out = super.updateBefore(frame)
+    const camera = this.camera as PerspectiveCamera
+    const light = this.light as DirectionalLight
+    this.toward.subVectors(light.target.position, light.position).normalize()
+    view.setFromProjectionMatrix(
+      toClip.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse),
+      WebGPUCoordinateSystem,
+    )
+    camera.getWorldDirection(ahead)
+    const along = ahead.dot(eye.setFromMatrixPosition(camera.matrixWorld))
+    const near = camera.near
+    const far = Math.min(camera.far, this.maxFar)
+    this.lights.forEach((l, i) => {
+      let planes = this.slices.get(l.shadow!.camera)
+      if (!planes) this.slices.set(l.shadow!.camera, (planes = view.planes.map(() => new Plane())))
+      // how far along the view the cascade goes, plus the bit where it fades into the next
+      // one (a quarter of the break squared, split between both sides, like CSMShadowNode)
+      const x = this.breaks[i - 1] ?? 0
+      const y = this.breaks[i]!
+      const from = near + (x - (x * x) / 8) * (far - near)
+      const to = near + (y + (y * y) / 8) * (far - near)
+      for (let k = 0; k < 4; k++) planes[k]!.copy(view.planes[k]!)
+      planes[4]!.set(ahead, -(along + from))
+      planes[5]!.set(behind.copy(ahead).negate(), along + to)
+    })
+    return out
+  }
+}
+
+const view = new Frustum()
+const toClip = new Matrix4()
+const ahead = new Vector3()
+const behind = new Vector3()
+const eye = new Vector3()
+const sphere = new Sphere()
+const end = new Vector3()
+// soft edges and filtering read the map a bit around where a shadow lands
+const EDGE = 2
+
+// three draws everything inside a cascade's box into its map, and the box reaches 200m
+// toward the sun and covers what's beside and behind you too. a caster only matters if its
+// shadow (the object swept along the light down to the ground) can land in the part of the
+// view that cascade is used for. at library north that's 148 shadow draws instead of 238
+function castsInto(object: Object3D, planes: Plane[], toward: Vector3) {
+  const o = object as Object3D & {
+    geometry?: BufferGeometry
+    boundingSphere?: Sphere | null
+    computeBoundingSphere?(): void
+  }
+  if (!o.frustumCulled || !o.geometry) return true
+  // instanced and skinned meshes have their own, around every instance or the pose
+  if (o.boundingSphere === null) o.computeBoundingSphere!()
+  let bounds = o.boundingSphere
+  if (bounds === undefined) {
+    if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere()
+    bounds = o.geometry.boundingSphere
+  }
+  sphere.copy(bounds!).applyMatrix4(o.matrixWorld)
+  const t = (sphere.center.y + sphere.radius + 1) / Math.max(-toward.y, 0.05)
+  end.copy(toward).multiplyScalar(t).add(sphere.center)
+  const r = -sphere.radius - EDGE
+  for (const p of planes)
+    if (p.distanceToPoint(sphere.center) < r && p.distanceToPoint(end) < r) return false
+  return true
 }
 
 type Draw = (object: Object3D, scene: Scene, camera: Camera, ...rest: unknown[]) => void
@@ -108,7 +194,7 @@ function keepVersion(material: Material) {
 }
 
 // once, when the renderer starts on high (Atmosphere.tsx)
-export function lighterShadowPasses(renderer: WebGPURenderer) {
+export function lighterShadowPasses(renderer: WebGPURenderer, cascades: SoftCascades) {
   const r = renderer as unknown as { renderObject: Draw }
   const draw = r.renderObject.bind(renderer)
   const kept = new WeakSet<Material>()
@@ -118,6 +204,8 @@ export function lighterShadowPasses(renderer: WebGPURenderer) {
       kept.add(shadow)
       keepVersion(shadow)
     }
+    const planes = cascades.slices.get(camera)
+    if (planes && !castsInto(object, planes, cascades.toward)) return
     draw(object, scene, camera, ...rest)
   }
 }
