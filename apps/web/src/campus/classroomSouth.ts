@@ -39,10 +39,13 @@ export type Part = 'marble' | 'glass' | 'frame' | 'clear' | 'cream' | 'tan' | 'g
 // the low windows along the ground floor and the band over them (mapillary 2019)
 export const RIBBON: [number, number] = [1.2, 1.65]
 const BAND: [number, number] = [1.65, 2.2]
-// the sills of the rows of small windows, each on a thin ledge. about 2.5m apart, and a
-// bigger gap under the top row (mapillary 2019 at the central ave end, commons 2025)
-export const SILLS = [3.4, 5.9, 8.4, 10.9, 13.4, 17.5]
-export const WINDOW: [number, number] = [0.75, 0.9]
+// the sills of the rows of small windows, each on a thin ledge. 2.5m apart, and 1.4 times
+// that under the top row (mapillary 2019 at the central ave end, commons 2025). decatur st
+// climbs about 4.5m toward library south, where the lowest two rows are really under the
+// sidewalk. the game's ground is flat, so it's the central ave end all along
+export const SILLS = [3.4, 5.9, 8.4, 10.9, 13.4, 17]
+// about square (commons 2025, gsu 2021)
+export const WINDOW: [number, number] = [0.85, 0.85]
 // a window to each bay, the first this far from the central ave corner
 export const BAY = 2.7
 export const FIRST = 3.7

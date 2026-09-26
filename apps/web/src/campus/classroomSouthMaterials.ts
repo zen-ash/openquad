@@ -22,7 +22,7 @@ export const classroomSouthMaterials: Record<Part, THREE.Material> = {
   // 2021, commons 2025) and reads dark from the shade (mapillary 2019), light frames
   glass: glass({
     color: '#2c4d52',
-    pane: [0.75, 0.9],
+    pane: [0.85, 0.85],
     frame: 0.05,
     frameColor: '#a9adad',
     lit: 0.4,
