@@ -281,7 +281,8 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
     if (block === 'lobby') lobbyWall(w, facing, sideways)
     else if (block === 'slab' && facing > 0.9 && f.dOf(w.at(w.len / 2)) > -1) front(w)
     else if (block === 'slab' && Math.abs(sideways) > 0.9 && (a < 1 || a > 59))
-      blankEnd(w, e0, e1, a > 59)
+      // osm has the end at library south as two walls, the doors are in the one on the street
+      blankEnd(w, e0, e1, a > 59 && f.dOf(w.at(w.len / 2)) > -10)
     else backWall(w, block === 'slab' ? H : REAR, e0, e1)
   }
 

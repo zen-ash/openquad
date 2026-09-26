@@ -69,7 +69,8 @@ describe('classroom south', () => {
     expect(f.dOf({ x: x!, z: z! })).toBeCloseTo(LOBBY_FRONT, 1)
     expect(pointInPolygon({ x: x! + nx! * 0.5, z: z! + nz! * 0.5 }, pts)).toBe(false)
     expect(pointInPolygon({ x: x! - nx! * 0.5, z: z! - nz! * 0.5 }, pts)).toBe(true)
-    expect(signs.filter((s) => s.text === 'CLASSROOM SOUTH').length).toBeGreaterThanOrEqual(2)
+    // over the lobby doors, the doors toward library south and the end doors, once each
+    expect(signs.filter((s) => s.text === 'CLASSROOM SOUTH')).toHaveLength(3)
   })
 
   it('has every outside wall facing out', () => {
