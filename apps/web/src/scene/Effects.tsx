@@ -1,6 +1,6 @@
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
-import { NoToneMapping, SRGBColorSpace, Vector2 } from 'three'
+import { NoToneMapping, SRGBColorSpace, Vector2, type DepthTexture, type Vector4 } from 'three'
 import { aerialPerspective } from '@takram/three-atmosphere/webgpu'
 import { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js'
 import { ao as gtao } from 'three/examples/jsm/tsl/display/GTAONode.js'
@@ -101,12 +101,29 @@ export default function Effects() {
   const mapping = useSettings((s) => s.toneMapping)
 
   const { pipeline, lit, resize } = useMemo(() => {
+    // the scene is drawn smaller than the screen, a bit off center every frame, and taau
+    // (below) puts the frames together into a sharp full size picture. that's the
+    // antialiasing too, so no msaa
+    const scenePass = pass(scene, camera, { samples: 0 })
+    scenePass.setMRT(mrt({ output, velocity }))
+
     // ambient occlusion first, from a quick pass that only draws depth and normals: how
     // much of the sky each spot can see. the scene pass then darkens only the light from
     // the sky and the environment with it, not the sun (which has shadows for that). the
     // old way multiplied the whole picture and made sunlit ground in corners too dark
-    const prePass = pass(scene, camera, { samples: 0 })
+    const depthTexture = scenePass.getTexture('depth') as DepthTexture
+    const prePass = pass(scene, camera, { samples: 0, depthTexture })
     prePass.setMRT(mrt({ output: normalView }))
+    // and the scene pass starts from that depth (resize() below), so it only shades what's in
+    // front. it's the scene pass's own depth texture lent to the prepass: three begins the
+    // scene pass first and draws the prepass from inside it, and the owner resizes it. with an empty depth buffer everything behind a wall that's drawn later got
+    // shaded for nothing (the cutout's discard stops the gpu from skipping hidden pixels by
+    // itself). the scene pass is pulled toward the camera a hair with its viewport's depth
+    // range, so the surface the prepass found always passes, even where the two shaders
+    // round differently
+    ;(scenePass.renderTarget.viewport as Vector4 & { maxDepth?: number }).maxDepth = 1 - 2e-6
+    // only solid things in the prepass, glass or a label there would hide what's behind it
+    prePass.transparent = false
     const preDepth = prePass.getTextureNode('depth')
     const aoPass = gtao(preDepth, prePass.getTextureNode(), camera)
     aoPass.radius.value = AO_RADIUS
@@ -121,11 +138,6 @@ export default function Effects() {
     const blurX = buildOnce(rtt(depthAwareBlur(raw, preDepth, texel.mul(vec2(1, 0)), camera)))
     const blurY = buildOnce(rtt(depthAwareBlur(blurX, preDepth, texel.mul(vec2(0, 1)), camera)))
 
-    // the scene is drawn smaller than the screen, a bit off center every frame, and taau
-    // (below) puts the frames together into a sharp full size picture. that's the
-    // antialiasing too, so no msaa
-    const scenePass = pass(scene, camera, { samples: 0 })
-    scenePass.setMRT(mrt({ output, velocity }))
     // contact shadows: the fine ones the shadow map is too coarse for, where a bench leg
     // or a shoe meets the ground, by marching toward the sun through the depth buffer.
     // they darken only the sun's light, like the shadow map (Atmosphere.tsx)
@@ -214,6 +226,9 @@ export default function Effects() {
 
     // everything drawn at the scene's size follows it, the half and quarter size passes too
     const resize = (scale: number) => {
+      // at the screen's own size three leaves the viewport (and its depth range) alone, so
+      // there the scene pass clears its depth and draws it again like before
+      scenePass.autoClearDepth = scale >= 1
       prePass.setResolutionScale(scale)
       scenePass.setResolutionScale(scale)
       lit.setResolutionScale(scale)
