@@ -1,6 +1,13 @@
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
-import { NoToneMapping, SRGBColorSpace, Vector2, type DepthTexture, type Vector4 } from 'three'
+import {
+  NoToneMapping,
+  RedFormat,
+  SRGBColorSpace,
+  Vector2,
+  type DepthTexture,
+  type Vector4,
+} from 'three'
 import { aerialPerspective } from '@takram/three-atmosphere/webgpu'
 import { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js'
 import { ao as gtao } from 'three/examples/jsm/tsl/display/GTAONode.js'
@@ -75,6 +82,10 @@ const BRIGHT_SATURATION = 0.6
 
 const size = new Vector2()
 
+// for textures that only hold one number (the ambient occlusion and contact shadow blurs):
+// one channel, and no depth buffer, which still got cleared and written out every frame
+const ONE_NUMBER = { depthBuffer: false, format: RedFormat }
+
 // three's rtt() and sss() reset their own shader every time a material that uses them gets
 // built. the ambient occlusion and contact shadows are used by every material in the scene
 // (through the lighting), so each new thing coming into view (a tree, a bench) rebuilt them
@@ -135,8 +146,12 @@ export default function Effects() {
     // bug with its kernel)
     const raw = aoPass.getTextureNode()
     const texel = vec2(1).div(vec2(textureSize(raw, int(0)) as unknown as Node<'ivec2'>))
-    const blurX = buildOnce(rtt(depthAwareBlur(raw, preDepth, texel.mul(vec2(1, 0)), camera)))
-    const blurY = buildOnce(rtt(depthAwareBlur(blurX, preDepth, texel.mul(vec2(0, 1)), camera)))
+    const blurX = buildOnce(
+      rtt(depthAwareBlur(raw, preDepth, texel.mul(vec2(1, 0)), camera), null, null, ONE_NUMBER),
+    )
+    const blurY = buildOnce(
+      rtt(depthAwareBlur(blurX, preDepth, texel.mul(vec2(0, 1)), camera), null, null, ONE_NUMBER),
+    )
 
     // contact shadows: the fine ones the shadow map is too coarse for, where a bench leg
     // or a shoe meets the ground, by marching toward the sun through the depth buffer.
@@ -152,7 +167,12 @@ export default function Effects() {
       .sub(smoothstep(12, 25, positionView.z.negate()))
       .mul(fx.contact)
     const soft = buildOnce(
-      rtt(boxBlur(contact.getTextureNode(), { size: int(1), separation: int(1) })),
+      rtt(
+        boxBlur(contact.getTextureNode(), { size: int(1), separation: int(1) }),
+        null,
+        null,
+        ONE_NUMBER,
+      ),
     )
     const contactShadow = mix(1, soft.sample(screenUV).r, near)
     const shadows = builtinShadowContext(contactShadow, sunlight)
@@ -170,7 +190,9 @@ export default function Effects() {
     // the sky itself is drawn in the scene already (Atmosphere.tsx)
     air.skyNode = null
     // drawn into a texture once, it's a lot of shader to repeat in every pass after it
-    const lit = rtt(mix(drawn, air as unknown as Node<'vec4'>, fx.haze))
+    const lit = rtt(mix(drawn, air as unknown as Node<'vec4'>, fx.haze), null, null, {
+      depthBuffer: false,
+    })
 
     // back up to full size, and the edges smooth, from this frame and the ones before it.
     // taa softens everything a little, sharpening gets some of the detail back
