@@ -29,21 +29,35 @@ export const classroomSouthMaterials: Record<Part, THREE.Material> = {
     roughness: 0.15,
     metalness: 0.5,
   }),
-  // dark bronze: the canopy, the posts, the tops of the lobby walls
-  frame: metal({ color: '#3a3330', roughness: 0.45, metalness: 0.5 }),
-  // the lobby's glass, dark bronze mullions, lit inside at night. dark and reflecting from
-  // outside in the 2020 and 2026 photos
+  // dark bronze, nearly black: the canopy, the posts, door frames, the tops of the lobby
+  // walls. in the overcast 2020 photo the posts are 0.2 as bright as the cream box (in
+  // linear), the canopy's face a little lighter and more purple. painted, so it doesn't
+  // pick up the sky's color
+  frame: metal({ color: '#231e20', roughness: 0.5, metalness: 0.15 }),
+  // the lobby's glass, dark bronze mullions, lit inside at night. dark and reflecting the
+  // street from outside in the 2020 and 2026 photos, you hardly see in: nearly opaque and
+  // shiny like student center east's storefront
   clear: clearGlass({
-    color: '#263033',
-    opacity: 0.9,
+    color: '#253236',
+    opacity: 0.95,
     grid: [1.25, 2.1],
     from: 2.45,
     mullion: 0.035,
     transom: 0.04,
-    frameColor: '#3a342e',
+    frameColor: '#262123',
     glow: 0.4,
-    roughness: 0.08,
-    metalness: 0.3,
+    roughness: 0.05,
+    metalness: 0.6,
+  }),
+  // the revolving door's glass: dark and shiny, a bronze frame round each pane
+  drum: glass({
+    color: '#1e2426',
+    pane: [0.45, 2.2],
+    frame: 0.03,
+    frameColor: '#231e20',
+    lit: 0,
+    roughness: 0.05,
+    metalness: 0.6,
   }),
   // the lobby's cream box over the doors, the box round the doors toward library south, the
   // wing's light panels

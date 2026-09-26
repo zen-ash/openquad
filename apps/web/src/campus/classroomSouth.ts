@@ -34,7 +34,8 @@ export type ClassroomSouthData = {
 }
 
 // few parts, each is a draw call in every pass
-export type Part = 'marble' | 'glass' | 'frame' | 'clear' | 'cream' | 'tan' | 'grey' | 'blue'
+export type Part =
+  'marble' | 'glass' | 'frame' | 'clear' | 'drum' | 'cream' | 'tan' | 'grey' | 'blue'
 
 // the low windows along the ground floor and the band over them (mapillary 2019)
 export const RIBBON: [number, number] = [1.2, 1.65]
@@ -492,7 +493,8 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
     for (const u of [3.75, 7.3])
       lump('frame', w, u - 0.06, u + 0.06, 0, 2.35, depth - 0.2, depth - 0.32)
     // the revolving door: a drum of glass half out of the wall, a dark top. the game's door
-    // is in it (build-campus.mjs)
+    // is in it (build-campus.mjs). its glass is the window family, which isn't see-through:
+    // the game's sliding door panels are behind it and showed through the lobby glass pale
     const c = (door.x - w.p.x) * w.dir.x + (door.z - w.p.z) * w.dir.z
     const r = 1.05
     const n = 8
@@ -505,9 +507,16 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
         x: -w.dir.x * Math.cos(tm) + w.o.x * Math.sin(tm),
         z: -w.dir.z * Math.cos(tm) + w.o.z * Math.sin(tm),
       }
-      add('clear', wallQuad(p0, p1, 0, 2.2, o))
+      add('drum', glassQuad(p0, p1, 0, 2.2, o))
     }
     lump('frame', w, c - r, c + r, 2.2, 2.3, r, 0.02)
+    // wide bronze jambs either side, reaching round the ends of the drum, and a band over
+    // it where it meets the lobby's glass. they also cover the game's sliding door panels
+    // behind, which are wider than the drum
+    const side = DOOR_WIDTH / 2 + 0.05
+    lump('frame', w, c - side, c + side, 2.2, DOOR_HEIGHT + 0.05, 0.1, 0.02)
+    lump('frame', w, c - side, c - r + 0.12, 0, 2.2, 0.35, 0.02)
+    lump('frame', w, c + r - 0.12, c + side, 0, 2.2, 0.35, 0.02)
     // its dark bronze frame: posts round the front of the drum
     for (const t of [0.25, 0.5, 0.75]) {
       const u = c - Math.cos(Math.PI * t) * r
@@ -701,7 +710,7 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
     for (const [u0, u1, v0, v1] of glassy) inside.glass.push(wallQuad(at(u0), at(u1), v0, v1, into))
   }
 
-  // the window glass is deep in the walls and the blue bits are flat on the box, their
-  // shadows don't show
-  return { parts: merged(), inside, signs, first: ['marble'], noShadow: ['glass', 'blue'] }
+  // the window glass is deep in the walls, the drum is under the canopy and the blue bits
+  // are flat on the box: their shadows don't show
+  return { parts: merged(), inside, signs, first: ['marble'], noShadow: ['glass', 'drum', 'blue'] }
 }
