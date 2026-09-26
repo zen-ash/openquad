@@ -8,6 +8,7 @@ import { dahlbergMaterials } from '../campus/dahlbergMaterials'
 import { langdaleHallMaterials } from '../campus/langdaleHallMaterials'
 import { landmarkGeometry, type Sign } from '../campus/landmarks'
 import { libraryNorthMaterials } from '../campus/libraryNorthMaterials'
+import { librarySouthMaterials } from '../campus/librarySouthMaterials'
 import { researchTowerMaterials } from '../campus/researchTowerMaterials'
 import { studentCenterEastMaterials } from '../campus/studentCenterEastMaterials'
 import { studentCenterWestMaterials } from '../campus/studentCenterWestMaterials'
@@ -22,6 +23,7 @@ const materials: Record<string, Record<string, THREE.Material>> = {
   'Student Center West': studentCenterWestMaterials,
   'Langdale Hall': langdaleHallMaterials,
   'Classroom South': classroomSouthMaterials,
+  'Library South': librarySouthMaterials,
 }
 
 // white sign with the name in gsu blue. the real ones have the logo where the blue

@@ -882,6 +882,89 @@ function classroomSouth(b, wing) {
   ]
 }
 
+// library south (1988). nine tall floors of tan brick on decatur street, a wall of glass on
+// the side toward library north and the plaza, drawn in campus/librarySouth.ts. osm's
+// outline is right but its 9 floors are 5m ones: the parapet is 45m up going by the photos.
+// the bit between it and classroom south (one of GSU_PARTS: the loading dock, with the
+// plaza over it and a small glass box on the plaza) is drawn with it
+const LIBRARY_SOUTH = {
+  corner: 841030081,
+  // the library link over decatur street (one of GSU_PARTS)
+  link: 301958707,
+  // ends of the decatur street front: the north end, where the glass wall starts, and the
+  // courtland street corner. osm's own nodes
+  front: [
+    { lat: 33.7524094, lon: -84.3868708 },
+    { lat: 33.7523175, lon: -84.3867323 },
+  ],
+  // the classroom south end of the side toward the plaza, osm's node
+  north: { lat: 33.7523967, lon: -84.3871879 },
+  height: 45.3,
+  // the doors under the plaza, meters along that side from the classroom south end
+  door: 11,
+  // the corner: the plaza is 5.2m up, and the glass box on it is 8.85m up at the top
+  cornerHeight: 8.85,
+}
+
+function librarySouth(b, corner, link) {
+  const snap = (c) => {
+    const [x, z] = toLocal(c)
+    return b.points.reduce((best, p) =>
+      Math.hypot(p[0] - x, p[1] - z) < Math.hypot(best[0] - x, best[1] - z) ? p : best,
+    )
+  }
+  const [from, to] = LIBRARY_SOUTH.front.map(snap)
+  b.height = LIBRARY_SOUTH.height
+  b.landmark = { front: [from, to], corner: corner.points }
+  corner.height = LIBRARY_SOUTH.cornerHeight
+  corner.landmark = { with: 'Library South' }
+
+  // osm's link lands on the glass side and 5m round the corner onto decatur street, where
+  // the 2018 and 2021 photos have the street floor's windows and no bridge: it meets the
+  // building at the corner
+  const len = Math.hypot(to[0] - from[0], to[1] - from[1])
+  const along = [(to[0] - from[0]) / len, (to[1] - from[1]) / len]
+  const onFront = (p) => {
+    const [dx, dz] = [p[0] - from[0], p[1] - from[1]]
+    const a = dx * along[0] + dz * along[1]
+    return Math.abs(dx * along[1] - dz * along[0]) < 0.3 && a > 0.5 && a < len + 0.1
+  }
+  if (link) link.points = link.points.filter((p) => !onFront(p))
+
+  // walk along the plaza side from the classroom south end to the door. the outline can go
+  // round either way, go the way that heads toward the front
+  const n = b.points.length
+  const start = b.points.indexOf(snap(LIBRARY_SOUTH.north))
+  const next = b.points[(start + 1) % n]
+  const step =
+    Math.hypot(next[0] - from[0], next[1] - from[1]) <
+    Math.hypot(b.points[start][0] - from[0], b.points[start][1] - from[1])
+      ? 1
+      : -1
+  const flip = signedArea(b.points) > 0 ? -1 : 1
+  let left = LIBRARY_SOUTH.door
+  for (let i = start; ; i = (i + step + n) % n) {
+    const p = b.points[i]
+    const q = b.points[(i + step + n) % n]
+    const l = Math.hypot(q[0] - p[0], q[1] - p[1])
+    if (left > l) {
+      left -= l
+      continue
+    }
+    const d = [(q[0] - p[0]) / l, (q[1] - p[1]) / l]
+    // outward is to the right going forward round the outline, left going back
+    const nx = -d[1] * flip * step
+    const nz = d[0] * flip * step
+    b.door = [
+      round(p[0] + d[0] * left),
+      round(p[1] + d[1] * left),
+      Math.round(nx * 100) / 100,
+      Math.round(nz * 100) / 100,
+    ]
+    break
+  }
+}
+
 function main(elements) {
   const buildings = []
   const roads = []
@@ -927,6 +1010,8 @@ function main(elements) {
         if (el.type === 'way' && GSU_PARTS.has(el.id)) b.gsu = b.part = true
         if (el.type === 'way' && el.id === STUDENT_CENTER_EAST.lobby) b.lobby = true
         if (el.type === 'way' && el.id === CLASSROOM_SOUTH.way) b.wing = true
+        if (el.type === 'way' && el.id === LIBRARY_SOUTH.corner) b.corner = true
+        if (el.type === 'way' && el.id === LIBRARY_SOUTH.link) b.link = true
         // parking decks look different, open floors and no windows
         if (tags.building === 'parking' || tags.amenity === 'parking') b.deck = true
         buildings.push(b)
@@ -1012,6 +1097,12 @@ function main(elements) {
   const wing = buildings.find((b) => b.wing)
   if (wing) delete wing.wing
   if (classroom && wing) classroomSouth(classroom, wing)
+  const library = buildings.find((b) => b.name === 'Library South')
+  const corner = buildings.find((b) => b.corner)
+  if (corner) delete corner.corner
+  const link = buildings.find((b) => b.link)
+  if (link) delete link.link
+  if (library && corner) librarySouth(library, corner, link)
   for (const b of NEW_BUILDINGS) buildings.push({ ...b, height: b.height * SCALE, gsu: true })
   const sce = buildings.find((b) => b.name === 'Student Center East')
   const lobby = buildings.find((b) => b.lobby)
