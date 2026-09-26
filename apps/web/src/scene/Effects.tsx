@@ -248,6 +248,11 @@ export default function Effects() {
 
   // priority 1 takes the rendering over from fiber
   useFrame((state, dt) => {
+    // three works out every object's world matrix again for each render of the scene, and a
+    // frame here is five of them (prepass, scene pass, three shadow cascades): 0.9ms of cpu
+    // at student center west. nothing moves in between, so once a frame is enough
+    state.scene.matrixWorldAutoUpdate = false
+    state.scene.updateMatrixWorld()
     const { quality, native } = useSettings.getState()
     if (quality !== 'high') {
       gl.render(state.scene, state.camera)
