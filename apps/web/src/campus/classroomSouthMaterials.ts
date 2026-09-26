@@ -18,23 +18,24 @@ export const classroomSouthMaterials: Record<Part, THREE.Material> = {
     roughness: 0.45,
     dirt: 0.5,
   }),
-  // small windows deep in the marble, dark bronze frames. they read as dark holes in the
-  // photos, not reflections
+  // small windows set in the marble: tinted teal glass that shows the sky in the sun (gsu
+  // 2021, commons 2025) and reads dark from the shade (mapillary 2019), light frames
   glass: glass({
-    color: '#161a1c',
+    color: '#2c4d52',
     pane: [0.75, 0.9],
     frame: 0.05,
-    frameColor: '#3a342e',
+    frameColor: '#a9adad',
     lit: 0.4,
-    roughness: 0.35,
-    metalness: 0.2,
+    roughness: 0.15,
+    metalness: 0.5,
   }),
   // dark bronze: the canopy, the posts, the tops of the lobby walls
   frame: metal({ color: '#3a3330', roughness: 0.45, metalness: 0.5 }),
-  // the lobby's glass, dark bronze mullions, lit inside at night
+  // the lobby's glass, dark bronze mullions, lit inside at night. dark and reflecting from
+  // outside in the 2020 and 2026 photos
   clear: clearGlass({
-    color: '#435052',
-    opacity: 0.72,
+    color: '#2c3537',
+    opacity: 0.84,
     grid: [1.25, 2.1],
     from: 2.45,
     mullion: 0.035,

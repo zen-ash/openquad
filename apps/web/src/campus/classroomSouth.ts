@@ -293,11 +293,9 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
     // the doors toward library south, between two bays, 4.8m wide
     const e = uOf(SIDE_ENTRANCE)
     const entry: Hole = [e - 2.4, e + 2.4, 0, 2.65]
-    // the low windows, but not at the doors
-    const ribbons: Hole[] = [
-      [uOf(58.6), entry[0] - 0.4, RIBBON[0], RIBBON[1]],
-      [entry[1] + 0.4, uOf(1.3), RIBBON[0], RIBBON[1]],
-    ]
+    // the low windows, from the central ave end to 6m short of the doors. past that it's
+    // plain marble behind a brick planter (gsu 2021)
+    const ribbons: Hole[] = [[uOf(SIDE_ENTRANCE - 6), uOf(1.3), RIBBON[0], RIBBON[1]]]
     const [lo, hi] = [-RECESS, w.len + RECESS]
     const cut = [...holes, ...ribbons, entry].map(([u0, u1, v0, v1]): Hole => [
       u0 - lo,
@@ -327,26 +325,27 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
     sideEntrance(w, e)
   }
 
-  // the doors toward library south: a cream box of a canopy with the name on it, its sides
-  // going down to the ground, glass doors set in under it
+  // the doors toward library south: a cream box round them, wide piers, the name on the band
+  // over the doors, four glass doors under a transom set well back (gsu 2021)
   function sideEntrance(w: Wall, e: number) {
-    const [u0, u1] = [e - 2.4, e + 2.4]
-    reveal('marble', w, u0, u1, 0, 2.65, RECESS, 0.02)
-    curtain(w, u0, u1, 0, 2.65)
+    const [u0, u1] = [e - 1.7, e + 1.7]
+    const [top, head] = [3.45, 2.75]
+    reveal('marble', w, u0, u1, 0, head, RECESS, 0.02)
+    curtain(w, u0, u1, 0, head)
     lump('frame', w, u0, u1, 2.3, 2.4, 0.08, 0.02)
-    lump('cream', w, u0 - 0.35, u1 + 0.35, 2.65, 3.45, 1.5, RECESS)
-    lump('cream', w, u0 - 0.35, u0, 0, 2.65, 1.5, RECESS)
-    lump('cream', w, u1, u1 + 0.35, 0, 2.65, 1.5, RECESS)
-    const s = w.at(e, 1.52)
+    lump('cream', w, u0 - 0.9, u1 + 0.9, head, top, 1.3, RECESS)
+    lump('cream', w, u0 - 0.9, u0, 0, head, 1.3, RECESS)
+    lump('cream', w, u1, u1 + 0.9, 0, head, 1.3, RECESS)
+    const s = w.at(e - 0.3, 1.32)
     signs.push({
       x: s.x,
-      y: 3.05,
+      y: 3.1,
       z: s.z,
       rot: Math.atan2(w.o.x, w.o.z),
       text: 'CLASSROOM SOUTH',
       plate: '#e9eaeb',
       color: '#33363b',
-      scale: 0.55,
+      scale: 0.5,
     })
   }
 
@@ -381,16 +380,24 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
       bond(w, lo, d0, 0, top, RECESS)
       bond(w, d1, hi, 0, top, RECESS)
       bond(w, lo, hi, top, H, RECESS)
-      // set in under the marble: marble boards, the door and its transom, stucco
+      // set in under the marble: marble boards, the door and its transom, grey stucco
       const back = 0.05
       reveal('marble', w, d0, d1, 0, top, RECESS, back)
-      face('marble', w, d0, d0 + 1.5, 0, top, back)
-      curtain(w, d0 + 1.5, d0 + 3, 0, 3, back + 0.02)
-      lump('frame', w, d0 + 1.5, d0 + 3, 3, top, back + 0.04, back)
-      face('tan', w, d0 + 3, d1, 0, top, back)
+      // narrow upright boards of marble: its slabs, squeezed
+      const boards = wallQuad(w.at(d0, back), w.at(d0 + 1.5, back), 0, top, w.o, 0)
+      const uv = boards.getAttribute('uv')
+      for (let i = 0; i < uv.count; i++)
+        uv.setXY(i, (uv.getX(i) * SLAB[0]) / 0.38, (uv.getY(i) * SLAB[1]) / top)
+      add('marble', boards)
+      curtain(w, d0 + 1.5, d0 + 3.3, 0, 3, back + 0.02)
+      lump('frame', w, d0 + 1.5, d0 + 3.3, 2.3, 2.38, back + 0.04, back)
+      lump('frame', w, d0 + 1.5, d0 + 3.3, 3, top, back + 0.04, back)
+      // a door and a sidelight
+      lump('frame', w, d0 + 2.4, d0 + 2.46, 0, 3, back + 0.04, back)
+      face('grey', w, d0 + 3.3, d1, 0, top, back)
       for (const [text, at, scale] of [
         ['CLASSROOM SOUTH', d0 + 0.75, 0.42],
-        ['95\nDECATUR ST.', d0 + 3.6, 0.36],
+        ['95\nDECATUR ST.', d0 + 4.05, 0.36],
       ] as const) {
         const s = w.at(at, back + 0.03)
         signs.push({
@@ -653,7 +660,7 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
   add('tan', flat(wing, WING_TOP - 0.6))
 
   /**
-   * Bands of panels, light, grey and tan, each piece 3.5-9m long. the same "random"
+   * Bands of panels, light, grey and tan, each piece 5-11m long. the same "random"
    * pattern every time, no two pieces next to each other the same
    */
   function stripes(w: Wall, holes: Hole[]) {
@@ -669,7 +676,7 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
       let u = -rnd(k++) * 4
       let last: Part | null = null
       while (u < w.len) {
-        const len = 3.5 + Math.floor(rnd(k++) * 5) * 1.3
+        const len = 5 + Math.floor(rnd(k++) * 5) * 1.5
         let tone = tones[Math.floor(rnd(k++) * tones.length)]!
         if (tone === last) tone = tone === 'cream' ? 'grey' : 'cream'
         last = tone
