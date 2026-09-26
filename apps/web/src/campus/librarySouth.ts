@@ -679,17 +679,17 @@ export function librarySouthGeometry(b: LibrarySouthData) {
         inside.glass.push(wallQuad(pos(g0 + u0), pos(g0 + u1), v0, v1, into))
   }
 
-  // each part that casts a shadow is three more draws (the cascades). the slot glass and the
-  // dark frames and bars are set into the walls, their shadows don't show. the pavers are
-  // flat on top of things (shadows are drawn from the faces turned away from the sun, the
-  // grey underside casts the deck's). the glass wall does cast, it's the whole side toward
-  // the plaza and without it the sun came through the building
+  // each part that casts a shadow is three more draws (the cascades). the slot glass is set
+  // into the walls, its shadow doesn't show. the pavers are flat on top of things: shadows
+  // are drawn from the faces turned away from the sun, the grey underside casts the deck's.
+  // the glass wall and the dark bars between its floors do cast, they're the whole side
+  // toward the plaza and without them the sun came through the building
   return {
     parts: merged(),
     inside,
     signs,
     first: ['brick'],
-    noShadow: ['glass', 'clear', 'dark', 'pavers'],
+    noShadow: ['glass', 'clear', 'pavers'],
   }
 }
 

@@ -9,9 +9,10 @@ export const librarySouthMaterials: Record<Part, THREE.Material> = {
   // classroom south's marble and a bit warmer, both in the shade (gsu 2026). the bands are
   // hardly lighter than it, they show by their shadow lines (2019)
   brick: brick({ color: '#b9ab92', saturation: 0.2, contrast: 0.7, dirt: 0.2 }),
-  // the street floor and the glass box on the plaza: a lighter cream brick, 1.3 times the
-  // tan one (gsu 2026, the 2024 dock photo)
-  cream: brick({ color: '#cfc4ac', saturation: 0.2, contrast: 0.7, dirt: 0.25 }),
+  // the street floor and the glass box on the plaza: a lighter cream brick, only a little
+  // brighter than the tan one (1.03 in the 2026 photo, the stripes are faint on the 2024
+  // dock photo, clearer in the 2021 dashcam)
+  cream: brick({ color: '#c3b8a1', saturation: 0.2, contrast: 0.7, dirt: 0.25 }),
   // the bands, the coping, the plaza deck's edge and columns, the planter. long pieces, no
   // joints across them
   stone: precast({ color: '#c3b9a4', panel: [1.5, 50], joint: 0.01, tone: 0.03, dirt: 0.3 }),
