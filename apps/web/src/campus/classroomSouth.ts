@@ -81,6 +81,11 @@ export const CANOPY: [number, number] = [2.95, 7.8]
 // doors, between two bays (gsu 2021, commons 2025: between the second and third windows
 // from the library south end)
 export const SIDE_ENTRANCE = 50.95
+// how wide and high the opening in the marble is there
+const DOORS: [number, number] = [3.4, 2.75]
+// the low windows stop 6m short of those doors, past that it's plain marble behind a brick
+// planter (gsu 2021)
+const RIBBON_END = SIDE_ENTRANCE - 6
 // the west wing along central ave (2019 mapillary photos, a 2021 dashcam): bands of light,
 // grey and tan panels, a meter high, in long pieces, and glass up the stairs. its back and its
 // side toward g deck are plain light panels
@@ -282,8 +287,8 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
 
   /**
    * The front on decatur street: the low windows along the ground floor, set in under a
-   * band, four rows of windows on thin ledges, and the parapet. u runs from the library
-   * south end
+   * band, the rows of small windows with a thin ledge under each, and the parapet. u runs
+   * from the library south end
    */
   function front(w: Wall) {
     const uOf = (a: number) => w.len - a
@@ -293,12 +298,10 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
     const holes: Hole[] = SILLS.flatMap((y0) =>
       cols.map((u): Hole => [u - WINDOW[0] / 2, u + WINDOW[0] / 2, y0, y0 + WINDOW[1]]),
     )
-    // the doors toward library south, between two bays, 4.8m wide
+    // the doors toward library south, between two bays (sideEntrance)
     const e = uOf(SIDE_ENTRANCE)
-    const entry: Hole = [e - 2.4, e + 2.4, 0, 2.65]
-    // the low windows, from the central ave end to 6m short of the doors. past that it's
-    // plain marble behind a brick planter (gsu 2021)
-    const ribbons: Hole[] = [[uOf(SIDE_ENTRANCE - 6), uOf(1.3), RIBBON[0], RIBBON[1]]]
+    const entry: Hole = [e - DOORS[0] / 2, e + DOORS[0] / 2, 0, DOORS[1]]
+    const ribbons: Hole[] = [[uOf(RIBBON_END), uOf(1.3), RIBBON[0], RIBBON[1]]]
     const [lo, hi] = [-RECESS, w.len + RECESS]
     const cut = [...holes, ...ribbons, entry].map(([u0, u1, v0, v1]): Hole => [
       u0 - lo,
@@ -331,8 +334,8 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
   // the doors toward library south: a cream box round them, wide piers, the name on the band
   // over the doors, four glass doors under a transom set well back (gsu 2021)
   function sideEntrance(w: Wall, e: number) {
-    const [u0, u1] = [e - 1.7, e + 1.7]
-    const [top, head] = [3.45, 2.75]
+    const [u0, u1] = [e - DOORS[0] / 2, e + DOORS[0] / 2]
+    const [top, head] = [3.45, DOORS[1]]
     reveal('marble', w, u0, u1, 0, head, RECESS, 0.02)
     curtain(w, u0, u1, 0, head)
     lump('frame', w, u0, u1, 2.3, 2.4, 0.08, 0.02)
@@ -537,79 +540,49 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
   over(f.at(DEEP[0], -27.7), f.at(DEEP[0], DEEP[1]), left, REAR - 0.6, false)
 
   // the roofs, clipped out of osm's outline
-  const cut = (...tests: ((p: Point) => number)[]) =>
-    tests.reduce((acc, t) => clip(acc, t), outline)
   const [aOf, dOf] = [(p: Point) => f.aOf(p), (p: Point) => f.dOf(p)]
-  add(
-    'tan',
-    flat(
-      cut(
-        (p) => aOf(p) + 0.3,
-        (p) => dOf(p) - BACK,
+  const roofAt = (y: number, ...sides: ((p: Point) => number)[]) =>
+    add(
+      'tan',
+      flat(
+        sides.reduce((acc, side) => clip(acc, side), outline),
+        y,
       ),
-      roof,
-    ),
+    )
+  roofAt(
+    roof,
+    (p) => aOf(p) + 0.3,
+    (p) => dOf(p) - BACK,
   )
-  add(
-    'tan',
-    flat(
-      cut(
-        (p) => aOf(p) - DEEP[0],
-        (p) => BACK - dOf(p),
-        (p) => dOf(p) - DEEP[1],
-      ),
-      roof,
-    ),
+  roofAt(
+    roof,
+    (p) => aOf(p) - DEEP[0],
+    (p) => BACK - dOf(p),
+    (p) => dOf(p) - DEEP[1],
   )
-  add(
-    'tan',
-    flat(
-      cut(
-        (p) => aOf(p) + 0.3,
-        (p) => BACK - dOf(p),
-        (p) => DEEP[0] - aOf(p),
-      ),
-      REAR - 0.6,
-    ),
+  roofAt(
+    REAR - 0.6,
+    (p) => aOf(p) + 0.3,
+    (p) => BACK - dOf(p),
+    (p) => DEEP[0] - aOf(p),
   )
-  add(
-    'tan',
-    flat(
-      cut(
-        (p) => aOf(p) - DEEP[0],
-        (p) => DEEP[1] - dOf(p),
-      ),
-      REAR - 0.6,
-    ),
+  roofAt(
+    REAR - 0.6,
+    (p) => aOf(p) - DEEP[0],
+    (p) => DEEP[1] - dOf(p),
   )
-  add(
-    'tan',
-    flat(
-      cut((p) => -2.9 - aOf(p)),
-      LOBBY - 0.3,
-    ),
+  roofAt(LOBBY - 0.3, (p) => -2.9 - aOf(p))
+  roofAt(
+    LOBBY - 0.3,
+    (p) => aOf(p) + 2.9,
+    (p) => -0.3 - aOf(p),
+    (p) => STAIR_BACK - dOf(p),
   )
-  add(
-    'tan',
-    flat(
-      cut(
-        (p) => aOf(p) + 2.9,
-        (p) => -0.3 - aOf(p),
-        (p) => STAIR_BACK - dOf(p),
-      ),
-      LOBBY - 0.3,
-    ),
-  )
-  add(
-    'tan',
-    flat(
-      cut(
-        (p) => aOf(p) + 2.9,
-        (p) => -0.3 - aOf(p),
-        (p) => dOf(p) - STAIR_BACK,
-      ),
-      STAIR,
-    ),
+  roofAt(
+    STAIR,
+    (p) => aOf(p) + 2.9,
+    (p) => -0.3 - aOf(p),
+    (p) => dOf(p) - STAIR_BACK,
   )
   // a stair house and a few units on the roof (satellite)
   const box = (a0: number, a1: number, d0: number, d1: number, h: number, part: Part) => {
@@ -705,11 +678,14 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
     const mid = at(len / 2)
     const facing = out.x * f.out.x + out.z * f.out.z
     const lobby = blockOf({ x: mid.x - out.x, z: mid.z - out.z }) === 'lobby' && facing > -0.9
-    const street = facing > 0.9 && Math.abs(f.dOf(mid)) < 1
+    // the low windows on decatur street, as far as they go along this edge
+    const uAt = (a: number) => ((a - f.aOf(p)) / (f.aOf(at(len)) - f.aOf(p))) * len
+    const [g0, g1] = [uAt(1.3), uAt(RIBBON_END)].sort((m, n) => m - n) as [number, number]
+    const street = facing > 0.9 && Math.abs(f.dOf(mid)) < 1 && g1 > 0 && g0 < len
     const glassy: Hole[] = lobby
       ? solidPieces(len, 0, CEILING, holes)
       : street
-        ? [[0, len, RIBBON[0], RIBBON[1]]]
+        ? [[Math.max(g0, 0), Math.min(g1, len), RIBBON[0], RIBBON[1]]]
         : []
     for (const [u0, u1, v0, v1] of solidPieces(len, 0, CEILING, [...holes, ...glassy]))
       inside.solid.push(wallQuad(at(u0), at(u1), v0, v1, into))
