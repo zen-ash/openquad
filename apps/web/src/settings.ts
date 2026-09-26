@@ -38,6 +38,10 @@ export const today = () => (pinnedDay ? new Date(`${pinnedDay}T12:00:00-04:00`) 
 // that get compared pixel by pixel (scripts/visual.mjs)
 export const still = params.has('still')
 
+// ?keepquality: never drop to low by itself. for timing frames (a hot laptop dropped some
+// pages to low halfway through a measurement)
+export const keepQuality = params.has('keepquality')
+
 // the debug panel (hud/DebugLayers.tsx) and window.quad, in dev or with ?debug
 export const showDebug = import.meta.env.DEV || params.has('debug')
 

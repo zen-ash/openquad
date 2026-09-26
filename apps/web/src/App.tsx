@@ -26,7 +26,7 @@ import Player from './scene/Player'
 import RemotePlayers from './scene/RemotePlayers'
 import RouteLine from './scene/RouteLine'
 import WarmUp from './scene/WarmUp'
-import { forceWebGL, hideCity, showDebug, useSettings } from './settings'
+import { forceWebGL, hideCity, keepQuality, showDebug, useSettings } from './settings'
 import TimePicker from './TimePicker'
 import TouchControls, { isTouchScreen } from './TouchControls'
 import MicButton from './voice/MicButton'
@@ -107,8 +107,8 @@ export default function App() {
         gl={startRenderer}
       >
         {/* drops to low quality if the framerate stays bad. not while the shaders are being
-            built, those frames are slow on purpose */}
-        {!warming && (
+            built, those frames are slow on purpose, or with ?keepquality (settings.ts) */}
+        {!warming && !keepQuality && (
           <PerformanceMonitor onDecline={() => useSettings.setState({ quality: 'low' })} />
         )}
         {!hideCity && <Campus />}
