@@ -101,9 +101,11 @@ GSU links (the files behind https://map.concept3d.com/?id=1108#!m/295215):
 
 ## Cost
 
-8 parts (marble, glass, frames, lobby glass, cream, tan, grey, blue), 6.4k triangles, no
-new shaders: the warm-up still builds 877 shaders and 790 pipelines. The window glass and
-the blue bits don't cast shadows. The marble is drawn before everything else while you're
+9 parts (marble, glass, frames, lobby glass, the revolving door's glass, cream, tan, grey,
+blue), 6.4k triangles, no new shaders: the warm-up still builds 877 shaders and 790
+pipelines. The window glass, the revolving door and the blue bits don't cast shadows. The
+revolving door is window glass (not see-through): the game's sliding door panels are right
+behind it and showed through. The marble is drawn before everything else while you're
 within 20m of it (`first`).
 
 Prod builds in one browser, taking turns (each build in each place in turn), 2 rounds thrown
