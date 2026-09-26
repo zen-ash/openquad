@@ -45,9 +45,11 @@ export const classroomSouthMaterials: Record<Part, THREE.Material> = {
     roughness: 0.08,
     metalness: 0.3,
   }),
-  // the lobby's cream box over the doors, the wing's light panels
+  // the lobby's cream box over the doors, the box round the doors toward library south, the
+  // wing's light panels
   cream: precast({ color: '#dcd7cc', panel: [3, 1.4], joint: 0.01, tone: 0.02, dirt: 0.2 }),
-  // the tan box on the lobby's corner, the wing's tan panels, and the roofs
+  // the tan box on the lobby's corner, the wing's tan panels, the stucco by the end doors
+  // and the roofs. 0.85 as bright as the marble in the 2020 photo, 0.65 in the shade (2026)
   tan: precast({ color: '#b5a794', panel: [3, 1.4], joint: 0.01, tone: 0.02, dirt: 0.2 }),
   // the wing's grey panels
   grey: precast({ color: '#9da1a5', panel: [3, 0.8], joint: 0.01, tone: 0.02, dirt: 0.2 }),

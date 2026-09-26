@@ -386,7 +386,8 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
       bond(w, lo, d0, 0, top, RECESS)
       bond(w, d1, hi, 0, top, RECESS)
       bond(w, lo, hi, top, H, RECESS)
-      // set in under the marble: marble boards, the door and its transom, grey stucco
+      // set in under the marble: marble boards, the door and its transom, stucco (about two
+      // thirds as bright as the marble in the 2026 photo, like the tan)
       const back = 0.05
       reveal('marble', w, d0, d1, 0, top, RECESS, back)
       // narrow upright boards of marble: its slabs, squeezed
@@ -400,7 +401,7 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
       lump('frame', w, d0 + 1.5, d0 + 3.3, 3, top, back + 0.04, back)
       // a door and a sidelight
       lump('frame', w, d0 + 2.4, d0 + 2.46, 0, 3, back + 0.04, back)
-      face('grey', w, d0 + 3.3, d1, 0, top, back)
+      face('tan', w, d0 + 3.3, d1, 0, top, back)
       for (const [text, at, scale] of [
         ['CLASSROOM SOUTH', d0 + 0.75, 0.42],
         ['95\nDECATUR ST.', d0 + 4.05, 0.36],
@@ -505,6 +506,12 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
       add('clear', wallQuad(p0, p1, 0, 2.2, o))
     }
     lump('frame', w, c - r, c + r, 2.2, 2.3, r, 0.02)
+    // its dark bronze frame: posts round the front of the drum
+    for (const t of [0.25, 0.5, 0.75]) {
+      const u = c - Math.cos(Math.PI * t) * r
+      const d = Math.sin(Math.PI * t) * r
+      lump('frame', w, u - 0.04, u + 0.04, 0, 2.2, d + 0.03, d - 0.05)
+    }
     // a mullion either side of the single door next to it
     for (const u of [c + r + 0.1, c + r + 0.85])
       lump('frame', w, u - 0.03, u + 0.03, 0, 2.3, 0.06, 0.02)
