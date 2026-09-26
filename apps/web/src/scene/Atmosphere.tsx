@@ -25,6 +25,7 @@ import {
 } from 'three/tsl'
 import { Mesh, NodeMaterial, PlaneGeometry, type Node, type WebGPURenderer } from 'three/webgpu'
 import { eciToEcef, moonDirection } from '../game/celestial'
+import { useSettings } from '../settings'
 import { lighterShadowPasses, SoftCascades } from './softShadows'
 
 // takram's atmosphere (bruneton's precomputed scattering): the sky, sunlight colored by how
@@ -81,7 +82,15 @@ skyMaterial.vertexNode = vec4(positionGeometry.xy, 1, 1)
 skyMaterial.depthWrite = false
 skyMaterial.fog = false
 const skyNode = sky()
-skyNode.starsNode = stars()
+// the stars are drawn into a texture the size of the screen every frame (0.1ms). in full
+// daylight they don't show at all, so then it's left as it was. drawn while the shaders
+// are being built either way, or the first dusk would build them
+const starsNode = stars()
+const drawStars = starsNode.updateBefore.bind(starsNode)
+starsNode.updateBefore = (frame) => {
+  if (glow.value > 0 || useSettings.getState().warming) drawStars(frame)
+}
+skyNode.starsNode = starsNode
 const view = cameraProjectionMatrixInverse.mul(vec4(positionGeometry.xy, 1, 1)).xyz
 const up = max(cameraWorldMatrix.mul(vec4(view, 0)).xyz.normalize().y, 0).pow(0.5)
 skyMaterial.colorNode = vec3(skyNode as unknown as Node<'vec3'>).add(
