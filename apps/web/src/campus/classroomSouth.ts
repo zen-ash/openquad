@@ -485,10 +485,11 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
     // the blue stripe down the cream box, and the logo up top (a plain blue square)
     lump('blue', w, CREAM[0] + 0.55, CREAM[0] + 0.78, 3.8, LOBBY - 1.2, 0.36, 0.3)
     lump('blue', w, CREAM[0] + 0.9, CREAM[0] + 2.9, LOBBY - 3.4, LOBBY - 1.4, 0.34, 0.3)
-    const depth = 2
-    lump('frame', w, CANOPY[0], CANOPY[1], 2.3, 2.55, depth, 0.02)
+    // a deep fascia, 2.4m out (2026 photo)
+    const depth = 2.4
+    lump('frame', w, CANOPY[0], CANOPY[1], 2.35, 2.7, depth, 0.02)
     for (const u of [3.75, 7.3])
-      lump('frame', w, u - 0.06, u + 0.06, 0, 2.3, depth - 0.2, depth - 0.32)
+      lump('frame', w, u - 0.06, u + 0.06, 0, 2.35, depth - 0.2, depth - 0.32)
     // the revolving door: a drum of glass half out of the wall, a dark top. the game's door
     // is in it (build-campus.mjs)
     const c = (door.x - w.p.x) * w.dir.x + (door.z - w.p.z) * w.dir.z
@@ -518,7 +519,7 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
     const s = w.at(CREAM[0] + 2.45, 0.33)
     signs.push({
       x: s.x,
-      y: 3.15,
+      y: 3.5,
       z: s.z,
       rot: Math.atan2(w.o.x, w.o.z),
       text: 'CLASSROOM SOUTH',

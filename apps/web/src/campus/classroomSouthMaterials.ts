@@ -34,8 +34,8 @@ export const classroomSouthMaterials: Record<Part, THREE.Material> = {
   // the lobby's glass, dark bronze mullions, lit inside at night. dark and reflecting from
   // outside in the 2020 and 2026 photos
   clear: clearGlass({
-    color: '#2c3537',
-    opacity: 0.84,
+    color: '#263033',
+    opacity: 0.9,
     grid: [1.25, 2.1],
     from: 2.45,
     mullion: 0.035,
