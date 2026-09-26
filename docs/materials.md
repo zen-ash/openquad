@@ -316,3 +316,59 @@ pnpm frametime                                       # before and after, plugged
 Then the usual: screenshots from the same spots as the real photos, side by side, and fix
 what's different. And the shader count from above: a new building made from the library
 shouldn't add any.
+
+## Frame budget
+
+The rule: every view under 14 ms on my M4 Air (a 1280x800 window at 2x, plugged in, after
+it's been drawing for a few minutes), and no view more than 1 ms over what it cost before
+the material library (commit 546ae05).
+
+It's the GPU that sets the frame everywhere. What each pass costs (ms, hot, Sept 2026,
+from GPU timestamps on every render pass):
+
+| pass                           | street view | close to a wall |
+| ------------------------------ | ----------- | --------------- |
+| shadow maps (three cascades)   | 0.7-1.3     | 0.6-0.7         |
+| prepass (depth and normals)    | 0.6-1.1     | 0.6-1.0         |
+| ambient occlusion              | 1.0-1.7     | 2.4-3.4         |
+| scene pass                     | 2.4-3.0     | 2.5-2.9         |
+| haze (aerial perspective)      | 1.0-1.3     | 1.1-1.3         |
+| taau, sharpen, glare, the rest | 3.2         | 3.2             |
+
+About 4.5 ms of every frame (the haze and everything after it) is the same whatever you
+look at. The ambient occlusion is the biggest single thing close to a wall: it runs for
+every pixel that isn't sky.
+
+The JavaScript side is 4.5-6.5 ms a frame, mostly three's work for each draw (about 15-20
+µs). A mesh can be drawn five times a frame: the prepass, the scene pass and three shadow
+cascades. So:
+
+- keep a building's parts few, merge the ones that look alike
+- `noShadow` for parts set into a wall (glass, frames), each casting part is up to three
+  more draws. A caster is only drawn into the cascades its shadow can reach
+  (`softShadows.ts`), so a far away one is cheaper than it looks
+- close up it's pixels: a textured library wall filling the screen costs 0.3-0.5 ms more
+  than a flat color, and deep window reveals add ambient occlusion work
+
+The scene pass starts from the prepass's depth, so nothing hidden behind a wall gets
+shaded twice (the cutout's discard stops the GPU from skipping those pixels by itself).
+
+### Measuring it
+
+Every earlier A/B disagreed with itself by 1-2 ms. What made it steady (rounds within
+0.1-0.3 ms of each other):
+
+- Plugged in. On battery the same frame took up to 50% longer.
+- Hot on purpose. The Air runs at full speed for about a minute, then holds the chip at
+  about 72°C and the GPU gets 15-20% slower. Draw the heaviest view for a few minutes
+  first, then measure, and compare builds in the same run.
+- Take turns: each round every build gets a fresh page that visits every spot, and the
+  order changes every round. Compare the rounds pairwise, not single numbers.
+- One page at a time. A second page in the same browser, even paused, made the first one
+  4 ms slower.
+- `?keepquality` so the page doesn't drop itself to low quality halfway.
+- GPU timestamps per render pass (WebGPU timestamp queries) say where the time goes. The
+  frame time is still the number that counts: passes overlap on the GPU, and the time the
+  JavaScript spends in WebGPU calls includes waiting for the GPU.
+- A tiny window (640x400 at 1x) leaves the GPU almost nothing to do, then the frame time
+  is the CPU's.
