@@ -30,7 +30,9 @@ const LIMIT = 0.005
 const HITCH = 50
 
 // from/at are camera positions (x east, y up, z south, hurt park is 0, 0). the player
-// stands behind the camera so it's not in the shot, and decides what's loaded around it
+// stands behind the camera so it's not in the shot, and decides what's loaded around it.
+// they're the realistic look unless they say another style (the game look is the default
+// now, so it's pinned)
 const VIEWS = [
   { name: 'park-north', from: [0, 4, 55], at: [0, 8, -60], player: [0, 58] },
   // with someone standing there saying something: name tag and chat bubble
@@ -54,6 +56,24 @@ const VIEWS = [
   },
   { name: 'fence-edge', from: [15, 4, -22], at: [40, 8, -100], player: [14, -19] },
   { name: 'night', from: [-30, 4, -10], at: [40, 12, 50], player: [-32, -12], time: '23:00' },
+  // the game look: its ground, trees, sky, a star and an entrance marker
+  { name: 'game-park', from: [0, 4, 55], at: [0, 8, -60], player: [0, 58], style: 'game' },
+  { name: 'game-sce', from: [2, 4, 108], at: [34, 2, 130], player: [0, 106], style: 'game' },
+  {
+    name: 'game-quad',
+    from: [-25, 7, 92],
+    at: [-70, 0, 135],
+    player: [-27, 90],
+    style: 'game',
+  },
+  {
+    name: 'game-night',
+    from: [-30, 4, -10],
+    at: [40, 12, 50],
+    player: [-32, -12],
+    time: '23:00',
+    style: 'game',
+  },
 ]
 
 const MODES = {
@@ -105,18 +125,19 @@ for (const mode of modes) {
   const dir = update ? `visual/baseline/${mode}` : `visual/latest/${mode}`
   mkdirSync(dir, { recursive: true })
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 } })
-  let time = null
+  let opened = null
   let me = null
   for (const v of views) {
-    // a new page when the time of day changes, the sun only reads it at the start
+    // a new page when the time of day or the style changes, the sun only reads it at the start
     const t = v.time ?? '09:00'
-    if (t !== time) {
+    const style = v.style ?? 'realistic'
+    if (`${t} ${style}` !== opened) {
       await me?.page.close()
-      me = await join(context, `time=${t}${DAY}${MODES[mode]}`, 'Camera')
+      me = await join(context, `time=${t}&style=${style}${DAY}${MODES[mode]}`, 'Camera')
       await me.page.keyboard.press('KeyP') // photo mode, no hud
       // before the switch to webgpu there's no backend() (it's all webgl)
       me.backend = await me.page.evaluate(() => globalThis.quad.backend?.() ?? 'webgl')
-      time = t
+      opened = `${t} ${style}`
     }
     const { page } = me
     // every frame of going to the spot and the first seconds there
