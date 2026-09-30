@@ -4,12 +4,24 @@ import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { night } from '../campus/facade'
 import { benches, bins, parkLamps, streetLights, type Spot } from '../game/streetFurniture'
-import { useSettings } from '../settings'
+import { game, useSettings } from '../settings'
 
 // black powder coated metal like the benches round campus, and gsu blue bins
 const black = new THREE.MeshStandardMaterial({ color: '#202326', roughness: 0.5, metalness: 0.6 })
 const grey = new THREE.MeshStandardMaterial({ color: '#7b7f83', roughness: 0.45, metalness: 0.7 })
 const blue = new THREE.MeshStandardMaterial({ color: '#1f4f9e', roughness: 0.55, metalness: 0.3 })
+// the game look's: warm wood benches, bright blue bins and navy lamp posts
+const wood = new THREE.MeshStandardMaterial({ color: '#b36d3c', roughness: 0.7 })
+const brightBlue = new THREE.MeshStandardMaterial({ color: '#2d6ae3', roughness: 0.45 })
+const navy = new THREE.MeshStandardMaterial({ color: '#27427e', roughness: 0.5, metalness: 0.3 })
+const lightGrey = new THREE.MeshStandardMaterial({
+  color: '#c4cad3',
+  roughness: 0.45,
+  metalness: 0.3,
+})
+const looks = game
+  ? { bench: wood, bin: brightBlue, lamp: navy, pole: lightGrey }
+  : { bench: black, bin: blue, lamp: black, pole: grey }
 // lamp glass, lit at night (see useFrame)
 const LAMP = new THREE.Color('#ffcf8a')
 const lampGlass = new THREE.MeshStandardMaterial({
@@ -161,12 +173,12 @@ export default function StreetFurniture() {
 
   return (
     <>
-      <Instances geometry={geos.bench} material={black} spots={benches} />
-      <Instances geometry={geos.bin} material={blue} spots={bins} />
-      <Instances geometry={geos.park.pole} material={black} spots={parkLamps} />
+      <Instances geometry={geos.bench} material={looks.bench} spots={benches} />
+      <Instances geometry={geos.bin} material={looks.bin} spots={bins} />
+      <Instances geometry={geos.park.pole} material={looks.lamp} spots={parkLamps} />
       <Instances geometry={geos.park.glass} material={lampGlass} spots={parkLamps} shadow={false} />
       <Instances geometry={poolGeos.park} material={pools.park} spots={parkLamps} shadow={false} />
-      <Instances geometry={geos.street.pole} material={grey} spots={streetLights} />
+      <Instances geometry={geos.street.pole} material={looks.pole} spots={streetLights} />
       <Instances
         geometry={geos.street.glass}
         material={lampGlass}
