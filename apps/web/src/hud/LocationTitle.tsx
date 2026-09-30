@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { Place } from '../game/location'
+import { game } from '../settings'
 
-// big title when you arrive somewhere new. waits a moment first, so walking along the
+// big title when you arrive somewhere new (a bouncy banner in the game look). waits a moment first, so walking along the
 // edge of two places doesn't flash titles back and forth
 const SETTLE = 700
 
@@ -16,7 +17,11 @@ export default function LocationTitle({ place }: { place: Place }) {
   if (!shown) return null
   // key restarts the fade animation for each new place
   return (
-    <div className="location-title" key={shown.name} aria-live="polite">
+    <div
+      className={game ? 'location-title game' : 'location-title'}
+      key={shown.name}
+      aria-live="polite"
+    >
       <div className="name">{shown.name}</div>
       <div className="sub">{shown.sub}</div>
     </div>

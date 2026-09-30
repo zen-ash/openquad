@@ -222,6 +222,50 @@ button {
   }
 }
 
+/* the game look: arriving somewhere is a bouncy banner instead of a film title */
+.location-title.game {
+  padding: 10px 26px 12px;
+  border: 3px solid white;
+  border-radius: 18px;
+  background: #1f5fe0;
+  box-shadow:
+    0 6px 0 #143f99,
+    0 12px 30px rgb(0 0 0 / 0.3);
+  animation: banner 4.5s ease forwards;
+}
+
+.location-title.game .name {
+  font-size: 30px;
+  font-weight: 800;
+  text-shadow: none;
+}
+
+.location-title.game .sub {
+  color: rgb(255 255 255 / 0.85);
+  font-size: 12px;
+  text-shadow: none;
+}
+
+@keyframes banner {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 30px) scale(0.6);
+  }
+  8% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.08);
+  }
+  13%,
+  78% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 0) scale(0.9);
+  }
+}
+
 /* the game look's quest and star count, under the place name */
 .quest {
   position: fixed;
