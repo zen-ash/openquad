@@ -14,7 +14,7 @@ import {
 } from 'three/tsl'
 import { FloatType, NodeMaterial, QuadMesh, RenderTarget, Texture } from 'three/webgpu'
 import type { WebGPURenderer } from 'three/webgpu'
-import { still } from '../settings'
+import { game, still } from '../settings'
 import { fx } from './fx'
 
 // eye adaptation: after every frame the picture's brightness is measured and the exposure
@@ -31,9 +31,13 @@ const TAPS = 8
 // darker or brighter than that gets evened out, like a phone camera does, but only so far.
 // a lobby or 9am get lifted about all the way, past DARKEST it gives some of it back so
 // night still looks like night (measured: noon -2.2, 9am -3.6, library lobby -3.3, 11pm -5.5)
-const MIDDLE = -1.95
-const DARKEST = -3.3
-const BRIGHTEST = -1.3
+// the game look's ground and sky are brighter colors than the real ones, which read as
+// more light and turned the buildings darker. it's measured against a brighter middle so the
+// buildings come out like they do in the realistic look
+const GAME = game ? 0.5 : 0
+const MIDDLE = -1.95 + GAME
+const DARKEST = -3.3 + GAME
+const BRIGHTEST = -1.3 + GAME
 const NIGHT = 0.35
 // seconds: getting used to the sun is quick, to the dark slower
 const TO_BRIGHT = 0.5

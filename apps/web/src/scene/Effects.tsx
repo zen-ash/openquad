@@ -49,7 +49,7 @@ import {
   type NodeBuilder,
   type WebGPURenderer,
 } from 'three/webgpu'
-import { useSettings } from '../settings'
+import { game, useSettings } from '../settings'
 import { sunlight } from './Atmosphere'
 import { adapt, exposure, meter } from './autoExposure'
 import { effects, fx, TONE_MAPPINGS } from './fx'
@@ -79,6 +79,10 @@ const ABERRATION = 0.0006
 // the sun came out lilac, where every photo has it white
 const SATURATION = 1.12
 const BRIGHT_SATURATION = 0.6
+// the game look: much less haze (the buildings stay crisp down the street), a bit more glow
+// round bright things, and none of the camera's darker corners or color fringes
+const GAME_HAZE = 0.35
+const GAME_GLARE = 0.07
 
 const size = new Vector2()
 
@@ -190,7 +194,8 @@ export default function Effects() {
     // the sky itself is drawn in the scene already (Atmosphere.tsx)
     air.skyNode = null
     // drawn into a texture once, it's a lot of shader to repeat in every pass after it
-    const lit = rtt(mix(drawn, air as unknown as Node<'vec4'>, fx.haze), null, null, {
+    const haze = game ? fx.haze.mul(GAME_HAZE) : fx.haze
+    const lit = rtt(mix(drawn, air as unknown as Node<'vec4'>, haze), null, null, {
       depthBuffer: false,
     })
 
@@ -213,11 +218,15 @@ export default function Effects() {
     // lenses bend red and blue a tiny bit differently, so toward the corners the colors
     // pull apart, about a pixel at the edge of a 1920 wide screen
     const shift = screenUV.sub(0.5).mul(fx.aberration.mul(ABERRATION))
-    let out = vec4(
-      image.sample(screenUV.add(shift)).r,
-      image.sample(screenUV).g,
-      image.sample(screenUV.sub(shift)).b,
-      1,
+    let out = (
+      game
+        ? vec4(image.sample(screenUV).rgb, 1)
+        : vec4(
+            image.sample(screenUV.add(shift)).r,
+            image.sample(screenUV).g,
+            image.sample(screenUV.sub(shift)).b,
+            1,
+          )
     ) as Node<'vec4'>
 
     // glare: a few percent of all light scatters in a lens (or an eye), which only shows
@@ -225,12 +234,12 @@ export default function Effects() {
     // at night. no threshold, so it's the same at any exposure. three's bloom adds up 5
     // blur sizes with weights that sum to 3
     const glare = bloom(image, 1 / 3, GLARE_SPREAD, 0)
-    out = mix(out, glare, fx.glare.mul(GLARE))
+    out = mix(out, glare, fx.glare.mul(game ? GAME_GLARE : GLARE))
 
     // darker corners, same curve as the postprocessing library's vignette we had before
     const d = distance(screenUV, vec2(0.5))
     const vignette = mix(1, smoothstep(0.8, float(0.3 * 0.799), d.mul(0.35 + 0.3)), fx.vignette)
-    const exposed = out.rgb.mul(vignette).mul(exposure)
+    const exposed = game ? out.rgb.mul(exposure) : out.rgb.mul(vignette).mul(exposure)
     const lum = luminance(exposed)
     const saturation = mix(float(SATURATION), float(BRIGHT_SATURATION), smoothstep(0.3, 0.8, lum))
     const color = mix(vec3(lum), exposed, mix(1, saturation, fx.saturation))
