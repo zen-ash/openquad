@@ -19,7 +19,7 @@ const rand = (x: number, z: number, salt: number) => {
 }
 
 const blob = (r: number, x: number, y: number, z: number, squash = 1) => {
-  const g = new THREE.SphereGeometry(r, 14, 10).scale(1, squash, 1).translate(x, y, z)
+  const g = new THREE.SphereGeometry(r, 11, 8).scale(1, squash, 1).translate(x, y, z)
   g.deleteAttribute('uv')
   return g
 }
