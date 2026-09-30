@@ -1,7 +1,7 @@
 import { KeyboardControls, PerformanceMonitor } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { lazy, Suspense, useEffect } from 'react'
-import { NeutralToneMapping, PCFShadowMap } from 'three'
+import { NeutralToneMapping, NoToneMapping, PCFShadowMap } from 'three'
 import { WebGPURenderer, type WebGPURendererParameters } from 'three/webgpu'
 import { shareShadowShaders } from './campus/materials'
 import { loadTextures } from './campus/textures'
@@ -16,6 +16,7 @@ import Minimap from './hud/Minimap'
 import NavBar from './hud/NavBar'
 import PlacesMenu from './hud/PlacesMenu'
 import ResolutionPicker from './ResolutionPicker'
+import StylePicker from './StylePicker'
 import { instrument } from './net/perf'
 import { useGame } from './net/store'
 import CameraInput from './scene/CameraInput'
@@ -25,8 +26,9 @@ import JoinCamera from './scene/JoinCamera'
 import Player from './scene/Player'
 import RemotePlayers from './scene/RemotePlayers'
 import RouteLine from './scene/RouteLine'
+import ToonEffects from './scene/ToonEffects'
 import WarmUp from './scene/WarmUp'
-import { forceWebGL, hideCity, keepQuality, showDebug, useSettings } from './settings'
+import { forceWebGL, hideCity, keepQuality, showDebug, toon, useSettings } from './settings'
 import TimePicker from './TimePicker'
 import TouchControls, { isTouchScreen } from './TouchControls'
 import MicButton from './voice/MicButton'
@@ -49,6 +51,11 @@ async function startRenderer(props: object) {
   // brighter: unlike three's aces, neutral doesn't brighten what goes into it
   renderer.toneMapping = NeutralToneMapping
   renderer.toneMappingExposure = 2 ** 0.35
+  // the cartoon colors are picked as they should come out, nothing in between
+  if (toon) {
+    renderer.toneMapping = NoToneMapping
+    renderer.toneMappingExposure = 1
+  }
   const webgpu = (renderer.backend as { isWebGPUBackend?: boolean }).isWebGPUBackend === true
   useSettings.setState(webgpu ? { backend: 'webgpu' } : { backend: 'webgl2', quality: 'low' })
   // no shader warm-up (WarmUp.tsx) on a gpu that's really the cpu, like in ci. every frame
@@ -56,8 +63,8 @@ async function startRenderer(props: object) {
   if (softwareGpu(renderer)) useSettings.setState({ warming: false })
   // high quality's atmosphere and effects, loaded before the first frame (the atmosphere
   // hooks into the renderer). they stay for the whole visit even if it drops to low, so
-  // starting on low they're never needed
-  if (useSettings.getState().quality === 'high') {
+  // starting on low they're never needed. the cartoon look has its own (ToonEffects)
+  if (useSettings.getState().quality === 'high' && !toon) {
     const [{ addAtmosphere }] = await Promise.all([
       import('./scene/Atmosphere'),
       import('./scene/Effects'),
@@ -103,7 +110,7 @@ export default function App() {
         dpr={quality === 'high' ? window.devicePixelRatio : 1}
         // near is as far out as it can be without clipping your own head. every bit
         // helps the depth buffer tell apart things that are close together far away
-        camera={{ fov: 50, near: 0.3, far: 1500 }}
+        camera={{ fov: toon ? 40 : 50, near: 0.3, far: 1500 }}
         gl={startRenderer}
       >
         {/* drops to low quality if the framerate stays bad. not while the shaders are being
@@ -131,6 +138,7 @@ export default function App() {
             <Effects />
           </Suspense>
         )}
+        {toon && !hideCity && <ToonEffects />}
         <WarmUp />
       </Canvas>
 
@@ -150,6 +158,7 @@ export default function App() {
               <PlacesMenu />
               <NavBar />
               <div className="view-options">
+                <StylePicker />
                 <ResolutionPicker />
                 <TimePicker />
               </div>

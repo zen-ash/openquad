@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useRef } from 'react'
 import type { Object3D } from 'three'
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js'
 import { AVATARS, type Avatar as AvatarInfo } from '../game/avatars'
-import { hideCity, useSettings } from '../settings'
+import { hideCity, toon, useSettings } from '../settings'
 import { modelUrl } from './Character'
 import { effects } from './fx'
 
@@ -87,6 +87,9 @@ function Warming() {
   // the step to go on to, once the gpu has made the last one's pipelines
   const after = useRef<{ to: Step; done: boolean } | null>(null)
   const plain = useRef<{ pipelines: Pipelines; update: Pipelines['updateForRender'] } | null>(null)
+  // whether there's a high quality to build as well as low: the atmosphere, or the cartoon
+  // look starting on high (it has shadows there). decided on the first frame
+  const both = useRef<boolean | null>(null)
   // back to the normal way if this goes away halfway
   useEffect(
     () => () => {
@@ -99,6 +102,7 @@ function Warming() {
     started.current ||= clock.elapsedTime
     countNew()
     const atmosphere = useSettings.getState().atmosphere
+    both.current ??= atmosphere || (toon && useSettings.getState().quality === 'high')
     const pipelines = (gl as unknown as { _pipelines: Pipelines })._pipelines
     const next = (to: Step | 'done') => {
       frames.current = 0
@@ -159,12 +163,14 @@ function Warming() {
       // everything downloaded (models, textures, the labels' font) for a moment, and the
       // effects drawing (they're loaded separately)
       const loaded =
-        !busy.current && document.fonts.status === 'loaded' && (!atmosphere || effects.drawn)
+        !busy.current &&
+        document.fonts.status === 'loaded' &&
+        (!(atmosphere || toon) || effects.drawn)
       if (!loaded && clock.elapsedTime - started.current < MAX_WAIT) frames.current = 0
-      else if (frames.current > 5) next(atmosphere ? 'high' : 'low')
+      else if (frames.current > 5) next(both.current ? 'high' : 'low')
     } else if (frames.current > FRAMES) {
       if (step.current === 'high') settle('low')
-      else if (step.current === 'low') settle(atmosphere ? 'back' : 'last')
+      else if (step.current === 'low') settle(both.current ? 'back' : 'last')
       else if (step.current === 'back') settle('last')
       else next('done')
     }

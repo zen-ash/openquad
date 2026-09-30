@@ -42,6 +42,33 @@ export const still = params.has('still')
 // pages to low halfway through a measurement)
 export const keepQuality = params.has('keepquality')
 
+// the look: 'real' is the photo-real campus, 'toon' the cartoon one (campus/toon.ts).
+// ?style=toon, or remembered from the last pick. it's picked once per visit, switching
+// reloads the page: every material, the effects and the camera are different
+export type Style = 'real' | 'toon'
+function startingStyle(): Style {
+  let saved = null
+  try {
+    saved = localStorage.getItem('style')
+  } catch {
+    // private mode
+  }
+  return (params.get('style') ?? saved) === 'toon' ? 'toon' : 'real'
+}
+export const style = startingStyle()
+export const toon = style === 'toon'
+
+export function switchStyle(next: Style) {
+  try {
+    localStorage.setItem('style', next)
+  } catch {
+    // it's in the url too
+  }
+  const url = new URL(location.href)
+  url.searchParams.set('style', next)
+  location.href = url.toString()
+}
+
 // the debug panel (hud/DebugLayers.tsx) and window.quad, in dev or with ?debug
 export const showDebug = import.meta.env.DEV || params.has('debug')
 
