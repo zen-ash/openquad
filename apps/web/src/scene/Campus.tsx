@@ -12,6 +12,15 @@ import {
   sidewalkMaterial,
 } from '../campus/ground'
 import {
+  gameGrass,
+  gameLot,
+  gamePath,
+  gamePavers,
+  gamePaving,
+  gamePlaza,
+  gameRoad,
+} from '../campus/game'
+import {
   toonGrass,
   toonLot,
   toonPath,
@@ -22,7 +31,7 @@ import {
 } from '../campus/toon'
 import { localPlayer } from '../game/localPlayer'
 import { daylight, sunDirection, sunPosition, timeFor } from '../game/sun'
-import { today, toon, useSettings } from '../settings'
+import { game, today, toon, useSettings } from '../settings'
 import Buildings from './Buildings'
 import Doors from './Doors'
 import FenceHaze from './FenceHaze'
@@ -158,6 +167,18 @@ function Ground() {
     }
   }, [])
 
+  if (game)
+    return (
+      <>
+        <mesh geometry={geos.ground} material={gamePaving()} receiveShadow />
+        <mesh geometry={geos.lots} material={gameLot()} receiveShadow />
+        <mesh geometry={geos.pavers} material={gamePavers()} receiveShadow />
+        <mesh geometry={geos.parks} material={gameGrass()} receiveShadow />
+        <mesh geometry={geos.roads} material={gameRoad()} receiveShadow />
+        <mesh geometry={geos.plazas} material={gamePlaza()} receiveShadow />
+        <mesh geometry={geos.paths} material={gamePath()} receiveShadow />
+      </>
+    )
   if (toon)
     return (
       <>
