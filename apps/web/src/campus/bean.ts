@@ -156,3 +156,22 @@ export function beanShadow() {
     .mul(0.38)
   return m
 }
+
+// the puff of dust when it lands off a table: a soft ring that grows and fades. how far
+// it's faded comes from each mesh's userData.fade
+export function beanDust() {
+  const m = new MeshBasicNodeMaterial()
+  m.transparent = true
+  m.depthWrite = false
+  m.polygonOffset = true
+  m.polygonOffsetFactor = -8
+  m.polygonOffsetUnits = -32
+  m.colorNode = vec3(0.95, 0.92, 0.86)
+  const d = length(uv().sub(0.5)).mul(2)
+  const fade = uniform(0).onObjectUpdate(({ object }) => object?.userData.fade as number)
+  m.opacityNode = smoothstep(0.5, 0.8, d)
+    .sub(smoothstep(0.85, 1, d))
+    .mul(fade)
+    .mul(0.8)
+  return m
+}
