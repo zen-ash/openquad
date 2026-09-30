@@ -102,6 +102,8 @@ export const useSettings = create<{
   time: string
   photo: boolean
   fenceLine: boolean
+  // on the bike (the cartoon look, B)
+  bike: boolean
 }>(() => ({
   quality: startingQuality(),
   backend: null,
@@ -117,4 +119,5 @@ export const useSettings = create<{
   photo: false,
   // where the fence is, as a yellow curtain
   fenceLine: params.has('fence'),
+  bike: false,
 }))

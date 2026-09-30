@@ -1,32 +1,32 @@
-import { lerpAngle } from '@quad/shared'
-import { resolveCollisions, type World } from './collision'
+import { resolveCollisions, type Point, type World } from './collision'
 import { headingFor } from './movement'
 
-// the cartoon look's beans don't walk, they glide: speed eases in and out and the body
-// turns toward where you steer instead of snapping. a bit faster than walking, there are
-// no legs to keep in step with
-export const GLIDE_SPEED = 3.2
-export const BOOST_SPEED = 5.6
+// the cartoon look's beans don't walk, they zip around like in an arcade game: full speed
+// the moment a key goes down, stopped the moment it comes up. the wobble in game/bean.ts
+// is what makes starting and stopping look soft
+export const GLIDE_SPEED = 7
+// holding shift
+export const DASH_SPEED = 14
+// B toggles the bike
+export const BIKE_SPEED = 24
 
-// how quickly the speed catches up with the stick (1/s). 95% of the way in 3/k seconds:
-// ~0.33s to get going, ~0.43s to stop, so you slide about half a meter after letting go
-const SPEED_UP = 9
-const SLOW_DOWN = 7
-// same for the heading, 90 degrees is done in about a quarter second
-const TURN = 10
-// below this it's stopped, instead of creeping forever
-const REST = 0.05
-// substeps, like walk() in movement.ts: long frames get split up so the result doesn't
-// depend on the frame rate and you can't skip through a wall
+// how fast the bean turns to face where it's going (1/s). 90 degrees is done in ~0.2s
+const TURN = 14
+// substeps: at most this long and this far each, so a fast bean can't skip through a wall
+// and the result is the same at any frame rate
 const MAX_STEP = 1 / 60
+const MAX_MOVE = 0.2
 const MAX_FRAME = 0.5
 
-export type Glide = { x: number; z: number; vx: number; vz: number; heading: number }
+export type Glide = { x: number; z: number; heading: number }
+
+const blocked = (to: Point, got: Point) => Math.abs(to.x - got.x) + Math.abs(to.z - got.z) > 1e-6
 
 /**
- * One frame of gliding. want is the unit direction the keys/stick point (null = let go).
- * The velocity eases toward want * speed, and whatever a wall takes away is gone from the
- * velocity too, so pushing into a wall doesn't store up speed and you slide along it
+ * One frame of moving. want is the unit direction the keys/stick point (null = stopped).
+ * Each step tries the whole move, then only its x part, then only its z part, so you slide
+ * along walls. If none of those fit (a slanted wall with only one key held, or starting
+ * inside something) it's pushed out the usual way
  */
 export function glide(
   from: Glide,
@@ -36,36 +36,35 @@ export function glide(
   radius: number,
   world: World,
 ): Glide {
-  let { x, z, vx, vz, heading } = from
-  // equal steps: a leftover step of 1e-17s (0.05 - 3/60) made the wall check below think
-  // a wall had stopped you
+  let { x, z, heading } = from
   const total = Math.min(delta, MAX_FRAME)
-  const steps = Math.ceil(total / MAX_STEP - 1e-9)
-  const dt = total / steps
-  for (let i = 0; i < steps; i++) {
-    const k = 1 - Math.exp(-(want ? SPEED_UP : SLOW_DOWN) * dt)
-    vx += ((want ? want.x * speed : 0) - vx) * k
-    vz += ((want ? want.z * speed : 0) - vz) * k
-    if (!want && Math.hypot(vx, vz) < REST) vx = vz = 0
-    if (want) heading = lerpAngle(heading, headingFor(want), 1 - Math.exp(-TURN * dt))
-    if (vx === 0 && vz === 0) continue
-
-    const next = resolveCollisions({ x: x + vx * dt, z: z + vz * dt }, radius, world)
-    // what actually happened. only ever slower: getting pushed out of something you
-    // started inside shouldn't fling you
-    const ax = (next.x - x) / dt
-    const az = (next.z - z) / dt
-    const was = Math.hypot(vx, vz)
-    const got = Math.hypot(ax, az)
-    if (got < was - 1e-6) {
-      vx = ax
-      vz = az
-    } else if (got > was) {
-      vx = (ax / got) * was
-      vz = (az / got) * was
+  if (want && total > 0) {
+    const steps = Math.ceil(Math.max(total / MAX_STEP, (total * speed) / MAX_MOVE) - 1e-9)
+    const dt = total / steps
+    const dx = want.x * speed * dt
+    const dz = want.z * speed * dt
+    for (let i = 0; i < steps; i++) {
+      const tries = [{ x: x + dx, z: z + dz }]
+      if (dx !== 0 && dz !== 0) tries.push({ x: x + dx, z }, { x, z: z + dz })
+      const free = tries.find((to) => !blocked(to, resolveCollisions(to, radius, world)))
+      const next = free ?? resolveCollisions(tries[0]!, radius, world)
+      x = next.x
+      z = next.z
     }
-    x = next.x
-    z = next.z
+    heading = turnToward(heading, headingFor(want), total)
   }
-  return { x, z, vx, vz, heading }
+  return { x, z, heading }
+}
+
+// shortest way round from a to b
+export function angleBetween(a: number, b: number) {
+  let d = (b - a) % (Math.PI * 2)
+  if (d > Math.PI) d -= Math.PI * 2
+  if (d < -Math.PI) d += Math.PI * 2
+  return d
+}
+
+// eases the heading toward where it's going, the shortest way round. never past it
+export function turnToward(heading: number, target: number, dt: number) {
+  return heading + angleBetween(heading, target) * (1 - Math.exp(-TURN * dt))
 }

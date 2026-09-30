@@ -1,4 +1,4 @@
-import { BOOST_SPEED, GLIDE_SPEED } from './glide'
+import { angleBetween, GLIDE_SPEED, DASH_SPEED } from './glide'
 
 // how a cartoon bean (scene/Bean.tsx) wobbles. it only looks at where its player is and
 // which way they face, so it works the same for you and for everyone else (whose
@@ -14,11 +14,15 @@ export const EMOTE_LENGTH: Record<string, number> = {
   Laugh: 1.4,
   Shrug: 1.4,
 }
-const BOOSTING = (GLIDE_SPEED + BOOST_SPEED) / 2
-// a jump bigger than this in one frame is a teleport, not movement (m)
-const TELEPORT = 4
+const RUNNING = (GLIDE_SPEED + DASH_SPEED) / 2
+// a jump bigger than this in one frame is a teleport, not movement (m). a bike does 24 m/s
+const TELEPORT = 8
 const GRAVITY = 22
 const HOP = 3.2 // m/s up, about 23cm high
+// clears a table with this much to spare (m)
+const CLEAR = 0.35
+// landing faster than this (m/s) kicks up dust. a hop off a table, not a little one
+const DUST = 5
 
 export type Bean = {
   x: number
@@ -29,7 +33,8 @@ export type Bean = {
   vz: number
   speed: number
   accel: number
-  turn: number
+  // what it's over: 0 on the floor, the top of a table it's hopping over
+  ground: number
   // springs: a value and how fast it's changing
   squash: number
   squashV: number
@@ -54,6 +59,8 @@ export type Pose = {
   yaw: number
   // the emote that was playing just ended
   done: boolean
+  // landed hard this frame, puff of dust
+  dust: boolean
 }
 
 export const newBean = (phase = 0): Bean => ({
@@ -65,7 +72,7 @@ export const newBean = (phase = 0): Bean => ({
   vz: 0,
   speed: 0,
   accel: 0,
-  turn: 0,
+  ground: 0,
   squash: 0,
   squashV: 0,
   lean: 0,
@@ -88,18 +95,20 @@ function spring(x: number, v: number, target: number, dt: number) {
 }
 
 function hop(b: Bean, up = HOP) {
-  if (b.hop <= 0.02) b.hopV = up
+  if (b.hop <= b.ground + 0.02) b.hopV = up
 }
 
 /**
  * Moves the bean's springs along by one frame, given where its player is now. emote is
- * the one playing (key changes when a new one starts), done is set on the frame it ends
+ * the one playing (key changes when a new one starts), done is set on the frame it ends.
+ * ground is the top of the low furniture it's over, if any: it hops up and over
  */
 export function stepBean(
   b: Bean,
   at: { x: number; z: number; heading: number },
   delta: number,
   emote?: { name: string; key: number },
+  ground = 0,
 ): Pose {
   const real = Math.max(delta, 1e-4)
   if (!b.started || Math.hypot(at.x - b.x, at.z - b.z) > TELEPORT) {
@@ -115,13 +124,17 @@ export function stepBean(
   b.vz += ((at.z - b.z) / real - b.vz) * smooth
   const speed = Math.hypot(b.vx, b.vz)
   b.accel += ((speed - b.speed) / real - b.accel) * ease(real, 10)
-  let dh = (at.heading - b.heading) % (Math.PI * 2)
-  if (dh > Math.PI) dh -= Math.PI * 2
-  if (dh < -Math.PI) dh += Math.PI * 2
-  b.turn += (dh / real - b.turn) * ease(real, 10)
-  // a little hop when you start zooming
-  if (speed > BOOSTING && b.speed <= BOOSTING) hop(b)
+  // a little hop when you start running
+  if (speed > RUNNING && b.speed <= RUNNING) hop(b)
   b.speed = speed
+  // how far it still has to turn to face where it's going, it leans into that
+  const going = Math.atan2(b.vx, b.vz)
+  const turning = speed > 0.5 ? angleBetween(at.heading, going) : 0
+  // something to hop onto
+  if (ground > b.hop + 0.05 && b.hopV <= 0)
+    b.hopV = Math.sqrt(2 * GRAVITY * (ground - b.hop + CLEAR))
+  b.ground = ground
+  let dust = false
   b.x = at.x
   b.z = at.z
   b.heading = at.heading
@@ -132,36 +145,38 @@ export function stepBean(
     const dt = Math.min(left, 1 / 90)
     left -= dt
     // leans forward when gliding and harder while speeding up, back a bit when braking
-    const lean = clamp(b.speed * 0.035 + b.accel * 0.012, -0.2, 0.3)
+    const lean = clamp(b.speed * 0.02 + b.accel * 0.004, -0.2, 0.3)
     ;[b.lean, b.leanV] = spring(b.lean, b.leanV, lean, dt)
-    // and into turns, like on a bike
-    const roll = clamp(-b.turn * b.speed * 0.012, -0.2, 0.2)
+    // and into turns, like on a bike. back upright once it's stopped
+    const roll = clamp(-turning * 0.6, -0.35, 0.35)
     ;[b.roll, b.rollV] = spring(b.roll, b.rollV, roll, dt)
-    // squashed while the speed changes, a stretch while in the air. the spring's
+    // squashed when it starts and stops, a stretch while in the air. the spring's
     // overshoot does the rest
-    const squash = b.hop > 0.02 ? 0.1 : clamp(-Math.abs(b.accel) * 0.005, -0.12, 0)
+    const squash = b.hop > ground + 0.02 ? 0.1 : clamp(-Math.abs(b.accel) * 0.002, -0.12, 0)
     ;[b.squash, b.squashV] = spring(b.squash, b.squashV, squash, dt)
-    if (b.hop > 0 || b.hopV > 0) {
+    if (b.hop > ground || b.hopV > 0) {
       b.hopV -= GRAVITY * dt
       b.hop += b.hopV * dt
-      if (b.hop <= 0) {
+      if (b.hop <= ground && b.hopV <= 0) {
         // landing
-        b.hop = 0
+        dust ||= b.hopV < -DUST
+        b.hop = ground
         b.hopV = 0
         b.squashV -= 2.2
       }
     }
     // bobs gently on the spot, faster and smaller when going
-    b.phase += (2.2 + b.speed * 0.8) * dt
+    b.phase += (2.2 + Math.min(b.speed, 6) * 0.8) * dt
   }
 
   const pose: Pose = {
     y: HOVER + b.hop + Math.sin(b.phase) * (0.012 + 0.035 * clamp(1 - b.speed / 2, 0, 1)),
     stretch: 1 + b.squash,
     pitch: b.lean,
-    roll: b.roll,
+    roll: clamp(b.roll, -0.35, 0.35),
     yaw: 0,
     done: false,
+    dust,
   }
 
   if (emote && emote.key !== b.emote?.key) {

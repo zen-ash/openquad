@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import campus from '../campus/campus.json'
 import { pointInPolygon } from './collision'
+import { LOW, furnish } from './furniture'
+import { glide } from './glide'
+import { interiors } from './interiors'
 import { walk } from './movement'
-import { world } from './world'
+import { groundAt, hoppingWorldFor, world, worldFor } from './world'
 
 describe('world', () => {
   it('does not let you walk through the planter on the quad', () => {
@@ -32,5 +35,26 @@ describe('world', () => {
       p = walk(p, dir, 1.6, 1 / 30, 0.4, world)
     }
     expect(Math.hypot(p.x - to.x, p.z - to.z)).toBeLessThan(5)
+  })
+})
+
+describe('hopping over furniture (cartoon look)', () => {
+  const room = interiors.find((r) => furnish(r).some((i) => i.kind === 'table'))!
+  const table = furnish(room).find((i) => i.kind === 'table')!
+
+  it('knows how high the table under you is', () => {
+    expect(groundAt(room.index, table, 0.4)).toBe(LOW.table)
+    expect(groundAt(room.index, { x: table.x + 50, z: table.z }, 0.4)).toBe(0)
+  })
+
+  it('lets the bean through a table but not the normal walker', () => {
+    // walk straight across the table, along its short side
+    const dir = { x: Math.sin(table.rot), z: Math.cos(table.rot) }
+    const from = { x: table.x - dir.x * 1.5, z: table.z - dir.z * 1.5, heading: 0 }
+    const walked = glide(from, dir, 7, 0.45, 0.4, worldFor(room.index))
+    const hopped = glide(from, dir, 7, 0.45, 0.4, hoppingWorldFor(room.index))
+    const past = (p: { x: number; z: number }) => (p.x - table.x) * dir.x + (p.z - table.z) * dir.z
+    expect(past(walked)).toBeLessThan(0)
+    expect(past(hopped)).toBeGreaterThan(1)
   })
 })
