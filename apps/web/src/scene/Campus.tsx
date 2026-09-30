@@ -39,6 +39,7 @@ import FenceLine from './FenceLine'
 import Fountain from './Fountain'
 import Furniture from './Furniture'
 import GameSky, { HORIZON as GAME_HORIZON } from './GameSky'
+import GameTrees from './GameTrees'
 import Interiors from './Interiors'
 import Landmarks from './Landmarks'
 import PantherQuad from './PantherQuad'
@@ -279,7 +280,7 @@ export default function Campus() {
       <PantherQuad />
       <Fountain />
       <StreetFurniture />
-      {toon ? <ToonTrees /> : <Trees />}
+      {game ? <GameTrees /> : toon ? <ToonTrees /> : <Trees />}
       <FenceHaze />
       {fenceLine && <FenceLine />}
       {toon && <Toonify />}
