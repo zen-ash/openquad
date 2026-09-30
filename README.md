@@ -107,8 +107,9 @@ See [docs/SPEC.md](docs/SPEC.md) for the plan.
 
 ## Controls
 
-- WASD / arrow keys to walk
-- Shift to run
+- WASD / arrow keys to move. Everyone's a little bean that zips around
+- Shift to run, B to get on / off the bike
+- Walk into a table or a chair inside and you hop over it
 - Drag with the mouse (or Q / E) to turn the camera, scroll to zoom
 - G for places: walking directions to a building, or teleport there
 - Walk through a building's front door to go in
@@ -120,8 +121,8 @@ See [docs/SPEC.md](docs/SPEC.md) for the plan.
 - Time of day in the top right: follows the real time in Atlanta, or pick morning, noon,
   sunset or night. `?time=night` in the url works too
 - On a phone or tablet: joystick in the bottom left, drag anywhere else to turn
-- Cartoon style (the picker in the top right, or `?style=toon`): you're a bean, north is
-  always up the screen, Shift runs and B gets you on a bike
+- Cartoon style (the picker in the top right, or `?style=toon`): the camera is high up and
+  north is always up the screen
 
 ## Credits
 
