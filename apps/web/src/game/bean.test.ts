@@ -111,4 +111,22 @@ describe('stepBean', () => {
       expect(done, name).toBe(1)
     }
   })
+
+  it('puffs once when it sets off and once when it stops', () => {
+    const b = newBean()
+    drive(b, 1, 0)
+    const going = drive(b, 1, GLIDE_SPEED)
+    expect(going.filter((p) => p.puff)).toHaveLength(1)
+    const stopping = drive(b, 1, 0, 1)
+    expect(stopping.filter((p) => p.puff)).toHaveLength(1)
+  })
+
+  it('puffs when it lands from any hop', () => {
+    const b = newBean()
+    drive(b, 1, 0)
+    // a dash start hops a little, too gently for the big dust
+    const poses = drive(b, 1.5, DASH_SPEED)
+    expect(poses.some((p) => p.dust)).toBe(false)
+    expect(poses.filter((p) => p.puff).length).toBeGreaterThanOrEqual(2)
+  })
 })

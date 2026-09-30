@@ -44,6 +44,8 @@ export type Bean = {
   rollV: number
   hop: number
   hopV: number
+  // going somewhere, for the puffs of dust when it sets off and stops
+  moving: boolean
   // bob
   phase: number
   emote: { key: number; time: number } | null
@@ -61,6 +63,8 @@ export type Pose = {
   done: boolean
   // landed hard this frame, puff of dust
   dust: boolean
+  // set off, stopped or landed at all this frame: a little puff (the game look)
+  puff: boolean
 }
 
 export const newBean = (phase = 0): Bean => ({
@@ -81,6 +85,7 @@ export const newBean = (phase = 0): Bean => ({
   rollV: 0,
   hop: 0,
   hopV: 0,
+  moving: false,
   phase,
   emote: null,
 })
@@ -127,6 +132,10 @@ export function stepBean(
   // a little hop when you start running
   if (speed > RUNNING && b.speed <= RUNNING) hop(b)
   b.speed = speed
+  // a gap between the two so a wobbly speed doesn't puff over and over
+  const moving = b.moving ? speed > 1 : speed > 3
+  let puff = moving !== b.moving
+  b.moving = moving
   // how far it still has to turn to face where it's going, it leans into that
   const going = Math.atan2(b.vx, b.vz)
   const turning = speed > 0.5 ? angleBetween(at.heading, going) : 0
@@ -160,6 +169,7 @@ export function stepBean(
       if (b.hop <= ground && b.hopV <= 0) {
         // landing
         dust ||= b.hopV < -DUST
+        puff = true
         b.hop = ground
         b.hopV = 0
         b.squashV -= 2.2
@@ -177,6 +187,7 @@ export function stepBean(
     yaw: 0,
     done: false,
     dust,
+    puff,
   }
 
   if (emote && emote.key !== b.emote?.key) {

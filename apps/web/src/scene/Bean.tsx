@@ -6,7 +6,7 @@ import { HOVER, newBean, stepBean, type Bean as BeanState } from '../game/bean'
 import { beanOf } from '../game/avatars'
 import { interiorAt } from '../game/interiors'
 import { groundAt } from '../game/world'
-import { toon } from '../settings'
+import { game, toon } from '../settings'
 
 // shared by every bean: one shader for the body (toon or vinyl, by the world's look), one
 // for the shadow
@@ -82,7 +82,8 @@ export default function Bean({ avatar, emote, onEmoteDone, still }: Props) {
 
     // the dust stays where it landed while the bean goes on
     const f = puff.current
-    if (p.dust) {
+    // the game look puffs whenever it sets off, stops or lands
+    if (p.dust || (game && p.puff)) {
       f.at.set(mover.position.x, ground + 0.03, mover.position.z)
       f.age = 0
     }
