@@ -1,5 +1,5 @@
 import { useGame } from '../net/store'
-import { showDebug } from '../settings'
+import { showDebug, toon, useSettings } from '../settings'
 import Clock from './Clock'
 import Compass from './Compass'
 import Fps from './Fps'
@@ -10,6 +10,7 @@ import { usePlace } from './usePlace'
 export default function Hud() {
   const online = useGame((s) => Object.keys(s.players).length + 1)
   const { place, nearby } = usePlace()
+  const bike = useSettings((s) => s.bike)
 
   return (
     <>
@@ -20,6 +21,7 @@ export default function Hud() {
           <span className="dot" />
           <span>{online} online</span>
           {nearby > 0 && <span className="nearby">&middot; {nearby} can hear you</span>}
+          {toon && bike && <span className="bike">Bike</span>}
           {showDebug && <Fps />}
         </div>
       </div>
