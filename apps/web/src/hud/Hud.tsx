@@ -1,10 +1,11 @@
 import { useGame } from '../net/store'
-import { showDebug, useSettings } from '../settings'
+import { game, showDebug, useSettings } from '../settings'
 import Clock from './Clock'
 import Compass from './Compass'
 import Fps from './Fps'
 import Help from './Help'
 import LocationTitle from './LocationTitle'
+import Quest from './Quest'
 import { usePlace } from './usePlace'
 
 export default function Hud() {
@@ -27,6 +28,7 @@ export default function Hud() {
       </div>
       <Compass />
       <Clock />
+      {game && <Quest place={place} />}
       <LocationTitle place={place} />
       <Help />
     </>
