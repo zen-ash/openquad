@@ -10,7 +10,7 @@ describe('beanGeometry', () => {
   const part = geo.attributes.aPart!
 
   it('stays cheap', () => {
-    expect(index.count / 3).toBeLessThan(1500)
+    expect(index.count / 3).toBeLessThan(2500)
   })
 
   it('stands on the ground and is as tall as it says', () => {

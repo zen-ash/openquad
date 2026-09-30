@@ -14,12 +14,13 @@ import {
   vec3,
   vertexColor,
 } from 'three/tsl'
-import { MeshBasicNodeMaterial } from 'three/webgpu'
+import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu'
 import { toonMaterial } from './toon'
 
-// the cartoon look's people: a jellybean with no legs, big eyes, rosy cheeks and a little
-// sprout on top. one mesh and one material for all of them, the colors come from each
-// mesh's userData (body, accent), so a new person never means a new shader
+// everyone's a jellybean with no legs, big eyes, rosy cheeks and a little sprout on top.
+// one mesh and one material for all of them (toon in the cartoon look, soft vinyl in the
+// real one), the colors come from each mesh's userData (body, accent), so a new person
+// never means a new shader
 
 export const BEAN_HEIGHT = 1.5
 
@@ -66,12 +67,12 @@ const ball = (w: number, h: number, d: number, detail = 8) =>
 
 export function beanGeometry() {
   const profile = []
-  for (let i = 0; i <= 14; i++) {
+  for (let i = 0; i <= 20; i++) {
     // more points round the ends, where it curves most
-    const y = ((1 - Math.cos((Math.PI * i) / 14)) / 2) * BEAN_HEIGHT
+    const y = ((1 - Math.cos((Math.PI * i) / 20)) / 2) * BEAN_HEIGHT
     profile.push(new THREE.Vector2(beanRadius(y), y))
   }
-  const body = paint(new THREE.LatheGeometry(profile, 20), BODY)
+  const body = paint(new THREE.LatheGeometry(profile, 32), BODY)
 
   // big eyes up high, that's most of the cute
   const eyeY = BEAN_HEIGHT * 0.68
@@ -127,22 +128,42 @@ const fromMesh =
   ({ object }: { object: THREE.Object3D | null }) =>
     object?.userData[name] as THREE.Color | undefined
 
-export function beanMaterial() {
-  const m = toonMaterial()
-  const part = attribute('aPart', 'float')
+const part = attribute('aPart', 'float')
+const on = (from: number) => select(part.greaterThan(from), float(1), float(0))
+// 1 on the face (eyes, cheeks, smile), 0 on the body and sprout
+const face = on(1.5)
+const beanColor = () => {
   const body = uniform(new THREE.Color()).onObjectUpdate(fromMesh('body'))
   const accent = uniform(new THREE.Color()).onObjectUpdate(fromMesh('accent'))
-  const on = (from: number) => select(part.greaterThan(from), float(1), float(0))
-  m.colorNode = mix(mix(body, accent, on(0.5)), vertexColor().rgb, on(1.5))
+  return mix(mix(body, accent, on(0.5)), vertexColor().rgb, face)
+}
+
+export function beanMaterial() {
+  const m = toonMaterial()
+  m.colorNode = beanColor()
   // a shiny spot like on a gummy candy, always up and to the left of the view. not on
   // the face
   const gloss = smoothstep(0.955, 0.975, normalView.dot(normalize(vec3(-0.35, 0.55, 0.75))))
-  m.emissiveNode = vec3(gloss.mul(float(0.35).sub(on(1.5).mul(0.35))))
+  m.emissiveNode = vec3(gloss.mul(float(0.35).sub(face.mul(0.35))))
   return m
 }
 
-// a soft dark spot on the ground under it. shrinks when it hops
-export function beanShadow() {
+/**
+ * The bean in the real world: a soft vinyl toy. Satin body, glossier eyes. The sky and
+ * the sun light it like everything else and it casts real shadows
+ */
+export function beanVinyl() {
+  const m = new MeshStandardNodeMaterial()
+  m.name = 'bean'
+  m.colorNode = beanColor()
+  m.roughnessNode = mix(float(0.42), float(0.2), face)
+  m.metalnessNode = float(0)
+  return m
+}
+
+// a soft dark spot on the ground under it. shrinks when it hops. the cartoon one is a
+// bluish grey, the real one only darkens (grey lit up dark asphalt)
+export function beanShadow(color: [number, number, number], opacity: number) {
   const m = new MeshBasicNodeMaterial()
   m.transparent = true
   m.depthWrite = false
@@ -150,10 +171,10 @@ export function beanShadow() {
   m.polygonOffset = true
   m.polygonOffsetFactor = -8
   m.polygonOffsetUnits = -32
-  m.colorNode = vec3(0.12, 0.14, 0.22)
+  m.colorNode = vec3(...color)
   m.opacityNode = float(1)
     .sub(smoothstep(0.25, 1, length(uv().sub(0.5)).mul(2)))
-    .mul(0.38)
+    .mul(opacity)
   return m
 }
 
