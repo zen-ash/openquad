@@ -780,10 +780,13 @@ button {
 }
 
 @media (max-width: 640px), (max-height: 500px) {
+  /* stacked, side by side they ran into the mic button */
   .view-options {
     top: auto;
     right: 16px;
     bottom: 16px;
+    flex-direction: column;
+    align-items: flex-end;
   }
 }
 
