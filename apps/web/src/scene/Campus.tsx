@@ -33,6 +33,7 @@ import { localPlayer } from '../game/localPlayer'
 import { daylight, sunDirection, sunPosition, timeFor } from '../game/sun'
 import { game, today, toon, useSettings } from '../settings'
 import Buildings from './Buildings'
+import Collectibles from './Collectibles'
 import Doors from './Doors'
 import FenceHaze from './FenceHaze'
 import FenceLine from './FenceLine'
@@ -281,6 +282,7 @@ export default function Campus() {
       <Fountain />
       <StreetFurniture />
       {game ? <GameTrees /> : toon ? <ToonTrees /> : <Trees />}
+      {game && <Collectibles />}
       <FenceHaze />
       {fenceLine && <FenceLine />}
       {toon && <Toonify />}
