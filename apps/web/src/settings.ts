@@ -42,30 +42,40 @@ export const still = params.has('still')
 // pages to low halfway through a measurement)
 export const keepQuality = params.has('keepquality')
 
-// the look: 'real' is the photo-real campus, 'toon' the cartoon one (campus/toon.ts).
-// ?style=toon, or remembered from the last pick. it's picked once per visit, switching
-// reloads the page: every material, the effects and the camera are different
-export type Style = 'real' | 'toon'
+// the look: 'game' (the default) is the real buildings in a bright, friendly world with
+// stars to collect (campus/game.ts), 'real' the photo-real campus, 'toon' the cartoon one
+// (campus/toon.ts). ?style=game|realistic|toon, or remembered from the last pick. it's
+// picked once per visit, switching reloads the page: every material, the effects and the
+// camera are different
+export type Style = 'game' | 'real' | 'toon'
+const STYLES: Record<string, Style> = {
+  game: 'game',
+  realistic: 'real',
+  real: 'real',
+  toon: 'toon',
+}
 function startingStyle(): Style {
   let saved = null
   try {
-    saved = localStorage.getItem('style')
+    // 'look' and not 'style': the old picks were from before the game look existed
+    saved = localStorage.getItem('look')
   } catch {
     // private mode
   }
-  return (params.get('style') ?? saved) === 'toon' ? 'toon' : 'real'
+  return STYLES[params.get('style') ?? saved ?? ''] ?? 'game'
 }
 export const style = startingStyle()
 export const toon = style === 'toon'
+export const game = style === 'game'
 
 export function switchStyle(next: Style) {
   try {
-    localStorage.setItem('style', next)
+    localStorage.setItem('look', next)
   } catch {
     // it's in the url too
   }
   const url = new URL(location.href)
-  url.searchParams.set('style', next)
+  url.searchParams.set('style', next === 'real' ? 'realistic' : next)
   location.href = url.toString()
 }
 
