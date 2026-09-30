@@ -120,6 +120,8 @@ See [docs/SPEC.md](docs/SPEC.md) for the plan.
 - Time of day in the top right: follows the real time in Atlanta, or pick morning, noon,
   sunset or night. `?time=night` in the url works too
 - On a phone or tablet: joystick in the bottom left, drag anywhere else to turn
+- Cartoon style (the picker in the top right, or `?style=toon`): you're a bean, north is
+  always up the screen, Shift runs and B gets you on a bike
 
 ## Credits
 
@@ -128,3 +130,4 @@ See [docs/SPEC.md](docs/SPEC.md) for the plan.
 - Trees made with [EZ-Tree](https://github.com/dgreenheck/ez-tree) by Daniel Greenheck (MIT), the leaves are drawn by me
 - Heights for some GSU buildings from [Overture Maps](https://overturemaps.org) (USGS lidar and Microsoft building footprints, ODbL)
 - People from Microsoft's [Rocketbox Avatar Library](https://github.com/microsoft/Microsoft-Rocketbox) (MIT, license in `apps/web/public/models/people/LICENSE.txt`)
+- The cartoon style's look and movement were inspired by togethr (HackGT 13, [github.com/kbhatnagar1506/facemash](https://github.com/kbhatnagar1506/facemash), MIT). I wrote my own version, no code from it
