@@ -127,7 +127,18 @@ sunlight.indirect.value = false
 
 const toWorld = new Vector3()
 
-export default function Atmosphere({ sun, when, day }: { sun: number[]; when: Date; day: number }) {
+export default function Atmosphere({
+  sun,
+  when,
+  day,
+  sky = true,
+}: {
+  sun: number[]
+  when: Date
+  day: number
+  // false: only the light and the haze, the game look draws its own sky
+  sky?: boolean
+}) {
   const [x, y, z] = sun as [number, number, number]
   useEffect(() => {
     const toEcef = atmosphere.matrixWorldToECEF.value
@@ -150,7 +161,7 @@ export default function Atmosphere({ sun, when, day }: { sun: number[]; when: Da
   return (
     <>
       <primitive object={sunlight} />
-      <primitive object={skyQuad} />
+      {sky && <primitive object={skyQuad} />}
     </>
   )
 }

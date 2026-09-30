@@ -38,6 +38,7 @@ import FenceHaze from './FenceHaze'
 import FenceLine from './FenceLine'
 import Fountain from './Fountain'
 import Furniture from './Furniture'
+import GameSky, { HORIZON as GAME_HORIZON } from './GameSky'
 import Interiors from './Interiors'
 import Landmarks from './Landmarks'
 import PantherQuad from './PantherQuad'
@@ -205,6 +206,17 @@ function Ground() {
   )
 }
 
+// the game sky's stars: always there so their shader stays built, shown at night (and
+// while the shaders are being built before joining)
+function GameStars({ night }: { night: boolean }) {
+  const warming = useSettings((s) => s.warming)
+  return (
+    <group visible={night || warming}>
+      <Stars />
+    </group>
+  )
+}
+
 export default function Campus() {
   const sky = useSky()
   // the real atmosphere when the visit started on high quality with webgpu (it stays if it
@@ -216,6 +228,7 @@ export default function Campus() {
   // whole city goes flat and hazy
   const environment = 0.15 + 0.3 * sky.day
   const haze = useMemo(() => NIGHT_HAZE.clone().lerp(DAY_HAZE, sky.day), [sky.day])
+  const gameHaze = useMemo(() => NIGHT_HAZE.clone().lerp(GAME_HORIZON, sky.day), [sky.day])
 
   // lit windows fade in as it gets dark
   useEffect(() => {
@@ -232,15 +245,22 @@ export default function Campus() {
         </>
       ) : high ? (
         <Suspense fallback={null}>
-          <Atmosphere sun={sky.dir} when={sky.when} day={sky.day} />
+          {/* the game look keeps the real sky's light and haze, and draws its own sky */}
+          <Atmosphere sun={sky.dir} when={sky.when} day={sky.day} sky={!game} />
+          {game && <GameSky daylight={sky.day} sun={sky.dir} />}
+          {game && <GameStars night={sky.day < 0.3} />}
         </Suspense>
       ) : (
         <>
-          <SkyDome sun={sunAt} />
-          {sky.day < 0.3 && <Stars />}
+          {game ? <GameSky daylight={sky.day} sun={sky.dir} /> : <SkyDome sun={sunAt} />}
+          {game ? <GameStars night={sky.day < 0.3} /> : sky.day < 0.3 && <Stars />}
           <SkyEnvironment sun={sunAt} />
           {/* the color as a prop for the same reason as the sky light below */}
-          <fog attach="fog" args={[DAY_HAZE, 300, 1000]} color={haze} />
+          <fog
+            attach="fog"
+            args={[DAY_HAZE, game ? 350 : 300, game ? 1300 : 1000]}
+            color={game ? gameHaze : haze}
+          />
           <Sun dir={sky.light} day={sky.day} />
         </>
       )}
