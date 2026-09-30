@@ -1,8 +1,9 @@
 import { AVATAR_IDS, MAX_NAME_LENGTH } from '@quad/shared'
-import { useState, type FormEvent } from 'react'
+import { useState, type CSSProperties, type FormEvent } from 'react'
+import { beanOf } from './game/avatars'
 import { connect } from './net/connection'
 import { useGame } from './net/store'
-import { useSettings } from './settings'
+import { toon, useSettings } from './settings'
 import { startMic } from './voice/voice'
 
 // for screen readers and the tests, the thumbnails say the rest
@@ -81,9 +82,21 @@ export default function JoinScreen() {
                 name="avatar"
                 value={id}
                 defaultChecked={id === firstPick}
-                aria-label={DESCRIPTIONS[id]}
+                aria-label={toon ? `${beanOf(id).name} bean` : DESCRIPTIONS[id]}
               />
-              <img src={`/models/people/thumbs/${id}.webp`} alt="" />
+              {toon ? (
+                // the cartoon look's beans, drawn in css (styles.css .bean)
+                <span
+                  className="bean"
+                  style={
+                    { '--body': beanOf(id).body, '--accent': beanOf(id).accent } as CSSProperties
+                  }
+                >
+                  <i />
+                </span>
+              ) : (
+                <img src={`/models/people/thumbs/${id}.webp`} alt="" />
+              )}
             </label>
           ))}
         </fieldset>

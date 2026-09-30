@@ -345,6 +345,49 @@ button {
   object-fit: cover;
 }
 
+/* a bean for the cartoon look: the body, two eyes and a leaf on top in its accent color */
+.avatars .bean {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 5;
+  /* clicks go to the radio button under it */
+  pointer-events: none;
+}
+
+.bean::before {
+  position: absolute;
+  inset: 22% 22% 8%;
+  border-radius: 50% 50% 46% 46% / 42% 42% 36% 36%;
+  background: var(--body);
+  box-shadow:
+    inset -5px -6px 0 rgb(0 0 0 / 0.12),
+    inset 3px 4px 0 rgb(255 255 255 / 0.3);
+  content: '';
+}
+
+.bean::after {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  width: 26%;
+  height: 11%;
+  transform: translateX(-50%);
+  background:
+    radial-gradient(closest-side, #1d1a2b 85%, transparent) left / 38% 100% no-repeat,
+    radial-gradient(closest-side, #1d1a2b 85%, transparent) right / 38% 100% no-repeat;
+  content: '';
+}
+
+.bean i {
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  width: 16%;
+  height: 11%;
+  border-radius: 0 100%;
+  background: var(--accent);
+}
+
 .card input {
   padding: 12px 14px;
   border: 1px solid var(--panel-border);
