@@ -27,6 +27,15 @@ const FOOTPRINT: Record<Kind, [number, number, number]> = {
   plant: [0.5, 0.5, 0],
 }
 
+// how tall the low things are (m, after SCALE): the cartoon bean hops over these instead
+// of bumping into them. shelves and plants are in the way for everyone
+export const LOW: Partial<Record<Kind, number>> = {
+  table: 1,
+  chair: 0.9,
+  armchair: 0.85,
+  coffee_table: 0.45,
+}
+
 // the room is split into squares this big, each gets one group of furniture
 const CELL = 5
 // nothing this close to the door, it's the lobby
@@ -178,4 +187,16 @@ export function footprint(item: Item): Segment[] {
     const b = c[(i + 1) % 4]!
     return { ax: a.x, az: a.z, bx: b.x, bz: b.z }
   })
+}
+
+/** whether a point is within margin of an item's footprint */
+export function isOver(item: Item, p: Point, margin = 0) {
+  const [w, d, forward] = FOOTPRINT[item.kind]
+  const [sx, , sz] = SCALE[item.kind]
+  // into the item's own axes, same as footprint()
+  const dx = p.x - item.x
+  const dz = p.z - item.z
+  const along = dx * Math.cos(item.rot) - dz * Math.sin(item.rot)
+  const across = dx * Math.sin(item.rot) + dz * Math.cos(item.rot) - forward * sz
+  return Math.abs(along) <= (w * sx) / 2 + margin && Math.abs(across) <= (d * sz) / 2 + margin
 }

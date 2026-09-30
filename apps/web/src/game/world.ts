@@ -1,8 +1,8 @@
 import { FENCE } from '@quad/shared'
 import campus from '../campus/campus.json'
 import { BED, memorialWall } from '../campus/fountain'
-import { polygon, type Segment, type World } from './collision'
-import { footprint, furnish } from './furniture'
+import { polygon, type Point, type Segment, type World } from './collision'
+import { footprint, furnish, isOver, LOW, type Item } from './furniture'
 import { enterable, interiors } from './interiors'
 import { benches, bins } from './streetFurniture'
 
@@ -48,7 +48,7 @@ export const world: World = {
 }
 
 // furniture only matters in the building you're in, and all of it together is a lot of walls
-const furnished = new Map<number, { world: World; tall: Segment[] }>()
+const furnished = new Map<number, { world: World; tall: Segment[]; hopping: World; low: Item[] }>()
 
 function furnishedRoom(inside: number) {
   const room = interiors.find((r) => r.index === inside)
@@ -56,9 +56,16 @@ function furnishedRoom(inside: number) {
   let f = furnished.get(inside)
   if (!f) {
     const items = furnish(room)
+    const low = items.filter((i) => LOW[i.kind])
     f = {
       world: { ...world, walls: [...world.walls, ...items.flatMap(footprint)] },
       tall: items.filter((i) => i.kind === 'shelf').flatMap(footprint),
+      // the cartoon bean hops over the low things
+      hopping: {
+        ...world,
+        walls: [...world.walls, ...items.filter((i) => !LOW[i.kind]).flatMap(footprint)],
+      },
+      low,
     }
     furnished.set(inside, f)
   }
@@ -69,3 +76,14 @@ export const worldFor = (inside: number) => furnishedRoom(inside)?.world ?? worl
 
 // shelves are taller than the camera is indoors, it has to stay in front of them
 export const tallFurniture = (inside: number) => furnishedRoom(inside)?.tall ?? []
+
+// the cartoon look's collisions: tables and chairs get hopped over (game/bean.ts)
+export const hoppingWorldFor = (inside: number) => furnishedRoom(inside)?.hopping ?? world
+
+/** the top of the low furniture a bean at p is over, 0 if none */
+export function groundAt(inside: number, p: Point, radius: number) {
+  let top = 0
+  for (const item of furnishedRoom(inside)?.low ?? [])
+    if (isOver(item, p, radius)) top = Math.max(top, LOW[item.kind]!)
+  return top
+}
