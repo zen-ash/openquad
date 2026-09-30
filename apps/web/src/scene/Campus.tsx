@@ -35,6 +35,7 @@ import { game, today, toon, useSettings } from '../settings'
 import Buildings from './Buildings'
 import Collectibles from './Collectibles'
 import Doors from './Doors'
+import EntranceMarkers from './EntranceMarkers'
 import FenceHaze from './FenceHaze'
 import FenceLine from './FenceLine'
 import Fountain from './Fountain'
@@ -282,7 +283,12 @@ export default function Campus() {
       <Fountain />
       <StreetFurniture />
       {game ? <GameTrees /> : toon ? <ToonTrees /> : <Trees />}
-      {game && <Collectibles />}
+      {game && (
+        <>
+          <Collectibles />
+          <EntranceMarkers />
+        </>
+      )}
       <FenceHaze />
       {fenceLine && <FenceLine />}
       {toon && <Toonify />}
