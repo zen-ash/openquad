@@ -1,20 +1,21 @@
 import { useThree } from '@react-three/fiber'
 import { useEffect } from 'react'
 import { input } from '../game/input'
+import { toon } from '../settings'
 
 const TURN = 0.005 // radians per pixel dragged
 const TILT = 0.004
 const ZOOM = 0.01 // meters per scroll unit
 
 // drag on the 3d view to look around, scroll to zoom. only mouse, touch screens have
-// their own look area (TouchControls)
+// their own look area (TouchControls). the cartoon look's camera doesn't turn by dragging
 export default function CameraInput() {
   const canvas = useThree((s) => s.gl.domElement)
 
   useEffect(() => {
     let dragging = false
     const down = (e: PointerEvent) => {
-      if (e.pointerType !== 'mouse') return
+      if (e.pointerType !== 'mouse' || toon) return
       dragging = true
       canvas.setPointerCapture(e.pointerId)
     }

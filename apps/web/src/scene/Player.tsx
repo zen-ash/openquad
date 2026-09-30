@@ -22,6 +22,7 @@ import {
 import { input } from '../game/input'
 import { tallFurniture, worldFor } from '../game/world'
 import { send } from '../net/connection'
+import { toon } from '../settings'
 import { stopEmote, useEmotes } from '../net/emotes'
 import Character, { type Anim } from './Character'
 import ChatBubble from './ChatBubble'
@@ -38,6 +39,12 @@ const RUN_FOV = 56
 const INDOOR_DISTANCE = 4
 const INDOOR_PITCH = 0.2
 const CAMERA_TURN_SPEED = 2 // radians/sec
+// the cartoon look's camera: high up behind you at a fixed angle with a long lens, like an
+// old handheld game. only scrolling moves it (in and out)
+const TOON_PITCH = 0.62
+const TOON_DISTANCE = 40
+const TOON_FOV = 40
+const toonDistance = (d: number) => Math.min(70, Math.max(14, d))
 // how close a wall behind you can pull the camera in
 const CLOSEST = 2.2
 const PLAYER_RADIUS = 0.4
@@ -60,8 +67,8 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
   const body = useRef<THREE.Group>(null)
   // carried over from before a reconnect, so the camera doesn't jump
   const cameraYaw = useRef(localPlayer.cameraYaw)
-  const pitch = useRef(START_PITCH)
-  const distance = useRef(START_DISTANCE)
+  const pitch = useRef(toon ? TOON_PITCH : START_PITCH)
+  const distance = useRef(toon ? TOON_DISTANCE : START_DISTANCE)
   const pull = useRef(0)
   const indoor = useRef(0) // 0 outside, 1 inside, eases in between
   const insideTimer = useRef(0)
@@ -98,8 +105,12 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
     if (keys.turnLeft) cameraYaw.current += CAMERA_TURN_SPEED * dt
     if (keys.turnRight) cameraYaw.current -= CAMERA_TURN_SPEED * dt
     cameraYaw.current += input.turn
-    pitch.current = clampPitch(pitch.current + input.tilt)
-    distance.current = clampDistance(distance.current + input.zoom)
+    if (toon) {
+      distance.current = toonDistance(distance.current + input.zoom * 2.5)
+    } else {
+      pitch.current = clampPitch(pitch.current + input.tilt)
+      distance.current = clampDistance(distance.current + input.zoom)
+    }
     input.turn = input.tilt = input.zoom = 0
 
     let dir = moveDirection(keys, cameraYaw.current)
@@ -161,7 +172,8 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
     // ease back while jogging, back in when you stop
     pull.current += ((running && dir ? 1 : 0) - pull.current) * (1 - Math.exp(-2 * dt))
     const cam = camera as THREE.PerspectiveCamera
-    const fov = localPlayer.shot?.fov ?? WALK_FOV + (RUN_FOV - WALK_FOV) * pull.current
+    const fov =
+      localPlayer.shot?.fov ?? (toon ? TOON_FOV : WALK_FOV + (RUN_FOV - WALK_FOV) * pull.current)
     if (Math.abs(cam.fov - fov) > 0.01) {
       cam.fov = fov
       cam.updateProjectionMatrix()
@@ -174,7 +186,7 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
     else look.lerp(lookGoal, 1 - Math.exp(-10 * dt))
 
     const outdoors = 1 - indoor.current
-    const dist = distance.current + RUN_PULL * pull.current
+    const dist = distance.current + (toon ? 0 : RUN_PULL * pull.current)
     const want = orbit(
       look,
       cameraYaw.current,
