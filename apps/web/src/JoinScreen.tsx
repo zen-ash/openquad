@@ -3,7 +3,7 @@ import { useState, type CSSProperties, type FormEvent } from 'react'
 import { beanOf } from './game/avatars'
 import { connect } from './net/connection'
 import { useGame } from './net/store'
-import { toon, useSettings } from './settings'
+import { useSettings, walker } from './settings'
 import { startMic } from './voice/voice'
 
 // for screen readers and the tests, the thumbnails say the rest
@@ -82,10 +82,10 @@ export default function JoinScreen() {
                 name="avatar"
                 value={id}
                 defaultChecked={id === firstPick}
-                aria-label={toon ? `${beanOf(id).name} bean` : DESCRIPTIONS[id]}
+                aria-label={walker ? DESCRIPTIONS[id] : `${beanOf(id).name} bean`}
               />
-              {toon ? (
-                // the cartoon look's beans, drawn in css (styles.css .bean)
+              {!walker ? (
+                // everyone's a bean, drawn in css (styles.css .bean)
                 <span
                   className="bean"
                   style={

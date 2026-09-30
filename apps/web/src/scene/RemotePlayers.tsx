@@ -9,7 +9,7 @@ import { localPlayer } from '../game/localPlayer'
 import { animForSpeed } from '../game/movement'
 import { stopEmote, useEmotes } from '../net/emotes'
 import { snapshots, useGame, type Person } from '../net/store'
-import { toon } from '../settings'
+import { toon, walker } from '../settings'
 import { useVoice } from '../voice/store'
 import Bean from './Bean'
 import Character, { type Anim } from './Character'
@@ -71,7 +71,7 @@ function RemotePlayer({ id, person }: { id: string; person: Person }) {
 
   return (
     <group ref={body}>
-      {toon ? (
+      {!walker ? (
         // wobbles by itself from how the group moves
         <Bean
           avatar={person.avatar}
@@ -86,7 +86,7 @@ function RemotePlayer({ id, person }: { id: string; person: Person }) {
         />
       )}
       <ChatBubble id={id} />
-      {/* bigger in the cartoon look, its camera is 40m away */}
+      {/* bigger in the cartoon look, its camera is 30m away */}
       <Billboard position-y={toon ? 2.4 : 2.2}>
         <Label
           fontSize={toon ? 0.8 : 0.35}

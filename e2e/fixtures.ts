@@ -3,7 +3,7 @@ import { test as base, expect, type BrowserContext, type Page } from '@playwrigh
 
 type Fixtures = {
   // joins the game as a new person (own browser context, so no shared storage)
-  // avatar is the description on the picker, like 'green top'
+  // avatar is the name on the picker, like 'yellow bean'
   join: (name: string, avatar?: string) => Promise<Page>
 }
 

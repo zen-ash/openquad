@@ -72,6 +72,11 @@ export function switchStyle(next: Style) {
 // the debug panel (hud/DebugLayers.tsx) and window.quad, in dev or with ?debug
 export const showDebug = import.meta.env.DEV || params.has('debug')
 
+// everyone plays as a bean (scene/Bean.tsx) that zips around with north up, whatever the
+// world looks like. ?walker in dev brings back the old walking person with the camera
+// behind them
+export const walker = showDebug && params.has('walker')
+
 // full resolution, remembered between visits (the resolution button)
 function savedNative() {
   try {

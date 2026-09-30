@@ -4,7 +4,7 @@ import * as THREE from 'three'
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js'
 import { AVATARS, MOCAP_SPEED, type Avatar } from '../game/avatars'
 import { RUN_SPEED, WALK_SPEED } from '../game/movement'
-import { toon } from '../settings'
+import { walker } from '../settings'
 
 export type Anim = 'Idle' | 'Walk' | 'Run'
 
@@ -86,8 +86,8 @@ export default function Character({ avatar, anim, onEmoteDone }: Props) {
   )
 }
 
-// the cartoon look has beans instead, no need to download these
-if (!toon)
+// only the old walking person (?walker) uses these, everyone else is a bean
+if (walker)
   for (const a of AVATARS) {
     useGLTF.preload(modelUrl(a))
     useGLTF.preload(animsUrl(a))

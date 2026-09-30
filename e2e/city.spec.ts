@@ -26,7 +26,7 @@ for (const time of ['noon', 'night']) {
 test('picking an avatar works even while the city is still loading', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel("What's your name?").fill('Quick')
-  await page.getByRole('radio', { name: 'green top' }).click()
+  await page.getByRole('radio', { name: 'yellow bean' }).click()
   await page.getByRole('button', { name: 'Join' }).click()
 
   await expect(page.getByText(/^\d+ online$/)).toBeVisible({ timeout: 30_000 })

@@ -32,7 +32,7 @@ test('player count goes down when someone leaves', async ({ join }) => {
 })
 
 test('other people see the avatar you picked', async ({ join }) => {
-  const alice = await join('Alice', 'green top')
+  const alice = await join('Alice', 'yellow bean')
   const bob = await join('Bob')
   const aliceId = await myId(alice)
 

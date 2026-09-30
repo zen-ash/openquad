@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { toon } from '../settings'
+import { toon, walker } from '../settings'
 import { isTouchScreen } from '../TouchControls'
 
 const KEYS: [string, string][] = [
@@ -15,11 +15,14 @@ const KEYS: [string, string][] = [
   ['H', 'show / hide this'],
 ]
 
-// the cartoon look: north is always up, and there's a bike
+const BIKE: [string, string] = ['B', 'bike on / off']
+// the bean has a bike
+const BEAN_KEYS = [...KEYS.slice(0, 2), BIKE, ...KEYS.slice(2)]
+// and in the cartoon look north is always up
 const TOON_KEYS: [string, string][] = [
   ['W A S D', 'move (W is north)'],
   ['Shift', 'run'],
-  ['B', 'bike on / off'],
+  BIKE,
   ['Q / E', 'turn the camera indoors'],
   ...KEYS.slice(3),
 ]
@@ -41,7 +44,7 @@ export default function Help() {
     <div className="help">
       {open ? (
         <dl>
-          {(toon ? TOON_KEYS : KEYS).map(([k, what]) => (
+          {(toon ? TOON_KEYS : walker ? KEYS : BEAN_KEYS).map(([k, what]) => (
             <div key={k}>
               <dt>{k}</dt>
               <dd>{what}</dd>

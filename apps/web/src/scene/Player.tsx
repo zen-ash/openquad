@@ -23,7 +23,7 @@ import {
 import { input } from '../game/input'
 import { hoppingWorldFor, tallFurniture, worldFor } from '../game/world'
 import { send } from '../net/connection'
-import { toon, useSettings } from '../settings'
+import { toon, useSettings, walker } from '../settings'
 import { stopEmote, useEmotes } from '../net/emotes'
 import Bean from './Bean'
 import Character, { type Anim } from './Character'
@@ -88,9 +88,9 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
   const snapCamera = useRef(true)
   const bike = useSettings((s) => s.bike)
 
-  // B gets on and off the bike, in the cartoon look
+  // B gets the bean on and off the bike
   useEffect(() => {
-    if (!toon) return
+    if (walker) return
     const onKey = (e: KeyboardEvent) => {
       if (e.code !== 'KeyB' || e.repeat || e.target instanceof HTMLInputElement) return
       useSettings.setState((s) => ({ bike: !s.bike }))
@@ -150,7 +150,7 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
     }
     let next: Anim = 'Idle'
 
-    if (toon) {
+    if (!walker) {
       // full speed right away, stopped right away (game/glide.ts)
       const g = glide(
         { x: player.position.x, z: player.position.z, heading: player.rotation.y },
@@ -288,7 +288,7 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
 
   return (
     <group ref={body} position={[spawn.position.x, 0, spawn.position.z]} rotation-y={spawn.heading}>
-      {toon ? (
+      {!walker ? (
         <Bean
           avatar={spawn.avatar}
           emote={emote && anim === 'Idle' ? emote : undefined}
