@@ -51,6 +51,21 @@ describe('Room', () => {
     expect(a.inbox).toEqual([{ type: 'state', players: [['b', 1, 2, 0.5]] }])
   })
 
+  it('keeps up with the cartoon bike (24 m/s, 1.2m a tick)', () => {
+    const room = new Room()
+    const a = fakeClient()
+    room.join('a', 'Alice', 'male_09', a.send)
+    room.join('b', 'Bob', 'male_09', () => {})
+    a.inbox.length = 0
+
+    // there's no speed limit, only the fence. every tick's move gets through
+    for (let i = 1; i <= 3; i++) {
+      expect(room.move('b', { x: 1.2 * i, y: 0, z: 0 }, 0)).toBe(true)
+      room.tick()
+    }
+    expect(a.inbox.map((m) => m.type === 'state' && m.players[0]![1])).toEqual([1.2, 2.4, 3.6])
+  })
+
   it('relays signals only to the target player', () => {
     const room = new Room()
     const a = fakeClient()

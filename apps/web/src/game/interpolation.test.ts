@@ -54,4 +54,13 @@ describe('pushSnapshot', () => {
     pushSnapshot(buf, snap(50, 200))
     expect(sample(buf, 25)?.x).toBe(200)
   })
+
+  it('blends a bean on a bike smoothly, even over a missed update', () => {
+    // 24 m/s is 1.2m a tick, 2.4 when one goes missing. not a teleport
+    const buf: Snapshot[] = []
+    pushSnapshot(buf, snap(0, 0))
+    pushSnapshot(buf, snap(50, 1.2))
+    pushSnapshot(buf, snap(150, 3.6))
+    expect(sample(buf, 100)?.x).toBeCloseTo(2.4)
+  })
 })
