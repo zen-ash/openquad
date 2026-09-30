@@ -5,6 +5,7 @@ import type { Object3D } from 'three'
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js'
 import { AVATARS, type Avatar as AvatarInfo } from '../game/avatars'
 import { hideCity, toon, useSettings } from '../settings'
+import Bean from './Bean'
 import { modelUrl } from './Character'
 import { effects } from './fx'
 
@@ -12,8 +13,9 @@ import { effects } from './fx'
 // took 50-200ms every time something new came into view while walking around (pnpm walk).
 // so while the join screen is up this draws everything once, with nothing left out for
 // being off screen, in each state that needs its own shaders: high quality, then low (so
-// dropping to it later doesn't rebuild anything), and back. plus every avatar, under the
-// ground, and some furnished rooms (Furniture.tsx). join waits for it
+// dropping to it later doesn't rebuild anything), and back. plus every avatar (the beans in
+// the cartoon look), under the ground, and some furnished rooms (Furniture.tsx). join waits
+// for it
 
 // frames per step: the first one builds, the others catch anything that showed up late
 const FRAMES = 3
@@ -40,11 +42,16 @@ export default function WarmUp() {
       {!hideCity && (
         // and left out of the world matrix updates once it's hidden (all those bones)
         <group position={[0, -50, 0]} visible={warming} matrixWorldAutoUpdate={warming}>
-          {AVATARS.map((a) => (
-            <Suspense key={a.id} fallback={null}>
-              <Avatar avatar={a} />
-            </Suspense>
-          ))}
+          {AVATARS.map((a) =>
+            // the cartoon look's people are beans, all one shader
+            toon ? (
+              <Bean key={a.id} avatar={a.id} still />
+            ) : (
+              <Suspense key={a.id} fallback={null}>
+                <Avatar avatar={a} />
+              </Suspense>
+            ),
+          )}
         </group>
       )}
     </>

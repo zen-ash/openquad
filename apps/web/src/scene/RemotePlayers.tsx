@@ -9,7 +9,9 @@ import { localPlayer } from '../game/localPlayer'
 import { animForSpeed } from '../game/movement'
 import { stopEmote, useEmotes } from '../net/emotes'
 import { snapshots, useGame, type Person } from '../net/store'
+import { toon } from '../settings'
 import { useVoice } from '../voice/store'
+import Bean from './Bean'
 import Character, { type Anim } from './Character'
 import ChatBubble from './ChatBubble'
 import Label from './Label'
@@ -69,20 +71,30 @@ function RemotePlayer({ id, person }: { id: string; person: Person }) {
 
   return (
     <group ref={body}>
-      <Character
-        avatar={avatarById(person.avatar)}
-        anim={shown}
-        onEmoteDone={() => emote && stopEmote(id, emote.key)}
-      />
+      {toon ? (
+        // wobbles by itself from how the group moves
+        <Bean
+          avatar={person.avatar}
+          emote={emote && anim === 'Idle' ? emote : undefined}
+          onEmoteDone={() => emote && stopEmote(id, emote.key)}
+        />
+      ) : (
+        <Character
+          avatar={avatarById(person.avatar)}
+          anim={shown}
+          onEmoteDone={() => emote && stopEmote(id, emote.key)}
+        />
+      )}
       <ChatBubble id={id} />
-      <Billboard position-y={2.2}>
+      {/* bigger in the cartoon look, its camera is 40m away */}
+      <Billboard position-y={toon ? 2.4 : 2.2}>
         <Label
-          fontSize={0.35}
+          fontSize={toon ? 0.8 : 0.35}
           color={speaking ? '#7dff6a' : 'white'}
           // faded when they're too far away to hear you
           fillOpacity={inRange ? 1 : 0.45}
           outlineOpacity={inRange ? 1 : 0.45}
-          outlineWidth={0.03}
+          outlineWidth={toon ? 0.07 : 0.03}
           outlineColor="black"
         >
           {person.name}

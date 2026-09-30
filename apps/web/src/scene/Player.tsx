@@ -7,6 +7,7 @@ import { cutout } from '../campus/cutout'
 import type { Controls } from '../game/controls'
 import { avatarById } from '../game/avatars'
 import { clampDistance, clampPitch, clearView, orbit } from '../game/camera'
+import { BOOST_SPEED, glide, GLIDE_SPEED } from '../game/glide'
 import { interiorAt } from '../game/interiors'
 import { blocksView, cameraReach, outlineOf } from '../game/occlusion'
 import { localPlayer } from '../game/localPlayer'
@@ -24,6 +25,7 @@ import { tallFurniture, worldFor } from '../game/world'
 import { send } from '../net/connection'
 import { toon } from '../settings'
 import { stopEmote, useEmotes } from '../net/emotes'
+import Bean from './Bean'
 import Character, { type Anim } from './Character'
 import ChatBubble from './ChatBubble'
 
@@ -78,6 +80,8 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
   const [, getKeys] = useKeyboardControls<Controls>()
   const sendTimer = useRef(0)
   const snapCamera = useRef(true)
+  // the cartoon bean's speed and heading, it glides (game/glide.ts)
+  const motion = useRef({ vx: 0, vz: 0, heading: spawn.heading })
 
   // walking off cancels an emote
   useEffect(() => {
@@ -99,6 +103,7 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
       localPlayer.teleport = null
       sendTimer.current = SEND_INTERVAL // send the new spot right away
       snapCamera.current = true
+      motion.current.vx = motion.current.vz = 0
     }
 
     // bigger yaw swings the camera around so the view turns left
@@ -121,7 +126,21 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
     }
     let next: Anim = 'Idle'
 
-    if (dir) {
+    if (toon) {
+      const g = glide(
+        { x: player.position.x, z: player.position.z, ...motion.current },
+        dir,
+        running ? BOOST_SPEED : GLIDE_SPEED,
+        delta,
+        PLAYER_RADIUS,
+        worldFor(localPlayer.inside),
+      )
+      player.position.x = g.x
+      player.position.z = g.z
+      player.rotation.y = g.heading
+      motion.current = { vx: g.vx, vz: g.vz, heading: g.heading }
+      if (dir) next = running ? 'Run' : 'Walk'
+    } else if (dir) {
       const speed = running ? RUN_SPEED : WALK_SPEED
       const pos = walk(
         player.position,
@@ -230,11 +249,19 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
 
   return (
     <group ref={body} position={[spawn.position.x, 0, spawn.position.z]} rotation-y={spawn.heading}>
-      <Character
-        avatar={avatarById(spawn.avatar)}
-        anim={emote && anim === 'Idle' ? emote.name : anim}
-        onEmoteDone={() => emote && stopEmote(spawn.id, emote.key)}
-      />
+      {toon ? (
+        <Bean
+          avatar={spawn.avatar}
+          emote={emote && anim === 'Idle' ? emote : undefined}
+          onEmoteDone={() => emote && stopEmote(spawn.id, emote.key)}
+        />
+      ) : (
+        <Character
+          avatar={avatarById(spawn.avatar)}
+          anim={emote && anim === 'Idle' ? emote.name : anim}
+          onEmoteDone={() => emote && stopEmote(spawn.id, emote.key)}
+        />
+      )}
       <ChatBubble id={spawn.id} />
     </group>
   )
