@@ -408,6 +408,11 @@ malformed.
 11. **Google's 3D tiles** - the real buildings of downtown, lined up with our map (removed
     later, tag `tiles-final`)
 12. **The fence** - a playable area round the middle of campus
+13. **Beans** - everyone plays as a bean with arcade movement (full speed right away, a
+    dash and a bike), a cartoon look as a second style
+14. **Game look** - the default style: the real buildings in a bright, stylized world, with
+    stars to collect, a short tour of campus, markers at the doors and dust puffs under
+    the bean. The realistic and cartoon looks are still in the picker
 
 ## Testing
 

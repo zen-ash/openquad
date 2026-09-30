@@ -121,8 +121,15 @@ See [docs/SPEC.md](docs/SPEC.md) for the plan.
 - Time of day in the top right: follows the real time in Atlanta, or pick morning, noon,
   sunset or night. `?time=night` in the url works too
 - On a phone or tablet: joystick in the bottom left, drag anywhere else to turn
-- Cartoon style (the picker in the top right, or `?style=toon`): the camera is high up and
-  north is always up the screen
+- Three looks, picked in the top right (or `?style=game|realistic|toon` in the url):
+  - **Game** (the default): the real buildings, but the world around them is bright and
+    friendly: tiled grass, sandy paths, chunky trees, flowers and a cartoon sky. There are
+    20 blue stars floating around campus to collect (glide through them), a little tour of
+    campus in the top left ("Show me" gives directions), and gold markers at the main doors
+    of GSU's buildings. Stars and the tour are remembered in your browser
+  - **Realistic**: the photo-real campus
+  - **Cartoon**: everything toon shaded, the camera is high up and north is always up the
+    screen
 
 ## Credits
 
