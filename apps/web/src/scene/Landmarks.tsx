@@ -12,6 +12,7 @@ import { librarySouthMaterials } from '../campus/librarySouthMaterials'
 import { researchTowerMaterials } from '../campus/researchTowerMaterials'
 import { studentCenterEastMaterials } from '../campus/studentCenterEastMaterials'
 import { studentCenterWestMaterials } from '../campus/studentCenterWestMaterials'
+import { urbanLifeMaterials } from '../campus/urbanLifeMaterials'
 import Label from './Label'
 
 const materials: Record<string, Record<string, THREE.Material>> = {
@@ -24,6 +25,7 @@ const materials: Record<string, Record<string, THREE.Material>> = {
   'Langdale Hall': langdaleHallMaterials,
   'Classroom South': classroomSouthMaterials,
   'Library South': librarySouthMaterials,
+  'Urban Life Building': urbanLifeMaterials,
 }
 
 // white sign with the name in gsu blue. the real ones have the logo where the blue

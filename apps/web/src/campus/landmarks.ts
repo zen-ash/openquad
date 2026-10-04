@@ -8,6 +8,7 @@ import { librarySouthGeometry, type LibrarySouthData } from './librarySouth'
 import { researchTowerGeometry, type TowerData } from './researchTower'
 import { studentCenterEastGeometry, type StudentCenterData } from './studentCenterEast'
 import { studentCenterWestGeometry, type StudentCenterWestData } from './studentCenterWest'
+import { urbanLifeGeometry, type UrbanLifeData } from './urbanLife'
 
 // buildings drawn by hand from photos instead of the regular buildings mesh, by name
 
@@ -51,7 +52,8 @@ type Data = LibraryNorthData &
   StudentCenterWestData &
   LangdaleData &
   ClassroomSouthData &
-  LibrarySouthData
+  LibrarySouthData &
+  UrbanLifeData
 const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Library North': libraryNorthGeometry,
   'Dahlberg Hall': dahlbergGeometry,
@@ -62,6 +64,7 @@ const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Langdale Hall': langdaleHallGeometry,
   'Classroom South': classroomSouthGeometry,
   'Library South': librarySouthGeometry,
+  'Urban Life Building': urbanLifeGeometry,
 }
 
 // the scene and the interiors both need it, only build it once

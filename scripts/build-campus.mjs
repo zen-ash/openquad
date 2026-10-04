@@ -965,6 +965,116 @@ function librarySouth(b, corner, link) {
   }
 }
 
+// the urban life building. a slab of 11 floors with round brick towers at its corners and
+// halfway along the long sides, a low wing toward student center west (the entrance from the
+// plaza) and the brick box at 140 decatur st in front (one of GSU_PARTS), drawn in
+// campus/urbanLife.ts. osm's outline has the towers but only roughly, so it's redone here from
+// the tower centers. osm's 12 floors are right (the street floor, then 11 more), but they're
+// tall: 50.8m from piedmont ave to the top of the parapet. that's from two photos with
+// fitted cameras (mapillary 2019 on piedmont ave, commons 2019 on the courtland st bridge,
+// with usgs ground heights) and overture's lidar, which has 49m from the higher ground on
+// the student center side
+const URBAN_LIFE = {
+  podium: 252608874,
+  // centers of the towers at the north and east corners, and the west one (from osm's
+  // circles, they fit its nodes to a few cm)
+  towers: [
+    { lat: 33.7523897, lon: -84.3853841 },
+    { lat: 33.7520691, lon: -84.384942 },
+    { lat: 33.7522033, lon: -84.3855809 },
+  ],
+  radius: 3.13,
+  height: 50.8,
+  // meters along from the north tower (a) and in toward the west one (v): the wing's two
+  // long sides and how far it reaches, the bit that joins the slab to 140 decatur st
+  wing: { from: 4.9, to: 21.3, end: -26.3 },
+  link: { from: 17.4, to: 37.5, out: 35 },
+  // a walk through the middle of the wing, from the plaza to the steps up to unity plaza:
+  // osm has it as a footway (a tunnel, the plaza is a floor under unity plaza). it's the
+  // way in under "URBAN LIFE CENTER", and the game's door is in its side, this far in from
+  // the plaza. the wing past it is a building of its own here (drawn with urban life)
+  passage: { from: -16.2, to: -10.1, way: 780276694 },
+  door: 3.5,
+  // the plaza itself, also a floor down in osm (layer -1)
+  plaza: 780276691,
+  // unity plaza is an area in osm and the game only walks along lines: from the top of the
+  // steps down to the passage, between the bookstore and student center east, to the
+  // footway along its north side. meters from hurt park, the ends are osm's nodes
+  unity: [
+    [-1.6, 180.5],
+    [0, 165],
+    [-2, 147],
+    [-4.8, 133.9],
+  ],
+  wingHeight: 18.9,
+  // 140 decatur st, overture's lidar
+  podiumHeight: 16.6,
+}
+
+function urbanLife(b, podium) {
+  const [n, e, w] = URBAN_LIFE.towers.map(({ lat, lon }) => [
+    (lon - CENTER.lon) * METERS_PER_DEG_LON * SCALE,
+    -(lat - CENTER.lat) * METERS_PER_DEG_LAT * SCALE,
+  ])
+  const long = Math.hypot(e[0] - n[0], e[1] - n[1])
+  const along = [(e[0] - n[0]) / long, (e[1] - n[1]) / long]
+  const side = [-along[1], along[0]]
+  const wide = (w[0] - n[0]) * side[0] + (w[1] - n[1]) * side[1]
+  // cm here, the web app draws the walls on these same lines
+  const cm = (x) => Math.round(x * 100) / 100
+  const at = (a, v) => [
+    cm(n[0] + along[0] * a + side[0] * v),
+    cm(n[1] + along[1] * a + side[1] * v),
+  ]
+  const r = URBAN_LIFE.radius
+  // round the outside of a tower, t in degrees: 0 is along, 90 in toward the west tower
+  const arc = (a, v, t0, t1) => {
+    const pts = []
+    for (let t = t0; t <= t1 + 0.01; t += 11.25) {
+      const rad = (t * Math.PI) / 180
+      pts.push(at(a + Math.cos(rad) * r, v + Math.sin(rad) * r))
+    }
+    return pts
+  }
+  const { wing, link, passage } = URBAN_LIFE
+  b.points = [
+    ...arc(0, 0, 90, 360),
+    ...arc(long / 2, 0, 180, 360),
+    ...arc(long, 0, 180, 450),
+    ...arc(long, wide, 270, 540),
+    at(link.to, wide),
+    at(link.to, link.out),
+    at(link.from, link.out),
+    at(link.from, wide),
+    ...arc(0, wide, 0, 270),
+    at(0, wing.to),
+    at(passage.to, wing.to),
+    at(passage.to, wing.from),
+    at(0, wing.from),
+  ]
+  b.height = URBAN_LIFE.height
+  b.landmark = { front: [n.map(cm), e.map(cm)], podium: podium.points }
+  // in the passage's side, facing into it
+  b.door = [...at(passage.to, wing.to - URBAN_LIFE.door), cm(-along[0]), cm(-along[1])]
+  podium.height = URBAN_LIFE.podiumHeight
+  podium.landmark = { with: 'Urban Life Building' }
+  // the wing on the other side of the passage
+  return {
+    height: URBAN_LIFE.wingHeight,
+    points: [
+      at(passage.from, wing.to),
+      at(wing.end, wing.to),
+      ...arc(wing.end, wide, 270, 540),
+      ...arc(wing.end, 0, 180, 450),
+      at(wing.end, wing.from),
+      at(passage.from, wing.from),
+    ],
+    gsu: true,
+    part: true,
+    landmark: { with: 'Urban Life Building' },
+  }
+}
+
 function main(elements) {
   const buildings = []
   const roads = []
@@ -1012,6 +1122,7 @@ function main(elements) {
         if (el.type === 'way' && el.id === CLASSROOM_SOUTH.way) b.wing = true
         if (el.type === 'way' && el.id === LIBRARY_SOUTH.corner) b.corner = true
         if (el.type === 'way' && el.id === LIBRARY_SOUTH.link) b.link = true
+        if (el.type === 'way' && el.id === URBAN_LIFE.podium) b.podium = true
         // parking decks look different, open floors and no windows
         if (tags.building === 'parking' || tags.amenity === 'parking') b.deck = true
         buildings.push(b)
@@ -1046,7 +1157,8 @@ function main(elements) {
     }
 
     if (tags.highway) {
-      if (tags.tunnel === 'yes' || Number(tags.layer) < 0) continue
+      const walk = el.type === 'way' && [URBAN_LIFE.plaza, URBAN_LIFE.passage.way].includes(el.id)
+      if ((tags.tunnel === 'yes' || Number(tags.layer) < 0) && !walk) continue
       if (tags.footway === 'crossing') {
         crossings.push({ width: 3, points: el.geometry.map(toLocal) })
         continue
@@ -1103,6 +1215,11 @@ function main(elements) {
   const link = buildings.find((b) => b.link)
   if (link) delete link.link
   if (library && corner) librarySouth(library, corner, link)
+  const urban = buildings.find((b) => b.name === 'Urban Life Building')
+  const podium = buildings.find((b) => b.podium)
+  if (podium) delete podium.podium
+  if (urban && podium) buildings.push(urbanLife(urban, podium))
+  paths.push({ width: PATH_WIDTH.footway * SCALE, points: URBAN_LIFE.unity })
   for (const b of NEW_BUILDINGS) buildings.push({ ...b, height: b.height * SCALE, gsu: true })
   const sce = buildings.find((b) => b.name === 'Student Center East')
   const lobby = buildings.find((b) => b.lobby)
