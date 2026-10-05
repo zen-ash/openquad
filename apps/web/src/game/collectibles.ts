@@ -20,7 +20,7 @@ export const STARS: Point[] = [
   { x: -194, z: 113 }, // langdale hall
   { x: -236, z: 146 }, // classroom south
   { x: -123, z: 217 }, // library south plaza
-  { x: -61, z: 271 }, // sports arena
+  { x: -58.6, z: 268.3 }, // sports arena, under the terrace
   { x: -166, z: 286 }, // courtland st
   { x: 36, z: 341 }, // petit science center
   { x: 44, z: 455 }, // research tower

@@ -1,6 +1,7 @@
 import { FENCE } from '@quad/shared'
 import campus from '../campus/campus.json'
 import { coeObstacles, type CollegeOfEducationData } from '../campus/collegeOfEducation'
+import { arenaObstacles, type ArenaData } from '../campus/sportsArena'
 import { BED, memorialWall } from '../campus/fountain'
 import { practiceObstacles, type PracticeFacilityData } from '../campus/practiceFacility'
 import { polygon, type Point, type Segment, type World } from './collision'
@@ -29,6 +30,10 @@ const coe = coeObstacles(
     (b) => b.name === 'College of Education & Human Development',
   ) as CollegeOfEducationData,
 )
+// the sports arena's terrace columns, the piers under its bridges, the steps under the terrace
+const arena = arenaObstacles(
+  campus.buildings.find((b) => b.name === 'GSU Sports Arena') as ArenaData,
+)
 
 export const world: World = {
   // buildings you can walk into are just their walls (with a doorway), the rest are solid.
@@ -43,6 +48,7 @@ export const world: World = {
     ...memorialWall({ x: campus.fountain[0]!, z: campus.fountain[1]! }),
     ...fenceWalls,
     ...coe.walls,
+    ...arena.walls,
   ],
   circles: [
     ...campus.trees.map(([x, z]) => ({ x: x!, z: z!, radius: TREE_RADIUS })),
@@ -61,6 +67,7 @@ export const world: World = {
     ...quad.flags.map(([x, z]) => ({ x: x!, z: z!, radius: 0.2 })),
     ...coe.circles,
     gym.pole,
+    ...arena.circles,
   ],
   halfSize: campus.halfSize,
 }

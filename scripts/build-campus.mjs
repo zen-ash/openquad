@@ -1351,6 +1351,88 @@ function universityBookstore(b) {
   ]
 }
 
+// the gsu sports arena (1973, 125 decatur st), athletics' offices and the volleyball court.
+// a precast box between two end walls that stick out past it like blades, a stair tower at
+// each corner of the long sides, the big panel wall with the sign on decatur st over a
+// terrace, two bridges over decatur st and a glass pavilion at the north corner. drawn in
+// campus/sportsArena.ts. osm's outline is the right shape but 1-3m off almost everywhere
+// and has no blades, so it's redrawn here on usgs's lidar walls (2018, esri's 2026 image has
+// the same roof). no height in osm or overture, the lidar has the stair towers at 29.5m and
+// the boxes on them at 30.7m over the decatur st sidewalk under the terrace
+const SPORTS_ARENA = {
+  // u is along decatur st toward piedmont ave (bearing 131), v in from decatur st. meters from
+  // hurt park
+  along: [0.75011, 0.66131],
+  // [u, v] round the ground floor: the end wall's blade at the north corner, the passage to
+  // the doors, the glass pavilion and the ticket office, the north tower, the wall under the
+  // terrace, the east tower and round the open landing behind it, the end wall in the court
+  // by the practice facility, the party wall with it, the back with the south and west
+  // towers, the other blade and the courtland st side. the terrace and the boxes over it
+  // stick out over the sidewalk
+  outline: [
+    [80, 252.3],
+    [94, 252.3],
+    [94, 247.7],
+    [86, 247.7],
+    [80, 244],
+    [80, 235.7],
+    [89.5, 235.7],
+    [89.5, 234.8],
+    [98.6, 234.8],
+    [98.6, 240.2],
+    [104.9, 240.2],
+    [104.9, 244.6],
+    [140.9, 244.6],
+    [140.9, 240.5],
+    [151.7, 240.5],
+    [151.7, 247.7],
+    [146.5, 247.7],
+    [146.5, 252.3],
+    [163.55, 252.3],
+    [163.55, 293.05],
+    [151.7, 293.05],
+    [151.7, 305.3],
+    [140.9, 305.3],
+    [140.9, 298.3],
+    [104.8, 298.3],
+    [104.8, 305.3],
+    [93.9, 305.3],
+    [93.9, 293.05],
+    [80, 293.05],
+    [80, 291.8],
+    [82.7, 291.8],
+    [82.7, 253.6],
+    [80, 253.6],
+  ],
+  // the louvre boxes on the towers
+  height: 30.7,
+  // gsu's 2026 photo of the doors under the blue "welcome" awning: at the end of the passage
+  // between the pavilion and the end wall, facing courtland st
+  door: [94, 250],
+  // the two footbridges over decatur st (osm footways). the arena draws them up in the air,
+  // on the ground they were paths across the street where there's no crosswalk
+  bridges: [780276692, 780276693],
+  // osm 270880915, a 14m box at the back. it's the loading dock's sunken well, the lidar has
+  // nothing over the drive there. it keeps its place (the made up facades go by index) and
+  // its collision, the arena draws the wall round it
+  well: { way: 270880915, height: 1.1 },
+}
+
+function sportsArena(b, well) {
+  const [ax, az] = SPORTS_ARENA.along
+  // cm here, the web app draws the walls on these same lines
+  const cm = (x) => Math.round(x * 100) / 100
+  const at = (u, v) => [cm(ax * u - az * v), cm(az * u + ax * v)]
+  b.points = SPORTS_ARENA.outline.map(([u, v]) => at(u, v))
+  b.height = SPORTS_ARENA.height
+  b.landmark = { along: SPORTS_ARENA.along }
+  b.door = [...at(...SPORTS_ARENA.door), cm(-ax), cm(-az)]
+  if (!well) return
+  well.height = SPORTS_ARENA.well.height
+  well.landmark = { with: 'GSU Sports Arena' }
+  b.landmark.well = well.points
+}
+
 function main(elements) {
   const buildings = []
   const roads = []
@@ -1400,6 +1482,7 @@ function main(elements) {
         if (el.type === 'way' && el.id === LIBRARY_SOUTH.link) b.link = true
         if (el.type === 'way' && el.id === URBAN_LIFE.podium) b.podium = true
         if (el.type === 'way' && el.id === PETIT.bridge.way) b.skybridge = true
+        if (el.type === 'way' && el.id === SPORTS_ARENA.well.way) b.well = true
         // parking decks look different, open floors and no windows
         if (tags.building === 'parking' || tags.amenity === 'parking') b.deck = true
         buildings.push(b)
@@ -1436,6 +1519,7 @@ function main(elements) {
     if (tags.highway) {
       const walk = el.type === 'way' && [URBAN_LIFE.plaza, URBAN_LIFE.passage.way].includes(el.id)
       if ((tags.tunnel === 'yes' || Number(tags.layer) < 0) && !walk) continue
+      if (el.type === 'way' && SPORTS_ARENA.bridges.includes(el.id)) continue
       if (tags.footway === 'crossing') {
         crossings.push({ width: 3, points: el.geometry.map(toLocal) })
         continue
@@ -1506,6 +1590,10 @@ function main(elements) {
   if (petit) petitScience(petit, skybridge)
   const gym = buildings.find((b) => b.name === 'Practice Facility')
   if (gym) practiceFacility(gym)
+  const arena = buildings.find((b) => b.name === 'GSU Sports Arena')
+  const well = buildings.find((b) => b.well)
+  if (well) delete well.well
+  if (arena) sportsArena(arena, well)
   paths.push({ width: PATH_WIDTH.footway * SCALE, points: URBAN_LIFE.unity })
   for (const b of NEW_BUILDINGS) buildings.push({ ...b, height: b.height * SCALE, gsu: true })
   const sce = buildings.find((b) => b.name === 'Student Center East')
