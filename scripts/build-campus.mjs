@@ -158,6 +158,9 @@ const MEASURED_HEIGHTS = {
   '58 Edgewood': 16.5,
   // floors: 5
   'Science Annex': 18,
+  // usgs lidar (3dep 2018, read from the point cloud: overture only has microsoft's 16.4
+  // and osm 5 floors). the glass bridge from petit lands on it 21-26m up
+  'Research Science Center': 31.4,
 }
 
 function heightOf(tags) {
@@ -1075,6 +1078,97 @@ function urbanLife(b, podium) {
   }
 }
 
+// petit science center (2010). nine tall floors of dark brick with cream bands over a cream
+// base, a tower of blue glass on the corner of piedmont ave and decatur st, the entrance
+// plaza off decatur st with a glass wing past it, and a metal penthouse over most of the
+// roof, drawn in campus/petitScience.ts with the glass bridge to the research science center
+// (one of GSU_PARTS, osm has it as a box on the ground). osm's outline is right except two
+// walls usgs's lidar has further out (piedmont ave 0.45m, the courtyard toward the research
+// tower 1m), so it's redone here. osm's 39m is too low: the lidar has the coping at 44.5m
+// and the penthouse at 55m over the piedmont ave sidewalk
+const PETIT = {
+  // the piedmont ave wall from the west corner to where the glass tower starts, meters from
+  // hurt park, on the lidar's walls
+  front: [
+    [-53.62, 384.21],
+    [-11.8, 344.09],
+  ],
+  // [a, w]: meters along piedmont ave from the west corner and in from it. osm's nodes, but
+  // the two walls above, and the colonnade at the decatur st end of piedmont ave is open
+  // (mapillary 2019)
+  outline: [
+    [0, 0],
+    [33, 0],
+    [33, 2.4],
+    [57.95, 2.4],
+    // the gap between the brick and the glass tower
+    [57.95, 5.3],
+    [60.6, 5.4],
+    // the glass tower
+    [60.6, -2.6],
+    [72.43, -7.3],
+    [79.53, 0.76],
+    [69.8, 19.14],
+    // the lobby at the end of the plaza
+    [75.21, 24.33],
+    [77.29, 18.7],
+    // the glass wing on decatur st
+    [86.05, 18.38],
+    [87.17, 41.48],
+    [74.45, 42.03],
+    // the back, where the bridge goes out
+    [74.3, 38.42],
+    [68.29, 35.29],
+    [64.57, 33.25],
+    [62.57, 32.16],
+    [59.95, 31.86],
+    [59.76, 32.92],
+    [57.99, 36.5],
+    [55.38, 36.48],
+    [55.36, 42.2],
+    // a recess at the south corner on the ground floor
+    [3.8, 42.2],
+    [3.8, 38.8],
+    [0, 38.8],
+  ],
+  height: 55,
+  // the main doors: on the glass tower's side toward the plaza, meters from its north corner
+  door: { side: [79.53, 0.76, 69.8, 19.14], at: 14 },
+  // the bridge, its underside and its roof (lidar, gsu's 2025 photo of it from the other end)
+  bridge: { way: 802046231, under: 20.5, top: 25.8 },
+}
+
+function petitScience(b, bridge) {
+  const [o, e] = PETIT.front
+  const len = Math.hypot(e[0] - o[0], e[1] - o[1])
+  const along = [(e[0] - o[0]) / len, (e[1] - o[1]) / len]
+  const inward = [-along[1], along[0]]
+  // cm here, the web app draws the walls on these same lines
+  const cm = (x) => Math.round(x * 100) / 100
+  const at = (a, w) => [
+    cm(o[0] + along[0] * a + inward[0] * w),
+    cm(o[1] + along[1] * a + inward[1] * w),
+  ]
+  b.points = PETIT.outline.map(([a, w]) => at(a, w))
+  b.height = PETIT.height
+  b.landmark = { front: PETIT.front }
+  const [a0, w0, a1, w1] = PETIT.door.side
+  const l = Math.hypot(a1 - a0, w1 - w0)
+  const [da, dw] = [(a1 - a0) / l, (w1 - w0) / l]
+  // out of the outline is to the left going round it, -w along piedmont ave
+  const [na, nw] = [dw, -da]
+  b.door = [
+    ...at(a0 + da * PETIT.door.at, w0 + dw * PETIT.door.at),
+    cm(along[0] * na + inward[0] * nw),
+    cm(along[1] * na + inward[1] * nw),
+  ]
+  if (!bridge) return
+  bridge.minHeight = PETIT.bridge.under
+  bridge.height = PETIT.bridge.top
+  bridge.landmark = { with: 'Petit Science Center' }
+  b.landmark.bridge = bridge.points
+}
+
 // the university bookstore (66 courtland st). a light stucco box on unity plaza with two
 // brown bands round it, a glass bay on its north corner, a gable over the doors in the
 // notch next to student center west and a clock tower at the back. drawn in
@@ -1179,6 +1273,7 @@ function main(elements) {
         if (el.type === 'way' && el.id === LIBRARY_SOUTH.corner) b.corner = true
         if (el.type === 'way' && el.id === LIBRARY_SOUTH.link) b.link = true
         if (el.type === 'way' && el.id === URBAN_LIFE.podium) b.podium = true
+        if (el.type === 'way' && el.id === PETIT.bridge.way) b.skybridge = true
         // parking decks look different, open floors and no windows
         if (tags.building === 'parking' || tags.amenity === 'parking') b.deck = true
         buildings.push(b)
@@ -1277,6 +1372,10 @@ function main(elements) {
   const podium = buildings.find((b) => b.podium)
   if (podium) delete podium.podium
   if (urban && podium) buildings.push(urbanLife(urban, podium))
+  const petit = buildings.find((b) => b.name === 'Petit Science Center')
+  const skybridge = buildings.find((b) => b.skybridge)
+  if (skybridge) delete skybridge.skybridge
+  if (petit) petitScience(petit, skybridge)
   paths.push({ width: PATH_WIDTH.footway * SCALE, points: URBAN_LIFE.unity })
   for (const b of NEW_BUILDINGS) buildings.push({ ...b, height: b.height * SCALE, gsu: true })
   const sce = buildings.find((b) => b.name === 'Student Center East')

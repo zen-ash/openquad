@@ -5,6 +5,7 @@ import { dahlbergGeometry, type DahlbergData } from './dahlberg'
 import { langdaleHallGeometry, type LangdaleData } from './langdaleHall'
 import { libraryNorthGeometry, type LibraryNorthData } from './libraryNorth'
 import { librarySouthGeometry, type LibrarySouthData } from './librarySouth'
+import { petitScienceGeometry, type PetitData } from './petitScience'
 import { researchTowerGeometry, type TowerData } from './researchTower'
 import { studentCenterEastGeometry, type StudentCenterData } from './studentCenterEast'
 import { studentCenterWestGeometry, type StudentCenterWestData } from './studentCenterWest'
@@ -57,6 +58,7 @@ type Data = LibraryNorthData &
   ClassroomSouthData &
   LibrarySouthData &
   UrbanLifeData &
+  PetitData &
   UniversityBookstoreData
 const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Library North': libraryNorthGeometry,
@@ -69,6 +71,7 @@ const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Classroom South': classroomSouthGeometry,
   'Library South': librarySouthGeometry,
   'Urban Life Building': urbanLifeGeometry,
+  'Petit Science Center': petitScienceGeometry,
   'University Bookstore': universityBookstoreGeometry,
 }
 

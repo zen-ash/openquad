@@ -9,6 +9,7 @@ import { langdaleHallMaterials } from '../campus/langdaleHallMaterials'
 import { landmarkGeometry, type Sign } from '../campus/landmarks'
 import { libraryNorthMaterials } from '../campus/libraryNorthMaterials'
 import { librarySouthMaterials } from '../campus/librarySouthMaterials'
+import { petitScienceMaterials } from '../campus/petitScienceMaterials'
 import { researchTowerMaterials } from '../campus/researchTowerMaterials'
 import { studentCenterEastMaterials } from '../campus/studentCenterEastMaterials'
 import { studentCenterWestMaterials } from '../campus/studentCenterWestMaterials'
@@ -27,6 +28,7 @@ const materials: Record<string, Record<string, THREE.Material>> = {
   'Classroom South': classroomSouthMaterials,
   'Library South': librarySouthMaterials,
   'Urban Life Building': urbanLifeMaterials,
+  'Petit Science Center': petitScienceMaterials,
   'University Bookstore': universityBookstoreMaterials,
 }
 
