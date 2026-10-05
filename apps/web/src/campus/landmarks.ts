@@ -8,6 +8,7 @@ import { librarySouthGeometry, type LibrarySouthData } from './librarySouth'
 import { researchTowerGeometry, type TowerData } from './researchTower'
 import { studentCenterEastGeometry, type StudentCenterData } from './studentCenterEast'
 import { studentCenterWestGeometry, type StudentCenterWestData } from './studentCenterWest'
+import { universityBookstoreGeometry, type UniversityBookstoreData } from './universityBookstore'
 import { urbanLifeGeometry, type UrbanLifeData } from './urbanLife'
 
 // buildings drawn by hand from photos instead of the regular buildings mesh, by name
@@ -27,6 +28,8 @@ export type Sign = {
   weight?: number
   scale?: number
   plate?: string
+  // the plate's height, before scale (it's sized to the text otherwise)
+  height?: number
 }
 export type LandmarkGeometry = {
   parts: Record<string, THREE.BufferGeometry>
@@ -53,7 +56,8 @@ type Data = LibraryNorthData &
   LangdaleData &
   ClassroomSouthData &
   LibrarySouthData &
-  UrbanLifeData
+  UrbanLifeData &
+  UniversityBookstoreData
 const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Library North': libraryNorthGeometry,
   'Dahlberg Hall': dahlbergGeometry,
@@ -65,6 +69,7 @@ const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Classroom South': classroomSouthGeometry,
   'Library South': librarySouthGeometry,
   'Urban Life Building': urbanLifeGeometry,
+  'University Bookstore': universityBookstoreGeometry,
 }
 
 // the scene and the interiors both need it, only build it once

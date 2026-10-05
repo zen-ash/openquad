@@ -12,6 +12,7 @@ import { librarySouthMaterials } from '../campus/librarySouthMaterials'
 import { researchTowerMaterials } from '../campus/researchTowerMaterials'
 import { studentCenterEastMaterials } from '../campus/studentCenterEastMaterials'
 import { studentCenterWestMaterials } from '../campus/studentCenterWestMaterials'
+import { universityBookstoreMaterials } from '../campus/universityBookstoreMaterials'
 import { urbanLifeMaterials } from '../campus/urbanLifeMaterials'
 import Label from './Label'
 
@@ -26,6 +27,7 @@ const materials: Record<string, Record<string, THREE.Material>> = {
   'Classroom South': classroomSouthMaterials,
   'Library South': librarySouthMaterials,
   'Urban Life Building': urbanLifeMaterials,
+  'University Bookstore': universityBookstoreMaterials,
 }
 
 // white sign with the name in gsu blue. the real ones have the logo where the blue
@@ -48,7 +50,7 @@ function NameSign({ sign }: { sign: Sign }) {
   // two lines on some of them (student center west)
   const lines = sign.text.split('\n')
   const width = 0.8 + Math.max(...lines.map((l) => l.length)) * 0.23
-  const height = 0.75 + (lines.length - 1) * 0.45
+  const height = sign.height ?? 0.75 + (lines.length - 1) * 0.45
   return (
     <group position={[sign.x, sign.y, sign.z]} rotation-y={sign.rot} scale={sign.scale ?? 1}>
       <mesh>

@@ -1075,6 +1075,62 @@ function urbanLife(b, podium) {
   }
 }
 
+// the university bookstore (66 courtland st). a light stucco box on unity plaza with two
+// brown bands round it, a glass bay on its north corner, a gable over the doors in the
+// notch next to student center west and a clock tower at the back. drawn in
+// campus/universityBookstore.ts. osm's outline is right (the satellite's roof edge has every
+// jog), it just has no height and findDoor puts the door on courtland st, where there's none
+const BOOKSTORE = {
+  // the unity plaza front, osm's own nodes: the north corner, then the east one
+  front: [
+    { lat: 33.7529284, lon: -84.3856166 },
+    { lat: 33.7527831, lon: -84.3854176 },
+  ],
+  // the clock tower is the bump at the back: its corners from the main wall round
+  tower: [
+    { lat: 33.7527051, lon: -84.3855 },
+    { lat: 33.7526698, lon: -84.3854516 },
+    { lat: 33.7526416, lon: -84.3854814 },
+    { lat: 33.7526775, lon: -84.3855306 },
+  ],
+  // the back wall of the notch, from the courtland st side to student center west. the
+  // sliding doors are in the middle of it, under the courtland st bridge
+  notch: [
+    { lat: 33.7528567, lon: -84.3857902 },
+    { lat: 33.7528279, lon: -84.3858207 },
+  ],
+  // the parapet, meters above unity plaza (gsu's 2024 photo and commons' 2019 one from
+  // courtland st, with usgs ground heights). courtland st is a bridge 5.2m up, the game is
+  // flat, so it's drawn from the plaza like student center east
+  height: 18,
+}
+
+function universityBookstore(b) {
+  const snap = (c) => {
+    const [x, z] = toLocal(c)
+    return b.points.reduce((best, p) =>
+      Math.hypot(p[0] - x, p[1] - z) < Math.hypot(best[0] - x, best[1] - z) ? p : best,
+    )
+  }
+  const notch = BOOKSTORE.notch.map(snap)
+  b.height = BOOKSTORE.height
+  b.landmark = { front: BOOKSTORE.front.map(snap), tower: BOOKSTORE.tower.map(snap), notch }
+  // the door in the middle of the notch, facing courtland st
+  const [p, q] = notch
+  const len = Math.hypot(q[0] - p[0], q[1] - p[1])
+  const flip = signedArea(b.points) > 0 ? -1 : 1
+  const i = b.points.indexOf(p)
+  // which way round the outline goes decides which side is out
+  const forward = b.points[(i + 1) % b.points.length] === q ? 1 : -1
+  const d = [((q[0] - p[0]) / len) * forward, ((q[1] - p[1]) / len) * forward]
+  b.door = [
+    round((p[0] + q[0]) / 2),
+    round((p[1] + q[1]) / 2),
+    Math.round(-d[1] * flip * 100) / 100,
+    Math.round(d[0] * flip * 100) / 100,
+  ]
+}
+
 function main(elements) {
   const buildings = []
   const roads = []
@@ -1203,6 +1259,8 @@ function main(elements) {
   if (arts) artsHumanities(arts)
   const scw = buildings.find((b) => b.name === 'Student Center West')
   if (scw) studentCenterWest(scw)
+  const bookstore = buildings.find((b) => b.name === 'University Bookstore')
+  if (bookstore) universityBookstore(bookstore)
   const langdale = buildings.find((b) => b.name === 'Langdale Hall')
   if (langdale) langdaleHall(langdale)
   const classroom = buildings.find((b) => b.name === 'Classroom South')
