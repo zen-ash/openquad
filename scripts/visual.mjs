@@ -51,6 +51,7 @@ const VIEWS = [
   { name: 'college-of-education', from: [-336, 3, 33], at: [-344, 10, 64], player: [-334, 31] },
   { name: 'petit-science', from: [35, 2.5, 305], at: [-15, 20, 355], player: [37, 303] },
   { name: 'university-bookstore', from: [10, 3, 112], at: [-22, 10, 152], player: [12, 109] },
+  { name: 'practice-facility', from: [-59, 3, 364], at: [-42, 7, 327], player: [-60, 366] },
   {
     name: 'library-north-inside',
     from: [-93.8, 1.7, 142.9],
