@@ -33,6 +33,17 @@ describe('furnish', () => {
     expect(furnish(deck)).toEqual([])
   })
 
+  it('keeps the courts in the gyms open, just seats by the door', () => {
+    for (const name of ['GSU Sports Arena', 'Practice Facility', 'Student Recreation Center']) {
+      const room = interiors.find((r) => r.name === name)!
+      const items = furnish(room)
+      expect(items.length, name).toBeGreaterThan(0)
+      expect(items.some((i) => i.kind === 'table')).toBe(false)
+      for (const i of items)
+        expect(Math.hypot(i.x - room.door.x, i.z - room.door.z), name).toBeLessThan(22)
+    }
+  })
+
   it('furnishes most buildings', () => {
     const empty = interiors.filter((r) => furnish(r).length <= 2)
     expect(empty.length).toBeLessThan(interiors.length / 4)

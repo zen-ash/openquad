@@ -40,6 +40,8 @@ export const LOW: Partial<Record<Kind, number>> = {
 const CELL = 5
 // nothing this close to the door, it's the lobby
 const LOBBY = 7
+// and in a gym nothing further than this, the rest is the court
+const GYM_LOBBY = 16
 
 type Placed = { kind: Kind; a: number; b: number; rot: number }
 
@@ -116,6 +118,10 @@ export function furnish(room: Interior): Item[] {
   let n = 0
   const rand = () => seedOf(room.index * 1000 + n++)
   const library = room.name.includes('Library')
+  // the arena, the practice gym and the rec center are courts inside, not study rooms: just
+  // seats in a lobby by the door. the arena's glass lobby showed hundreds of tables from the
+  // street (and cost 2.5ms there)
+  const gym = /Arena|Practice Facility|Recreation/.test(room.name)
 
   const as = room.points.map((p) => (p.x - x) * along.x + (p.z - z) * along.z)
   const bs = room.points.map((p) => (p.x - x) * into.x + (p.z - z) * into.z)
@@ -126,6 +132,7 @@ export function furnish(room: Interior): Item[] {
   for (let ca = Math.ceil(Math.min(...as) / CELL) * CELL; ca < Math.max(...as); ca += CELL) {
     for (let cb = CELL / 2; cb < Math.max(...bs); cb += CELL) {
       if (ca === 0 || Math.hypot(ca, cb) < LOBBY) continue
+      if (gym && Math.hypot(ca, cb) > GYM_LOBBY) continue
       // the cell (minus a bit of room to walk around) has to be well inside
       const corners = [
         [-2, -2],
@@ -144,6 +151,9 @@ export function furnish(room: Interior): Item[] {
       if (library) {
         if (r < 0.35) group = shelves()
         else if (r < 0.85) group = studyTable(rand)
+      } else if (gym) {
+        if (r < 0.6) group = lounge(rand)
+        else if (r < 0.8) group = [{ kind: 'plant', a: 1.6, b: 1.6, rot: rand() * 6 }]
       } else if (r < 0.45) group = studyTable(rand)
       else if (r < 0.7) group = lounge(rand)
       else if (r < 0.8) group = [{ kind: 'plant', a: 1.6, b: 1.6, rot: rand() * 6 }]
