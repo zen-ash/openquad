@@ -48,6 +48,7 @@ const VIEWS = [
   { name: 'classroom-south', from: [-221, 3, 116], at: [-196, 8, 150], player: [-223, 113] },
   { name: 'library-south', from: [-96, 3, 213], at: [-146, 17, 197], player: [-93, 214] },
   { name: 'urban-life', from: [-20, 2, 327], at: [20, 22, 255], player: [-22, 330] },
+  { name: 'petit-science', from: [35, 2.5, 305], at: [-15, 20, 355], player: [37, 303] },
   { name: 'university-bookstore', from: [10, 3, 112], at: [-22, 10, 152], player: [12, 109] },
   {
     name: 'library-north-inside',
