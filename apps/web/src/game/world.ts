@@ -2,6 +2,7 @@ import { FENCE } from '@quad/shared'
 import campus from '../campus/campus.json'
 import { coeObstacles, type CollegeOfEducationData } from '../campus/collegeOfEducation'
 import { BED, memorialWall } from '../campus/fountain'
+import { practiceObstacles, type PracticeFacilityData } from '../campus/practiceFacility'
 import { polygon, type Point, type Segment, type World } from './collision'
 import { footprint, furnish, isOver, LOW, type Item } from './furniture'
 import { enterable, interiors } from './interiors'
@@ -17,6 +18,11 @@ export const fenceWalls: Segment[] = FENCE.map(([ax, az], i) => {
   return { ax, az, bx, bz }
 })
 
+// the planter along the practice facility on decatur st and the floodlight pole by its wing
+const gym = practiceObstacles(
+  campus.buildings.find((b) => b.name === 'Practice Facility') as PracticeFacilityData,
+)
+
 // the piers and screens in front of the college of education's set back ground floor
 const coe = coeObstacles(
   campus.buildings.find(
@@ -30,6 +36,7 @@ export const world: World = {
   buildings: [
     ...campus.buildings.filter((b, i) => !enterable.has(i) && !b.minHeight).map((b) => b.points),
     ...quad.planters.map((p) => p.points),
+    gym.planter.map((p) => [p.x, p.z]),
   ].map((points) => polygon(points as [number, number][])),
   walls: [
     ...interiors.flatMap((i) => i.walls),
@@ -53,6 +60,7 @@ export const world: World = {
     { x: campus.fountain[0]!, z: campus.fountain[1]!, radius: BED },
     ...quad.flags.map(([x, z]) => ({ x: x!, z: z!, radius: 0.2 })),
     ...coe.circles,
+    gym.pole,
   ],
   halfSize: campus.halfSize,
 }

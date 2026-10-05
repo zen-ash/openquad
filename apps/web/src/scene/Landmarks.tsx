@@ -11,6 +11,7 @@ import { landmarkGeometry, type Sign } from '../campus/landmarks'
 import { libraryNorthMaterials } from '../campus/libraryNorthMaterials'
 import { librarySouthMaterials } from '../campus/librarySouthMaterials'
 import { petitScienceMaterials } from '../campus/petitScienceMaterials'
+import { practiceFacilityMaterials } from '../campus/practiceFacilityMaterials'
 import { researchTowerMaterials } from '../campus/researchTowerMaterials'
 import { studentCenterEastMaterials } from '../campus/studentCenterEastMaterials'
 import { studentCenterWestMaterials } from '../campus/studentCenterWestMaterials'
@@ -32,6 +33,7 @@ const materials: Record<string, Record<string, THREE.Material>> = {
   'College of Education & Human Development': collegeOfEducationMaterials,
   'Petit Science Center': petitScienceMaterials,
   'University Bookstore': universityBookstoreMaterials,
+  'Practice Facility': practiceFacilityMaterials,
 }
 
 // white sign with the name in gsu blue. the real ones have the logo where the blue
@@ -42,6 +44,7 @@ function NameSign({ sign }: { sign: Sign }) {
       <Label
         position={[sign.x, sign.y, sign.z]}
         rotation-y={sign.rot}
+        scale-x={sign.wide ?? 1}
         fontSize={sign.size ?? 0.3}
         fontWeight={sign.weight}
         lineHeight={1.25}

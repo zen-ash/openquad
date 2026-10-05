@@ -150,7 +150,6 @@ const MEASURED_HEIGHTS = {
   'One Park Place': 21.2,
   'Patton Hall': 16.5,
   'Piedmont North Dining Hall': 18.2,
-  'Sports Annex': 27.5,
   'Loft Parking': 12.3,
   // osm says 4 floors, but they're tall ones
   'Helen M. Aderhold Learning Center': 21.9,
@@ -1237,6 +1236,65 @@ function petitScience(b, bridge) {
   b.landmark.bridge = bridge.points
 }
 
+// the practice facility (145 decatur st), gsu's basketball and volleyball practice gym since
+// 2016, the old natatorium next to the sports arena. a windowless grey concrete box with ribs
+// along piedmont ave and a low wing on the beach volleyball side, drawn in
+// campus/practiceFacility.ts. osm's shape is right but three walls are off (usgs lidar): the
+// decatur st wall is 1.5m further in, the party wall with the arena 1-3m further out (osm's gap
+// between the two is really arena) and the wing a bit longer. overture's 27.5m was the arena's
+// roof, the lidar has the coping at 10.6m over the piedmont ave sidewalk
+const PRACTICE_FACILITY = {
+  // the piedmont ave wall from osm's south node to the decatur st corner, meters from hurt park
+  front: [
+    [-54.36, 349.65],
+    [-20.54, 311.34],
+  ],
+  // [u, v]: meters along piedmont ave from there and in from it, on the lidar's walls
+  outline: [
+    [-0.15, -0.2],
+    [51.1, -0.2],
+    [51.1, 27.8],
+    [46, 27.8],
+    // the party wall with the arena
+    [46, 26.9],
+    [4, 26.9],
+    [4, 28],
+    [-0.15, 28],
+    // the low wing toward the beach volleyball courts
+    [-0.15, 25.9],
+    [-7, 25.9],
+    [-7, 3.9],
+    [-0.15, 3.9],
+  ],
+  height: 10.6,
+  // no photo shows a door on a street. the game's is on the short wall in the court off
+  // decatur st, next to the arena's door there: [u, v] and which way is out
+  door: { at: [48.6, 27.8], out: [0, 1] },
+}
+
+function practiceFacility(b) {
+  const [o, e] = PRACTICE_FACILITY.front
+  const len = Math.hypot(e[0] - o[0], e[1] - o[1])
+  const along = [(e[0] - o[0]) / len, (e[1] - o[1]) / len]
+  // in from piedmont ave, toward the arena
+  const inward = [along[1], -along[0]]
+  // cm here, the web app draws the walls on these same lines
+  const cm = (x) => Math.round(x * 100) / 100
+  const at = (u, v) => [
+    cm(o[0] + along[0] * u + inward[0] * v),
+    cm(o[1] + along[1] * u + inward[1] * v),
+  ]
+  b.points = PRACTICE_FACILITY.outline.map(([u, v]) => at(u, v))
+  b.height = PRACTICE_FACILITY.height
+  b.landmark = { front: PRACTICE_FACILITY.front }
+  const [du, dv] = PRACTICE_FACILITY.door.out
+  b.door = [
+    ...at(...PRACTICE_FACILITY.door.at),
+    cm(along[0] * du + inward[0] * dv),
+    cm(along[1] * du + inward[1] * dv),
+  ]
+}
+
 // the university bookstore (66 courtland st). a light stucco box on unity plaza with two
 // brown bands round it, a glass bay on its north corner, a gable over the doors in the
 // notch next to student center west and a clock tower at the back. drawn in
@@ -1446,6 +1504,8 @@ function main(elements) {
   const skybridge = buildings.find((b) => b.skybridge)
   if (skybridge) delete skybridge.skybridge
   if (petit) petitScience(petit, skybridge)
+  const gym = buildings.find((b) => b.name === 'Practice Facility')
+  if (gym) practiceFacility(gym)
   paths.push({ width: PATH_WIDTH.footway * SCALE, points: URBAN_LIFE.unity })
   for (const b of NEW_BUILDINGS) buildings.push({ ...b, height: b.height * SCALE, gsu: true })
   const sce = buildings.find((b) => b.name === 'Student Center East')

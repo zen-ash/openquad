@@ -7,6 +7,7 @@ import { langdaleHallGeometry, type LangdaleData } from './langdaleHall'
 import { libraryNorthGeometry, type LibraryNorthData } from './libraryNorth'
 import { librarySouthGeometry, type LibrarySouthData } from './librarySouth'
 import { petitScienceGeometry, type PetitData } from './petitScience'
+import { practiceFacilityGeometry, type PracticeFacilityData } from './practiceFacility'
 import { researchTowerGeometry, type TowerData } from './researchTower'
 import { studentCenterEastGeometry, type StudentCenterData } from './studentCenterEast'
 import { studentCenterWestGeometry, type StudentCenterWestData } from './studentCenterWest'
@@ -28,6 +29,8 @@ export type Sign = {
   size?: number
   color?: string
   weight?: number
+  // squeezes the letters to this much of their width, for condensed type
+  wide?: number
   scale?: number
   plate?: string
   // the plate's height, before scale (it's sized to the text otherwise)
@@ -61,7 +64,8 @@ type Data = LibraryNorthData &
   UrbanLifeData &
   CollegeOfEducationData &
   PetitData &
-  UniversityBookstoreData
+  UniversityBookstoreData &
+  PracticeFacilityData
 const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Library North': libraryNorthGeometry,
   'Dahlberg Hall': dahlbergGeometry,
@@ -76,6 +80,7 @@ const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'College of Education & Human Development': collegeOfEducationGeometry,
   'Petit Science Center': petitScienceGeometry,
   'University Bookstore': universityBookstoreGeometry,
+  'Practice Facility': practiceFacilityGeometry,
 }
 
 // the scene and the interiors both need it, only build it once
