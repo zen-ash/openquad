@@ -1078,6 +1078,74 @@ function urbanLife(b, podium) {
   }
 }
 
+// the college of education & human development, 30 pryor st. a white marble office slab from
+// the 1960s, ten floors, rows of windows between thin marble fins, drawn in
+// campus/collegeOfEducation.ts. osm's box is right, it's the marble's face. on the three
+// street sides the ground floor is set back about a meter under the overhang (mapillary 2019),
+// so the outline moves in to that wall and the piers stand out on the sidewalk in front of
+// it: anything behind the outline would be behind the inside walls (interiorGeometry.ts). the
+// south side is against 40-42 pryor st and stays where it is
+const COLLEGE_OF_EDUCATION = {
+  // osm's corners: pryor st at decatur st, decatur st at kimball way, then the kimball way and
+  // pryor st ends of the wall against 40-42 pryor st
+  corners: [
+    { lat: 33.7537725, lon: -84.3889867 },
+    { lat: 33.7536195, lon: -84.3887038 },
+    { lat: 33.7532921, lon: -84.3889608 },
+    { lat: 33.7534461, lon: -84.3892374 },
+  ],
+  // to the top of the parapet over the middle of the block. the soffit over the ground floor is
+  // level and the streets drop 4.3m round the block (usgs), so the game's flat ground is their
+  // average. gsu's 2021 photo has 31.55m from the soffit to the top (fitted on the fins)
+  height: 36.05,
+  recess: 1,
+  // the main doors on pryor st, meters from the decatur st corner: the middle two of the four
+  // sliding doors in gsu's 2026 photo, in the middle of the blue canopy over them (mapillary 2019)
+  door: 17.9,
+}
+
+function collegeOfEducation(b) {
+  const corners = COLLEGE_OF_EDUCATION.corners.map(({ lat, lon }) => [
+    (lon - CENTER.lon) * METERS_PER_DEG_LON * SCALE,
+    -(lat - CENTER.lat) * METERS_PER_DEG_LAT * SCALE,
+  ])
+  const [n, e, s, w] = corners
+  const { recess, door } = COLLEGE_OF_EDUCATION
+  // cm here, the web app draws the set back walls on these same lines
+  const cm = (x) => Math.round(x * 100) / 100
+  const mid = [(n[0] + s[0]) / 2, (n[1] + s[1]) / 2]
+  // a side as a line, moved in by `by`
+  const side = (p, q, by) => {
+    const len = Math.hypot(q[0] - p[0], q[1] - p[1])
+    const dir = [(q[0] - p[0]) / len, (q[1] - p[1]) / len]
+    let inward = [-dir[1], dir[0]]
+    if ((mid[0] - p[0]) * inward[0] + (mid[1] - p[1]) * inward[1] < 0) inward = [dir[1], -dir[0]]
+    return { p: [p[0] + inward[0] * by, p[1] + inward[1] * by], dir, inward }
+  }
+  // where two of them cross
+  const meet = (a, c) => {
+    const t =
+      ((c.p[0] - a.p[0]) * c.dir[1] - (c.p[1] - a.p[1]) * c.dir[0]) /
+      (a.dir[0] * c.dir[1] - a.dir[1] * c.dir[0])
+    return [cm(a.p[0] + a.dir[0] * t), cm(a.p[1] + a.dir[1] * t)]
+  }
+  const decatur = side(n, e, recess)
+  const kimball = side(e, s, recess)
+  const south = side(s, w, 0)
+  const pryor = side(n, w, recess)
+  b.points = [
+    meet(pryor, decatur),
+    meet(decatur, kimball),
+    meet(kimball, south),
+    meet(south, pryor),
+  ]
+  b.height = COLLEGE_OF_EDUCATION.height
+  b.landmark = { corners: corners.map((c) => c.map(cm)) }
+  // on the set back wall, facing pryor st
+  const at = (k) => n[k] + pryor.dir[k] * door + pryor.inward[k] * recess
+  b.door = [cm(at(0)), cm(at(1)), cm(-pryor.inward[0]), cm(-pryor.inward[1])]
+}
+
 // petit science center (2010). nine tall floors of dark brick with cream bands over a cream
 // base, a tower of blue glass on the corner of piedmont ave and decatur st, the entrance
 // plaza off decatur st with a glass wing past it, and a metal penthouse over most of the
@@ -1372,6 +1440,8 @@ function main(elements) {
   const podium = buildings.find((b) => b.podium)
   if (podium) delete podium.podium
   if (urban && podium) buildings.push(urbanLife(urban, podium))
+  const coe = buildings.find((b) => b.name === 'College of Education & Human Development')
+  if (coe) collegeOfEducation(coe)
   const petit = buildings.find((b) => b.name === 'Petit Science Center')
   const skybridge = buildings.find((b) => b.skybridge)
   if (skybridge) delete skybridge.skybridge

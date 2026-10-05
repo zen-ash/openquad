@@ -4,6 +4,7 @@ import type * as THREE from 'three'
 import campus from '../campus/campus.json'
 import { artsHumanitiesMaterials } from '../campus/artsHumanitiesMaterials'
 import { classroomSouthMaterials } from '../campus/classroomSouthMaterials'
+import { collegeOfEducationMaterials } from '../campus/collegeOfEducationMaterials'
 import { dahlbergMaterials } from '../campus/dahlbergMaterials'
 import { langdaleHallMaterials } from '../campus/langdaleHallMaterials'
 import { landmarkGeometry, type Sign } from '../campus/landmarks'
@@ -28,6 +29,7 @@ const materials: Record<string, Record<string, THREE.Material>> = {
   'Classroom South': classroomSouthMaterials,
   'Library South': librarySouthMaterials,
   'Urban Life Building': urbanLifeMaterials,
+  'College of Education & Human Development': collegeOfEducationMaterials,
   'Petit Science Center': petitScienceMaterials,
   'University Bookstore': universityBookstoreMaterials,
 }

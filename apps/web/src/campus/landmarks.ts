@@ -1,6 +1,7 @@
 import type * as THREE from 'three'
 import { artsHumanitiesGeometry, type ArtsData } from './artsHumanities'
 import { classroomSouthGeometry, type ClassroomSouthData } from './classroomSouth'
+import { collegeOfEducationGeometry, type CollegeOfEducationData } from './collegeOfEducation'
 import { dahlbergGeometry, type DahlbergData } from './dahlberg'
 import { langdaleHallGeometry, type LangdaleData } from './langdaleHall'
 import { libraryNorthGeometry, type LibraryNorthData } from './libraryNorth'
@@ -58,6 +59,7 @@ type Data = LibraryNorthData &
   ClassroomSouthData &
   LibrarySouthData &
   UrbanLifeData &
+  CollegeOfEducationData &
   PetitData &
   UniversityBookstoreData
 const builders: Record<string, (b: Data) => LandmarkGeometry> = {
@@ -71,6 +73,7 @@ const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Classroom South': classroomSouthGeometry,
   'Library South': librarySouthGeometry,
   'Urban Life Building': urbanLifeGeometry,
+  'College of Education & Human Development': collegeOfEducationGeometry,
   'Petit Science Center': petitScienceGeometry,
   'University Bookstore': universityBookstoreGeometry,
 }

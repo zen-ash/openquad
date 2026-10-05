@@ -1,5 +1,6 @@
 import { FENCE } from '@quad/shared'
 import campus from '../campus/campus.json'
+import { coeObstacles, type CollegeOfEducationData } from '../campus/collegeOfEducation'
 import { BED, memorialWall } from '../campus/fountain'
 import { polygon, type Point, type Segment, type World } from './collision'
 import { footprint, furnish, isOver, LOW, type Item } from './furniture'
@@ -16,6 +17,13 @@ export const fenceWalls: Segment[] = FENCE.map(([ax, az], i) => {
   return { ax, az, bx, bz }
 })
 
+// the piers and screens in front of the college of education's set back ground floor
+const coe = coeObstacles(
+  campus.buildings.find(
+    (b) => b.name === 'College of Education & Human Development',
+  ) as CollegeOfEducationData,
+)
+
 export const world: World = {
   // buildings you can walk into are just their walls (with a doorway), the rest are solid.
   // except the ones up off the ground, you walk under those (the library link)
@@ -27,6 +35,7 @@ export const world: World = {
     ...interiors.flatMap((i) => i.walls),
     ...memorialWall({ x: campus.fountain[0]!, z: campus.fountain[1]! }),
     ...fenceWalls,
+    ...coe.walls,
   ],
   circles: [
     ...campus.trees.map(([x, z]) => ({ x: x!, z: z!, radius: TREE_RADIUS })),
@@ -43,6 +52,7 @@ export const world: World = {
     // the fountain, out to the edge of its flower beds
     { x: campus.fountain[0]!, z: campus.fountain[1]!, radius: BED },
     ...quad.flags.map(([x, z]) => ({ x: x!, z: z!, radius: 0.2 })),
+    ...coe.circles,
   ],
   halfSize: campus.halfSize,
 }
