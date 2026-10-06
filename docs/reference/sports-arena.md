@@ -190,3 +190,18 @@ seats and plants in a lobby within 16m of their doors (15, 8 and 14 pieces). Aft
 
 What's left at the doors is the scene pass (+0.6 ms): the arena's own walls filling the screen
 close up, about what the other hand-built buildings cost there.
+
+Measured again on Oct 6 with the other Chrome tabs quiet (median 0% cpu over the run), the
+same before/now builds, 22 spots, 4 min preheat, median of 4 rounds, ms a frame:
+
+| spot          | before | now   | now - before | gpu now - before |
+| ------------- | ------ | ----- | ------------ | ---------------- |
+| arena decatur | 11.30  | 11.38 | -0.10        | 0.63             |
+| arena door    | 13.60  | 14.50 | 0.88         | 0.86             |
+
+The door's 14.5 is over the 14 ms line, but that whole run was about 1.5 ms slower than
+Oct 4's on the same builds (petit close was 13.3 then and 14.9 in this run's "before", with
+nothing changed), so the arena itself adds 0.9 ms there, like other buildings close up. The 12
+old spots moved -0.45..+0.98 ms (gpu within 0.25). A 2 minute walk past it was clean (1% and
+0.1% low 16.8 ms, no spikes) in 3 of 4 tries; the other had gpu waits, no shader builds, and
+the same build was clean the next time.

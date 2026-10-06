@@ -153,3 +153,14 @@ seats and plants in a lobby within 16m of their doors (15, 8 and 14 pieces). Aft
 
 It's cheaper than the generic 27.5m brick box it replaces: a lot less wall, and no window
 shader.
+
+Measured again on Oct 6 with the other Chrome tabs quiet (median 0% cpu over the run), the
+same before/now builds, 22 spots, 4 min preheat, median of 4 rounds, ms a frame:
+
+| spot      | before | now   | now - before | gpu now - before |
+| --------- | ------ | ----- | ------------ | ---------------- |
+| pf street | 11.52  | 11.80 | 0.18         | -0.27            |
+| pf close  | 9.75   | 11.82 | 2.08         | 0.45             |
+
+pf close's "before" (9.75) came out under its own gpu time (11.57), so its 2 ms is mostly that
+one low number; the gpu passes add 0.45 ms (the low gym shows more of the arena behind it).
