@@ -8,6 +8,7 @@ import { libraryNorthGeometry, type LibraryNorthData } from './libraryNorth'
 import { librarySouthGeometry, type LibrarySouthData } from './librarySouth'
 import { petitScienceGeometry, type PetitData } from './petitScience'
 import { practiceFacilityGeometry, type PracticeFacilityData } from './practiceFacility'
+import { recCenterGeometry, type RecData } from './recCenter'
 import { researchTowerGeometry, type TowerData } from './researchTower'
 import { sportsArenaGeometry, type ArenaData } from './sportsArena'
 import { studentCenterEastGeometry, type StudentCenterData } from './studentCenterEast'
@@ -36,6 +37,8 @@ export type Sign = {
   plate?: string
   // the plate's height, before scale (it's sized to the text otherwise)
   height?: number
+  // with no text it's just a plate of its color this wide (a painted bar, a logo's square)
+  width?: number
 }
 export type LandmarkGeometry = {
   parts: Record<string, THREE.BufferGeometry>
@@ -67,7 +70,8 @@ type Data = LibraryNorthData &
   PetitData &
   UniversityBookstoreData &
   PracticeFacilityData &
-  ArenaData
+  ArenaData &
+  RecData
 const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Library North': libraryNorthGeometry,
   'Dahlberg Hall': dahlbergGeometry,
@@ -84,6 +88,7 @@ const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'University Bookstore': universityBookstoreGeometry,
   'Practice Facility': practiceFacilityGeometry,
   'GSU Sports Arena': sportsArenaGeometry,
+  'Student Recreation Center': recCenterGeometry,
 }
 
 // the scene and the interiors both need it, only build it once

@@ -12,6 +12,7 @@ import { libraryNorthMaterials } from '../campus/libraryNorthMaterials'
 import { librarySouthMaterials } from '../campus/librarySouthMaterials'
 import { petitScienceMaterials } from '../campus/petitScienceMaterials'
 import { practiceFacilityMaterials } from '../campus/practiceFacilityMaterials'
+import { recCenterMaterials } from '../campus/recCenterMaterials'
 import { researchTowerMaterials } from '../campus/researchTowerMaterials'
 import { sportsArenaMaterials } from '../campus/sportsArenaMaterials'
 import { studentCenterEastMaterials } from '../campus/studentCenterEastMaterials'
@@ -36,11 +37,19 @@ const materials: Record<string, Record<string, THREE.Material>> = {
   'University Bookstore': universityBookstoreMaterials,
   'Practice Facility': practiceFacilityMaterials,
   'GSU Sports Arena': sportsArenaMaterials,
+  'Student Recreation Center': recCenterMaterials,
 }
 
 // white sign with the name in gsu blue. the real ones have the logo where the blue
 // square is, but that's gsu's trademark
 function NameSign({ sign }: { sign: Sign }) {
+  if (!sign.text)
+    return (
+      <mesh position={[sign.x, sign.y, sign.z]} rotation-y={sign.rot}>
+        <planeGeometry args={[sign.width ?? 1, sign.height ?? 1]} />
+        <meshStandardMaterial color={sign.plate ?? '#f4f4f2'} />
+      </mesh>
+    )
   if (sign.letters)
     return (
       <Label

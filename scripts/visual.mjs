@@ -49,7 +49,8 @@ const VIEWS = [
   { name: 'library-south', from: [-96, 3, 213], at: [-146, 17, 197], player: [-93, 214] },
   { name: 'urban-life', from: [-20, 2, 327], at: [20, 22, 255], player: [-22, 330] },
   { name: 'college-of-education', from: [-336, 3, 33], at: [-344, 10, 64], player: [-334, 31] },
-  { name: 'petit-science', from: [35, 2.5, 305], at: [-15, 20, 355], player: [37, 303] },
+  // on decatur st, the corner by the rec center is its fenced patio now
+  { name: 'petit-science', from: [24, 2.5, 320], at: [-15, 20, 355], player: [25.4, 318.6] },
   { name: 'university-bookstore', from: [10, 3, 112], at: [-22, 10, 152], player: [12, 109] },
   { name: 'practice-facility', from: [-59, 3, 364], at: [-42, 7, 327], player: [-60, 366] },
   { name: 'sports-arena', from: [-91.5, 2.5, 212.6], at: [-68.3, 14, 266.4], player: [-93, 211] },

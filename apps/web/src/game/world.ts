@@ -4,6 +4,7 @@ import { coeObstacles, type CollegeOfEducationData } from '../campus/collegeOfEd
 import { arenaObstacles, type ArenaData } from '../campus/sportsArena'
 import { BED, memorialWall } from '../campus/fountain'
 import { practiceObstacles, type PracticeFacilityData } from '../campus/practiceFacility'
+import { recObstacles, type RecData } from '../campus/recCenter'
 import { polygon, type Point, type Segment, type World } from './collision'
 import { footprint, furnish, isOver, LOW, type Item } from './furniture'
 import { enterable, interiors } from './interiors'
@@ -34,6 +35,10 @@ const coe = coeObstacles(
 const arena = arenaObstacles(
   campus.buildings.find((b) => b.name === 'GSU Sports Arena') as ArenaData,
 )
+// the rec center's columns, the corner sign's pillar and post, the patio fence, low walls
+const rec = recObstacles(
+  campus.buildings.find((b) => b.name === 'Student Recreation Center') as RecData,
+)
 
 export const world: World = {
   // buildings you can walk into are just their walls (with a doorway), the rest are solid.
@@ -49,6 +54,7 @@ export const world: World = {
     ...fenceWalls,
     ...coe.walls,
     ...arena.walls,
+    ...rec.walls,
   ],
   circles: [
     ...campus.trees.map(([x, z]) => ({ x: x!, z: z!, radius: TREE_RADIUS })),
@@ -68,6 +74,7 @@ export const world: World = {
     ...coe.circles,
     gym.pole,
     ...arena.circles,
+    ...rec.circles,
   ],
   halfSize: campus.halfSize,
 }

@@ -1433,6 +1433,58 @@ function sportsArena(b, well) {
   b.landmark.well = well.points
 }
 
+// the student recreation center (2001, 101 piedmont ave). white metal panels and grey
+// louvres: a long box on piedmont ave over a colonnade with louvred boxes on its roof, the
+// main doors in a notch under a louvred sign band, a raised wing over an open corner on
+// gilmer st, the tall gym box at the back and the pool's glass wall on the decatur st end.
+// drawn in campus/recCenter.ts. osm's outline is the right shape but 0.5-1.7m off, misses
+// the low dock annex by the n deck and is solid to the ground where the colonnade and the
+// corner court are open, so it's redrawn on usgs's lidar walls (2018, esri's 2026 image has
+// the same roof). the ground is the piedmont ave sidewalk at the main doors (308.8m)
+const REC_CENTER = {
+  // u is along piedmont ave toward gilmer st (bearing 41.1), v in from piedmont ave. meters
+  // from hurt park
+  along: [0.65738, -0.75356],
+  // [u, v] round the ground floor: the back of the colonnade (it goes the whole length of
+  // piedmont ave, the 2019 photo from decatur st has columns under the corner too), the
+  // notch with the atrium's glass, the court under the wing, the wing's ground floor set
+  // back on gilmer st, the back drive, the dock annex, the n deck side, the wing on the
+  // decatur st end and the pool's glass bay
+  outline: [
+    [-173.4, 212.5],
+    [-99.6, 212.5],
+    [-99.6, 220.9],
+    [-80, 220.9],
+    [-67.5, 220.9],
+    [-67.5, 241.2],
+    [-65.2, 241.2],
+    [-65.2, 271.5],
+    [-126.75, 271.5],
+    [-136.6, 271],
+    [-136.6, 244.7],
+    [-199.9, 244.7],
+    [-199.9, 240.4],
+    [-180.9, 240.4],
+    [-180.9, 212.25],
+    [-173.4, 212.25],
+  ],
+  // the gym box's corners (lidar, over the piedmont ave sidewalk at the doors)
+  height: 18.6,
+  // the atrium's glass doors under the sign band (osm's entrance node), facing piedmont ave
+  door: [-90.7, 220.9],
+}
+
+function recCenter(b) {
+  const [ax, az] = REC_CENTER.along
+  // cm here, the web app draws the walls on these same lines
+  const cm = (x) => Math.round(x * 100) / 100
+  const at = (u, v) => [cm(ax * u - az * v), cm(az * u + ax * v)]
+  b.points = REC_CENTER.outline.map(([u, v]) => at(u, v))
+  b.height = REC_CENTER.height
+  b.landmark = { along: REC_CENTER.along }
+  b.door = [...at(...REC_CENTER.door), cm(az), cm(-ax)]
+}
+
 function main(elements) {
   const buildings = []
   const roads = []
@@ -1594,6 +1646,8 @@ function main(elements) {
   const well = buildings.find((b) => b.well)
   if (well) delete well.well
   if (arena) sportsArena(arena, well)
+  const rec = buildings.find((b) => b.name === 'Student Recreation Center')
+  if (rec) recCenter(rec)
   paths.push({ width: PATH_WIDTH.footway * SCALE, points: URBAN_LIFE.unity })
   for (const b of NEW_BUILDINGS) buildings.push({ ...b, height: b.height * SCALE, gsu: true })
   const sce = buildings.find((b) => b.name === 'Student Center East')
