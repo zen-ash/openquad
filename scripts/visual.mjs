@@ -55,6 +55,7 @@ const VIEWS = [
   { name: 'practice-facility', from: [-59, 3, 364], at: [-42, 7, 327], player: [-60, 366] },
   { name: 'sports-arena', from: [-91.5, 2.5, 212.6], at: [-68.3, 14, 266.4], player: [-93, 211] },
   { name: 'rec-center', from: [47.4, 3, 243.1], at: [100.8, 9, 220.6], player: [45.3, 243.9] },
+  { name: 'natural-science', from: [-270, 3, 90], at: [-263, 10, 71], player: [-272, 90] },
   {
     name: 'library-north-inside',
     from: [-93.8, 1.7, 142.9],
