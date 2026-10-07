@@ -10,6 +10,7 @@ import { langdaleHallMaterials } from '../campus/langdaleHallMaterials'
 import { landmarkGeometry, type Sign } from '../campus/landmarks'
 import { libraryNorthMaterials } from '../campus/libraryNorthMaterials'
 import { librarySouthMaterials } from '../campus/librarySouthMaterials'
+import { naturalScienceMaterials } from '../campus/naturalScienceMaterials'
 import { petitScienceMaterials } from '../campus/petitScienceMaterials'
 import { practiceFacilityMaterials } from '../campus/practiceFacilityMaterials'
 import { recCenterMaterials } from '../campus/recCenterMaterials'
@@ -38,6 +39,7 @@ const materials: Record<string, Record<string, THREE.Material>> = {
   'Practice Facility': practiceFacilityMaterials,
   'GSU Sports Arena': sportsArenaMaterials,
   'Student Recreation Center': recCenterMaterials,
+  'Natural Science Center': naturalScienceMaterials,
 }
 
 // white sign with the name in gsu blue. the real ones have the logo where the blue

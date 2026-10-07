@@ -1485,6 +1485,78 @@ function recCenter(b) {
   b.door = [...at(...REC_CENTER.door), cm(az), cm(-ax)]
 }
 
+// the natural science center (50 decatur st, about 1993): chemistry and physics labs. a
+// light precast frame with dark brown brick bays and ribbon windows on decatur st, three
+// glass pylons with stepped parapets (the main doors under the east one) and a set back
+// top floor. drawn in campus/naturalScience.ts. osm's outline is the right shape but its
+// front is 1.2m in, it has bumps for piers that aren't there, the east wall is 0.9m in and
+// the wing on the alley is wrong, so it's redrawn on usgs's lidar walls (2018, esri's 2026
+// image has the same roof). the game's ground is 315.0m, the sidewalk in the middle of the
+// front: it falls 1.1m from the west end to the doors
+const NATURAL_SCIENCE = {
+  // u is along decatur st toward peachtree center ave (bearing 123.5), v in from decatur st
+  // toward the garage at the back. meters from hurt park
+  along: [0.8341, 0.5516],
+  // [u, v] round the ground floor. the front is the brick, the precast frame stands 0.25m
+  // out from it. the notch is the recess with the doors, then the east wall against the
+  // shops and the science annex, the back against the hurt plaza garage, and the alley side
+  // with its wing and the tall bit by the dock
+  outline: [
+    [-213.8, -203.65],
+    [-156.8, -203.65],
+    [-156.8, -202.6],
+    [-152.75, -202.6],
+    [-152.75, -203.65],
+    [-146.4, -203.65],
+    [-146.4, -154.6],
+    [-183, -154.6],
+    [-183, -151.8],
+    [-213.8, -151.8],
+    [-213.8, -164],
+    [-219.9, -164],
+    [-219.9, -170.5],
+    [-218.6, -170.5],
+    [-218.6, -180.5],
+    [-213.8, -180.5],
+  ],
+  // the set back top floor's coping (the front's is 21.85)
+  height: 26.5,
+  // the glass doors at the back of the recess under the east pylon (gsu 2026)
+  door: [-154.75, -202.6],
+  // the one storey shops on the corner of peachtree center ave (osm way, no name): 14m by
+  // default, lidar has their roof 4m over the sidewalk. they and the science annex reached
+  // 1.3m into the new east wall
+  shops: 270880870,
+  shopsHeight: 4,
+  east: -146.4,
+}
+
+function naturalScience(b, neighbours) {
+  const [ax, az] = NATURAL_SCIENCE.along
+  // cm here, the web app draws the walls on these same lines
+  const cm = (x) => Math.round(x * 100) / 100
+  const at = (u, v) => [cm(ax * u + az * v), cm(az * u - ax * v)]
+  b.points = NATURAL_SCIENCE.outline.map(([u, v]) => at(u, v))
+  b.height = NATURAL_SCIENCE.height
+  b.landmark = { along: NATURAL_SCIENCE.along }
+  b.door = [...at(...NATURAL_SCIENCE.door), cm(-az), cm(ax)]
+  // cut the neighbours back to the east wall
+  const side = ([x, z]) => ax * x + az * z - NATURAL_SCIENCE.east
+  for (const n of neighbours) {
+    const kept = []
+    n.points.forEach((p, i) => {
+      const q = n.points[(i + 1) % n.points.length]
+      const [sp, sq] = [side(p), side(q)]
+      if (sp >= 0) kept.push(p)
+      if (sp >= 0 !== sq >= 0) {
+        const t = sp / (sp - sq)
+        kept.push([cm(p[0] + (q[0] - p[0]) * t), cm(p[1] + (q[1] - p[1]) * t)])
+      }
+    })
+    n.points = kept
+  }
+}
+
 function main(elements) {
   const buildings = []
   const roads = []
@@ -1535,6 +1607,7 @@ function main(elements) {
         if (el.type === 'way' && el.id === URBAN_LIFE.podium) b.podium = true
         if (el.type === 'way' && el.id === PETIT.bridge.way) b.skybridge = true
         if (el.type === 'way' && el.id === SPORTS_ARENA.well.way) b.well = true
+        if (el.type === 'way' && el.id === NATURAL_SCIENCE.shops) b.shops = true
         // parking decks look different, open floors and no windows
         if (tags.building === 'parking' || tags.amenity === 'parking') b.deck = true
         buildings.push(b)
@@ -1648,6 +1721,14 @@ function main(elements) {
   if (arena) sportsArena(arena, well)
   const rec = buildings.find((b) => b.name === 'Student Recreation Center')
   if (rec) recCenter(rec)
+  const nsc = buildings.find((b) => b.name === 'Natural Science Center')
+  const shops = buildings.find((b) => b.shops)
+  if (shops) {
+    delete shops.shops
+    shops.height = NATURAL_SCIENCE.shopsHeight
+  }
+  const annex = buildings.find((b) => b.name === 'Science Annex')
+  if (nsc) naturalScience(nsc, [shops, annex].filter(Boolean))
   paths.push({ width: PATH_WIDTH.footway * SCALE, points: URBAN_LIFE.unity })
   for (const b of NEW_BUILDINGS) buildings.push({ ...b, height: b.height * SCALE, gsu: true })
   const sce = buildings.find((b) => b.name === 'Student Center East')

@@ -1,6 +1,7 @@
 import { FENCE } from '@quad/shared'
 import campus from '../campus/campus.json'
 import { coeObstacles, type CollegeOfEducationData } from '../campus/collegeOfEducation'
+import { nscObstacles, type NscData } from '../campus/naturalScience'
 import { arenaObstacles, type ArenaData } from '../campus/sportsArena'
 import { BED, memorialWall } from '../campus/fountain'
 import { practiceObstacles, type PracticeFacilityData } from '../campus/practiceFacility'
@@ -39,6 +40,10 @@ const arena = arenaObstacles(
 const rec = recObstacles(
   campus.buildings.find((b) => b.name === 'Student Recreation Center') as RecData,
 )
+// the natural science center's planters and the gate across its alley
+const nsc = nscObstacles(
+  campus.buildings.find((b) => b.name === 'Natural Science Center') as NscData,
+)
 
 export const world: World = {
   // buildings you can walk into are just their walls (with a doorway), the rest are solid.
@@ -55,6 +60,8 @@ export const world: World = {
     ...coe.walls,
     ...arena.walls,
     ...rec.walls,
+    ...nsc.planters,
+    nsc.gate,
   ],
   circles: [
     ...campus.trees.map(([x, z]) => ({ x: x!, z: z!, radius: TREE_RADIUS })),

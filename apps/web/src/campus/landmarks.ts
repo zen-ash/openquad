@@ -6,6 +6,7 @@ import { dahlbergGeometry, type DahlbergData } from './dahlberg'
 import { langdaleHallGeometry, type LangdaleData } from './langdaleHall'
 import { libraryNorthGeometry, type LibraryNorthData } from './libraryNorth'
 import { librarySouthGeometry, type LibrarySouthData } from './librarySouth'
+import { naturalScienceGeometry, type NscData } from './naturalScience'
 import { petitScienceGeometry, type PetitData } from './petitScience'
 import { practiceFacilityGeometry, type PracticeFacilityData } from './practiceFacility'
 import { recCenterGeometry, type RecData } from './recCenter'
@@ -71,7 +72,8 @@ type Data = LibraryNorthData &
   UniversityBookstoreData &
   PracticeFacilityData &
   ArenaData &
-  RecData
+  RecData &
+  NscData
 const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Library North': libraryNorthGeometry,
   'Dahlberg Hall': dahlbergGeometry,
@@ -89,6 +91,7 @@ const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Practice Facility': practiceFacilityGeometry,
   'GSU Sports Arena': sportsArenaGeometry,
   'Student Recreation Center': recCenterGeometry,
+  'Natural Science Center': naturalScienceGeometry,
 }
 
 // the scene and the interiors both need it, only build it once
