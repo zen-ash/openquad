@@ -84,8 +84,8 @@ GSU links (the files behind https://map.concept3d.com/?id=1108#!m/295224):
   on its side toward the plaza. A box of machinery on its roof.
 - **The bridge**: osm has it as a 14m box on the ground. It's a glass box from 20.5m to
   25.8m with blue panels under the glass and a grey fascia, open ground under it (lidar, the
-  2025 photo). Drawn with petit, no collision. The research science center it lands on was
-  17.5m in the game (osm's 5 floors), the lidar has 31.4m, so build-campus uses that now.
+  2025 photo). Drawn with petit, no collision. The research science center it lands on is
+  drawn by hand now (research-science-center.md), with holes where the bridge's walls are.
 - **Colors**: in the shade the brick is about half as bright as the cream base (0.47, 2019);
   in gsu's 2025 photo in the sun the brick is 120-130 and the penthouse 125/145/165, a blue
   grey. The game's sunny brick came out 140 and was darkened.
