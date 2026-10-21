@@ -2,6 +2,8 @@ import type * as THREE from 'three'
 import { artsHumanitiesGeometry, type ArtsData } from './artsHumanities'
 import { classroomSouthGeometry, type ClassroomSouthData } from './classroomSouth'
 import { collegeOfEducationGeometry, type CollegeOfEducationData } from './collegeOfEducation'
+import { courtlandBuildingGeometry, type CourtlandBuildingData } from './courtlandBuilding'
+import { courtlandNorthGeometry, type CourtlandNorthData } from './courtlandNorth'
 import { dahlbergGeometry, type DahlbergData } from './dahlberg'
 import { langdaleHallGeometry, type LangdaleData } from './langdaleHall'
 import { libraryNorthGeometry, type LibraryNorthData } from './libraryNorth'
@@ -73,7 +75,9 @@ type Data = LibraryNorthData &
   PracticeFacilityData &
   ArenaData &
   RecData &
-  NscData
+  NscData &
+  CourtlandNorthData &
+  CourtlandBuildingData
 const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Library North': libraryNorthGeometry,
   'Dahlberg Hall': dahlbergGeometry,
@@ -92,6 +96,8 @@ const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'GSU Sports Arena': sportsArenaGeometry,
   'Student Recreation Center': recCenterGeometry,
   'Natural Science Center': naturalScienceGeometry,
+  'Courtland North': courtlandNorthGeometry,
+  'Courtland Building': courtlandBuildingGeometry,
 }
 
 // the scene and the interiors both need it, only build it once

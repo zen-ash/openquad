@@ -143,7 +143,6 @@ const MEASURED_HEIGHTS = {
   'GSU Parking A Deck': 4.2,
   'Alumni Center': 7.9,
   'Centennial Hall': 13.5,
-  'Courtland Building': 16.8,
   'Greek Housing': 9.6,
   'J Deck': 13.9,
   'M Deck': 25.7,
@@ -1575,6 +1574,104 @@ function outFrom(road, over) {
   road.points = [start, ...road.points.slice(i)]
 }
 
+// courtland north (106 courtland st). a 1920s two storey building of painted cream brick on
+// the courtland st viaduct (two more floors go down to the alley under it), with a red brick
+// stair tower at its north end that's turned to true north and a low link with a canopy over
+// a door between them. drawn in campus/courtlandNorth.ts. osm's box is 2m short, misses the
+// tower and its front is 1m out, so it's redrawn on usgs's lidar walls (2018, esri's 2026
+// image has the same roof). the ground is the viaduct's sidewalk in the middle of the front
+// (320.6m)
+const COURTLAND_NORTH = {
+  // [u, v] like the sports arena next door (same block): u along decatur st, v along courtland
+  // st away from decatur st. the front is the ground floor's glass, 5cm behind the painted
+  // wall. the back goes up to 5cm off the arena (osm left a slot there, the real strip between
+  // them is a lower roof nobody sees). the corner where the cream block meets the tower's
+  // south wall
+  block: [
+    [67.35, 290.4],
+    [82.65, 290.4],
+    [82.65, 264.4],
+    [72.08, 264.4],
+  ],
+  // the tower in the game's x/z, it's square to north: its south west and north east corners,
+  // and the radius of the rounded north east one. its south west corner is inside the block
+  tower: { sw: [-121.25, 246], ne: [-115.25, 240.1], round: 1.5 },
+  // [u, v] where the tower's west wall meets the link's front, the link's front, the cream
+  // block's north west corner
+  link: [
+    [69, 261.62],
+    [69, 264.4],
+    [67.35, 264.4],
+  ],
+  // the tower's coping. the parapet on the cream block is 8.85
+  height: 10.55,
+  // the street door under the awning in the middle bay. gsu's map says the courtland st
+  // entrance has no steps, the one under the canopy by the name has three
+  door: [67.35, 278.18],
+}
+
+function courtlandNorth(b) {
+  const [ax, az] = SPORTS_ARENA.along
+  // cm here, the web app draws the walls on these same lines
+  const cm = (x) => Math.round(x * 100) / 100
+  const at = (u, v) => [cm(ax * u - az * v), cm(az * u + ax * v)]
+  const { sw, ne, round } = COURTLAND_NORTH.tower
+  const [cx, cz] = [ne[0] - round, ne[1] + round]
+  const arc = [1, 2, 3].map((i) => {
+    const t = (-i * Math.PI) / 8
+    return [cm(cx + Math.cos(t) * round), cm(cz + Math.sin(t) * round)]
+  })
+  b.points = [
+    ...COURTLAND_NORTH.block.map(([u, v]) => at(u, v)),
+    [ne[0], sw[1]],
+    [ne[0], cz],
+    ...arc,
+    [cx, ne[1]],
+    [sw[0], ne[1]],
+    ...COURTLAND_NORTH.link.map(([u, v]) => at(u, v)),
+  ]
+  b.height = COURTLAND_NORTH.height
+  b.landmark = { along: SPORTS_ARENA.along }
+  b.door = [...at(...COURTLAND_NORTH.door), cm(-ax), cm(-az)]
+}
+
+// the courtland building (120 courtland st). red brick, two storeys over the viaduct with
+// cast stone sills, bands and coping, and a lower brick part at the back with gsu's loading
+// dock on the drive. drawn in campus/courtlandBuilding.ts. osm's box is right to about a
+// meter, redrawn on the lidar (2018) with the notch of the entrance. overture's 16.8m was the
+// roof over the ground at the back, the lidar has the penthouse 11m over the sidewalk at the
+// doors (322.0m). the low part at the back (its roof is under the street) is a low box drawn
+// and walled in courtlandBuilding.ts, it's not in the outline: the inside's ceiling (3.3m)
+// would stand over it
+const COURTLAND_BUILDING = {
+  // [u, v] like courtland north: the two storey part. the front is the windows' glass, 10cm
+  // behind the brick, the entrance is a notch 1m deep
+  outline: [
+    [67.4, 307.85],
+    [67.4, 322.25],
+    [68.3, 322.25],
+    [68.3, 324.65],
+    [67.4, 324.65],
+    [67.4, 339],
+    [83.85, 339],
+    [83.85, 307.85],
+  ],
+  // the penthouse
+  height: 11,
+  // the doors at the back of the entrance, under the name
+  door: [68.3, 323.45],
+}
+
+function courtlandBuilding(b) {
+  const [ax, az] = SPORTS_ARENA.along
+  const cm = (x) => Math.round(x * 100) / 100
+  const at = (u, v) => [cm(ax * u - az * v), cm(az * u + ax * v)]
+  b.points = COURTLAND_BUILDING.outline.map(([u, v]) => at(u, v))
+  b.height = COURTLAND_BUILDING.height
+  b.landmark = { along: SPORTS_ARENA.along }
+  b.door = [...at(...COURTLAND_BUILDING.door), cm(-ax), cm(-az)]
+}
+
 function main(elements) {
   const buildings = []
   const roads = []
@@ -1739,6 +1836,10 @@ function main(elements) {
   const well = buildings.find((b) => b.well)
   if (well) delete well.well
   if (arena) sportsArena(arena, well)
+  const north = buildings.find((b) => b.name === 'Courtland North')
+  if (north) courtlandNorth(north)
+  const courtland = buildings.find((b) => b.name === 'Courtland Building')
+  if (courtland) courtlandBuilding(courtland)
   const rec = buildings.find((b) => b.name === 'Student Recreation Center')
   if (rec) recCenter(rec)
   const nsc = buildings.find((b) => b.name === 'Natural Science Center')

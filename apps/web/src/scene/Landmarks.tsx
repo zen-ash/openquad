@@ -5,6 +5,8 @@ import campus from '../campus/campus.json'
 import { artsHumanitiesMaterials } from '../campus/artsHumanitiesMaterials'
 import { classroomSouthMaterials } from '../campus/classroomSouthMaterials'
 import { collegeOfEducationMaterials } from '../campus/collegeOfEducationMaterials'
+import { courtlandBuildingMaterials } from '../campus/courtlandBuildingMaterials'
+import { courtlandNorthMaterials } from '../campus/courtlandNorthMaterials'
 import { dahlbergMaterials } from '../campus/dahlbergMaterials'
 import { langdaleHallMaterials } from '../campus/langdaleHallMaterials'
 import { landmarkGeometry, type Sign } from '../campus/landmarks'
@@ -40,6 +42,8 @@ const materials: Record<string, Record<string, THREE.Material>> = {
   'GSU Sports Arena': sportsArenaMaterials,
   'Student Recreation Center': recCenterMaterials,
   'Natural Science Center': naturalScienceMaterials,
+  'Courtland North': courtlandNorthMaterials,
+  'Courtland Building': courtlandBuildingMaterials,
 }
 
 // white sign with the name in gsu blue. the real ones have the logo where the blue
