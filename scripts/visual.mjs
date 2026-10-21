@@ -69,6 +69,12 @@ const VIEWS = [
     player: [-156.4, 250],
   },
   {
+    name: 'research-science',
+    from: [56.95, 2.5, 352.85],
+    at: [68.62, 12, 390.53],
+    player: [56.14, 350.77],
+  },
+  {
     name: 'library-north-inside',
     from: [-93.8, 1.7, 142.9],
     at: [-75, 3, 125],
