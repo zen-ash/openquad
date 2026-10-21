@@ -154,8 +154,6 @@ const MEASURED_HEIGHTS = {
   'Helen M. Aderhold Learning Center': 21.9,
   // floors: 4 tall old warehouse floors
   '58 Edgewood': 16.5,
-  // floors: 5
-  'Science Annex': 18,
 }
 
 function heightOf(tags) {
@@ -1722,6 +1720,89 @@ function researchScience(b) {
   b.door = [...at(...RESEARCH_SCIENCE.door), cm(az), cm(-ax)]
 }
 
+// the science annex (29 peachtree center ave): chemistry, biology and physics labs over a gsu
+// parking level. light grey precast with punched windows on peachtree center ave, a corner on
+// hurt plaza with a tall blank pylon, two bays with columns of windows and louvres, a round
+// stair drum and a brick wing over a colonnade against the garage (not in the 2013 photo,
+// there in 2018). drawn in
+// campus/scienceAnnex.ts. osm's front is 1.4m too far in and its corner is rough, so it's
+// redrawn on usgs's lidar walls (2018) and the commons photo (2013). the ground is 312.0m,
+// the sidewalk in the middle of the front: it climbs 1m from hurt plaza to the shops
+const SCIENCE_ANNEX = {
+  // a is along peachtree center ave toward decatur st (bearing 216.5), v in from it
+  // toward the garage. meters from hurt park
+  along: [-0.5948, 0.8039],
+  // [a, v] round the ground floor, from the brick wing on hurt plaza (the back of its
+  // colonnade, the piers stand 2m out, and its side wall) round the stair drum, the north
+  // bay, the pylon, the bay with the doors and the front. the front is 0.25m behind the face
+  // so the ground floor's windows can be set in. the south wall goes on past the natural
+  // science center's east wall, naturalScience() cuts it back
+  outline: [
+    [127, 129.31],
+    [127, 114.5],
+    'drum',
+    [129.3, 110],
+    [129.05, 110],
+    [127.5, 108.7],
+    [129.4, 106.15],
+    [130.95, 107.42],
+    [131, 107.9],
+    [133.9, 107.9],
+    [133.9, 105.55],
+    [178.6, 105.55],
+    [178.6, 140],
+  ],
+  // the round stair between the brick wing and the north bay [a, v, r]: the commons photo's
+  // outline of it (the lidar has it to a meter)
+  drum: [128.3, 113.4, 1.35],
+  // the back is the hurt plaza garage's wall (osm, game coords), the first one is past the
+  // natural science center's wall. it goes on to the garage's corner on hurt plaza, the
+  // colonnade's back meets it on the way
+  back: [
+    [-205.3, 44.2],
+    [-196, 49.9],
+  ],
+  // the pylon's top
+  height: 17.1,
+  // the glass doors in the bay on peachtree center ave, under the canopy, facing it
+  door: [132.45, 107.9],
+  // the shops' wall (osm way 270880870) goes a meter in and out of the annex's straight south
+  // wall, they get it too
+  south: 178.6,
+  // the hurt plaza garage (osm way 301958709) right behind it: 14m by default, the lidar has
+  // its decks 25m up from hurt plaza (and a corner tower to 31m)
+  garage: { way: 301958709, height: 25 },
+}
+
+function scienceAnnex(b, shops) {
+  const [dx, dz] = SCIENCE_ANNEX.along
+  // cm here, the web app draws the walls on these same lines
+  const cm = (x) => Math.round(x * 100) / 100
+  const at = (a, v) => [cm(a * dx - v * dz), cm(a * dz + v * dx)]
+  const av = ([x, z]) => [x * dx + z * dz, -x * dz + z * dx]
+  const [ca, cv, r] = SCIENCE_ANNEX.drum
+  // round the drum from the brick wing's side wall to the north bay's wall
+  const from = Math.PI - Math.asin((114.5 - cv) / r)
+  const to = 2 * Math.PI - Math.acos((129.3 - ca) / r)
+  const drum = []
+  for (let i = 0; i <= 12; i++) {
+    const t = from + ((to - from) * i) / 12
+    drum.push(at(ca + Math.cos(t) * r, cv + Math.sin(t) * r))
+  }
+  b.points = [
+    ...SCIENCE_ANNEX.outline.flatMap((p) => (p === 'drum' ? drum : [at(...p)])),
+    ...SCIENCE_ANNEX.back,
+  ]
+  b.height = SCIENCE_ANNEX.height
+  b.landmark = { along: SCIENCE_ANNEX.along }
+  b.door = [...at(...SCIENCE_ANNEX.door), cm(dz), cm(-dx)]
+  if (!shops) return
+  shops.points = shops.points.map((p) => {
+    const [a, v] = av(p)
+    return Math.abs(a - SCIENCE_ANNEX.south) < 1.5 ? at(SCIENCE_ANNEX.south, v) : p
+  })
+}
+
 function main(elements) {
   const buildings = []
   const roads = []
@@ -1774,6 +1855,7 @@ function main(elements) {
         if (el.type === 'way' && el.id === PETIT.bridge.way) b.skybridge = true
         if (el.type === 'way' && el.id === SPORTS_ARENA.well.way) b.well = true
         if (el.type === 'way' && el.id === NATURAL_SCIENCE.shops) b.shops = true
+        if (el.type === 'way' && el.id === SCIENCE_ANNEX.garage.way) b.garage = true
         // parking decks look different, open floors and no windows
         if (tags.building === 'parking' || tags.amenity === 'parking') b.deck = true
         buildings.push(b)
@@ -1898,7 +1980,14 @@ function main(elements) {
     delete shops.shops
     shops.height = NATURAL_SCIENCE.shopsHeight
   }
+  const garage = buildings.find((b) => b.garage)
+  if (garage) {
+    delete garage.garage
+    garage.height = SCIENCE_ANNEX.garage.height
+  }
   const annex = buildings.find((b) => b.name === 'Science Annex')
+  // before the natural science center, which cuts both back to its east wall
+  if (annex) scienceAnnex(annex, shops)
   if (nsc) naturalScience(nsc, [shops, annex].filter(Boolean))
   const rsc = buildings.find((b) => b.name === 'Research Science Center')
   if (rsc) researchScience(rsc)

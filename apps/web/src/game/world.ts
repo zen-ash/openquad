@@ -9,6 +9,7 @@ import { BED, memorialWall } from '../campus/fountain'
 import { practiceObstacles, type PracticeFacilityData } from '../campus/practiceFacility'
 import { recObstacles, type RecData } from '../campus/recCenter'
 import { rscObstacles, type RscData } from '../campus/researchScience'
+import { annexObstacles, type AnnexData } from '../campus/scienceAnnex'
 import { polygon, type Point, type Segment, type World } from './collision'
 import { footprint, furnish, isOver, LOW, type Item } from './furniture'
 import { enterable, interiors } from './interiors'
@@ -59,6 +60,8 @@ const wing = wingWalls(
 const rsc = rscObstacles(
   campus.buildings.find((b) => b.name === 'Research Science Center') as RscData,
 )
+// the science annex's planter on hurt plaza and the piers and fences of its colonnade
+const annex = annexObstacles(campus.buildings.find((b) => b.name === 'Science Annex') as AnnexData)
 
 export const world: World = {
   // buildings you can walk into are just their walls (with a doorway), the rest are solid.
@@ -79,6 +82,7 @@ export const world: World = {
     nsc.gate,
     ...viaduct,
     ...wing,
+    ...annex,
   ],
   circles: [
     ...campus.trees.map(([x, z]) => ({ x: x!, z: z!, radius: TREE_RADIUS })),

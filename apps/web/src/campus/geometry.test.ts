@@ -36,7 +36,7 @@ describe('buildingsGeometry', () => {
     expect(aderhold.style).toBe(BRICK)
     expect(aderhold.color).toBe('#dcc8a3')
     // strips of windows all along each floor
-    expect(facadeOf({ name: 'Science Annex', height: 18 }, 0).window[2]).toBe(1)
+    expect(facadeOf({ name: 'Centennial Hall', height: 13.5 }, 0).window[2]).toBe(1)
   })
 
   it('stores the facade info the shader needs on every vertex', () => {

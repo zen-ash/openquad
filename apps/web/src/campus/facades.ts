@@ -34,13 +34,6 @@ const LOOKS: Record<string, Look> = {
     frame: '#3a3d40',
     window: [2.3, 4.1, 0.64, 0.6],
   },
-  // white with strips of windows along every floor
-  'Science Annex': {
-    wall: 'concrete',
-    color: '#eeede8',
-    frame: '#7f858b',
-    window: [3, 3.6, 1, 0.38],
-  },
   // tan concrete with bands of glass
   'Centennial Hall': {
     wall: 'concrete',

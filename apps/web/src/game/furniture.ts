@@ -119,9 +119,13 @@ export function furnish(room: Interior): Item[] {
   const rand = () => seedOf(room.index * 1000 + n++)
   const library = room.name.includes('Library')
   // the arena, the practice gym and the rec center are courts inside, not study rooms, and
-  // the natural and research science centers are labs: just seats in a lobby by the door.
-  // the arena's glass lobby showed hundreds of tables from the street (and cost 2.5ms there)
-  const gym = /Arena|Practice Facility|Recreation|Natural Science|Research Science/.test(room.name)
+  // the natural and research science centers and the science annex are labs: just seats in
+  // a lobby by the door. the arena's glass lobby showed hundreds of tables from the street
+  // (and cost 2.5ms there)
+  const gym =
+    /Arena|Practice Facility|Recreation|Natural Science|Research Science|Science Annex/.test(
+      room.name,
+    )
 
   const as = room.points.map((p) => (p.x - x) * along.x + (p.z - z) * along.z)
   const bs = room.points.map((p) => (p.x - x) * into.x + (p.z - z) * into.z)
