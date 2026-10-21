@@ -1557,6 +1557,24 @@ function naturalScience(b, neighbours) {
   }
 }
 
+// collins st runs under the courtland st viaduct, 8m down. the game is flat, so it lay right on
+// top of courtland st and its asphalt covered the centre dashes (they flickered in and out).
+// only its end that turns off to the back drive behind the courtland building is kept
+const COLLINS = 840362906
+
+// cuts the start of a road off up to where its asphalt stops touching the others'
+function outFrom(road, over) {
+  const gap = (p) =>
+    Math.min(...over.map((o) => distToLine(p, o.points) - (o.width + road.width) / 2))
+  const d = road.points.map(gap)
+  const i = d.findIndex((x) => x >= 0)
+  if (i <= 0) return
+  const [a, b] = [road.points[i - 1], road.points[i]]
+  const t = -d[i - 1] / (d[i] - d[i - 1])
+  const start = [round(a[0] + (b[0] - a[0]) * t), round(a[1] + (b[1] - a[1]) * t)]
+  road.points = [start, ...road.points.slice(i)]
+}
+
 function main(elements) {
   const buildings = []
   const roads = []
@@ -1570,6 +1588,7 @@ function main(elements) {
   // crosswalks. not drawn as paths, but gps needs them to get across roads
   const crossings = []
   const plazas = []
+  let collins
   const trees = []
 
   for (const el of elements) {
@@ -1663,6 +1682,7 @@ function main(elements) {
       if (ROAD_WIDTH[tags.highway]) {
         const road = { width: ROAD_WIDTH[tags.highway] * SCALE, points }
         if (tags.name) road.name = tags.name
+        if (el.id === COLLINS) collins = road
         roads.push(road)
       } else if (PATH_WIDTH[tags.highway]) {
         paths.push({ width: PATH_WIDTH[tags.highway] * SCALE, points })
@@ -1753,6 +1773,11 @@ function main(elements) {
         round(fountain[0] + Math.cos((i / 40) * Math.PI * 2) * 11.5),
         round(fountain[1] + Math.sin((i / 40) * Math.PI * 2) * 11.5),
       ]),
+    )
+  if (collins)
+    outFrom(
+      collins,
+      roads.filter((r) => r.name === 'Courtland Street Southeast'),
     )
   const planted = plantParkTrees(parks, [...roads, ...paths])
   trees.push(
