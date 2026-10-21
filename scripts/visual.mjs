@@ -57,6 +57,18 @@ const VIEWS = [
   { name: 'rec-center', from: [47.4, 3, 243.1], at: [100.8, 9, 220.6], player: [45.3, 243.9] },
   { name: 'natural-science', from: [-270, 3, 90], at: [-263, 10, 71], player: [-272, 90] },
   {
+    name: 'courtland-north',
+    from: [-125.2, 3, 217.6],
+    at: [-127.8, 5, 248.6],
+    player: [-125.4, 214.8],
+  },
+  {
+    name: 'courtland-building',
+    from: [-156.3, 3, 252.8],
+    at: [-160.9, 5, 286.1],
+    player: [-156.4, 250],
+  },
+  {
     name: 'library-north-inside',
     from: [-93.8, 1.7, 142.9],
     at: [-75, 3, 125],
