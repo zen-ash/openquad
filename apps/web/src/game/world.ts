@@ -8,6 +8,7 @@ import { arenaObstacles, type ArenaData } from '../campus/sportsArena'
 import { BED, memorialWall } from '../campus/fountain'
 import { practiceObstacles, type PracticeFacilityData } from '../campus/practiceFacility'
 import { recObstacles, type RecData } from '../campus/recCenter'
+import { rscObstacles, type RscData } from '../campus/researchScience'
 import { polygon, type Point, type Segment, type World } from './collision'
 import { footprint, furnish, isOver, LOW, type Item } from './furniture'
 import { enterable, interiors } from './interiors'
@@ -54,6 +55,10 @@ const viaduct = courtlandObstacles(
 const wing = wingWalls(
   campus.buildings.find((b) => b.name === 'Courtland Building') as CourtlandBuildingData,
 )
+// the research science center's columns, the posts of its canopy and pergola
+const rsc = rscObstacles(
+  campus.buildings.find((b) => b.name === 'Research Science Center') as RscData,
+)
 
 export const world: World = {
   // buildings you can walk into are just their walls (with a doorway), the rest are solid.
@@ -94,6 +99,7 @@ export const world: World = {
     gym.pole,
     ...arena.circles,
     ...rec.circles,
+    ...rsc.circles,
   ],
   halfSize: campus.halfSize,
 }

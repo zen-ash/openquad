@@ -118,6 +118,8 @@ export const PENTHOUSE: [number, number][] = [
   [0, 42.2],
 ]
 export const STAIRS = { a: 6.5, top: 49.7 }
+// the bridge to the research science center: its underside and its roof (lidar)
+export const BRIDGE = { under: 20.5, top: 25.8 }
 export const COOLING = { a: [6.7, 22.2], w: [25.45, 36.95], top: 62.6 } as const
 
 // the slots in the brick, 1m of dark glass set back in it. on piedmont ave they go all the
@@ -602,7 +604,7 @@ export function petitScienceGeometry(b: PetitData) {
   // grey fascia over it (gsu's 2025 photo of it). the ends are against the two buildings
   const bridge = b.landmark!.bridge?.map(pt)
   if (bridge) {
-    const [under, top] = [20.5, 25.8]
+    const { under, top } = BRIDGE
     for (const { p, q, out } of edges(bridge)) {
       const mid = { x: (p.x + q.x) / 2, z: (p.z + q.z) / 2 }
       if (edges(outline).some((e) => onEdge(mid, e))) continue

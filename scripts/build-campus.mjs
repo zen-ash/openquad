@@ -156,9 +156,6 @@ const MEASURED_HEIGHTS = {
   '58 Edgewood': 16.5,
   // floors: 5
   'Science Annex': 18,
-  // usgs lidar (3dep 2018, read from the point cloud: overture only has microsoft's 16.4
-  // and osm 5 floors). the glass bridge from petit lands on it 21-26m up
-  'Research Science Center': 31.4,
 }
 
 function heightOf(tags) {
@@ -1672,6 +1669,59 @@ function courtlandBuilding(b) {
   b.door = [...at(...COURTLAND_BUILDING.door), cm(-ax), cm(-az)]
 }
 
+// the research science center (157 decatur st, 2016): labs for molecular and translational
+// medicine. a glass box on decatur st over a band of fins, a grey brick block by petit with the
+// sign, a charcoal brick tower on jesse hill jr dr and tan brick on columns toward the research
+// tower, a metal penthouse on top. drawn in campus/researchScience.ts. osm's outline is off (the
+// petit end 0.8m too far out, the jesse hill jr dr side 2m short, the entrance recess drawn
+// 5.9m deep where it's 2.7), so it's redrawn on usgs's lidar walls (2018, esri's 2026 image has
+// the same roof). the outline is the ground floor: the floors over it overhang decatur st and
+// the research tower side. the ground is petit's (306.5m), so petit's bridge lands where it
+// should
+const RESEARCH_SCIENCE = {
+  // u is along decatur st toward jesse hill jr dr (bearing 132.3), v in from decatur st toward
+  // the research tower, from an osm node on the decatur st face. meters from hurt park
+  origin: [60.7, 372.5],
+  along: [0.73923, 0.67346],
+  // [u, v] round the ground floor: the grey block's front, the recess with the doors, the
+  // ground floor under the glass (2.7m in, glass to 15m, tan brick on from there), the corner
+  // under the glass box on the corner, the charcoal tower on jesse hill jr dr, the ground floor
+  // behind the columns toward the research tower, the stair core and the grey block's back
+  outline: [
+    [-12.4, 0.4],
+    [-4.3, 0.4],
+    [-4.3, 2.7],
+    [15, 2.7],
+    [30.2, 2.7],
+    [30.2, 0.6],
+    [39.3, 0.6],
+    [39.3, 6],
+    [40, 6],
+    [40, 24],
+    [34.9, 24],
+    [34.9, 20.7],
+    [-2.5, 20.7],
+    [-2.5, 20.3],
+    [-12.4, 20.3],
+  ],
+  // the charcoal tower's parapet (lidar, over 306.5m)
+  height: 32.75,
+  // the double doors under "157" in the recess (gsu 2026), facing decatur st
+  door: [-2.7, 2.7],
+}
+
+function researchScience(b) {
+  const [ox, oz] = RESEARCH_SCIENCE.origin
+  const [ax, az] = RESEARCH_SCIENCE.along
+  // cm here, the web app draws the walls on these same lines
+  const cm = (x) => Math.round(x * 100) / 100
+  const at = (u, v) => [cm(ox + ax * u - az * v), cm(oz + az * u + ax * v)]
+  b.points = RESEARCH_SCIENCE.outline.map(([u, v]) => at(u, v))
+  b.height = RESEARCH_SCIENCE.height
+  b.landmark = { origin: RESEARCH_SCIENCE.origin, along: RESEARCH_SCIENCE.along }
+  b.door = [...at(...RESEARCH_SCIENCE.door), cm(az), cm(-ax)]
+}
+
 function main(elements) {
   const buildings = []
   const roads = []
@@ -1850,6 +1900,8 @@ function main(elements) {
   }
   const annex = buildings.find((b) => b.name === 'Science Annex')
   if (nsc) naturalScience(nsc, [shops, annex].filter(Boolean))
+  const rsc = buildings.find((b) => b.name === 'Research Science Center')
+  if (rsc) researchScience(rsc)
   paths.push({ width: PATH_WIDTH.footway * SCALE, points: URBAN_LIFE.unity })
   for (const b of NEW_BUILDINGS) buildings.push({ ...b, height: b.height * SCALE, gsu: true })
   const sce = buildings.find((b) => b.name === 'Student Center East')
