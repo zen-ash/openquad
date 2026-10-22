@@ -76,6 +76,10 @@ const VIEWS = [
     at: [68.62, 12, 390.53],
     player: [56.14, 350.77],
   },
+  // from across auditorium pl, the commons photos' spot: the tower, the step, the "135" door
+  { name: 'university-lofts', from: [129, 2.5, 52], at: [140, 25, 25], player: [128.6, 54.5] },
+  // piedmont ave at armstrong st: the deck's cable rails and storefront, the lofts' blank wall
+  { name: 'lofts-parking', from: [222, 1.5, 80], at: [160, 9, 25], player: [224.9, 82.6] },
   {
     name: 'library-north-inside',
     from: [-93.8, 1.7, 142.9],
