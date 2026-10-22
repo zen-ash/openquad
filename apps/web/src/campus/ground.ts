@@ -35,8 +35,12 @@ export const pavingMaterial = textured('sidewalk', '#c4c8d2', 0.9, 0)
 export const paversMaterial = textured('sidewalk', '#f4e6cc', 0.85, 1)
 
 export const roadMaterial = textured('asphalt', '#9a9a9a', 0.9, 3)
+// the crosswalks: strips of the same asphalt just over the road, so the texture carries on
+// across them, with the paint on top
+export const crosswalkMaterial = textured('asphalt', '#9a9a9a', 0.9, 3.5)
 // lane lines, from the aRoad attribute linesGeometry adds: dashed yellow down the middle
-// and solid white near the edges. skipped on narrow roads like alleys
+// and solid white near the edges. skipped on narrow roads like alleys. a crosswalk has its
+// width negative (Campus.tsx): white bars across it, along the road, like atlanta's
 {
   const road = attribute('aRoad', 'vec3')
   const width = road.z
@@ -44,9 +48,9 @@ export const roadMaterial = textured('asphalt', '#9a9a9a', 0.9, 3)
   const wide = width.greaterThan(8)
   const middle = wide.and(fromCenter.lessThan(0.1)).and(fract(road.x.div(6)).lessThan(0.5))
   const edge = wide.and(abs(fromCenter.sub(width.div(2).sub(0.6))).lessThan(0.08))
-  roadMaterial.colorNode = select(
-    edge,
-    vec3(0.82),
-    select(middle, vec3(0.85, 0.68, 0.18), materialColor.rgb),
-  )
+  const zebra = width.lessThan(0).and(fract(road.x.div(1.2)).lessThan(0.5))
+  const paint = select(edge.or(zebra), vec3(0.82), vec3(0.85, 0.68, 0.18))
+  const color = select(edge.or(middle).or(zebra), paint, materialColor.rgb)
+  roadMaterial.colorNode = color
+  crosswalkMaterial.colorNode = color
 }

@@ -2,6 +2,7 @@ import { useFrame } from '@react-three/fiber'
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Color,
+  type BufferAttribute,
   type BufferGeometry,
   type DirectionalLight,
   type HemisphereLight,
@@ -15,6 +16,7 @@ import { precast } from '../campus/materials'
 import { areasGeometry, linesGeometry, onDeck, planarUv, type LineData } from '../campus/geometry'
 import { night } from '../campus/facade'
 import {
+  crosswalkMaterial,
   grassMaterial,
   paversMaterial,
   pavingMaterial,
@@ -191,6 +193,22 @@ function lines(all: LineData[], lift: number) {
   decks.setIndex([...Array(decks.getAttribute('position').count).keys()])
   return mergeGeometries([planarUv(ground), decks])
 }
+// the crossings (osm footway=crossing), a meter short at each end so they stay on the road,
+// with their width negative: that's how the road shader knows to paint the bars (ground.ts)
+function crosswalks() {
+  const short = campus.crossings.flatMap(({ width, points }) => {
+    const [a, b] = [points[0]!, points[points.length - 1]!]
+    const len = Math.hypot(b[0]! - a[0]!, b[1]! - a[1]!)
+    if (len < 4) return []
+    const k = 1 / len
+    const at = (t: number) => [a[0]! + (b[0]! - a[0]!) * t, a[1]! + (b[1]! - a[1]!) * t]
+    return [{ width, points: [at(k), at(1 - k)] }]
+  })
+  const geo = planarUv(onGround(linesGeometry(short, 0), 0.0045))
+  const road = geo.getAttribute('aRoad') as BufferAttribute
+  for (let i = 0; i < road.count; i++) road.setZ(i, -Math.abs(road.getZ(i)))
+  return geo
+}
 const areas = (all: number[][][], lift: number) =>
   planarUv(onGround(areasGeometry(all, 0), lift, enterable))
 
@@ -233,6 +251,7 @@ function Ground() {
       // under the lawns, which sit on top of it
       pavers: areas(campus.quad.pavers, 0.0015),
       roads: lines(campus.roads, 0.004),
+      crosswalks: crosswalks(),
       paths: lines(campus.paths, 0.005),
     }),
     [],
@@ -270,6 +289,7 @@ function Ground() {
       <mesh geometry={geos.pavers} material={paversMaterial} receiveShadow />
       <mesh geometry={geos.parks} material={grassMaterial} receiveShadow />
       <mesh geometry={geos.roads} material={roadMaterial} receiveShadow />
+      <mesh geometry={geos.crosswalks} material={crosswalkMaterial} receiveShadow />
       <mesh geometry={geos.plazas} material={sidewalkMaterial} receiveShadow />
       <mesh geometry={geos.paths} material={sidewalkMaterial} receiveShadow />
     </>
