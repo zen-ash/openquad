@@ -4,6 +4,7 @@ import {
   AtmosphereLight,
   AtmosphereLightNode,
   AtmosphereParameters,
+  getSplitIlluminance,
   sky,
   skyEnvironment,
   StarsNode,
@@ -19,6 +20,7 @@ import {
   max,
   mix,
   positionGeometry,
+  smoothstep,
   uniform,
   vec3,
   vec4,
@@ -108,6 +110,37 @@ const MOONLIGHT = new Color(0.75, 0.87, 1.15)
 
 // reflections and the soft light from the whole sky, redrawn when the camera moves far
 const environment = skyEnvironment()
+// there's no ground in the model here (showGround above), so under the horizon the sky just
+// carried on as more bright haze, and anything in the shade got lit blue from underneath. real
+// shade gets the light bounced off the street and off the sunlit walls across it: warm, and
+// about a third of what the sun and the sky put on the ground
+// how much of that comes back, per color (linear): warm grey, like concrete and pavement
+const BOUNCE = vec3(0.32, 0.29, 0.25)
+const look = cameraProjectionMatrixInverse.mul(vec4(positionGeometry.xy, 1, 1)).xyz
+const down = cameraWorldMatrix.mul(vec4(look, 0)).xyz.normalize().y.negate()
+const onGround = getSplitIlluminance(
+  atmosphere.cameraPositionUnit.add(atmosphere.altitudeCorrectionUnit),
+  atmosphere.cameraPositionUnit.normalize(),
+  atmosphere.sunDirectionECEF,
+)
+const bounced = onGround
+  .get('direct')
+  .add(onGround.get('indirect'))
+  .mul(BOUNCE)
+  .mul(1 / Math.PI)
+// made once: takram sets the environment up again now and then, a new node every time
+// rebuilt its shader and drew its cube again (2.4s more to get through the warm-up)
+const grounded = mix(
+  vec3(environment.skyNode as unknown as Node<'vec3'>),
+  bounced,
+  smoothstep(0, 0.15, down),
+)
+const setupEnvironment = environment.setup.bind(environment)
+environment.setup = (builder) => {
+  const out = setupEnvironment(builder)
+  ;(environment as unknown as { material: NodeMaterial }).material.fragmentNode = grounded
+  return out
+}
 
 // the sun, through the atmosphere: redder and dimmer when it's low
 export const sunlight = new AtmosphereLight(150)
