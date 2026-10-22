@@ -1,6 +1,7 @@
 import { FENCE } from '@quad/shared'
 import campus from '../campus/campus.json'
 import { coeObstacles, type CollegeOfEducationData } from '../campus/collegeOfEducation'
+import { parkingObstacles, type ParkingData } from '../campus/loftsParking'
 import { wingWalls, type CourtlandBuildingData } from '../campus/courtlandBuilding'
 import { courtlandObstacles, type CourtlandNorthData } from '../campus/courtlandNorth'
 import { nscObstacles, type NscData } from '../campus/naturalScience'
@@ -10,6 +11,7 @@ import { practiceObstacles, type PracticeFacilityData } from '../campus/practice
 import { recObstacles, type RecData } from '../campus/recCenter'
 import { rscObstacles, type RscData } from '../campus/researchScience'
 import { annexObstacles, type AnnexData } from '../campus/scienceAnnex'
+import { loftsObstacles, type LoftsData } from '../campus/universityLofts'
 import { polygon, type Point, type Segment, type World } from './collision'
 import { footprint, furnish, isOver, LOW, type Item } from './furniture'
 import { enterable, interiors } from './interiors'
@@ -65,6 +67,14 @@ const rsc = rscObstacles(
 )
 // the science annex's planter on hurt plaza and the piers and fences of its colonnade
 const annex = annexObstacles(campus.buildings.find((b) => b.name === 'Science Annex') as AnnexData)
+// the lofts' base on edgewood ave and the entrance's columns, the gate across the dock's drive
+// and the deck's columns and towers
+const lofts = loftsObstacles(
+  campus.buildings.find((b) => b.name === 'University Lofts') as LoftsData,
+)
+const deck = parkingObstacles(
+  campus.buildings.find((b) => b.name === 'University Lofts Parking') as ParkingData,
+)
 
 export const world: World = {
   // buildings you can walk into are just their walls (with a doorway), the rest are solid.
@@ -86,6 +96,8 @@ export const world: World = {
     ...viaduct,
     ...wing,
     ...annex,
+    ...lofts.walls,
+    ...deck.walls,
   ],
   circles: [
     ...campus.trees.map(([x, z]) => ({ x: x!, z: z!, radius: TREE_RADIUS })),
@@ -107,6 +119,8 @@ export const world: World = {
     ...arena.circles,
     ...rec.circles,
     ...rsc.circles,
+    ...lofts.circles,
+    ...deck.circles,
     // the traffic lights' poles
     ...signalPoles().map((p) => ({ x: p.x, z: p.z, radius: 0.2 })),
   ],

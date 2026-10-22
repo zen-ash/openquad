@@ -8,6 +8,7 @@ import { dahlbergGeometry, type DahlbergData } from './dahlberg'
 import { langdaleHallGeometry, type LangdaleData } from './langdaleHall'
 import { libraryNorthGeometry, type LibraryNorthData } from './libraryNorth'
 import { librarySouthGeometry, type LibrarySouthData } from './librarySouth'
+import { loftsParkingGeometry, type ParkingData } from './loftsParking'
 import { naturalScienceGeometry, type NscData } from './naturalScience'
 import { oneParkGeometry, type OneParkData } from './onePark'
 import { petitScienceGeometry, type PetitData } from './petitScience'
@@ -20,6 +21,7 @@ import { sportsArenaGeometry, type ArenaData } from './sportsArena'
 import { studentCenterEastGeometry, type StudentCenterData } from './studentCenterEast'
 import { studentCenterWestGeometry, type StudentCenterWestData } from './studentCenterWest'
 import { universityBookstoreGeometry, type UniversityBookstoreData } from './universityBookstore'
+import { universityLoftsGeometry, type LoftsData } from './universityLofts'
 import { urbanLifeGeometry, type UrbanLifeData } from './urbanLife'
 
 // buildings drawn by hand from photos instead of the regular buildings mesh, by name
@@ -83,7 +85,9 @@ type Data = LibraryNorthData &
   CourtlandBuildingData &
   RscData &
   AnnexData &
-  OneParkData
+  OneParkData &
+  LoftsData &
+  ParkingData
 const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Library North': libraryNorthGeometry,
   'Dahlberg Hall': dahlbergGeometry,
@@ -107,6 +111,8 @@ const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Research Science Center': researchScienceGeometry,
   'Science Annex': scienceAnnexGeometry,
   'One Park Place': oneParkGeometry,
+  'University Lofts': universityLoftsGeometry,
+  'University Lofts Parking': loftsParkingGeometry,
 }
 
 // the scene and the interiors both need it, only build it once

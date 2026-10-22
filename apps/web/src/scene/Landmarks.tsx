@@ -15,6 +15,7 @@ import { landmarkGeometry, type Sign } from '../campus/landmarks'
 import { libraryNorthMaterials } from '../campus/libraryNorthMaterials'
 import { precast } from '../campus/materials'
 import { librarySouthMaterials } from '../campus/librarySouthMaterials'
+import { loftsParkingMaterials } from '../campus/loftsParkingMaterials'
 import { naturalScienceMaterials } from '../campus/naturalScienceMaterials'
 import { oneParkMaterials } from '../campus/oneParkMaterials'
 import { petitScienceMaterials } from '../campus/petitScienceMaterials'
@@ -27,6 +28,7 @@ import { sportsArenaMaterials } from '../campus/sportsArenaMaterials'
 import { studentCenterEastMaterials } from '../campus/studentCenterEastMaterials'
 import { studentCenterWestMaterials } from '../campus/studentCenterWestMaterials'
 import { universityBookstoreMaterials } from '../campus/universityBookstoreMaterials'
+import { universityLoftsMaterials } from '../campus/universityLoftsMaterials'
 import { urbanLifeMaterials } from '../campus/urbanLifeMaterials'
 import { floorOf, lowestUnder } from '../game/surface'
 import Label from './Label'
@@ -54,6 +56,8 @@ const materials: Record<string, Record<string, THREE.Material>> = {
   'Research Science Center': researchScienceMaterials,
   'Science Annex': scienceAnnexMaterials,
   'One Park Place': oneParkMaterials,
+  'University Lofts': universityLoftsMaterials,
+  'University Lofts Parking': loftsParkingMaterials,
 }
 
 // white sign with the name in gsu blue. the real ones have the logo where the blue

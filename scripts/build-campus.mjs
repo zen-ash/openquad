@@ -134,7 +134,6 @@ const MEASURED_HEIGHTS = {
   'M Deck': 25.7,
   'Patton Hall': 16.5,
   'Piedmont North Dining Hall': 18.2,
-  'Loft Parking': 12.3,
   // osm says 4 floors, but they're tall ones
   'Helen M. Aderhold Learning Center': 21.9,
   // floors: 4 tall old warehouse floors
@@ -1986,6 +1985,127 @@ function onePark(b, olympia, lines) {
   })
 }
 
+// the university lofts (135 edgewood ave, 2002): gsu's loft apartments, metal shingles round
+// a courtyard, stepping up from 6 floors on edgewood ave and auditorium pl to a 14 floor
+// tower and arm, with a 2 storey wing curving into the courtyard. drawn in
+// campus/universityLofts.ts. osm's outline is a box round all of it: its edgewood ave side
+// is the canopy (the wall is 2.3m further in), its east side 4m out over the drive. redrawn
+// on usgs's lidar walls (2018, esri's 2026 image has the same roofs), with the courtyard cut
+// out through a 10cm slot in the low wing (outlines can't have holes): no floor or ceiling
+// of the inside across it, and its walls stop you like the outside ones. the ground is the
+// edgewood ave sidewalk at the doors (304.3m)
+const UNIVERSITY_LOFTS = {
+  // the front on edgewood ave, its west and east corners. "n" is along it, v in from it
+  front: [
+    [132.38, -19.61],
+    [183.25, -18.73],
+  ],
+  // the south west half is on auditorium pl's grid: a along it toward piedmont ave, b in
+  // from it. meters from hurt park
+  origin: [115.1, 21.96],
+  along: [0.7615, 0.6481],
+  // round the ground floor: edgewood ave with the entrance's recess, the east side on the
+  // drive, the chamfer and the east wing over the deck, round the deck's elevator tower,
+  // the long wall shared with the deck, auditorium pl, the slot into the courtyard, round
+  // the courtyard (the low wing's curve, the tower, the arm, the north bar) and out again
+  outline: [
+    ['n', 0, 0],
+    ['n', 27.1, 0],
+    ['n', 27.1, 1.5],
+    ['n', 32.1, 1.5],
+    ['n', 32.1, 0],
+    ['n', 50.88, 0],
+    [182.76, 9.3],
+    [181.5, 11.7],
+    [174.6, 11.58],
+    [174.6, 8.6],
+    [168.8, 8.6],
+    ['s', 34.3, 42.55],
+    ['s', 34.3, 0],
+    ['s', -1.4, 0],
+    ['s', -1.4, 21.95],
+    ['s', 7.4, 21.95],
+    [133.5, 11.5],
+    ['s', 7.24, 17],
+    ['s', 13.9, 17],
+    ['s', 13.9, 17.5],
+    ['s', 23.2, 17.5],
+    'corner',
+    ['n', 18.9, 17.5],
+    ['n', 18.9, 17.3],
+    ['n', 10.9, 17.3],
+    [142.3, -1],
+    [141.4, 2],
+    [140.5, 4.5],
+    [139.5, 6.5],
+    [137.5, 8],
+    [135.5, 9.5],
+    ['s', 7.41, 22.05],
+    ['s', -1.4, 22.05],
+    ['s', -1.4, 27.8],
+  ],
+  // the tower's cornice
+  height: 44.93,
+  // the glass doors at the back of the entrance under "UNIVERSITY LOFTS" (gsu 2026)
+  door: [29.6, 1.5],
+}
+
+// the lofts' parking deck (34 piedmont ave), on the same grid: two open levels and the roof
+// behind cable rails, a glass stair at the auditorium pl / piedmont ave corner. drawn in
+// campus/loftsParking.ts. osm is 1-3m off, redrawn on the lidar. its north west side is the
+// lofts' wall, it wraps round the lofts' east wing and the elevator tower in the notch. the
+// lofts' loading dock is a drive between them behind a gate on auditorium pl (gsu 2024),
+// left out: it's outdoors, the upper levels go over it
+const LOFTS_PARKING = {
+  outline: [
+    ['s', 38.3, -0.8],
+    ['s', 88.7, -0.8],
+    ['s', 88.7, 56.3],
+    [190, 11.8],
+    [183.3, 11.8],
+    [182.76, 9.3],
+    [181.5, 11.7],
+    [174.6, 11.58],
+    [174.6, 8.6],
+    [168.8, 8.6],
+    ['s', 34.3, 42.55],
+    ['s', 34.3, 10],
+    ['s', 38.3, 10],
+  ],
+  // the cable rail on the roof (its deck is 9.4m up, the stair and elevator towers higher)
+  height: 10.5,
+  // the stair's glass lobby on piedmont ave
+  door: [88.7, 3.3],
+}
+
+function universityLofts(b, deck) {
+  const L = UNIVERSITY_LOFTS
+  // cm here, the web app draws the walls on these same lines
+  const cm = (x) => Math.round(x * 100) / 100
+  const [p, q] = L.front
+  const len = Math.hypot(q[0] - p[0], q[1] - p[1])
+  const [nx, nz] = [(q[0] - p[0]) / len, (q[1] - p[1]) / len]
+  const N = (a, v) => [p[0] + nx * a - nz * v, p[1] + nz * a + nx * v]
+  const [ux, uz] = L.along
+  const S = (a, b) => [L.origin[0] + ux * a + uz * b, L.origin[1] + uz * a - ux * b]
+  const point = (e) => (e[0] === 'n' ? N(e[1], e[2]) : e[0] === 's' ? S(e[1], e[2]) : e)
+  // where the arm's courtyard wall (a = 23.2) meets the north bar's (v = 17.5)
+  const [a0, a1] = [S(23.2, 17.5), S(23.2, 60)]
+  const side = ([x, z]) => -nz * (x - p[0]) + nx * (z - p[1]) - 17.5
+  const t = side(a0) / (side(a0) - side(a1))
+  const corner = [a0[0] + (a1[0] - a0[0]) * t, a0[1] + (a1[1] - a0[1]) * t]
+  b.points = L.outline.map((e) => (e === 'corner' ? corner : point(e)).map(cm))
+  b.height = L.height
+  b.landmark = { front: L.front, origin: L.origin, along: L.along }
+  b.door = [...N(...L.door).map(cm), cm(nz), cm(-nx)]
+  if (!deck) return
+  const D = LOFTS_PARKING
+  deck.points = D.outline.map((e) => point(e).map(cm))
+  deck.height = D.height
+  deck.landmark = { origin: L.origin, along: L.along }
+  deck.door = [...S(...D.door).map(cm), cm(ux), cm(uz)]
+}
+
 function main(elements) {
   const buildings = []
   const roads = []
@@ -2200,6 +2320,9 @@ function main(elements) {
   if (olympia) delete olympia.olympia
   const opp = buildings.find((b) => b.name === 'One Park Place')
   if (opp) onePark(opp, olympia, [...paths, ...crossings])
+  const lofts = buildings.find((b) => b.name === 'University Lofts')
+  const loftsDeck = buildings.find((b) => b.name === 'University Lofts Parking')
+  if (lofts) universityLofts(lofts, loftsDeck)
   paths.push({ width: PATH_WIDTH.footway * SCALE, points: URBAN_LIFE.unity })
   for (const b of NEW_BUILDINGS) buildings.push({ ...b, height: b.height * SCALE, gsu: true })
   const sce = buildings.find((b) => b.name === 'Student Center East')

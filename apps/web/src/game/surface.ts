@@ -42,6 +42,9 @@ const DATUMS: Record<string, number> = {
   'Practice Facility': 306.5,
   // the police door's sidewalk (lidar), the terrain there is 0.25m low
   'One Park Place': 318.4,
+  // the lofts and their deck share a wall, both on the edgewood ave sidewalk at the lofts' doors
+  'University Lofts': 304.3,
+  'University Lofts Parking': 304.3,
 }
 
 type Building = { name?: string; points: number[][]; door?: number[] }
