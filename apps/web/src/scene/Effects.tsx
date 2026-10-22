@@ -22,8 +22,11 @@ import {
   context,
   distance,
   float,
+  Fn,
   int,
   luminance,
+  max,
+  min,
   mix,
   mrt,
   normalView,
@@ -33,6 +36,7 @@ import {
   renderOutput,
   rtt,
   screenUV,
+  select,
   smoothstep,
   textureSize,
   toneMapping,
@@ -106,6 +110,22 @@ function buildOnce<T>(node: T): T {
   }
   return node
 }
+
+// khronos' pbr neutral with its shoulder from 0.55 instead of 0.76: in sun, pale stone and
+// white precast came out flat white (250) wherever exposure put them, photos keep them at
+// about 235 with their texture. below 0.55 (shade, grass, brick) it's the same curve
+const SHOULDER = 0.55
+const softNeutral = Fn(([c]: [Node<'vec3'>]) => {
+  const low = min(c.r, min(c.g, c.b))
+  const x = c.sub(select(low.lessThan(0.08), low.sub(low.mul(low).mul(6.25)), float(0.04)))
+  const peak = max(x.r, max(x.g, x.b))
+  const d = 1 - SHOULDER
+  const top = float(1).sub(float(d * d).div(peak.add(d - SHOULDER)))
+  // the brightest also lose a bit of color on the way to white, like the original
+  const pale = float(1).sub(float(1).div(peak.sub(top).mul(0.15).add(1)))
+  const shoulder = mix(x.mul(top.div(peak)), vec3(top), pale)
+  return select(peak.lessThan(SHOULDER), x, shoulder)
+})
 
 // mounted for the whole visit when it starts on high quality with webgpu (see App). on low
 // it draws straight to the screen instead, the effects stay built for when it's back
@@ -252,7 +272,10 @@ export default function Effects() {
     // took the green out of the grass, neutral keeps colors and still rolls off the sun.
     // here and not in renderOutput, that would add the renderer's exposure (the one for low
     // quality) on top of ours
-    const mapped = toneMapping(TONE_MAPPINGS[mapping], float(1), vec4(color, 1))
+    const mapped =
+      mapping === 'neutral'
+        ? vec4(softNeutral(color), 1)
+        : toneMapping(TONE_MAPPINGS[mapping], float(1), vec4(color, 1))
     const pipeline = new RenderPipeline(
       gl,
       renderOutput(mapped as unknown as Node<'vec4'>, NoToneMapping, SRGBColorSpace),
