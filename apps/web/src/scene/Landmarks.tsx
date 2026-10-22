@@ -16,6 +16,7 @@ import { libraryNorthMaterials } from '../campus/libraryNorthMaterials'
 import { precast } from '../campus/materials'
 import { librarySouthMaterials } from '../campus/librarySouthMaterials'
 import { naturalScienceMaterials } from '../campus/naturalScienceMaterials'
+import { oneParkMaterials } from '../campus/oneParkMaterials'
 import { petitScienceMaterials } from '../campus/petitScienceMaterials'
 import { practiceFacilityMaterials } from '../campus/practiceFacilityMaterials'
 import { recCenterMaterials } from '../campus/recCenterMaterials'
@@ -52,6 +53,7 @@ const materials: Record<string, Record<string, THREE.Material>> = {
   'Courtland Building': courtlandBuildingMaterials,
   'Research Science Center': researchScienceMaterials,
   'Science Annex': scienceAnnexMaterials,
+  'One Park Place': oneParkMaterials,
 }
 
 // white sign with the name in gsu blue. the real ones have the logo where the blue

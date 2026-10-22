@@ -40,6 +40,8 @@ const DATUMS: Record<string, number> = {
   'Petit Science Center': 306.5,
   'Research Science Center': 306.5,
   'Practice Facility': 306.5,
+  // the police door's sidewalk (lidar), the terrain there is 0.25m low
+  'One Park Place': 318.4,
 }
 
 type Building = { name?: string; points: number[][]; door?: number[] }

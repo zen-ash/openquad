@@ -132,7 +132,6 @@ const MEASURED_HEIGHTS = {
   'Greek Housing': 9.6,
   'J Deck': 13.9,
   'M Deck': 25.7,
-  'One Park Place': 21.2,
   'Patton Hall': 16.5,
   'Piedmont North Dining Hall': 18.2,
   'Loft Parking': 12.3,
@@ -1886,6 +1885,107 @@ function scienceAnnex(b, shops) {
   })
 }
 
+// one park place (1 park place / 18 decatur st): a 60s white marble office block on the five
+// points wedge, gsu police headquarters on edgewood ave. nine floors of window strips in the
+// marble over a ground floor of glass set back under it (edgewood ave and the north end of
+// park place, round a curved corner) and granite (the rest of park place and decatur st).
+// drawn in campus/onePark.ts. osm's outline is off on all four sides (park place 1.5m, decatur
+// st 2m too far in, the wall against the olympia building 0.4-1.1m too far out), so it's
+// redrawn on usgs's lidar parapet lines (2018, esri's 2026 image has the same roof). the
+// outline is the ground floor, the marble floors overhang it on the two glass sides
+const ONE_PARK_PLACE = {
+  // the marble floors' corners (lidar): edgewood ave at park place (a sharp 56 degrees),
+  // park place at decatur st, decatur st and edgewood ave at the olympia building
+  upper: [
+    [-305.53, -25.25],
+    [-336.67, 21.85],
+    [-359.1, 7.03],
+    [-337.76, -25.25],
+  ],
+  // how far the glass is back under the marble and the radius of the curved glass on the
+  // corner (both by eye from the 2019 and 2022 photos, the lidar sees at least 1m under it)
+  setback: 2,
+  radius: 2,
+  // meters along park place from edgewood ave: where the glass ends and the granite starts,
+  // and the side door at the back of a recess [from, to, depth]
+  storefront: 35,
+  portal: [40, 42.7, 2.5],
+  // the box on the penthouse, over the edgewood ave sidewalk at the police door (318.4m)
+  height: 41.5,
+  // the police headquarters' glass door, meters along edgewood ave from park place
+  door: 27,
+  // the two storey olympia building on the five points corner shares the west wall: its
+  // side moves onto that wall. osm's two floors made it 7m, the lidar has its roof and
+  // cornice at 328.9-329.3m, 10.4m over the middle of the ground under it
+  olympia: { way: 385744387, height: 10.4 },
+  // osm's sidewalks along park place and decatur st meet at a node that's under the real
+  // walls (they ran along osm's wall lines), so the whole of both got cut out as being
+  // inside the building. the node goes out to the corner of the sidewalk
+  sidewalk: [
+    [-336.6, 21.5],
+    [-335.5, 24.06],
+  ],
+}
+
+function onePark(b, olympia, lines) {
+  const { upper, setback, radius, storefront, portal } = ONE_PARK_PLACE
+  const [ne, se, sw, nw] = upper
+  const cm = (x) => Math.round(x * 100) / 100
+  // a side of the marble floors from p to q, `out` pointing away from the building
+  const side = (p, q) => {
+    const len = Math.hypot(q[0] - p[0], q[1] - p[1])
+    const dir = [(q[0] - p[0]) / len, (q[1] - p[1]) / len]
+    const out = [dir[1], -dir[0]]
+    return { p, dir, at: (a, d) => [0, 1].map((k) => p[k] + dir[k] * a + out[k] * d), out }
+  }
+  // where a line through p along dir crosses one through q along e
+  const meet = (p, dir, q, e) => {
+    const t = ((q[0] - p[0]) * e[1] - (q[1] - p[1]) * e[0]) / (dir[0] * e[1] - dir[1] * e[0])
+    return [p[0] + dir[0] * t, p[1] + dir[1] * t]
+  }
+  const park = side(ne, se)
+  const west = side(sw, nw)
+  const edgewood = side(nw, ne)
+  // the curved glass: round a center that's setback + radius in from both streets
+  const r = setback + radius
+  const c = meet(edgewood.at(0, -r), edgewood.dir, park.at(0, -r), park.dir)
+  const from = Math.atan2(edgewood.out[1], edgewood.out[0])
+  const to = Math.atan2(park.out[1], park.out[0])
+  const curve = []
+  for (let i = 0; i <= 6; i++) {
+    const t = from + ((to - from) * i) / 6
+    curve.push([c[0] + Math.cos(t) * radius, c[1] + Math.sin(t) * radius])
+  }
+  const [p0, p1, depth] = portal
+  b.points = [
+    ...curve,
+    park.at(storefront, -setback),
+    park.at(storefront, 0),
+    park.at(p0, 0),
+    park.at(p0, -depth),
+    park.at(p1, -depth),
+    park.at(p1, 0),
+    se,
+    sw,
+    meet(west.p, west.dir, edgewood.at(0, -setback), edgewood.dir),
+  ].map((p) => p.map(cm))
+  b.height = ONE_PARK_PLACE.height
+  b.landmark = { upper }
+  const len = Math.hypot(ne[0] - nw[0], ne[1] - nw[1])
+  const at = edgewood.at(len - ONE_PARK_PLACE.door, -setback)
+  b.door = [cm(at[0]), cm(at[1]), cm(edgewood.out[0]), cm(edgewood.out[1])]
+  const [osm, out] = ONE_PARK_PLACE.sidewalk
+  for (const line of lines)
+    line.points = line.points.map((p) => (p[0] === osm[0] && p[1] === osm[1] ? [...out] : p))
+  if (!olympia) return
+  olympia.height = ONE_PARK_PLACE.olympia.height
+  // its corners on the shared wall go onto one park place's, the rest stay osm's
+  olympia.points = olympia.points.map((p) => {
+    const near = (q) => Math.hypot(p[0] - q[0], p[1] - q[1]) < 3
+    return near(nw) ? nw : near(sw) ? sw : p
+  })
+}
+
 function main(elements) {
   const buildings = []
   const roads = []
@@ -1949,6 +2049,7 @@ function main(elements) {
         if (el.type === 'way' && el.id === SPORTS_ARENA.well.way) b.well = true
         if (el.type === 'way' && el.id === NATURAL_SCIENCE.shops) b.shops = true
         if (el.type === 'way' && el.id === SCIENCE_ANNEX.garage.way) b.garage = true
+        if (el.type === 'way' && el.id === ONE_PARK_PLACE.olympia.way) b.olympia = true
         // parking decks look different, open floors and no windows
         if (tags.building === 'parking' || tags.amenity === 'parking') b.deck = true
         buildings.push(b)
@@ -2095,6 +2196,10 @@ function main(elements) {
   if (nsc) naturalScience(nsc, [shops, annex].filter(Boolean))
   const rsc = buildings.find((b) => b.name === 'Research Science Center')
   if (rsc) researchScience(rsc)
+  const olympia = buildings.find((b) => b.olympia)
+  if (olympia) delete olympia.olympia
+  const opp = buildings.find((b) => b.name === 'One Park Place')
+  if (opp) onePark(opp, olympia, [...paths, ...crossings])
   paths.push({ width: PATH_WIDTH.footway * SCALE, points: URBAN_LIFE.unity })
   for (const b of NEW_BUILDINGS) buildings.push({ ...b, height: b.height * SCALE, gsu: true })
   const sce = buildings.find((b) => b.name === 'Student Center East')
