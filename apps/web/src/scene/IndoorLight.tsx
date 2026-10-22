@@ -1,7 +1,9 @@
 import { useFrame } from '@react-three/fiber'
 import { useRef } from 'react'
 import type { SpotLight } from 'three'
+import campus from '../campus/campus.json'
 import { localPlayer } from '../game/localPlayer'
+import { floorOf } from '../game/surface'
 import { CEILING } from '../game/interiors'
 
 // the sun doesn't get inside (the ceiling shades the floor), so indoors there's a light
@@ -15,8 +17,10 @@ export default function IndoorLight() {
     if (!l) return
     const target = localPlayer.inside >= 0 ? 6 : 0
     l.intensity += (target - l.intensity) * Math.min(1, dt * 4)
-    l.position.set(localPlayer.x, CEILING - 0.1, localPlayer.z)
-    l.target.position.set(localPlayer.x, 0, localPlayer.z)
+    // at the floor of the building you're in (surface.ts)
+    const floor = localPlayer.inside >= 0 ? floorOf(campus.buildings[localPlayer.inside]!) : 0
+    l.position.set(localPlayer.x, floor + CEILING - 0.1, localPlayer.z)
+    l.target.position.set(localPlayer.x, floor, localPlayer.z)
     l.target.updateMatrixWorld()
   })
 

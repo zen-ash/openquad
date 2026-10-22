@@ -1,8 +1,18 @@
 import { useFrame } from '@react-three/fiber'
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
-import { Color, PlaneGeometry, type DirectionalLight, type HemisphereLight } from 'three'
+import {
+  Color,
+  type BufferGeometry,
+  type DirectionalLight,
+  type HemisphereLight,
+} from 'three'
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import campus from '../campus/campus.json'
-import { areasGeometry, linesGeometry, planarUv } from '../campus/geometry'
+import { deckStructure } from '../campus/decks'
+import { drape, terrainGeometry } from '../campus/drape'
+import { COARSE, GRID, isNear } from '../game/terrain'
+import { precast } from '../campus/materials'
+import { areasGeometry, linesGeometry, onDeck, planarUv, type LineData } from '../campus/geometry'
 import { night } from '../campus/facade'
 import {
   grassMaterial,
@@ -155,21 +165,78 @@ function SkyLight({ intensity, environment }: { intensity: number; environment: 
   return <hemisphereLight ref={light} args={[SKY_LIGHT, GROUND_LIGHT]} intensity={intensity} />
 }
 
+// on the ground's shape, on the fine grid near campus and the coarse one past that
+// (game/terrain.ts isNear): half the ground's triangles
+function onGround(geo: BufferGeometry, lift: number, cut: { points: number[][] }[] = []) {
+  return mergeGeometries([
+    drape(geo, lift, GRID, isNear, cut),
+    drape(geo, lift, COARSE, (x, z) => !isNear(x, z), cut),
+  ])
+}
+// the buildings you can walk into: the ground stops at their walls, their own floor is inside
+const enterable = campus.buildings.filter((b) => b.door && !b.minHeight)
+
+// roads and paths on the ground, and bridges at their decks' height
+
+function lines(all: LineData[], lift: number) {
+  const ground = onGround(
+    linesGeometry(
+      all.filter((l) => !onDeck(l)),
+      0,
+    ),
+    lift,
+  )
+  const decks = linesGeometry(all.filter(onDeck), lift)
+  // indexed like the draped ones, or they can't be merged
+  decks.setIndex([...Array(decks.getAttribute('position').count).keys()])
+  return mergeGeometries([planarUv(ground), decks])
+}
+const areas = (all: number[][][], lift: number) =>
+  planarUv(onGround(areasGeometry(all, 0), lift, enterable))
+
+// the concrete under the bridges' decks (campus/decks.ts), once for the whole visit
+const deckConcrete = precast({
+  color: '#9b968d',
+  panel: [6, 1.2],
+  joint: 0.012,
+  tone: 0.04,
+  dirt: 0.6,
+})
+const deckGeometry = deckStructure([...campus.roads, ...campus.paths] as LineData[])
+function Decks() {
+  if (!deckGeometry) return null
+  return <mesh geometry={deckGeometry} material={deckConcrete} castShadow receiveShadow />
+}
+
+// the ground: the 4m grid near campus, the coarse one everywhere else. they meet on one of
+// the coarse grid's lines at the same heights
+function ground() {
+  const solid = campus.buildings.filter((b) => !b.minHeight)
+  return mergeGeometries([
+    terrainGeometry(campus.halfSize * 3, solid, { keep: isNear, ring: false, cut: enterable }),
+    terrainGeometry(campus.halfSize * 3, solid, {
+      grid: COARSE,
+      keep: (x, z) => !isNear(x, z),
+      cut: enterable,
+    }),
+  ])
+}
+
 function Ground() {
-  const geos = useMemo(() => {
-    const size = campus.halfSize * 6
-    return {
+  const geos = useMemo(
+    () => ({
       // goes well past the edge of the map so you don't see where it ends
-      ground: planarUv(new PlaneGeometry(size, size).rotateX(-Math.PI / 2)),
-      lots: areasGeometry(campus.lots, 0.0012),
-      parks: areasGeometry([...campus.parks, ...campus.lawns], 0.002),
-      plazas: areasGeometry(campus.plazas, 0.003),
+      ground: planarUv(ground()),
+      lots: areas(campus.lots, 0.0012),
+      parks: areas([...campus.parks, ...campus.lawns], 0.002),
+      plazas: areas(campus.plazas, 0.003),
       // under the lawns, which sit on top of it
-      pavers: areasGeometry(campus.quad.pavers, 0.0015),
-      roads: linesGeometry(campus.roads, 0.004),
-      paths: linesGeometry(campus.paths, 0.005),
-    }
-  }, [])
+      pavers: areas(campus.quad.pavers, 0.0015),
+      roads: lines(campus.roads, 0.004),
+      paths: lines(campus.paths, 0.005),
+    }),
+    [],
+  )
 
   if (game)
     return (
@@ -274,6 +341,7 @@ export default function Campus() {
         environment={high ? 1 : environment}
       />
       <Ground />
+      <Decks />
       <Buildings />
       <Landmarks />
       <Interiors />

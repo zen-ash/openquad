@@ -8,6 +8,7 @@ import { foliage } from '../campus/game'
 import { sway } from '../campus/toon'
 import { closestOnSegment, pointInPolygon, type Point } from '../game/collision'
 import { still } from '../settings'
+import { heightAt } from '../game/terrain'
 
 // the game look's trees: a trunk and a round, puffy crown like a toy tree, plus bushes
 // and little patches of flowers in the parks. the trees stand where the real ones do
@@ -88,7 +89,11 @@ function Instances({
     const up = new THREE.Vector3(0, 1, 0)
     spots.forEach((t, i) => {
       q.setFromAxisAngle(up, t.turn)
-      m.compose(new THREE.Vector3(t.x, 0, t.z), q, new THREE.Vector3(t.s, t.s, t.s))
+      m.compose(
+        new THREE.Vector3(t.x, heightAt(t.x, t.z), t.z),
+        q,
+        new THREE.Vector3(t.s, t.s, t.s),
+      )
       mesh.setMatrixAt(i, m)
       mesh.setColorAt(i, t.color)
     })

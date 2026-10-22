@@ -6,6 +6,7 @@ import { furnish, SCALE, SHELF_LEVELS, type Item, type Kind } from '../game/furn
 import { interiorNear, interiors } from '../game/interiors'
 import { localPlayer } from '../game/localPlayer'
 import { useSettings } from '../settings'
+import { floorAt } from '../game/surface'
 
 const KINDS: Kind[] = ['table', 'chair', 'armchair', 'coffee_table', 'shelf', 'plant']
 const UP = new THREE.Vector3(0, 1, 0)
@@ -42,7 +43,8 @@ function Piece({ mesh, kind, items, shadows }: Pieces & { mesh: THREE.Mesh }) {
     const scale = new THREE.Vector3(...SCALE[kind])
     items.forEach((item, i) => {
       q.setFromAxisAngle(UP, item.rot)
-      m.compose(new THREE.Vector3(item.x, FLOOR, item.z), q, scale).multiply(mesh.matrixWorld)
+      const at = new THREE.Vector3(item.x, floorAt(item.x, item.z) + FLOOR, item.z)
+      m.compose(at, q, scale).multiply(mesh.matrixWorld)
       inst.setMatrixAt(i, m)
     })
     inst.instanceMatrix.needsUpdate = true
@@ -82,12 +84,14 @@ function Books({ shelves }: { shelves: Item[] }) {
     const at = new THREE.Vector3()
     let i = 0
     for (const s of shelves) {
-      shelf.compose(new THREE.Vector3(s.x, FLOOR, s.z), q.setFromAxisAngle(UP, s.rot), one)
+      const floor = floorAt(s.x, s.z)
+      shelf.compose(at.set(s.x, floor + FLOOR, s.z), q.setFromAxisAngle(UP, s.rot), one)
       for (const [y, room] of SHELF_LEVELS) {
         row.makeScale(1, room - 0.02, 1).setPosition(0, y, 0)
         const m = shelf.clone().multiply(row)
         at.setFromMatrixPosition(m)
-        seeds!.setX(i, at.x * 12.9898 + at.y * 78.233 + at.z * 37.719)
+        // from the height above the floor, so the books are the same as on flat ground
+        seeds!.setX(i, at.x * 12.9898 + (at.y - floor) * 78.233 + at.z * 37.719)
         inst.setMatrixAt(i++, m)
       }
     }

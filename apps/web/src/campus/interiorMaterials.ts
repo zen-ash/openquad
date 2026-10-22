@@ -72,7 +72,8 @@ const between = (x: Node<'float'>, a: Node<'float'> | number, b: Node<'float'> |
 function windowHole() {
   const style = attribute('aStyle', 'float')
   const grid = attribute('aWindow', 'vec4')
-  const p = positionWorld
+  // up from the building's floor, like the outside (facade.ts)
+  const p = positionWorld.sub(vec3(0, attribute('aBase', 'float'), 0))
   // same "along the wall" coordinate the outside uses, from the outward normal
   const outward = normalize(normalGeometry.xz).negate()
   const u = p.xz.dot(vec2(outward.y, outward.x.negate()))

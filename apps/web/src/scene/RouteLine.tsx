@@ -17,6 +17,9 @@ import { MeshBasicNodeMaterial } from 'three/webgpu'
 import { linesGeometry } from '../campus/geometry'
 import { useNav } from '../game/nav'
 import { still } from '../settings'
+import { localPlayer } from '../game/localPlayer'
+import { alongGround } from '../game/surface'
+import { ORIGIN } from '../game/terrain'
 
 const time = uniform(0)
 
@@ -46,7 +49,16 @@ export default function RouteLine() {
   const geometry = useMemo(
     () =>
       path.length > 1
-        ? linesGeometry([{ width: 1.1, points: path.map((p) => [p.x, p.z]) }], 0.09)
+        ? linesGeometry(
+            [
+              {
+                width: 1.1,
+                // on the ground's shape (and decks), heights as sea level meters like a bridge's
+                points: alongGround(path, 2, localPlayer.y).map(([x, z, y]) => [x, z, y + ORIGIN]),
+              },
+            ],
+            0.09,
+          )
         : null,
     [path],
   )

@@ -67,6 +67,8 @@ export function facadeMaterial() {
 
   const style = attribute('aStyle', 'float')
   const height = attribute('aHeight', 'float')
+  // the building's floor: windows and doors count up from there, not from y = 0
+  const base = attribute('aBase', 'float')
   const seed = attribute('aSeed', 'float')
   const door = attribute('aDoor', 'vec4')
   const grid = attribute('aWindow', 'vec4')
@@ -81,7 +83,7 @@ export function facadeMaterial() {
   const doorway = dot(door.zw, door.zw)
     .greaterThan(0.5)
     .and(dot(wn.xz, door.zw).greaterThan(0.9))
-    .and(p.y.lessThan(DOOR_HEIGHT))
+    .and(p.y.sub(base).lessThan(DOOR_HEIGHT))
     .and(abs(dot(off, door.zw)).lessThan(0.3))
     .and(abs(dot(off, vec2(door.w, door.z.negate()))).lessThan(DOOR_WIDTH / 2))
   material.maskNode = outsideCutout().and(doorway.not())
@@ -92,7 +94,7 @@ export function facadeMaterial() {
   // along the wall (left to right when you face it) and up
   const along = vec2(wn.z, wn.x.negate())
   const u = dot(p.xz, along)
-  const v = p.y
+  const v = p.y.sub(base)
   const wallUv = vec2(u, v).div(4)
 
   // flat roofs are anything from white membrane to dark gravel

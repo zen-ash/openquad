@@ -4,6 +4,7 @@ import * as THREE from 'three'
 import campus from '../campus/campus.json'
 import { bedPlantsGeometry, fountainGeometry, inscription, type Part } from '../campus/fountain'
 import { concrete, marble, metal, plain, precast } from '../campus/materials'
+import { heightAt } from '../game/terrain'
 
 const materials: Record<Part, THREE.Material> = {
   marble: marble({ color: '#dcdcd8', slab: [1.2, 0.55] }),
@@ -77,7 +78,7 @@ export default function Fountain() {
   const at = campus.fountain
   const geo = useMemo(() => fountainGeometry(at), [at])
   return (
-    <>
+    <group position-y={heightAt(at[0]!, at[1]!)}>
       {(Object.keys(geo) as Part[]).map((part) => (
         <mesh
           key={part}
@@ -91,6 +92,6 @@ export default function Fountain() {
       <Suspense fallback={null}>
         <Plants at={at} />
       </Suspense>
-    </>
+    </group>
   )
 }

@@ -19,6 +19,7 @@ import { localPlayer } from '../game/localPlayer'
 import { chime } from '../game/sounds'
 import { useGame } from '../net/store'
 import { still, useSettings } from '../settings'
+import { surfaceAt } from '../game/surface'
 
 // the game look's stars (game/collectibles.ts): spinning and bobbing at about the bean's
 // middle, with a soft glow round them. glide through one and it pops with a sparkle
@@ -116,6 +117,9 @@ const pos = new THREE.Vector3()
 const scale = new THREE.Vector3()
 const UP = new THREE.Vector3(0, 1, 0)
 
+// the ground under each star (a deck if there's one there)
+const ground = STARS.map((s) => surfaceAt(s.x, s.z))
+
 export default function Collectibles() {
   const mesh = useRef<THREE.InstancedMesh>(null)
   const geometry = useMemo(() => starGeometry(), [])
@@ -149,7 +153,7 @@ export default function Collectibles() {
         chime(c.count)
         for (const i of picked) pops.current[i] = 0
         const s = STARS[picked[0]!]!
-        sparkAt.value.set(s.x, HEIGHT, s.z)
+        sparkAt.value.set(s.x, ground[picked[0]!]! + HEIGHT, s.z)
         burst.current = 0
       }
     }
@@ -159,7 +163,7 @@ export default function Collectibles() {
       const pop = (pops.current[i]! += dt)
       // grows a bit, then it's gone
       const size = pop === Infinity ? 1 : pop < POP ? 1 + (pop / POP) * 0.6 : 0
-      pos.set(s.x, HEIGHT + Math.sin(t * 2.4 + phase) * 0.12, s.z)
+      pos.set(s.x, ground[i]! + HEIGHT + Math.sin(t * 2.4 + phase) * 0.12, s.z)
       q.setFromAxisAngle(UP, t * 2 + phase)
       stars.setMatrixAt(i, m.compose(pos, q, scale.setScalar(size)))
       haloAt.setXYZW(i, pos.x, pos.y, pos.z, size)

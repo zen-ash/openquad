@@ -2,5 +2,10 @@ pnpm-lock.yaml
 dist
 coverage
 apps/web/src/campus/campus.json
+apps/web/src/campus/terrain.json
+# bridge deck heights, one row a bridge (scripts/build-campus.mjs)
+scripts/decks.json
+# lidar ground heights where they differ from usgs bare earth (scripts/build-terrain.mjs)
+scripts/ground.json
 # three's basis transcoder, copied in by pnpm textures
 apps/web/public/basis

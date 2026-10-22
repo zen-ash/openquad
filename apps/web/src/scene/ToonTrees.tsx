@@ -7,6 +7,7 @@ import campus from '../campus/campus.json'
 import { sway, toonMaterial } from '../campus/toon'
 import { pointInPolygon } from '../game/collision'
 import { still } from '../settings'
+import { heightAt } from '../game/terrain'
 
 // the cartoon trees: a stubby trunk and a few chunky blobs of leaves, no textures.
 // same spots as the real ones (so the trunks still block you), plus some bushes in the
@@ -81,7 +82,11 @@ function Instances({
     const up = new THREE.Vector3(0, 1, 0)
     spots.forEach((t, i) => {
       q.setFromAxisAngle(up, t.turn)
-      m.compose(new THREE.Vector3(t.x, 0, t.z), q, new THREE.Vector3(t.s, t.s, t.s))
+      m.compose(
+        new THREE.Vector3(t.x, heightAt(t.x, t.z), t.z),
+        q,
+        new THREE.Vector3(t.s, t.s, t.s),
+      )
       mesh.setMatrixAt(i, m)
       if (colored) mesh.setColorAt(i, t.green)
     })

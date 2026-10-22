@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import type { Point } from '../game/collision'
 import { CEILING, DOOR_HEIGHT, DOOR_WIDTH, type Interior } from '../game/interiors'
+import { floorOf } from '../game/surface'
 import campus from './campus.json'
 import { facadeOf } from './facades'
 import { planarUv } from './geometry'
@@ -21,9 +22,12 @@ function signedArea(points: Point[]) {
 // window grid [column, floor, width, height], the same one the outside uses
 const NO_GRID = [3, 3.5, 0.5, 0.5]
 
-function withStyle(geo: THREE.BufferGeometry, style: number, grid = NO_GRID) {
+// up at the building's floor (surface.ts), which the window shader counts up from too
+function withStyle(geo: THREE.BufferGeometry, floor: number, style: number, grid = NO_GRID) {
+  geo.translate(0, floor, 0)
   const count = geo.getAttribute('position').count
   geo.setAttribute('aStyle', new THREE.BufferAttribute(new Float32Array(count).fill(style), 1))
+  geo.setAttribute('aBase', new THREE.BufferAttribute(new Float32Array(count).fill(floor), 1))
   const windows = new Float32Array(count * 4)
   for (let v = 0; v < count; v++) windows.set(grid, v * 4)
   geo.setAttribute('aWindow', new THREE.BufferAttribute(windows, 4))
@@ -38,12 +42,13 @@ export const ALL_GLASS = 3
 export function interiorWallsGeometry(interiors: Interior[]) {
   const parts = interiors.flatMap((room) => {
     const b = campus.buildings[room.index]!
+    const floor = floorOf(b)
     // the ones drawn by hand know where their windows are
     const landmark = landmarkGeometry(b)
     if (landmark)
       return [
-        ...landmark.inside.solid.map((g) => withStyle(g.clone(), NO_WINDOWS)),
-        ...landmark.inside.glass.map((g) => withStyle(g.clone(), ALL_GLASS)),
+        ...landmark.inside.solid.map((g) => withStyle(g.clone(), floor, NO_WINDOWS)),
+        ...landmark.inside.glass.map((g) => withStyle(g.clone(), floor, ALL_GLASS)),
       ]
     const { style, window: grid } = facadeOf(b, room.index)
     const flip = signedArea(room.points) > 0 ? -1 : 1
@@ -56,6 +61,7 @@ export function interiorWallsGeometry(interiors: Interior[]) {
       const into = { x: (dz / len) * flip, z: (-dx / len) * flip }
       return withStyle(
         wallQuad({ x: w.ax, z: w.az }, { x: w.bx, z: w.bz }, 0, CEILING, into),
+        floor,
         style,
         grid,
       )
@@ -72,7 +78,7 @@ export function interiorWallsGeometry(interiors: Interior[]) {
       CEILING,
       { x: -nx, z: -nz },
     )
-    return [...walls, withStyle(above, NO_WINDOWS)]
+    return [...walls, withStyle(above, floor, NO_WINDOWS)]
   })
   return mergeGeometries(parts)
 }
@@ -95,8 +101,10 @@ function flat(points: Point[], y: number, facingUp: boolean) {
   return planarUv(geo, 0.4)
 }
 
+const floor = (r: Interior) => floorOf(campus.buildings[r.index]!)
+
 export const floorsGeometry = (interiors: Interior[]) =>
-  mergeGeometries(interiors.map((r) => flat(r.points, 0.06, true)))
+  mergeGeometries(interiors.map((r) => flat(r.points, floor(r) + 0.06, true)))
 
 export const ceilingsGeometry = (interiors: Interior[]) =>
-  mergeGeometries(interiors.map((r) => flat(r.points, CEILING, false)))
+  mergeGeometries(interiors.map((r) => flat(r.points, floor(r) + CEILING, false)))

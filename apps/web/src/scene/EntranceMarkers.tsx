@@ -19,6 +19,7 @@ import {
 import { MeshBasicNodeMaterial } from 'three/webgpu'
 import campus from '../campus/campus.json'
 import { still, useSettings } from '../settings'
+import { surfaceAt } from '../game/surface'
 
 // the game look's soft glowing markers at the main doors of gsu's buildings: a ring on
 // the ground, a column of light and a gold gem bobbing over it, so you can spot a way in
@@ -100,7 +101,9 @@ export default function EntranceMarkers() {
   useLayoutEffect(() => {
     const mesh = ref.current!
     const m = new THREE.Matrix4()
-    entrances.forEach((e, i) => mesh.setMatrixAt(i, m.makeTranslation(e.x, 0, e.z)))
+    entrances.forEach((e, i) =>
+      mesh.setMatrixAt(i, m.makeTranslation(e.x, surfaceAt(e.x, e.z), e.z)),
+    )
     mesh.instanceMatrix.needsUpdate = true
     mesh.computeBoundingSphere()
   }, [])

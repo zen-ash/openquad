@@ -31,6 +31,7 @@ import {
   vogelDiskSample,
 } from 'three/tsl'
 import type { Node, NodeBuilder, NodeFrame, Texture, WebGPURenderer } from 'three/webgpu'
+import { lowestGround } from '../game/terrain'
 
 // the sun is half a degree across, so a shadow's edge gets softer the further the ground is
 // from what's casting it: about 9mm per meter. a bench leg's shadow is sharp, the end of
@@ -149,6 +150,7 @@ const sphere = new Sphere()
 const end = new Vector3()
 // soft edges and filtering read the map a bit around where a shadow lands
 const EDGE = 2
+const LOWEST = lowestGround()
 
 // three draws everything inside a cascade's box into its map, and the box reaches 200m
 // toward the sun and covers what's beside and behind you too. a caster only matters if its
@@ -169,7 +171,8 @@ function castsInto(object: Object3D, planes: Plane[], toward: Vector3) {
     bounds = o.geometry.boundingSphere
   }
   sphere.copy(bounds!).applyMatrix4(o.matrixWorld)
-  const t = (sphere.center.y + sphere.radius + 1) / Math.max(-toward.y, 0.05)
+  // down to the lowest ground on the map, not y = 0: it's 18m below hurt park in places
+  const t = (sphere.center.y + sphere.radius + 1 - LOWEST) / Math.max(-toward.y, 0.05)
   end.copy(toward).multiplyScalar(t).add(sphere.center)
   const r = -sphere.radius - EDGE
   for (const p of planes)

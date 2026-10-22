@@ -14,6 +14,7 @@ import {
 import { MeshBasicNodeMaterial } from 'three/webgpu'
 import { night } from '../campus/facade'
 import { localPlayer } from '../game/localPlayer'
+import { alongGround } from '../game/surface'
 
 const HEIGHT = 3
 const DAY = new THREE.Color('#e6ebef')
@@ -26,15 +27,20 @@ const LINE_WIDTH = 0.35
 function band() {
   const pos: number[] = []
   const up: number[] = []
-  FENCE.forEach(([ax, az], i) => {
-    const [bx, bz] = FENCE[(i + 1) % FENCE.length]!
-    pos.push(ax, 0, az, bx, 0, bz, bx, HEIGHT, bz, ax, 0, az, bx, HEIGHT, bz, ax, HEIGHT, az)
+  // in 4m pieces, each on the ground under it
+  const ring = FENCE.map(([x, z]) => ({ x: x!, z: z! }))
+  const points = alongGround([...ring, ring[0]!], 4)
+  points.slice(1).forEach(([bx, bz, by], i) => {
+    const [ax, az, ay] = points[i]!
+    pos.push(ax, ay, az, bx, by, bz, bx, by + HEIGHT, bz, ax, ay, az, bx, by + HEIGHT, bz)
+    pos.push(ax, ay + HEIGHT, az)
     up.push(0, 0, 1, 0, 1, 1)
     // inward is to the right going round clockwise (z points south)
-    const len = Math.hypot(bx - ax, bz - az)
+    const len = Math.hypot(bx - ax, bz - az) || 1
     const [nx, nz] = [(-(bz - az) / len) * LINE_WIDTH, ((bx - ax) / len) * LINE_WIDTH]
-    pos.push(ax, 0.07, az, bx, 0.07, bz, bx + nx, 0.07, bz + nz)
-    pos.push(ax, 0.07, az, bx + nx, 0.07, bz + nz, ax + nx, 0.07, az + nz)
+    const [la, lb] = [ay + 0.07, by + 0.07]
+    pos.push(ax, la, az, bx, lb, bz, bx + nx, lb, bz + nz)
+    pos.push(ax, la, az, bx + nx, lb, bz + nz, ax + nx, la, az + nz)
     up.push(0.2, 0.2, 0.2, 0.2, 0.2, 0.2)
   })
   return new THREE.BufferGeometry()

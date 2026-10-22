@@ -15,6 +15,9 @@ import Bean from './Bean'
 import Character, { type Anim } from './Character'
 import ChatBubble from './ChatBubble'
 import Label from './Label'
+import campus from '../campus/campus.json'
+import { interiorAt } from '../game/interiors'
+import { floorOf, surfaceAt } from '../game/surface'
 
 function RemotePlayer({ id, person }: { id: string; person: Person }) {
   const body = useRef<Group>(null)
@@ -44,7 +47,13 @@ function RemotePlayer({ id, person }: { id: string; person: Person }) {
     const moved = Math.hypot(s.x - group.position.x, s.z - group.position.z)
     speed.current += (moved / dt - speed.current) * Math.min(1, dt * 10)
 
-    group.position.set(s.x, 0, s.z)
+    // the server only knows x and z: on the ground, a deck, or inside a building's floor,
+    // carrying on from where they were so they don't jump between the viaduct and under it
+    const room = interiorAt({ x: s.x, z: s.z })
+    const y = room
+      ? floorOf(campus.buildings[room.index]!)
+      : surfaceAt(s.x, s.z, group.visible ? group.position.y : Infinity)
+    group.position.set(s.x, y, s.z)
     group.rotation.y = s.heading
 
     const next = animForSpeed(speed.current)

@@ -20,6 +20,7 @@
     "walk": "node scripts/walk.mjs",
     "campus": "node scripts/build-campus.mjs",
     "textures": "node scripts/textures.mjs",
+    "terrain": "node scripts/build-terrain.mjs",
     "bots": "pnpm --filter @quad/server bots"
   },
   "devDependencies": {

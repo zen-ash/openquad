@@ -6,6 +6,7 @@ import { attribute, positionLocal, sin, uniform } from 'three/tsl'
 import { MeshStandardNodeMaterial, type NodeBuilder } from 'three/webgpu'
 import campus from '../campus/campus.json'
 import { still } from '../settings'
+import { heightAt } from '../game/terrain'
 
 // made with ez-tree and poly haven's bark, see docs/SPEC.md. one model each
 const VARIANTS = ['oak', 'magnolia', 'street'] as const
@@ -96,7 +97,7 @@ function Variant({ name, spots }: { name: Variant; spots: number[][] }) {
       const s = 0.75 + rand(x!, z!, 1) * 0.5
       q.setFromAxisAngle(up, rand(x!, z!, 2) * Math.PI * 2)
       return new THREE.Matrix4().compose(
-        new THREE.Vector3(x!, 0, z!),
+        new THREE.Vector3(x!, heightAt(x!, z!), z!),
         q,
         new THREE.Vector3(s, s, s),
       )

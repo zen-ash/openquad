@@ -1551,22 +1551,55 @@ function naturalScience(b, neighbours) {
   }
 }
 
-// collins st runs under the courtland st viaduct, 8m down. the game is flat, so it lay right on
-// top of courtland st and its asphalt covered the centre dashes (they flickered in and out).
-// only its end that turns off to the back drive behind the courtland building is kept
-const COLLINS = 840362906
+// how high the bridges' decks are: usgs lidar (3dep 2018, bridge deck points, or ground
+// where osm's bridge is really on grade), every DECK_STEP meters along each way, measured
+// outside the repo (decks.json). the terrain (pnpm terrain) is bare earth, without them
+const DECKS = JSON.parse(readFileSync(new URL('./decks.json', import.meta.url), 'utf8'))
+const DECK_STEP = 10
 
-// cuts the start of a road off up to where its asphalt stops touching the others'
-function outFrom(road, over) {
-  const gap = (p) =>
-    Math.min(...over.map((o) => distToLine(p, o.points) - (o.width + road.width) / 2))
-  const d = road.points.map(gap)
-  const i = d.findIndex((x) => x >= 0)
-  if (i <= 0) return
-  const [a, b] = [road.points[i - 1], road.points[i]]
-  const t = -d[i - 1] / (d[i] - d[i - 1])
-  const start = [round(a[0] + (b[0] - a[0]) * t), round(a[1] + (b[1] - a[1]) * t)]
-  road.points = [start, ...road.points.slice(i)]
+// a bridge's points every DECK_STEP meters, with the deck's height (meters above sea
+// level) as a third number
+function deckPoints(points, heights) {
+  const out = []
+  let along = 0
+  points.slice(1).forEach(([bx, bz], i) => {
+    const [ax, az] = points[i]
+    const len = Math.hypot(bx - ax, bz - az)
+    const steps = Math.max(1, Math.ceil(len / DECK_STEP))
+    for (let k = i === 0 ? 0 : 1; k <= steps; k++) {
+      const s = along + (len * k) / steps
+      const at = Math.min(s / DECK_STEP, heights.length - 1)
+      const j = Math.min(Math.floor(at), heights.length - 2)
+      const h = heights[j] + (heights[j + 1] - heights[j]) * (at - j)
+      out.push([round(ax + ((bx - ax) * k) / steps), round(az + ((bz - az) * k) / steps), round(h)])
+    }
+    along += len
+  })
+  return out
+}
+
+// a sidewalk on a bridge is a curb above the road next to it. the lidar along a sidewalk
+// picks up its railing and the walls beside it, a meter or more too high
+function curbsOnDecks(roads, paths) {
+  const decks = roads.filter((r) => r.points[0].length === 3)
+  for (const path of paths) {
+    if (path.points[0].length !== 3) continue
+    for (const p of path.points) {
+      let best = null
+      for (const road of decks)
+        road.points.slice(1).forEach((b, i) => {
+          const a = road.points[i]
+          const [dx, dz] = [b[0] - a[0], b[1] - a[1]]
+          const t = Math.max(
+            0,
+            Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dz) / (dx * dx + dz * dz || 1)),
+          )
+          const d = Math.hypot(a[0] + dx * t - p[0], a[1] + dz * t - p[1]) - road.width / 2
+          if (d < 5 && (!best || d < best.d)) best = { d, h: a[2] + (b[2] - a[2]) * t }
+        })
+      if (best) p[2] = Math.round((best.h + 0.15) * 100) / 100
+    }
+  }
 }
 
 // courtland north (106 courtland st). a 1920s two storey building of painted cream brick on
@@ -1816,7 +1849,6 @@ function main(elements) {
   // crosswalks. not drawn as paths, but gps needs them to get across roads
   const crossings = []
   const plazas = []
-  let collins
   const trees = []
 
   for (const el of elements) {
@@ -1905,16 +1937,20 @@ function main(elements) {
         continue
       }
 
-      const points = el.geometry.map(toLocal)
+      let points = el.geometry.map(toLocal)
       if (!points.some(inside)) continue
+      const bridge = tags.bridge && tags.bridge !== 'no'
+      if (bridge && DECKS[el.id]) points = deckPoints(points, DECKS[el.id])
 
       if (ROAD_WIDTH[tags.highway]) {
         const road = { width: ROAD_WIDTH[tags.highway] * SCALE, points }
         if (tags.name) road.name = tags.name
-        if (el.id === COLLINS) collins = road
+        if (bridge) road.bridge = true
         roads.push(road)
       } else if (PATH_WIDTH[tags.highway]) {
-        paths.push({ width: PATH_WIDTH[tags.highway] * SCALE, points })
+        const path = { width: PATH_WIDTH[tags.highway] * SCALE, points }
+        if (bridge) path.bridge = true
+        paths.push(path)
       }
       continue
     }
@@ -2016,11 +2052,7 @@ function main(elements) {
         round(fountain[1] + Math.sin((i / 40) * Math.PI * 2) * 11.5),
       ]),
     )
-  if (collins)
-    outFrom(
-      collins,
-      roads.filter((r) => r.name === 'Courtland Street Southeast'),
-    )
+  curbsOnDecks(roads, paths)
   const planted = plantParkTrees(parks, [...roads, ...paths])
   trees.push(
     ...planted.filter((t) => !fountain || Math.hypot(t[0] - fountain[0], t[1] - fountain[1]) > 10),

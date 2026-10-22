@@ -3,6 +3,8 @@ import {
   interleaveAttributes,
   mergeGeometries,
 } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+import { floorOf, lowestUnder } from '../game/surface'
+import { fromElevation } from '../game/terrain'
 import { facadeOf, seedOf } from './facades'
 
 type Pt = number[] // [x, z]
@@ -20,7 +22,9 @@ export type BuildingData = {
   // drawn by hand instead (campus/landmarks.ts)
   landmark?: unknown
 }
-export type LineData = { width: number; points: Pt[] }
+export type LineData = { width: number; points: Pt[]; bridge?: boolean }
+// is drawn at its deck's height (its points have it), not laid on the ground
+export const onDeck = (l: LineData) => l.points[0]?.length === 3
 
 // shapes are drawn on x/y, then laid flat. y has to be -z so it doesn't come out mirrored
 function shape(points: Pt[]) {
@@ -34,9 +38,12 @@ function fill(count: number, value: number) {
 export function buildingsGeometry(buildings: BuildingData[]) {
   const parts = buildings.flatMap((b, i) => {
     if (b.landmark) return []
-    const bottom = b.minHeight ?? 0
+    // on the ground's real shape: the walls go down into it wherever it's lower than the
+    // floor, and the height is from the floor
+    const floor = floorOf(b)
+    const bottom = b.minHeight ? floor + b.minHeight : Math.min(lowestUnder(b.points), floor) - 0.5
     const geo = new THREE.ExtrudeGeometry(shape(b.points), {
-      depth: b.height - bottom,
+      depth: floor + b.height - bottom,
       bevelEnabled: false,
     })
     geo.rotateX(-Math.PI / 2).translate(0, bottom, 0)
@@ -60,6 +67,7 @@ export function buildingsGeometry(buildings: BuildingData[]) {
     geo.setAttribute('aWindow', new THREE.BufferAttribute(windows, 4))
     geo.setAttribute('aStyle', fill(count, look.style))
     geo.setAttribute('aHeight', fill(count, b.height))
+    geo.setAttribute('aBase', fill(count, floor))
     geo.setAttribute('aSeed', fill(count, seedOf(i)))
     // where the doorway is, for the shader to cut it out. zeros for buildings without one
     const door = new Float32Array(count * 4)
@@ -76,7 +84,7 @@ export function buildingsGeometry(buildings: BuildingData[]) {
   return geo
 }
 
-const FACADE = ['aStyle', 'aHeight', 'aSeed', 'aDoor', 'aWindow', 'aFrame']
+const FACADE = ['aStyle', 'aHeight', 'aBase', 'aSeed', 'aDoor', 'aWindow', 'aFrame']
 
 // ground textures are mapped straight from world x/z, one repeat every 5m
 export function planarUv(geo: THREE.BufferGeometry, scale = 0.2) {
@@ -92,21 +100,24 @@ export function planarUv(geo: THREE.BufferGeometry, scale = 0.2) {
 
 // flat strips for roads and paths. a quad per segment plus a little disc at every
 // corner so there are no gaps where two segments meet. aRoad is (distance along the
-// road, 0-1 across it, width) for drawing lane lines. the discs get width 0 = no lines
+// road, 0-1 across it, width) for drawing lane lines. the discs get width 0 = no lines.
+// a bridge's points have its deck's height as a third number (sea level meters), the rest
+// are drawn at y and laid on the ground after (drape.ts)
 export function linesGeometry(lines: LineData[], y: number) {
   const pos: number[] = []
   const road: number[] = []
 
-  type V = [x: number, z: number, along: number, across: number, width: number]
+  type V = [x: number, z: number, along: number, across: number, width: number, h: number]
   // every triangle has to face up. which way round the points go depends on which way
   // the road was drawn on osm, and a face pointing down gets lit like the underside
   const tri = (a: V, b: V, c: V) => {
     const up = (b[1] - a[1]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[1] - a[1])
-    for (const [x, z, along, across, width] of up >= 0 ? [a, b, c] : [a, c, b]) {
-      pos.push(x, y, z)
+    for (const [x, z, along, across, width, h] of up >= 0 ? [a, b, c] : [a, c, b]) {
+      pos.push(x, y + h, z)
       road.push(along, across, width)
     }
   }
+  const deck = (p: Pt) => (p[2] === undefined ? 0 : fromElevation(p[2]))
 
   for (const { width, points } of lines) {
     const half = width / 2
@@ -114,34 +125,43 @@ export function linesGeometry(lines: LineData[], y: number) {
     for (let i = 0; i < points.length - 1; i++) {
       const [ax, az] = points[i] as [number, number]
       const [bx, bz] = points[i + 1] as [number, number]
+      const [ha, hb] = [deck(points[i]!), deck(points[i + 1]!)]
       const len = Math.hypot(bx - ax, bz - az) || 1
       const nx = (-(bz - az) / len) * half
       const nz = ((bx - ax) / len) * half
       const next = along + len
       tri(
-        [ax + nx, az + nz, along, 0, width],
-        [ax - nx, az - nz, along, 1, width],
-        [bx + nx, bz + nz, next, 0, width],
+        [ax + nx, az + nz, along, 0, width, ha],
+        [ax - nx, az - nz, along, 1, width, ha],
+        [bx + nx, bz + nz, next, 0, width, hb],
       )
       tri(
-        [bx + nx, bz + nz, next, 0, width],
-        [ax - nx, az - nz, along, 1, width],
-        [bx - nx, bz - nz, next, 1, width],
+        [bx + nx, bz + nz, next, 0, width, hb],
+        [ax - nx, az - nz, along, 1, width, ha],
+        [bx - nx, bz - nz, next, 1, width, hb],
       )
       along = next
     }
-    for (const [x, z] of points.slice(1, -1) as [number, number][]) {
+    points.slice(1, -1).forEach((p, i) => {
+      const [x, z] = p as [number, number]
+      // nearly straight on: the two quads already meet, no gap to fill
+      const [a, b] = [points[i]!, points[i + 2]!]
+      const turn =
+        ((x - a[0]!) * (b[0]! - x) + (z - a[1]!) * (b[1]! - z)) /
+        (Math.hypot(x - a[0]!, z - a[1]!) * Math.hypot(b[0]! - x, b[1]! - z) || 1)
+      if (turn > 0.995) return
+      const h = deck(p)
       const steps = 8
       for (let s = 0; s < steps; s++) {
         const a = (s / steps) * Math.PI * 2
         const b = ((s + 1) / steps) * Math.PI * 2
         tri(
-          [x, z, 0, 0.5, 0],
-          [x + Math.cos(a) * half, z + Math.sin(a) * half, 0, 0.5, 0],
-          [x + Math.cos(b) * half, z + Math.sin(b) * half, 0, 0.5, 0],
+          [x, z, 0, 0.5, 0, h],
+          [x + Math.cos(a) * half, z + Math.sin(a) * half, 0, 0.5, 0, h],
+          [x + Math.cos(b) * half, z + Math.sin(b) * half, 0, 0.5, 0, h],
         )
       }
-    }
+    })
   }
 
   const geo = new THREE.BufferGeometry()

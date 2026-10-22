@@ -14,6 +14,8 @@ import { polygon, type Point, type Segment, type World } from './collision'
 import { footprint, furnish, isOver, LOW, type Item } from './furniture'
 import { enterable, interiors } from './interiors'
 import { benches, bins } from './streetFurniture'
+import { decksAt } from './surface'
+import { fromElevation, heightAt } from './terrain'
 
 const TREE_RADIUS = 0.8
 const { quad } = campus
@@ -108,6 +110,39 @@ export const world: World = {
   halfSize: campus.halfSize,
 }
 
+// the sides of bridges with a drop beside them: walls, but only for someone up on the deck.
+// collisions are flat, the same walls would stop you walking under courtland st on decatur st
+const DROP = 1
+const deckEdges: Segment[] = [...campus.roads, ...campus.paths]
+  .filter((l) => l.points[0]?.length === 3)
+  .flatMap(({ width, points }) =>
+    points.slice(1).flatMap((b, i) => {
+      const a = points[i]!
+      const [dx, dz] = [b[0]! - a[0]!, b[1]! - a[1]!]
+      const len = Math.hypot(dx, dz) || 1
+      const [nx, nz] = [-dz / len, dx / len]
+      const [mx, mz] = [(a[0]! + b[0]!) / 2, (a[1]! + b[1]!) / 2]
+      const deck = fromElevation((a[2]! + b[2]!) / 2)
+      return [1, -1].flatMap((side) => {
+        const off = (width / 2) * side
+        // a metre out from this side: another deck (the sidewalk next to the road), or the
+        // ground not far below, and it's open
+        const [ox, oz] = [mx + nx * (off + side), mz + nz * (off + side)]
+        if (decksAt(ox, oz).some((h) => Math.abs(h - deck) < DROP)) return []
+        if (heightAt(ox, oz) > deck - DROP) return []
+        return [
+          {
+            ax: a[0]! + nx * off,
+            az: a[1]! + nz * off,
+            bx: b[0]! + nx * off,
+            bz: b[1]! + nz * off,
+          },
+        ]
+      })
+    }),
+  )
+const deckWorld: World = { ...world, walls: [...world.walls, ...deckEdges] }
+
 // furniture only matters in the building you're in, and all of it together is a lot of walls
 const furnished = new Map<number, { world: World; tall: Segment[]; hopping: World; low: Item[] }>()
 
@@ -133,13 +168,16 @@ function furnishedRoom(inside: number) {
   return f
 }
 
-export const worldFor = (inside: number) => furnishedRoom(inside)?.world ?? world
+// high: standing up on a bridge's deck (Player)
+export const worldFor = (inside: number, high = false) =>
+  furnishedRoom(inside)?.world ?? (high ? deckWorld : world)
 
 // shelves are taller than the camera is indoors, it has to stay in front of them
 export const tallFurniture = (inside: number) => furnishedRoom(inside)?.tall ?? []
 
 // the cartoon look's collisions: tables and chairs get hopped over (game/bean.ts)
-export const hoppingWorldFor = (inside: number) => furnishedRoom(inside)?.hopping ?? world
+export const hoppingWorldFor = (inside: number, high = false) =>
+  furnishedRoom(inside)?.hopping ?? (high ? deckWorld : world)
 
 /** the top of the low furniture a bean at p is over, 0 if none */
 export function groundAt(inside: number, p: Point, radius: number) {

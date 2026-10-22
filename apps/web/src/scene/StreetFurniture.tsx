@@ -4,6 +4,8 @@ import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { night } from '../campus/facade'
 import { benches, bins, parkLamps, streetLights, type Spot } from '../game/streetFurniture'
+import { surfaceAt } from '../game/surface'
+import { normalAt } from '../game/terrain'
 import { game, useSettings } from '../settings'
 
 // black powder coated metal like the benches round campus, and gsu blue bins
@@ -101,12 +103,15 @@ function Instances({
   material,
   spots,
   offset = 0,
+  lie = false,
   shadow = true,
 }: {
   geometry: THREE.BufferGeometry
   material: THREE.Material
   spots: Spot[]
   offset?: number
+  // tilted to lie on the slope (the light pools), the rest stand up straight
+  lie?: boolean
   shadow?: boolean
 }) {
   const ref = useRef<THREE.InstancedMesh>(null)
@@ -118,16 +123,14 @@ function Instances({
     spots.forEach((s, i) => {
       q.setFromAxisAngle(up, s.rot)
       // offset moves it forward, toward the path or road it faces
-      const at = new THREE.Vector3(
-        s.x + Math.sin(s.rot) * offset,
-        0,
-        s.z + Math.cos(s.rot) * offset,
-      )
+      const [x, z] = [s.x + Math.sin(s.rot) * offset, s.z + Math.cos(s.rot) * offset]
+      const at = new THREE.Vector3(x, surfaceAt(x, z), z)
+      if (lie) q.premultiply(tilt.setFromUnitVectors(up, slope.fromArray(normalAt(x, z))))
       ref.current!.setMatrixAt(i, m.compose(at, q, one))
     })
     ref.current!.instanceMatrix.needsUpdate = true
     ref.current!.computeBoundingSphere()
-  }, [spots, offset])
+  }, [spots, offset, lie])
   return (
     <instancedMesh
       ref={ref}
@@ -137,6 +140,9 @@ function Instances({
     />
   )
 }
+
+const tilt = new THREE.Quaternion()
+const slope = new THREE.Vector3()
 
 // benches, bins, lamp posts and street lights (game/streetFurniture.ts)
 export default function StreetFurniture() {
@@ -177,7 +183,13 @@ export default function StreetFurniture() {
       <Instances geometry={geos.bin} material={looks.bin} spots={bins} />
       <Instances geometry={geos.park.pole} material={looks.lamp} spots={parkLamps} />
       <Instances geometry={geos.park.glass} material={lampGlass} spots={parkLamps} shadow={false} />
-      <Instances geometry={poolGeos.park} material={pools.park} spots={parkLamps} shadow={false} />
+      <Instances
+        geometry={poolGeos.park}
+        material={pools.park}
+        spots={parkLamps}
+        shadow={false}
+        lie
+      />
       <Instances geometry={geos.street.pole} material={looks.pole} spots={streetLights} />
       <Instances
         geometry={geos.street.glass}
@@ -191,6 +203,7 @@ export default function StreetFurniture() {
         spots={streetLights}
         offset={2.35}
         shadow={false}
+        lie
       />
     </>
   )

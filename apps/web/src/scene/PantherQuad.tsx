@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
 import * as THREE from 'three'
 import campus from '../campus/campus.json'
+import { lowestUnder } from '../game/surface'
+import { heightAt } from '../game/terrain'
 
 const { quad } = campus
 const POLE = 11
@@ -56,8 +58,11 @@ export default function PantherQuad() {
     () =>
       quad.planters.map((p) => {
         const shape = new THREE.Shape(p.points.map(([x, z]) => new THREE.Vector2(x!, -z!)))
-        const geo = new THREE.ExtrudeGeometry(shape, { depth: p.height, bevelEnabled: false })
-        geo.rotateX(-Math.PI / 2)
+        // a level top over the slope, the walls going down into the ground
+        const low = lowestUnder(p.points) - 0.3
+        const top = Math.max(...p.points.map(([x, z]) => heightAt(x!, z!))) + p.height
+        const geo = new THREE.ExtrudeGeometry(shape, { depth: top - low, bevelEnabled: false })
+        geo.rotateX(-Math.PI / 2).translate(0, low, 0)
         return geo
       }),
     [],
@@ -77,7 +82,7 @@ export default function PantherQuad() {
       {planters.map((geo, i) => (
         <mesh key={i} geometry={geo} material={[soil, stone]} castShadow receiveShadow />
       ))}
-      <group position={[mx, 0, mz]}>
+      <group position={[mx, heightAt(mx, mz), mz]}>
         <mesh position={[0, 0.6, 0]} material={stone} castShadow receiveShadow>
           <boxGeometry args={[1.6, 1.2, 1.6]} />
         </mesh>
@@ -86,7 +91,7 @@ export default function PantherQuad() {
         </mesh>
       </group>
       {quad.flags.map(([x, z], i) => (
-        <group key={i} position={[x!, 0, z!]}>
+        <group key={i} position={[x!, heightAt(x!, z!), z!]}>
           <mesh position={[0, POLE / 2, 0]} material={metal} castShadow>
             <cylinderGeometry args={[0.05, 0.07, POLE, 8]} />
           </mesh>

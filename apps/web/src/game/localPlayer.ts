@@ -3,6 +3,8 @@
 export const localPlayer = {
   x: 0,
   z: 0,
+  // how high you stand (the ground, a deck or a floor), for things drawn from where you are
+  y: 0,
   cameraYaw: 0,
   // which way the character faces, for the minimap arrow
   heading: 0,

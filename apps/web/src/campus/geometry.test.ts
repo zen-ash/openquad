@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { BRICK, CONCRETE, GLASS } from './facade'
 import { facadeOf } from './facades'
+import { floorOf, lowestUnder } from '../game/surface'
 import { areasGeometry, buildingsGeometry, linesGeometry } from './geometry'
 
 const square = [
@@ -12,18 +13,23 @@ const square = [
 
 describe('buildingsGeometry', () => {
   it('starts a bridge at its underside', () => {
-    const geo = buildingsGeometry([{ points: square, height: 7, minHeight: 3.5 }])
+    const bridge = { points: square, height: 7, minHeight: 3.5 }
+    const geo = buildingsGeometry([bridge])
     geo.computeBoundingBox()
-    expect(geo.boundingBox!.min.y).toBeCloseTo(3.5)
-    expect(geo.boundingBox!.max.y).toBeCloseTo(7)
+    // heights are from its floor, the ground there (surface.ts)
+    expect(geo.boundingBox!.min.y).toBeCloseTo(floorOf(bridge) + 3.5)
+    expect(geo.boundingBox!.max.y).toBeCloseTo(floorOf(bridge) + 7)
   })
 
   it('extrudes up to the building height in the right spot', () => {
-    const geo = buildingsGeometry([{ points: square, height: 10 }])
+    const b = { points: square, height: 10 }
+    const geo = buildingsGeometry([b])
     geo.computeBoundingBox()
     const { min, max } = geo.boundingBox!
-    const box = [min.x, min.y, min.z, max.x, max.y, max.z]
-    ;[0, 0, 0, 4, 10, 4].forEach((v, i) => expect(box[i]).toBeCloseTo(v))
+    const box = [min.x, min.z, max.x, max.y, max.z]
+    ;[0, 0, 4, floorOf(b) + 10, 4].forEach((v, i) => expect(box[i]).toBeCloseTo(v))
+    // and down into the ground under its lowest corner, so it never floats
+    expect(min.y).toBeLessThan(lowestUnder(square) - 0.4)
   })
 
   it('makes tall buildings glass towers', () => {

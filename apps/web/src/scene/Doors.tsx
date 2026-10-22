@@ -5,6 +5,8 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { DOOR_HEIGHT, DOOR_WIDTH, doorOpens, doorPanels, interiors } from '../game/interiors'
 import { localPlayer } from '../game/localPlayer'
 import { snapshots } from '../net/store'
+import campus from '../campus/campus.json'
+import { floorOf } from '../game/surface'
 
 const W = DOOR_WIDTH / 2
 const H = DOOR_HEIGHT
@@ -42,6 +44,8 @@ export default function Doors() {
   const glass = useRef<THREE.InstancedMesh>(null)
   const frames = useRef<THREE.InstancedMesh>(null)
   const open = useMemo(() => new Float32Array(interiors.length), [])
+  // each door stands on its building's floor (surface.ts)
+  const floors = useMemo(() => interiors.map((r) => floorOf(campus.buildings[r.index]!)), [])
 
   useFrame((_, dt) => {
     if (!glass.current || !frames.current) return
@@ -51,7 +55,7 @@ export default function Doors() {
       const target = doorOpens(room.door, people) ? 1 : 0
       open[i]! += (target - open[i]!) * Math.min(1, dt * 5)
       doorPanels(room.door, open[i]!).forEach((p, side) => {
-        m.compose(pos.set(p.x, 0.06, p.z), q.setFromAxisAngle(UP, p.rot), one)
+        m.compose(pos.set(p.x, floors[i]! + 0.06, p.z), q.setFromAxisAngle(UP, p.rot), one)
         glass.current!.setMatrixAt(i * 2 + side, m)
         frames.current!.setMatrixAt(i * 2 + side, m)
       })

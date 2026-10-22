@@ -182,7 +182,9 @@ for (const mode of modes) {
     })
     await page.evaluate((v) => {
       globalThis.quad.teleport(v.player[0], v.player[1])
-      globalThis.quad.lookFrom(v.from, v.at)
+      // the views' heights are above the ground under them
+      const lift = ([x, y, z]) => [x, y + globalThis.quad.ground(x, z), z]
+      globalThis.quad.lookFrom(lift(v.from), lift(v.at))
     }, v)
     if (v.inside) await page.waitForFunction((n) => globalThis.quad.inside() === n, v.inside)
 

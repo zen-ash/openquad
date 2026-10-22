@@ -9,6 +9,7 @@ import { dropConnection } from './connection'
 import { startRecording, stopRecording } from './perf'
 import { useEmotes } from './emotes'
 import { snapshots, useGame, type Person } from './store'
+import { floorAt } from '../game/surface'
 
 // everything is drawn in a canvas so the e2e tests can't just look at the DOM.
 // this lets them ask where everyone is. dev builds, or ?debug (scripts/walk.mjs times
@@ -30,6 +31,9 @@ declare global {
       // put the camera at a spot looking at another one, [x, y, z], with a photo's vertical
       // fov if it's given. null goes back
       lookFrom: (from: number[] | null, at?: number[], fov?: number) => void
+      // the height of the ground (or a deck, or a building's floor) at x, z: views and
+      // spots are written as heights above it
+      ground: (x: number, z: number) => number
       // name of the building you're inside, or null
       inside: () => string | null
       // per person we're in a call with: connection state, and how many ms ago we
@@ -65,6 +69,7 @@ if (showDebug) {
     lookFrom: (from, at, fov) => {
       localPlayer.shot = from && at ? { from, at, fov } : null
     },
+    ground: (x, z) => floorAt(x, z),
     inside: () => interiors.find((r) => r.index === localPlayer.inside)?.name ?? null,
     voice: () => {
       const out: Record<string, { state: string; heardAgo: number | null }> = {}

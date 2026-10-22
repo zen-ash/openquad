@@ -8,6 +8,7 @@ import type { Controls } from '../game/controls'
 import { avatarById } from '../game/avatars'
 import { clampDistance, clampPitch, clearView, orbit } from '../game/camera'
 import { BIKE_SPEED, DASH_SPEED, glide, GLIDE_SPEED, turnToward } from '../game/glide'
+import campus from '../campus/campus.json'
 import { interiorAt } from '../game/interiors'
 import { blocksView, cameraReach, outlineOf } from '../game/occlusion'
 import { localPlayer } from '../game/localPlayer'
@@ -21,6 +22,8 @@ import {
   WALK_SPEED,
 } from '../game/movement'
 import { input } from '../game/input'
+import { floorOf, surfaceAt } from '../game/surface'
+import { heightAt } from '../game/terrain'
 import { hoppingWorldFor, tallFurniture, worldFor } from '../game/world'
 import { send } from '../net/connection'
 import { toon, useSettings, walker } from '../settings'
@@ -115,7 +118,8 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
     const keys = typing ? NO_KEYS : getKeys()
 
     if (localPlayer.teleport) {
-      player.position.set(localPlayer.teleport.x, 0, localPlayer.teleport.z)
+      const { x, z } = localPlayer.teleport
+      player.position.set(x, surfaceAt(x, z), z)
       localPlayer.teleport = null
       sendTimer.current = SEND_INTERVAL // send the new spot right away
       snapCamera.current = true
@@ -150,6 +154,8 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
     }
     let next: Anim = 'Idle'
 
+    // up on a bridge's deck (well above the ground): its edges are walls
+    const high = player.position.y > heightAt(player.position.x, player.position.z) + 1
     if (!walker) {
       // full speed right away, stopped right away (game/glide.ts)
       const g = glide(
@@ -158,7 +164,7 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
         bike ? BIKE_SPEED : running ? DASH_SPEED : GLIDE_SPEED,
         delta,
         PLAYER_RADIUS,
-        hoppingWorldFor(localPlayer.inside),
+        hoppingWorldFor(localPlayer.inside, high),
       )
       player.position.x = g.x
       player.position.z = g.z
@@ -173,7 +179,7 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
         speed,
         delta,
         PLAYER_RADIUS,
-        worldFor(localPlayer.inside),
+        worldFor(localPlayer.inside, high),
       )
       player.position.x = pos.x
       player.position.z = pos.z
@@ -187,7 +193,13 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
       setAnim(next)
     }
 
+    // standing on the ground's real shape, a bridge's deck, or a building's floor
+    player.position.y =
+      localPlayer.inside >= 0
+        ? floorOf(campus.buildings[localPlayer.inside]!)
+        : surfaceAt(player.position.x, player.position.z, player.position.y)
     localPlayer.x = player.position.x
+    localPlayer.y = player.position.y
     localPlayer.z = player.position.z
     localPlayer.cameraYaw = cameraYaw.current
     localPlayer.heading = player.rotation.y
@@ -260,6 +272,8 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
       want.y = look.y + (want.y - look.y) * reach
       want.z = look.z + (want.z - look.z) * reach
     }
+    // and never under the ground, on a slope it would be when looking up it
+    want.y = Math.max(want.y, surfaceAt(want.x, want.z, look.y) + 0.4)
     if (snapCamera.current) camera.position.set(want.x, want.y, want.z)
     else camera.position.lerp(want, 1 - Math.exp(-(toon ? 6 : 7) * dt))
     snapCamera.current = false
@@ -276,7 +290,7 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
       camera.lookAt(new THREE.Vector3().fromArray(localPlayer.shot.at))
     }
 
-    cutout.uCutoutPlayer.value.set(player.position.x, 1, player.position.z)
+    cutout.uCutoutPlayer.value.set(player.position.x, player.position.y + 1, player.position.z)
     cutout.uCutoutCamera.value.copy(camera.position)
     // only cut a hole if a building is actually in the way
     const blocked =
@@ -287,7 +301,11 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
   })
 
   return (
-    <group ref={body} position={[spawn.position.x, 0, spawn.position.z]} rotation-y={spawn.heading}>
+    <group
+      ref={body}
+      position={[spawn.position.x, surfaceAt(spawn.position.x, spawn.position.z), spawn.position.z]}
+      rotation-y={spawn.heading}
+    >
       {!walker ? (
         <Bean
           avatar={spawn.avatar}

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { CEILING, interiors } from '../game/interiors'
+import { floorOf } from '../game/surface'
+import campus from './campus.json'
 import {
   ALL_GLASS,
   ceilingsGeometry,
@@ -70,7 +72,8 @@ describe('interior geometry', () => {
     expect(up(tri(floor))).toBeGreaterThan(0)
     expect(up(tri(ceiling))).toBeLessThan(0)
     ceiling.computeBoundingBox()
-    expect(ceiling.boundingBox!.max.y).toBeCloseTo(CEILING)
+    // over the building's floor (surface.ts)
+    expect(ceiling.boundingBox!.max.y).toBeCloseTo(floorOf(campus.buildings[room.index]!) + CEILING)
   })
 
   it('library north has no windows except its glass lobby', () => {
