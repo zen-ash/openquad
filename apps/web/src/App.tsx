@@ -24,6 +24,7 @@ import Campus from './scene/Campus'
 import IndoorLight from './scene/IndoorLight'
 import JoinCamera from './scene/JoinCamera'
 import Player from './scene/Player'
+import Crowd from './scene/Crowd'
 import RemotePlayers from './scene/RemotePlayers'
 import RouteLine from './scene/RouteLine'
 import ToonEffects from './scene/ToonEffects'
@@ -128,6 +129,7 @@ export default function App() {
             <CameraInput />
             <RouteLine />
             <RemotePlayers />
+            {!hideCity && <Crowd />}
             <VoiceUpdater />
           </Suspense>
         ) : (

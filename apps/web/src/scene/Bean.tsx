@@ -26,13 +26,15 @@ type Props = {
   onEmoteDone?: () => void
   // for the warm-up: just stand there
   still?: boolean
+  // casting a real shadow (it always has the soft one under it)
+  shadows?: boolean
 }
 
 /**
  * Everyone's person (campus/bean.ts). Goes inside the group that's moved around
  * (Player / RemotePlayers) and works out its wobble from how that moves (game/bean.ts)
  */
-export default function Bean({ avatar, emote, onEmoteDone, still }: Props) {
+export default function Bean({ avatar, emote, onEmoteDone, still, shadows = true }: Props) {
   const outer = useRef<THREE.Group>(null)
   const pose = useRef<THREE.Group>(null)
   const body = useRef<THREE.Mesh>(null)
@@ -114,7 +116,7 @@ export default function Bean({ avatar, emote, onEmoteDone, still }: Props) {
           geometry={geometry}
           material={material}
           userData={colors}
-          castShadow={!toon}
+          castShadow={!toon && shadows}
           receiveShadow
         />
       </group>
