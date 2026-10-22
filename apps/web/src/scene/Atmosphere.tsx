@@ -28,6 +28,7 @@ import {
 import { Mesh, NodeMaterial, PlaneGeometry, type Node, type WebGPURenderer } from 'three/webgpu'
 import { eciToEcef, moonDirection } from '../game/celestial'
 import { useSettings } from '../settings'
+import { cloudySky, updateClouds } from './clouds'
 import { lighterShadowPasses, SoftCascades } from './softShadows'
 
 // takram's atmosphere (bruneton's precomputed scattering): the sky, sunlight colored by how
@@ -94,8 +95,9 @@ starsNode.updateBefore = (frame) => {
 }
 skyNode.starsNode = starsNode
 const view = cameraProjectionMatrixInverse.mul(vec4(positionGeometry.xy, 1, 1)).xyz
-const up = max(cameraWorldMatrix.mul(vec4(view, 0)).xyz.normalize().y, 0).pow(0.5)
-skyMaterial.colorNode = vec3(skyNode as unknown as Node<'vec3'>).add(
+const dir = cameraWorldMatrix.mul(vec4(view, 0)).xyz.normalize()
+const up = max(dir.y, 0).pow(0.5)
+skyMaterial.colorNode = cloudySky(vec3(skyNode as unknown as Node<'vec3'>), dir, atmosphere).add(
   mix(color('#6b5a4c'), color('#1b1d26'), up).mul(glow),
 )
 const skyQuad = new Mesh(new PlaneGeometry(2, 2), skyMaterial)
@@ -186,9 +188,10 @@ export default function Atmosphere({
     glow.value = 1 - day
   }, [x, y, z, when, day])
 
-  useFrame(({ scene, camera }) => {
+  useFrame(({ scene, camera }, dt) => {
     atmosphere.camera = camera
     scene.environmentNode = environment as unknown as Node<'vec3'>
+    updateClouds(sun, dt)
   })
 
   return (

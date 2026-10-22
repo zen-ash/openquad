@@ -56,6 +56,7 @@ import {
 import { game, useSettings } from '../settings'
 import { sunlight } from './Atmosphere'
 import { adapt, exposure, meter } from './autoExposure'
+import { cloudShadow } from './clouds'
 import { effects, fx, TONE_MAPPINGS } from './fx'
 
 // how far (meters) the ambient occlusion looks for things that block the sky
@@ -203,7 +204,11 @@ export default function Effects() {
       ),
     )
     const contactShadow = mix(1, soft.sample(screenUV).r, near)
-    const shadows = builtinShadowContext(contactShadow, sunlight)
+    // and the clouds' shadows drifting over (clouds.ts). the game look has its own sky
+    const shadows = builtinShadowContext(
+      game ? contactShadow : contactShadow.mul(cloudShadow),
+      sunlight,
+    )
     scenePass.contextNode = context({
       ...(gl.contextNode.value as object),
       ...(ao.value as object),

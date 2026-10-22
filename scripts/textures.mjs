@@ -130,6 +130,14 @@ const MADE = {
       const cells = (x, y) => [Math.round(x * meters), Math.round(y * meters)]
       return [fbm(u, v, cells(0.35, 0.12), 2, 5) * 1.33, fbm(u, v, cells(0.3, 0.6), 2, 7) * 1.33, 0]
     }),
+  // the clouds (Atmosphere.tsx): where they are (r, big soft blobs) and the lumps on them
+  // (g, noise folded at its middle: round puffs with creases between, like cumulus). the sky
+  // reads it at two sizes that don't line up, so the repeat doesn't show
+  cloud: () =>
+    image(512, (u, v) => {
+      const lumps = fbm(u, v, [16, 16], 4, 51)
+      return [fbm(u, v, [6, 6], 5, 41) * 1.1, Math.abs(2 * lumps - 1) * 1.6, 0]
+    }),
 }
 
 // bilinear read of a tiling image at (x, y) in its pixels

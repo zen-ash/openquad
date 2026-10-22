@@ -27,5 +27,6 @@
   "floor": { "polyhaven": "laminate_floor_02", "meters": 1.7, "maps": ["color", "normal"] },
   "plaster": { "polyhaven": "painted_plaster_wall", "meters": 2, "maps": ["color", "normal"] },
   "marble": { "meters": 8, "size": 1024, "maps": ["mask"] },
-  "grime": { "meters": 40, "maps": ["mask"] }
+  "grime": { "meters": 40, "maps": ["mask"] },
+  "cloud": { "meters": 4000, "maps": ["mask"] }
 }
