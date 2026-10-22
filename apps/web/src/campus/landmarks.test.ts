@@ -37,6 +37,11 @@ describe.each(landmarks.map((b) => [b.name!, b] as const))('%s', (_, b) => {
   })
 
   it('has inside walls the whole way round, except the doorway', () => {
+    // a parking deck is open, its floors and sides are what you see from inside too
+    if (geo.open) {
+      expect(geo.inside.solid.length + geo.inside.glass.length).toBe(0)
+      return
+    }
     // at waist height, add up how much wall (or window) there is
     let length = 0
     for (const g of [...geo.inside.solid, ...geo.inside.glass]) {

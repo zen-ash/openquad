@@ -18,6 +18,11 @@ import { librarySouthMaterials } from '../campus/librarySouthMaterials'
 import { loftsParkingMaterials } from '../campus/loftsParkingMaterials'
 import { naturalScienceMaterials } from '../campus/naturalScienceMaterials'
 import { oneParkMaterials } from '../campus/oneParkMaterials'
+import {
+  bandDeckMaterials,
+  paintedDeckMaterials,
+  steelDeckMaterials,
+} from '../campus/parkingDecksMaterials'
 import { petitScienceMaterials } from '../campus/petitScienceMaterials'
 import { practiceFacilityMaterials } from '../campus/practiceFacilityMaterials'
 import { recCenterMaterials } from '../campus/recCenterMaterials'
@@ -58,6 +63,11 @@ const materials: Record<string, Record<string, THREE.Material>> = {
   'One Park Place': oneParkMaterials,
   'University Lofts': universityLoftsMaterials,
   'University Lofts Parking': loftsParkingMaterials,
+  'N Deck': steelDeckMaterials,
+  'K Deck': steelDeckMaterials,
+  'S Deck': steelDeckMaterials,
+  'M Deck': paintedDeckMaterials,
+  'G Deck': bandDeckMaterials,
 }
 
 // white sign with the name in gsu blue. the real ones have the logo where the blue
@@ -120,7 +130,11 @@ let plinths: THREE.BufferGeometry | null | undefined
 function allPlinths() {
   if (plinths !== undefined) return plinths
   const walls = campus.buildings
-    .filter((b) => b.name && materials[b.name] && landmarkGeometry(b))
+    .filter((b) => {
+      const geo = b.name && materials[b.name] ? landmarkGeometry(b) : null
+      // the open decks draw their own sides down to the ground
+      return geo && !geo.open
+    })
     .map((b) => plinthGeometry(b.points, floorOf(b)))
     .filter((g): g is THREE.BufferGeometry => !!g)
   return (plinths = walls.length ? mergeGeometries(walls) : null)

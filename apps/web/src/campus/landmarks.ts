@@ -11,6 +11,7 @@ import { librarySouthGeometry, type LibrarySouthData } from './librarySouth'
 import { loftsParkingGeometry, type ParkingData } from './loftsParking'
 import { naturalScienceGeometry, type NscData } from './naturalScience'
 import { oneParkGeometry, type OneParkData } from './onePark'
+import { parkingDeckGeometry, type DeckData } from './parkingDecks'
 import { petitScienceGeometry, type PetitData } from './petitScience'
 import { practiceFacilityGeometry, type PracticeFacilityData } from './practiceFacility'
 import { recCenterGeometry, type RecData } from './recCenter'
@@ -61,6 +62,9 @@ export type LandmarkGeometry = {
   // parts that don't cast shadows: glass and frames deep in the walls, nothing behind them
   // shows the difference and each part is three more draws (the cascades)
   noShadow?: string[]
+  // a parking deck: open floors, no rooms inside. it draws its own floors and its sides go
+  // down to the ground, so no inside floor, ceiling or plinth
+  open?: boolean
 }
 
 // each one wants its own bits of the map data, the json doesn't know which is which
@@ -87,7 +91,8 @@ type Data = LibraryNorthData &
   AnnexData &
   OneParkData &
   LoftsData &
-  ParkingData
+  ParkingData &
+  DeckData
 const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Library North': libraryNorthGeometry,
   'Dahlberg Hall': dahlbergGeometry,
@@ -113,6 +118,11 @@ const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'One Park Place': oneParkGeometry,
   'University Lofts': universityLoftsGeometry,
   'University Lofts Parking': loftsParkingGeometry,
+  'N Deck': parkingDeckGeometry,
+  'K Deck': parkingDeckGeometry,
+  'S Deck': parkingDeckGeometry,
+  'M Deck': parkingDeckGeometry,
+  'G Deck': parkingDeckGeometry,
 }
 
 // the scene and the interiors both need it, only build it once

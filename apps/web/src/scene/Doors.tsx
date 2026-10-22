@@ -7,6 +7,7 @@ import { localPlayer } from '../game/localPlayer'
 import { snapshots } from '../net/store'
 import campus from '../campus/campus.json'
 import { floorOf } from '../game/surface'
+import { roofed } from '../campus/interiorGeometry'
 
 const W = DOOR_WIDTH / 2
 const H = DOOR_HEIGHT
@@ -46,12 +47,22 @@ export default function Doors() {
   const open = useMemo(() => new Float32Array(interiors.length), [])
   // each door stands on its building's floor (surface.ts)
   const floors = useMemo(() => interiors.map((r) => floorOf(campus.buildings[r.index]!)), [])
+  // the parking decks' ways in are open, no doors there
+  const shut = useMemo(() => interiors.map(roofed), [])
 
   useFrame((_, dt) => {
     if (!glass.current || !frames.current) return
     // everyone counts, so a door opens for other people walking in too
     const people = [localPlayer, ...[...snapshots.values()].flatMap((s) => s.slice(-1))]
     interiors.forEach((room, i) => {
+      if (!shut[i]) {
+        m.makeScale(0, 0, 0)
+        for (const side of [0, 1]) {
+          glass.current!.setMatrixAt(i * 2 + side, m)
+          frames.current!.setMatrixAt(i * 2 + side, m)
+        }
+        return
+      }
       const target = doorOpens(room.door, people) ? 1 : 0
       open[i]! += (target - open[i]!) * Math.min(1, dt * 5)
       doorPanels(room.door, open[i]!).forEach((p, side) => {

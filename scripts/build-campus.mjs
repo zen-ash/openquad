@@ -131,7 +131,6 @@ const MEASURED_HEIGHTS = {
   'Centennial Hall': 13.5,
   'Greek Housing': 9.6,
   'J Deck': 13.9,
-  'M Deck': 25.7,
   'Patton Hall': 16.5,
   'Piedmont North Dining Hall': 18.2,
   // osm says 4 floors, but they're tall ones
@@ -2106,6 +2105,146 @@ function universityLofts(b, deck) {
   deck.door = [...S(...D.door).map(cm), cm(ux), cm(uz)]
 }
 
+// gsu's parking decks, drawn in campus/parkingDecks.ts: n, k and s are open steel frames
+// with chain link on every floor, m painted precast, g banded precast. outlines from usgs's
+// lidar (2018, esri's feb 2026 image has the same roofs): osm has n and k 1-2m too far north
+// west (n 1.5m too wide too). body is the deck's main box, [w, s, e, n] corners in game
+// coords, the stair towers stick out of it. a is meters in from its north west face, w along
+// it from the south west end. the door is where people walk in: [a, w] and which way is out
+const PARKING_DECKS = {
+  'N Deck': {
+    outline: [
+      [47.61, 330.58],
+      [50.48, 327.24],
+      [50.95, 327.64],
+      [100.86, 270.91],
+      [122.12, 289.63],
+      [124.4, 286.97],
+      [128.65, 290.61],
+      [126.32, 293.34],
+      [126.11, 293.16],
+      [75.57, 350.35],
+      [54.33, 331.65],
+      [52.01, 334.35],
+    ],
+    body: [
+      [50.45, 328.22],
+      [75.57, 350.35],
+      [126.11, 293.16],
+      [100.86, 270.91],
+    ],
+    // the stair towers' tops (323.6m) over decatur st's sidewalk at the deck (306.55)
+    height: 17.05,
+    // the opening next to the south west stair tower, off decatur st (gsu's 2018 photo)
+    door: { at: [0, 2.55], out: [-1, 0] },
+  },
+  'K Deck': {
+    outline: [
+      [78.77, 357.74],
+      [81.51, 354.55],
+      [81.79, 354.79],
+      [131.74, 298.16],
+      [153.36, 316.7],
+      [155.44, 314.28],
+      [159.61, 317.86],
+      [157.54, 320.27],
+      [157.13, 319.92],
+      [106.7, 377.41],
+      [85.35, 358.83],
+      [83.1, 361.45],
+    ],
+    body: [
+      [81.33, 355.33],
+      [106.7, 377.41],
+      [157.13, 319.92],
+      [131.74, 298.16],
+    ],
+    height: 16.85,
+    // the way in from the drive between n and k, by the gate at the west corner
+    door: { at: [0, 2.6], out: [-1, 0] },
+  },
+  'G Deck': {
+    // osm's outline is right (lidar): its box is lined up with the plaza side, from the west
+    // corner
+    body: [
+      [-240.4, 233.4],
+      [-184.79, 282.22],
+      [-152.07, 244.95],
+      [-207.68, 196.13],
+    ],
+    // the north tower's top (338.4m) over level 4, on courtland st (321.3)
+    height: 17.1,
+    // the door findDoor finds is on courtland st, where the way in on level 4 is
+  },
+  'M Deck': {
+    // the box, the elevator tower on the drive by dahlberg hall, the pedestrian entrance's
+    // tower a meter out on gilmer st
+    outline: [
+      [77.83, 117.95],
+      [86.82, 107.73],
+      [85.12, 106.27],
+      [91.96, 98.31],
+      [93.66, 99.76],
+      [131.82, 56.63],
+      [171.65, 91.14],
+      [117.87, 152.25],
+      [117.29, 153.1],
+      [108.94, 145.94],
+      [109.61, 145.18],
+    ],
+    body: [
+      [77.83, 117.95],
+      [117.87, 152.25],
+      [171.65, 91.14],
+      [131.82, 56.63],
+    ],
+    // the towers' tops (332.1m) over the first floor (308.4)
+    height: 23.7,
+    // the passage under "M DECK PEDESTRIAN ENTRANCE" on gilmer st
+    door: { at: [47.35, -1.02], out: [0, -1] },
+  },
+  'S Deck': {
+    // osm's is fine, the lidar's has the notch at the north corner
+    outline: [
+      [142.38, 284.64],
+      [177.96, 243.8],
+      [186.48, 251.11],
+      [187.83, 249.53],
+      [207.05, 266.04],
+      [169.93, 308.63],
+    ],
+    body: [
+      [142.38, 284.64],
+      [169.93, 308.63],
+      [207.05, 266.04],
+      [179.34, 242.23],
+    ],
+    // the stair's top (319.8m) over the entrance (303.95)
+    height: 15.85,
+    // the entrance on the south west end under "Enter"
+    door: { at: [26, 0], out: [0, -1] },
+  },
+}
+
+function parkingDeck(b) {
+  const d = PARKING_DECKS[b.name]
+  const [w, s, , n] = d.body
+  const unit = ([x, z]) => {
+    const len = Math.hypot(x - w[0], z - w[1])
+    return [(x - w[0]) / len, (z - w[1]) / len]
+  }
+  const [A, W] = [unit(s), unit(n)]
+  // cm here, the web app draws the walls on these same lines
+  const cm = (x) => Math.round(x * 100) / 100
+  const at = (a, v) => [cm(w[0] + A[0] * a + W[0] * v), cm(w[1] + A[1] * a + W[1] * v)]
+  if (d.outline) b.points = d.outline
+  b.height = d.height
+  b.landmark = { body: d.body }
+  if (!d.door) return
+  const [oa, ow] = d.door.out
+  b.door = [...at(...d.door.at), cm(A[0] * oa + W[0] * ow), cm(A[1] * oa + W[1] * ow)]
+}
+
 function main(elements) {
   const buildings = []
   const roads = []
@@ -2323,6 +2462,7 @@ function main(elements) {
   const lofts = buildings.find((b) => b.name === 'University Lofts')
   const loftsDeck = buildings.find((b) => b.name === 'University Lofts Parking')
   if (lofts) universityLofts(lofts, loftsDeck)
+  for (const b of buildings) if (PARKING_DECKS[b.name]) parkingDeck(b)
   paths.push({ width: PATH_WIDTH.footway * SCALE, points: URBAN_LIFE.unity })
   for (const b of NEW_BUILDINGS) buildings.push({ ...b, height: b.height * SCALE, gsu: true })
   const sce = buildings.find((b) => b.name === 'Student Center East')

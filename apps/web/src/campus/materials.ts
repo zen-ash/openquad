@@ -400,17 +400,24 @@ const concreteNodes = once(() => {
   const e = fract(meters.y.div(height)).mul(height)
   const line = mLine(min(e, height.sub(e)), 0.004, px)
   const boards = float(1).sub(strength.mul(board.mul(0.1).add(line.mul(0.25))))
-  return { ...nodes, colorNode: materialColor.rgb.mul(s.color).mul(boards).mul(grime()) }
+  return {
+    ...nodes,
+    colorNode: materialColor.rgb.mul(s.color).mul(boards).mul(grime()),
+    aoNode: nodes.aoNode.mul(f('occlusion')),
+  }
 })
 
 /**
  * Concrete cast in place (the texture has the formwork lines). boards is [height,
- * strength] for board formed concrete
+ * strength] for board formed concrete. occlusion darkens the light from the sky and its
+ * reflections (not the sun): for floors deep inside a parking deck, where the ambient
+ * occlusion doesn't reach the floor over them and they'd reflect a sky they can't see
  */
-export function concrete(p: Common & { boards?: Pair }) {
+export function concrete(p: Common & { boards?: Pair; occlusion?: number }) {
   return material('concrete', concreteNodes(), p.color, {
     ...common('concrete', p, 0.8),
     boards: vec(p.boards ?? [0.15, 0]),
+    occlusion: p.occlusion ?? 1,
   })
 }
 

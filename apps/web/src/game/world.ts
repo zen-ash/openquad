@@ -5,6 +5,7 @@ import { parkingObstacles, type ParkingData } from '../campus/loftsParking'
 import { wingWalls, type CourtlandBuildingData } from '../campus/courtlandBuilding'
 import { courtlandObstacles, type CourtlandNorthData } from '../campus/courtlandNorth'
 import { nscObstacles, type NscData } from '../campus/naturalScience'
+import { deckObstacles, type DeckData } from '../campus/parkingDecks'
 import { arenaObstacles, type ArenaData } from '../campus/sportsArena'
 import { BED, memorialWall } from '../campus/fountain'
 import { practiceObstacles, type PracticeFacilityData } from '../campus/practiceFacility'
@@ -75,6 +76,8 @@ const lofts = loftsObstacles(
 const deck = parkingObstacles(
   campus.buildings.find((b) => b.name === 'University Lofts Parking') as ParkingData,
 )
+// g deck's stair towers where they stand out of its outline
+const decks = deckObstacles(campus.buildings.find((b) => b.name === 'G Deck') as DeckData)
 
 export const world: World = {
   // buildings you can walk into are just their walls (with a doorway), the rest are solid.
@@ -98,6 +101,7 @@ export const world: World = {
     ...annex,
     ...lofts.walls,
     ...deck.walls,
+    ...decks,
   ],
   circles: [
     ...campus.trees.map(([x, z]) => ({ x: x!, z: z!, radius: TREE_RADIUS })),

@@ -102,9 +102,11 @@ function flat(points: Point[], y: number, facingUp: boolean) {
 }
 
 const floor = (r: Interior) => floorOf(campus.buildings[r.index]!)
+// the parking decks draw their own floors, you'd see these through their open sides
+export const roofed = (r: Interior) => !landmarkGeometry(campus.buildings[r.index]!)?.open
 
 export const floorsGeometry = (interiors: Interior[]) =>
-  mergeGeometries(interiors.map((r) => flat(r.points, floor(r) + 0.06, true)))
+  mergeGeometries(interiors.filter(roofed).map((r) => flat(r.points, floor(r) + 0.06, true)))
 
 export const ceilingsGeometry = (interiors: Interior[]) =>
-  mergeGeometries(interiors.map((r) => flat(r.points, floor(r) + CEILING, false)))
+  mergeGeometries(interiors.filter(roofed).map((r) => flat(r.points, floor(r) + CEILING, false)))

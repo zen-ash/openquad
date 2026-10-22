@@ -45,6 +45,13 @@ const DATUMS: Record<string, number> = {
   // the lofts and their deck share a wall, both on the edgewood ave sidewalk at the lofts' doors
   'University Lofts': 304.3,
   'University Lofts Parking': 304.3,
+  // the parking decks' floors (lidar), at the way in: their ramps are drawn at their real
+  // heights from these
+  'N Deck': 306.55,
+  'K Deck': 306.45,
+  'S Deck': 303.95,
+  'M Deck': 308.4,
+  'G Deck': 321.3,
 }
 
 type Building = { name?: string; points: number[][]; door?: number[] }
