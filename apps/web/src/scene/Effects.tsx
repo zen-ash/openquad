@@ -56,6 +56,7 @@ import { effects, fx, TONE_MAPPINGS } from './fx'
 
 // how far (meters) the ambient occlusion looks for things that block the sky
 const AO_RADIUS = 2
+const AO_SAMPLES = 12
 
 // the scene is drawn at 1.2 pixels per css pixel (what it always was: 0.8 of a 1.5x
 // canvas) and never more than 1920x1200, and taa scales it up to the screen's own pixels.
@@ -143,6 +144,9 @@ export default function Effects() {
     const aoPass = gtao(preDepth, prePass.getTextureNode(), camera)
     aoPass.radius.value = AO_RADIUS
     aoPass.scale.value = 1
+    // 12 instead of three's 16: 4 steps along each direction instead of 6. it's the
+    // biggest pass close to a wall, and the noise it adds gets averaged out over frames
+    aoPass.samples.value = AO_SAMPLES
     // the noise pattern turns every frame and taa averages it out
     aoPass.useTemporalFiltering = true
     // soften the rest without blurring across edges. each pass is drawn into its own half
