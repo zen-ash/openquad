@@ -1,5 +1,17 @@
-import { expect, test } from '@playwright/test'
+import { expect, test as base, type Page } from '@playwright/test'
 import { doorOf, teleport } from './fixtures'
+
+// the full city on ci's cpu renderer (swiftshader) keeps the browser's gpu process busy for a
+// while after the page has closed, and with the new buildings the next page in the same
+// browser didn't open in time. each of these gets a browser of its own, closed at the end
+const test = base.extend<{ page: Page }>({
+  page: async ({ playwright, launchOptions, baseURL, viewport, permissions }, use) => {
+    const browser = await playwright.chromium.launch(launchOptions)
+    const page = await browser.newPage({ baseURL, viewport, permissions })
+    await use(page)
+    await browser.close()
+  },
+})
 
 // the other tests skip drawing the city (?nocity) to stay fast. these make sure it
 // actually draws: a broken shader only shows up as a console error, the page itself loads fine.
