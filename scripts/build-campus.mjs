@@ -24,22 +24,6 @@ const west = CENTER.lon - EDGES.west / METERS_PER_DEG_LON
 const east = CENTER.lon + EDGES.east / METERS_PER_DEG_LON
 const bbox = `${south},${west},${north},${east}`
 
-const query = `[out:json][timeout:90];
-(
-  way["building"](${bbox});
-  relation["building"](${bbox});
-  way["highway"](${bbox});
-  way["leisure"="park"](${bbox});
-  way["landuse"="grass"](${bbox});
-  way["leisure"~"^(garden|pitch)$"](${bbox});
-  way["natural"="scrub"](${bbox});
-  way["amenity"="parking"](${bbox});
-  node["natural"="tree"](${bbox});
-  node["amenity"="fountain"](${bbox});
-  node["highway"="traffic_signals"](${bbox});
-);
-out geom;`
-
 // north is -z so W walks north with the default camera
 const round = (n) => Math.round(n * 10) / 10
 const toLocal = ({ lat, lon }) => [
@@ -59,6 +43,7 @@ const inside = ([x, z]) =>
 // buildings (you can go inside them, they get labels). osm names, the ones osm calls
 // something else are renamed below
 const GSU_BUILDINGS = new Set([
+  '100 Edgewood',
   '148 Edgewood',
   '55 Park Place',
   '58 Edgewood',
@@ -157,6 +142,45 @@ const MEASURED_HEIGHTS = {
   '58 Edgewood': 16.5,
 }
 
+// osm's height is wrong for these (mostly floors x 3.92, or nothing at all): usgs lidar
+// over the ground round each one, by osm way id. reflection is newer than the lidar (2022,
+// 25 floors)
+const LIDAR_HEIGHTS = {
+  42779040: 76, // the ritz-carlton
+  270470030: 64, // the landmark
+  24232553: 69, // hurt building
+  102162996: 46.5, // bethel towers
+  252608923: 113, // 34 peachtree, the roof under its penthouse
+  262879648: 80, // 55 marietta
+  536690082: 97, // peachtree center south tower
+  345615607: 68, // the metropolitan
+  252608870: 63, // bennett a. brown
+  270880829: 70, // candler building
+  1103001627: 80, // reflection
+  287320828: 87, // the james h floyd twin towers
+  270880941: 42, // grady
+  42738913: 27, // lanier parking
+  354881427: 36, // college of law
+  252608883: 56, // robinson college of business
+}
+
+// a few towers are drawn in osm as building:part ways standing on a low outline. only these
+// parts are read: each tower goes on the end of the list (no index moves) with its outline's
+// name, and the outline under it gets the podium's height (lidar). heights are lidar where
+// osm's are wrong
+const TOWER_PARTS = {
+  192939493: {}, // the westin's glass cylinder
+  479134201: { podium: 61 }, // georgia-pacific's sawtooth, four steps
+  479134202: {},
+  479134203: {},
+  479134204: {},
+  886352430: { podium: 20 }, // 25 park place, the annex behind it is low
+  886349852: { height: 84, podium: 20 }, // the mix
+  536726595: { height: 52, podium: 22 }, // one 12 courtland
+  886352432: { height: 69, podium: 15 }, // southern bell
+  886357427: { podium: 10 }, // healey
+}
+
 function heightOf(tags) {
   const h = parseFloat(tags.height)
   if (h > 0) return h
@@ -190,6 +214,31 @@ function pointInPolygon([x, z], poly) {
     if (zi > z !== zj > z && x < ((xj - xi) * (z - zi)) / (zj - zi) + xi) inside = !inside
   }
   return inside
+}
+
+// an outline moved in by d all round: under a tower part, so its walls don't fight the
+// tower's where they're on the same line
+function inset(points, d) {
+  const n = points.length
+  const area = points.reduce((a, [x, z], i) => {
+    const [x2, z2] = points[(i + 1) % n]
+    return a + x * z2 - x2 * z
+  }, 0)
+  const side = area > 0 ? 1 : -1
+  const normal = ([ax, az], [bx, bz]) => {
+    const len = Math.hypot(bx - ax, bz - az) || 1
+    return [(-(bz - az) / len) * side, ((bx - ax) / len) * side]
+  }
+  return points.map((p, i) => {
+    const [n1, n2] = [normal(points[(i - 1 + n) % n], p), normal(p, points[(i + 1) % n])]
+    const m = [n1[0] + n2[0], n1[1] + n2[1]]
+    const k = d / Math.max((m[0] * n1[0] + m[1] * n1[1]) / (Math.hypot(...m) || 1), 0.3)
+    const len = Math.hypot(...m) || 1
+    return [
+      Math.round((p[0] + (m[0] / len) * k) * 100) / 100,
+      Math.round((p[1] + (m[1] / len) * k) * 100) / 100,
+    ]
+  })
 }
 
 function distToLine([x, z], points) {
@@ -1853,8 +1902,17 @@ function main(elements) {
   const signals = []
   const trees = []
 
+  const towers = []
+
   for (const el of elements) {
     const tags = el.tags ?? {}
+
+    if (el.type === 'way' && TOWER_PARTS[el.id]) {
+      const points = ring(el.geometry)
+      const part = TOWER_PARTS[el.id]
+      if (points) towers.push({ ...part, points, height: part.height ?? heightOf(tags) })
+      continue
+    }
 
     if (
       tags.building &&
@@ -1870,7 +1928,8 @@ function main(elements) {
 
       for (const points of rings) {
         if (!points || !inside(centroid(points))) continue
-        const b = { height: round(heightOf(tags) * SCALE), points }
+        const lidar = el.type === 'way' ? LIDAR_HEIGHTS[el.id] : undefined
+        const b = { height: round((lidar ?? heightOf(tags)) * SCALE), points }
         const minHeight = el.type === 'way' && BRIDGES.has(el.id) ? FLOOR : minHeightOf(tags)
         if (minHeight > 0) {
           b.minHeight = round(minHeight * SCALE)
@@ -2048,6 +2107,18 @@ function main(elements) {
     const last = buildings.pop()
     if (last !== lobby) buildings[buildings.indexOf(lobby)] = last
   }
+  // the towers last, after everything that moves buildings about
+  const cut = new Set()
+  for (const t of towers) {
+    const under = buildings.find(
+      (b) => !b.minHeight && pointInPolygon(centroid(t.points), b.points),
+    )
+    if (!under) continue
+    if (t.podium) under.height = round(t.podium * SCALE)
+    if (!cut.has(under)) under.points = inset(under.points, 0.1)
+    cut.add(under)
+    buildings.push({ name: under.name, height: round(t.height * SCALE), points: t.points })
+  }
 
   // hurt park's fountain. it hasn't worked in years, the memorial wall to joel hurt curves
   // round the south side of it. drawn in scene/Fountain.tsx
@@ -2102,6 +2173,23 @@ function main(elements) {
     fountain,
   }
 }
+
+const query = `[out:json][timeout:90];
+(
+  way["building"](${bbox});
+  relation["building"](${bbox});
+  way["highway"](${bbox});
+  way["leisure"="park"](${bbox});
+  way["landuse"="grass"](${bbox});
+  way["leisure"~"^(garden|pitch)$"](${bbox});
+  way["natural"="scrub"](${bbox});
+  way["amenity"="parking"](${bbox});
+  node["natural"="tree"](${bbox});
+  node["amenity"="fountain"](${bbox});
+  node["highway"="traffic_signals"](${bbox});
+  way(id:${Object.keys(TOWER_PARTS).join(',')});
+);
+out geom;`
 
 // OSM=file keeps overpass's answer there and uses it next time: the same map for builds
 // made side by side, and no waiting for a busy overpass
