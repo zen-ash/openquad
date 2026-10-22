@@ -7,7 +7,7 @@ import { buildingsGeometry, centroid } from '../campus/geometry'
 import { facadeMaterial } from '../campus/facade'
 import { toonFacade } from '../campus/toon'
 import { localPlayer } from '../game/localPlayer'
-import { floorOf } from '../game/surface'
+import { baseOf } from '../game/surface'
 import { toon } from '../settings'
 import Label from './Label'
 
@@ -17,7 +17,7 @@ const material = toon ? toonFacade() : facadeMaterial()
 
 const labels = campus.buildings
   .filter((b) => b.gsu && b.name)
-  .map((b) => ({ name: b.name!, height: floorOf(b) + b.height, ...centroid(b.points) }))
+  .map((b) => ({ name: b.name!, height: baseOf(b) + b.height, ...centroid(b.points) }))
 
 function Labels() {
   const refs = useRef<(THREE.Group | null)[]>([])

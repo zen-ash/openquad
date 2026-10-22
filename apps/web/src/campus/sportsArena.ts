@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import type { Point, Segment } from '../game/collision'
 import { DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
+import { baseOf, liftOf, lowestUnder } from '../game/surface'
+import { heightAt } from '../game/terrain'
 import type { Sign } from './landmarks'
 import {
   circle,
@@ -9,6 +11,7 @@ import {
   glassQuad,
   insideWalls,
   parts as collect,
+  sink,
   solidPieces,
   wallQuad,
   type Hole,
@@ -25,10 +28,12 @@ import {
 // sources: docs/reference/sports-arena.md
 //
 // "u" is meters along decatur st toward piedmont ave, "v" meters in from decatur st, both
-// from hurt park (the same numbers as build-campus.mjs). the game's ground is the decatur st
-// sidewalk under the terrace
+// from hurt park (the same numbers as build-campus.mjs). heights are over the decatur st
+// sidewalk under the terrace (surface.ts): the doors and the ticket office are up the hill by
+// courtland st, decatur st drops past it toward piedmont ave
 
 export type ArenaData = {
+  name?: string
   points: number[][]
   height: number
   door?: number[]
@@ -87,9 +92,9 @@ export const HALL = { nw: 82.7, se: 163.55, ne: 253.6, sw: 291.8, roof: 24.85, t
 // the end walls, 1.3m thick, past the hall at both ends: 2.7m on courtland st, 2.25m over
 // the practice facility's roof
 export const END = { from: 80, to: 165.8, ne: 252.3, sw: 293.05, top: 26.45 }
-// the practice facility draws everything under its roof (10.3m over its own ground, which
-// is the game's ground too). the arena's walls over it start a bit under that
-export const PRACTICE_ROOF = 10
+// the practice facility draws everything under its roof, 10.3m over its own datum (306.5m,
+// 2.5m under ours). the arena's walls over it start a bit under that
+export const PRACTICE_ROOF = 7.5
 // the stair towers and the louvre boxes on them (lidar). the north and east ones only go
 // 7.5m back from the front, behind them it's the hall's roof
 export const TOWER = 29.5
@@ -204,6 +209,14 @@ export function sportsArenaGeometry(b: ArenaData) {
   const { A, uvOf, D } = arenaFrame(b)
   const outline = b.points.map(([x, z]) => ({ x: x!, z: z! }))
   const door = b.door ? { x: b.door[0]!, z: b.door[1]! } : null
+  // the doors' level over the sidewalk under the terrace (the game's ground there), and the
+  // ground anywhere else, for the doors round the back
+  const lift = liftOf(b)
+  const base = baseOf(b)
+  const ground = (u: number, v: number) => {
+    const p = A(u, v)
+    return heightAt(p.x, p.z) - base
+  }
   const V3 = (u: number, v: number, y: number) => {
     const p = A(u, v)
     return new THREE.Vector3(p.x, y, p.z)
@@ -425,9 +438,10 @@ export function sportsArenaGeometry(b: ArenaData) {
   ribbed(HALL.nw, -1, 0)
   ribbed(HALL.se, 1, PRACTICE_ROOF)
   lid('precast', rect(HALL.nw + 0.3, HALL.se - 0.3, HALL.ne, HALL.sw), HALL.roof)
-  // a couple of service doors on courtland st
+  // a couple of service doors on courtland st, at the ground under the bridge
   for (const v of [262, 281]) {
-    const geo = wallQuad(A(HALL.nw - 0.02, v), A(HALL.nw - 0.02, v + 1.8), 0, 2.4, D(-1, 0))
+    const g = ground(HALL.nw, v + 0.9)
+    const geo = wallQuad(A(HALL.nw - 0.02, v), A(HALL.nw - 0.02, v + 1.8), g, g + 2.4, D(-1, 0))
     add('dark', smooth(geo))
   }
 
@@ -691,10 +705,12 @@ export function sportsArenaGeometry(b: ArenaData) {
   }
 
   // the north corner: the ticket office, a box of cream blocks with a deep flat canopy and
-  // taller ends, its window, poster case and sign (2019 photos)
+  // taller ends, its window, poster case and sign (2019 photos). it stands on the paving in
+  // front of it, up the hill from the terrace
   const office = { u: [89.5, 98.6] as Range, v: [234.8, 240.2] as Range, top: 3.75 }
   const [o0, o1] = office.u
   const ov = office.v[0]
+  const up = Math.max(ground(o0, ov - 0.5), ground(o1, ov - 0.5))
   // the precast's grid made the size of a block
   const blocks = (geo: THREE.BufferGeometry) => {
     const uv = geo.getAttribute('uv')
@@ -702,11 +718,11 @@ export function sportsArenaGeometry(b: ArenaData) {
     return geo
   }
   const windows: Hole[] = [
-    [o1 - 6.4, o1 - 3, 0.9, 2.6],
-    [o1 - 2.5, o1 - 1, 0.9, 2.5],
+    [o1 - 6.4, o1 - 3, up + 0.9, up + 2.6],
+    [o1 - 2.5, o1 - 1, up + 0.9, up + 2.5],
   ]
   const cut = windows.map(([a, z, y0, y1]): Hole => [a - o0, z - o0, y0, y1])
-  for (const [h0, h1, y0, y1] of solidPieces(o1 - o0, 0, office.top, cut))
+  for (const [h0, h1, y0, y1] of solidPieces(o1 - o0, 0, up + office.top, cut))
     add('precast', blocks(wallQuad(A(o0 + h0, ov), A(o0 + h1, ov), y0, y1, D(0, -1), o0 + h0)))
   for (const [a, z, y0, y1] of windows) {
     if (a < o1 - 4) add('clear', wallQuad(A(a, ov), A(z, ov), y0, y1, D(0, -1)))
@@ -717,14 +733,15 @@ export function sportsArenaGeometry(b: ArenaData) {
     [o0, -1],
     [o1, 1],
   ] as const)
-    add('precast', blocks(wallQuad(A(u, ov), A(u, office.v[1]), 0, 5.1, D(s, 0), ov)))
-  box('precast', [o0, o0 + 1.7], office.v, [office.top, 5.1], 'Uvt')
-  box('precast', [o1 - 0.8, o1], office.v, [office.top, 5.1], 'uvt')
-  box('precast', [o0 + 1.7, o1 + 0.3], [ov - 1.2, office.v[1]], [office.top, 4.3], 'Uvtb')
-  fu('precast', o0 + 1.7, ov - 1.2, ov, office.top, 4.3, -1)
+    add('precast', blocks(wallQuad(A(u, ov), A(u, office.v[1]), 0, up + 5.1, D(s, 0), ov)))
+  const [top, end, eave] = [up + office.top, up + 5.1, up + 4.3]
+  box('precast', [o0, o0 + 1.7], office.v, [top, end], 'Uvt')
+  box('precast', [o1 - 0.8, o1], office.v, [top, end], 'uvt')
+  box('precast', [o0 + 1.7, o1 + 0.3], [ov - 1.2, office.v[1]], [top, eave], 'Uvtb')
+  fu('precast', o0 + 1.7, ov - 1.2, ov, top, eave, -1)
   signs.push({
     ...A(o1 - 4.7, ov - 0.03),
-    y: 3.15,
+    y: up + 3.15,
     rot: facing(0, -1),
     text: 'SPORTS ARENA\nTICKET OFFICE',
     plate: '#1f4b99',
@@ -835,20 +852,22 @@ export function sportsArenaGeometry(b: ArenaData) {
   const du = OUTLINE[1]![0]
   const [dv0, dv1] = [T.n.v[1], END.ne]
   const doorAt = door ? uvOf(door)[1] : (dv0 + dv1) / 2
+  // they're up the hill, level with the court in front of them: a plain base under them
   const doorway: Hole = [
     doorAt - DOOR_WIDTH / 2 - dv0,
     doorAt + DOOR_WIDTH / 2 - dv0,
-    0,
-    DOOR_HEIGHT,
+    lift,
+    lift + DOOR_HEIGHT,
   ]
-  for (const [h0, h1, y0, y1] of solidPieces(dv1 - dv0, 0, SHOP, [doorway]))
+  for (const [h0, h1, y0, y1] of solidPieces(dv1 - dv0, lift, lift + SHOP, [doorway]))
     paneU(du, dv0 + h0, dv0 + h1, y0, y1, -1)
+  fu('precast', du, dv0, dv1, 0, lift, -1)
   const [j0, j1] = [dv0 + doorway[0], dv0 + doorway[1]]
-  box('metal', [du - 0.08, du], [j0 - 0.08, j0], [0, DOOR_HEIGHT], 'uV', smooth)
-  box('metal', [du - 0.08, du], [j1, j1 + 0.08], [0, DOOR_HEIGHT], 'uv', smooth)
-  box('metal', [du - 0.08, du], [dv0, dv1], [DOOR_HEIGHT, SHOP + 0.1], 'ub', smooth)
+  box('metal', [du - 0.08, du], [j0 - 0.08, j0], [lift, lift + DOOR_HEIGHT], 'uV', smooth)
+  box('metal', [du - 0.08, du], [j1, j1 + 0.08], [lift, lift + DOOR_HEIGHT], 'uv', smooth)
+  box('metal', [du - 0.08, du], [dv0, dv1], [lift + DOOR_HEIGHT, lift + SHOP + 0.1], 'ub', smooth)
   const curtain = Math.min(roofAt(du, dv0), roofAt(du, dv1)) - 0.3
-  paneU(du, dv0, dv1, SHOP + 0.1, curtain, -1)
+  paneU(du, dv0, dv1, lift + SHOP + 0.1, curtain, -1)
   quad(
     'metal',
     [
@@ -860,8 +879,8 @@ export function sportsArenaGeometry(b: ArenaData) {
     dir3(-1, 0),
   )
   // the awning: a band with an arched top, sloping back to the wall
-  const aw = { u: du - 1.4, v: [dv0 + 0.3, dv1 - 0.2] as Range, y: 3.35, wall: 4.5 }
-  const arc = (t: number) => 3.75 + 0.35 * Math.sin(Math.PI * t)
+  const aw = { u: du - 1.4, v: [dv0 + 0.3, dv1 - 0.2] as Range, y: lift + 3.35, wall: lift + 4.5 }
+  const arc = (t: number) => lift + 3.75 + 0.35 * Math.sin(Math.PI * t)
   const at = (t: number) => aw.v[0] + (aw.v[1] - aw.v[0]) * t
   const n = 8
   for (let k = 0; k < n; k++) {
@@ -904,7 +923,7 @@ export function sportsArenaGeometry(b: ArenaData) {
     box('metal', [aw.u - 0.05, aw.u + 0.05], [v - 0.05, v + 0.05], [0, aw.y], 'uUvV', smooth)
   signs.push({
     ...A(aw.u - 0.02, (aw.v[0] + aw.v[1]) / 2),
-    y: 3.55,
+    y: lift + 3.55,
     rot: facing(-1, 0),
     text: 'Welcome to the GEORGIA STATE Sports Arena',
     letters: true,
@@ -947,7 +966,7 @@ export function sportsArenaGeometry(b: ArenaData) {
   // the small ones: on a column under the terrace, and on the east tower by the flagpole
   signs.push({
     ...A(COLUMNS[1]! - 0.52, TERRACE.v + 0.6),
-    y: 2.7,
+    y: ground(COLUMNS[1]!, TERRACE.v) + 2.7,
     rot: facing(-1, 0),
     text: 'SPORTS ARENA',
     plate: '#1f4b99',
@@ -956,37 +975,50 @@ export function sportsArenaGeometry(b: ArenaData) {
   })
   signs.push({
     ...A(143.6, T.e.v[0] - 0.03),
-    y: 2.6,
+    y: ground(143.6, T.e.v[0] - 0.2) + 2.6,
     rot: facing(0, -1),
     text: 'SPORTS ARENA',
     scale: 0.55,
   })
   prism('metal', circle(A(147, T.e.v[0] - 0.6), 0.07, 8), 0, 16)
 
-  // the court by the practice facility: a flat canopy over a door in the end wall
-  box('metal', [151.5, 161], [249.7, END.ne], [4.3, 4.5], 'uUvtb', smooth)
-  add('dark', smooth(wallQuad(A(155.3, END.ne - 0.02), A(157.3, END.ne - 0.02), 0, 2.4, D(0, -1))))
+  // the court by the practice facility, down at its level: a flat canopy over a door in the
+  // end wall
+  const court = ground(156.3, END.ne - 1)
+  box('metal', [151.5, 161], [249.7, END.ne], [court + 4.3, court + 4.5], 'uUvtb', smooth)
+  const shut = wallQuad(
+    A(155.3, END.ne - 0.02),
+    A(157.3, END.ne - 0.02),
+    court,
+    court + 2.4,
+    D(0, -1),
+  )
+  add('dark', smooth(shut))
 
   // the back: plain panels, the loading dock's door by the west tower
   box('precast', [T.w.u[1], T.s.u[0]], [END.sw, 298.3], [0, HALL.top], 'Vt')
   fv('precast', 298, T.w.u[1], T.s.u[0], HALL.roof, HALL.top, -1)
-  add('dark', smooth(wallQuad(A(106, 298.32), A(109.6, 298.32), 0, 3.2, D(0, 1))))
-  // the loading dock's well (osm's box, building 166): a low wall with a rail round it
+  const dock = ground(107.8, 299)
+  add('dark', smooth(wallQuad(A(106, 298.32), A(109.6, 298.32), dock, dock + 3.2, D(0, 1))))
+  // the loading dock's well (osm's box, building 166): a low wall with a rail round it, half
+  // a meter over the highest ground round it and down into the lowest
   const well = b.landmark!.well?.map(([x, z]) => ({ x: x!, z: z! }))
+  const rim = well ? Math.max(...well.map((c) => heightAt(c.x, c.z))) - base + 0.5 : 0
+  const under = well ? Math.min(...well.map((c) => heightAt(c.x, c.z))) - base - 0.3 : 0
   for (const { p, q, out, len } of well ? edges(well) : []) {
     const o = { x: -out.x, z: -out.z }
     const by = (c: Point, k: number) => ({ x: c.x + o.x * k, z: c.z + o.z * k })
-    add('precast', wallQuad(p, q, 0, 0.5, out))
-    add('precast', wallQuad(by(p, 0.25), by(q, 0.25), 0, 0.5, o))
-    add('precast', flat([p, q, by(q, 0.25), by(p, 0.25)], 0.5))
-    add('metal', smooth(flat([by(p, 0.1), by(q, 0.1), by(q, 0.17), by(p, 0.17)], 1.1)))
-    add('metal', smooth(wallQuad(by(p, 0.1), by(q, 0.1), 1.03, 1.1, out)))
-    add('metal', smooth(wallQuad(by(p, 0.17), by(q, 0.17), 1.03, 1.1, o)))
+    add('precast', wallQuad(p, q, under, rim, out))
+    add('precast', wallQuad(by(p, 0.25), by(q, 0.25), under, rim, o))
+    add('precast', flat([p, q, by(q, 0.25), by(p, 0.25)], rim))
+    add('metal', smooth(flat([by(p, 0.1), by(q, 0.1), by(q, 0.17), by(p, 0.17)], rim + 0.6)))
+    add('metal', smooth(wallQuad(by(p, 0.1), by(q, 0.1), rim + 0.53, rim + 0.6, out)))
+    add('metal', smooth(wallQuad(by(p, 0.17), by(q, 0.17), rim + 0.53, rim + 0.6, o)))
     const posts = Math.max(1, Math.round(len / 2))
     for (let k = 0; k < posts; k++) {
       const t = (k + 0.5) / posts
       const c = by({ x: p.x + (q.x - p.x) * t, z: p.z + (q.z - p.z) * t }, 0.135)
-      prism('metal', circle(c, 0.03, 4), 0.5, 1.03, false)
+      prism('metal', circle(c, 0.03, 4), rim, rim + 0.53, false)
     }
   }
 
@@ -1006,8 +1038,11 @@ export function sportsArenaGeometry(b: ArenaData) {
     }
   }
 
+  // decatur st drops toward piedmont ave: everything standing on the sidewalk goes on down
+  const parts = merged()
+  sink(parts, lowestUnder(b.points) - base - 0.3)
   return {
-    parts: merged(),
+    parts,
     inside,
     signs,
     first: ['precast'],

@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import type { Point } from '../game/collision'
 import { CEILING, DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
+import { baseOf, liftOf, lowestUnder } from '../game/surface'
+import { heightAt } from '../game/terrain'
 import type { Sign } from './landmarks'
 import {
   edges,
@@ -8,6 +10,7 @@ import {
   glassQuad,
   parts as collect,
   pt,
+  sink,
   solidPieces,
   wallQuad,
   type Hole,
@@ -21,9 +24,11 @@ import {
 // sources: docs/reference/college-of-education.md
 //
 // on a side, "u" is meters along it from its corner (pryor st and decatur st from the corner
-// where they meet) and "d" meters out from the marble's face
+// where they meet) and "d" meters out from the marble's face. heights are over the pryor st
+// sidewalk at the doors (surface.ts), the block drops 2.3m from there to kimball way
 
 export type CollegeOfEducationData = {
+  name?: string
   points: number[][]
   height: number
   door?: number[]
@@ -34,17 +39,19 @@ export type CollegeOfEducationData = {
 // is empty inside, the sun would come through the rows of windows otherwise. grey is the soffit
 export type Part = 'marble' | 'glass' | 'dark' | 'brick' | 'screen' | 'blue' | 'grey' | 'clear'
 
-// the ground floor up to the soffit under the overhang, then nine rows of windows 3.3m apart
-// and the top band. fitted on gsu's 2021 photo from the south (the fins give the scale) and on
-// two mapillary photos from 2019 (docs/reference/college-of-education.md)
-export const SOFFIT = 4.5
-export const PITCH = 3.3
+// the ground floor up to the soffit under the overhang, then nine rows of windows 3.64m apart
+// and the top band. the proportions are from gsu's 2021 photo from the south and two
+// mapillary photos from 2019 (docs/reference/college-of-education.md), the size from usgs's
+// lidar: the coping at 356.1m (b.height over the doors), the soffit 4.7m over the sidewalk at
+// pryor st and decatur st
+export const SOFFIT = 4.2
+export const PITCH = 3.64
 export const ROWS = Array.from({ length: 9 }, (_, k): [number, number] => [
-  6.25 + k * PITCH,
-  7.7 + k * PITCH,
+  SOFFIT + 1.93 + k * PITCH,
+  SOFFIT + 3.53 + k * PITCH,
 ])
-// the roof behind the parapet
-export const ROOF = 35.2
+// the roof behind the parapet (lidar)
+export const ROOF = 38
 // how far the ground floor is set back under the overhang. build-campus.mjs moves the outline
 // in by this much on the three street sides
 export const RECESS = 1
@@ -58,7 +65,7 @@ export const PIER = 0.32
 export const POST = 0.45
 const PARAPET = 0.35
 // a strip of dark windows under the soffit, over the ground floor's brick and louvres
-export const CLERESTORY = 3.85
+export const CLERESTORY = SOFFIT - 0.72
 // 40-42 pryor st (four floors) stands against the south side, no windows behind it
 export const PARTY_ROWS = 3
 // marble slabs: four to a bay (the joints are on the mullion lines), one to a spandrel
@@ -92,19 +99,19 @@ const DOOR_PANEL = 1.125
 // the blue canopy over the doors on pryor st: from, to, how far out past the marble and its
 // fascia (fitted on mapillary's 2019 photo from park place, the far end on another one from
 // pryor st). the doors are in the middle of it, where there's no pier
-export const CANOPY = { from: 12.5, to: 23.3, out: 2, y: [3.55, 4.15] }
+export const CANOPY = { from: 12.5, to: 23.3, out: 2, y: [SOFFIT - 1.05, SOFFIT - 0.39] }
 // banners on the corner and three fins of pryor st (blue, gsu's logo left out), the round
 // blue sign on a bracket off the last fin but one (it's gsu's logo, plain blue here)
 const BANNERS = [0, 1, 4, 5]
-const BANNER = { y: [4.55, 6.75], d: [0.1, 0.7] }
-const DISC = { fin: 6, y: 6.6, r: 0.65, d: 1 }
+const BANNER = { y: [SOFFIT + 0.06, SOFFIT + 2.48], d: [0.1, 0.7] }
+const DISC = { fin: 6, y: SOFFIT + 2.32, r: 0.65, d: 1 }
 // the louvres' slats and the screens' rows
 const SLAT = 0.15
 export const ROW = 0.45
 // the box on the roof, dark glass in a white frame: along decatur st and pryor st from their
 // corner, and its top. its side toward kimball way shows over the parapet in gsu's 2021 photo,
 // which puts it a bit further from pryor st than the dark patch on esri's satellite images
-const PENTHOUSE = { u: [9.5, 15.9], v: [10, 31.5], top: 42.3 } as const
+const PENTHOUSE = { u: [9.5, 15.9], v: [10, 31.5], top: 44.8 } as const
 
 type Side = {
   name: 'decatur' | 'kimball' | 'south' | 'pryor'
@@ -199,6 +206,11 @@ export function collegeOfEducationGeometry(b: CollegeOfEducationData) {
   const outline = b.points.map(pt)
   const door = b.door ? { x: b.door[0]!, z: b.door[1]! } : pryor.at(DOOR, -RECESS)
   const flip = (o: Point) => ({ x: -o.x, z: -o.z })
+  // the doors' level (the game's ground there), and the ground anywhere: down kimball way the
+  // vents, the dock and the back door stand on the sidewalk under them
+  const base = baseOf(b)
+  const lift = liftOf(b)
+  const ground = (p: Point) => heightAt(p.x, p.z) - base
   const shift = (geo: THREE.BufferGeometry, f: (u: number, v: number) => [number, number]) => {
     const uv = geo.getAttribute('uv')
     for (let i = 0; i < uv.count; i++) uv.setXY(i, ...f(uv.getX(i), uv.getY(i)))
@@ -462,12 +474,13 @@ export function collegeOfEducationGeometry(b: CollegeOfEducationData) {
     GROUND[s.name as keyof typeof GROUND].forEach((kind, k) => {
       const u0 = Math.max(ua, k * s.bay)
       const u1 = Math.min(uz, (k + 1) * s.bay)
+      const g = ground(s.at((u0 + u1) / 2, 1.5))
       // the strip of dark windows under the soffit, all along
       dark(u0, u1, CLERESTORY, SOFFIT)
       const vent = VENTS[s.name]?.[k]
       const vents: Hole[] =
         vent !== undefined && kind === 'brick'
-          ? [[u0 + 0.8 + vent * (u1 - u0 - 3), u0 + 2.2 + vent * (u1 - u0 - 3), 0.4, 1.4]]
+          ? [[u0 + 0.8 + vent * (u1 - u0 - 3), u0 + 2.2 + vent * (u1 - u0 - 3), g + 0.4, g + 1.4]]
           : []
       for (const [h0, h1, v0, v1] of vents) louvre(h0, h1, v0, v1)
       if (kind === 'brick') fill('brick', u0, u1, 0, CLERESTORY, vents)
@@ -477,7 +490,7 @@ export function collegeOfEducationGeometry(b: CollegeOfEducationData) {
         // the lobby's glass, and four sliding doors in the middle of the canopy (gsu 2026): the
         // middle two are the game's door (Doors.tsx draws them)
         clear(u0, u1, 0, CLERESTORY, [
-          [doorU - DOOR_WIDTH / 2, doorU + DOOR_WIDTH / 2, 0, DOOR_HEIGHT],
+          [doorU - DOOR_WIDTH / 2, doorU + DOOR_WIDTH / 2, lift, lift + DOOR_HEIGHT],
         ])
         // white piers either side of the doors and the sidelight next to them, up to the canopy
         for (const p of [doorU - 2 * DOOR_PANEL - 0.25, doorU + 3 * DOOR_PANEL])
@@ -486,22 +499,26 @@ export function collegeOfEducationGeometry(b: CollegeOfEducationData) {
       } else if (kind === 'dock') {
         // a grey roll up door, its slats across
         const [r0, r1] = [u0 + 0.85, u1 - 0.85]
-        fill('brick', u0, u1, 0, CLERESTORY, [[r0, r1, 0, 3.6]])
+        fill('brick', u0, u1, 0, CLERESTORY, [[r0, r1, 0, g + 3.6]])
         add(
           'screen',
-          shift(quad(r0, r1, 0, 3.6), (u, v) => [v * 2.75, 0.2 + u * 0.001]),
+          shift(quad(r0, r1, 0, g + 3.6), (u, v) => [v * 2.75, 0.2 + u * 0.001]),
         )
       } else {
         // white marble panels along the bottom, brick over them. the back door has a small
         // blue canopy (mapillary 2019, looking up kimball way)
-        fill('brick', u0, u1, 0, CLERESTORY, [[u0, u1, 0, PANEL]])
+        fill('brick', u0, u1, 0, CLERESTORY, [[u0, u1, 0, g + PANEL]])
         const at = u0 + 0.5
-        const doorway: Hole[] = kind === 'back' ? [[at, at + 1.1, 0, 2.3]] : []
+        const doorway: Hole[] = kind === 'back' ? [[at, at + 1.1, g, g + 2.3]] : []
         // one slab up each panel
-        fill('marble', u0, u1, 0, PANEL, doorway, (u, v) => [u * 1.25, (v * SLAB[1]) / PANEL])
+        const slab = (u: number, v: number): [number, number] => [
+          u * 1.25,
+          ((v - g) * SLAB[1]) / PANEL,
+        ]
+        fill('marble', u0, u1, 0, g + PANEL, doorway, slab)
         if (kind === 'back') {
-          dark(at, at + 1.1, 0, 2.3)
-          box('blue', s, at - 0.25, at + 1.35, -RECESS, -RECESS + 0.9, 2.45, 2.75)
+          dark(at, at + 1.1, g, g + 2.3)
+          box('blue', s, at - 0.25, at + 1.35, -RECESS, -RECESS + 0.9, g + 2.45, g + 2.75)
         }
       }
     })
@@ -540,7 +557,7 @@ export function collegeOfEducationGeometry(b: CollegeOfEducationData) {
     const p = pryor.at(15.2, 0.04)
     signs.push({
       x: p.x,
-      y: 5,
+      y: SOFFIT + 0.55,
       z: p.z,
       rot: Math.atan2(pryor.o.x, pryor.o.z),
       text: 'COLLEGE OF EDUCATION\n& HUMAN DEVELOPMENT',
@@ -553,7 +570,7 @@ export function collegeOfEducationGeometry(b: CollegeOfEducationData) {
     const p = kimball.at(3.55, -RECESS + 0.03)
     signs.push({
       x: p.x,
-      y: 3.45,
+      y: SOFFIT - 1.16,
       z: p.z,
       rot: Math.atan2(kimball.o.x, kimball.o.z),
       text: 'COLLEGE OF EDUCATION\n& HUMAN DEVELOPMENT',
@@ -589,8 +606,11 @@ export function collegeOfEducationGeometry(b: CollegeOfEducationData) {
     }
   }
 
+  // and on down to the lowest ground round the block
+  const parts = merged()
+  sink(parts, lowestUnder(b.points) - base - 0.3)
   return {
-    parts: merged(),
+    parts,
     inside,
     signs,
     first: ['marble'],

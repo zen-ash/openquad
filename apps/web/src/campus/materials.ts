@@ -222,9 +222,10 @@ const weathering = once(() =>
   sample(texture('grime', 'mask'), meters.div(textureList.grime.meters)),
 )
 
-// weathering: darker blotches, more near the ground. dirt 0 is clean
+// weathering: darker blotches, more near the ground. dirt 0 is clean. walls carry on under the
+// floor where the ground is lower (Landmarks.tsx), there it's as dirty as at the floor
 const grime = once(() => {
-  const ground = exp(meters.y.div(-1.2))
+  const ground = exp(max(meters.y, 0).div(-1.2))
   return float(1).sub(f('dirt').mul(weathering().r.mul(0.35).add(ground.mul(0.25))))
 })
 
@@ -292,7 +293,7 @@ function uplights(spacing: Float, strength: Float) {
   return vec3(1, 0.72, 0.42)
     .mul(night)
     .mul(beam)
-    .mul(exp(meters.y.div(-5)))
+    .mul(exp(max(meters.y, 0).div(-5)))
     .mul(strength)
 }
 

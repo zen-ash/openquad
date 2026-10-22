@@ -228,6 +228,39 @@ export function parts<P extends string>() {
   return { add, prism, block, wall, inside, merged }
 }
 
+/**
+ * Walls standing at 0 carry on down to y, for a building on a slope: it's drawn from one
+ * street and the ground is lower than that on another side. the uvs carry on the same way
+ * (from the triangle's other corners), so joints and courses don't stretch
+ */
+export function sink(parts: Record<string, THREE.BufferGeometry>, y: number) {
+  for (const geo of Object.values(parts)) {
+    const pos = geo.getAttribute('position')
+    const normal = geo.getAttribute('normal')
+    const uv = geo.getAttribute('uv')
+    const index = geo.getIndex()
+    const at = (k: number) => (index ? index.getX(k) : k)
+    const moved = new Set<number>()
+    const count = index ? index.count : pos.count
+    for (let t = 0; t < count; t += 3) {
+      const tri = [at(t), at(t + 1), at(t + 2)]
+      for (const i of tri) {
+        if (moved.has(i) || Math.abs(pos.getY(i)) > 1e-4 || Math.abs(normal.getY(i)) > 0.01)
+          continue
+        // a corner of the same triangle higher up gives how the uvs go with height
+        const j = tri.find((k) => pos.getY(k) > 0.01)
+        if (j === undefined) continue
+        if (uv) uv.setY(i, uv.getY(i) + ((uv.getY(j) - uv.getY(i)) / pos.getY(j)) * y)
+        pos.setY(i, y)
+        moved.add(i)
+      }
+    }
+    pos.needsUpdate = true
+    geo.boundingBox = null
+    geo.boundingSphere = null
+  }
+}
+
 /** the part of a shape where side(point) >= 0, for a straight cut through it */
 export function clip(points: Point[], side: (p: Point) => number) {
   const kept: Point[] = []

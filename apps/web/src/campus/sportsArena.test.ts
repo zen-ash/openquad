@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { closestOnSegment, pointInPolygon } from '../game/collision'
+import { baseOf, floorOf, lowestUnder } from '../game/surface'
+import { heightAt } from '../game/terrain'
 import campus from './campus.json'
 import { buildingsGeometry } from './geometry'
 import {
@@ -58,8 +60,24 @@ describe('gsu sports arena', () => {
     const party = OUTLINE.filter(([u]) => u === HALL.se)
     expect(party).toHaveLength(2)
     expect(END.to - HALL.se).toBeCloseTo(2.25)
-    // its roof is 10.3m up, the arena's walls start just under it
-    expect(PRACTICE_ROOF).toBeLessThan(10.3)
+    // its roof is 10.3m over its own datum, the arena's walls start just under it
+    const gym = campus.buildings.find((b) => b.name === 'Practice Facility')!
+    const roof = baseOf(gym) + 10.3
+    expect(baseOf(arena) + PRACTICE_ROOF).toBeLessThan(roof)
+    expect(baseOf(arena) + PRACTICE_ROOF).toBeGreaterThan(roof - 0.5)
+  })
+
+  it('stands on decatur st with its doors up the hill, level with the ground there', () => {
+    const [x, z] = arena.door!
+    expect(floorOf(arena)).toBeCloseTo(heightAt(x!, z!), 1)
+    expect(floorOf(arena) - baseOf(arena)).toBeGreaterThan(1)
+    // and its walls go down to the ground where decatur st drops toward piedmont ave
+    let low = Infinity
+    for (const g of Object.values(parts)) {
+      g.computeBoundingBox()
+      low = Math.min(low, g.boundingBox!.min.y)
+    }
+    expect(low).toBeLessThan(lowestUnder(arena.points) - baseOf(arena))
   })
 
   it('lets you walk under the terrace and both bridges', () => {

@@ -13,6 +13,7 @@ import { recObstacles, type RecData } from '../campus/recCenter'
 import { rscObstacles, type RscData } from '../campus/researchScience'
 import { annexObstacles, type AnnexData } from '../campus/scienceAnnex'
 import { loftsObstacles, type LoftsData } from '../campus/universityLofts'
+import { urbanLifeObstacles, type UrbanLifeData } from '../campus/urbanLife'
 import { polygon, type Point, type Segment, type World } from './collision'
 import { footprint, furnish, isOver, LOW, type Item } from './furniture'
 import { enterable, interiors } from './interiors'
@@ -78,6 +79,10 @@ const deck = parkingObstacles(
 )
 // g deck's stair towers where they stand out of its outline
 const decks = deckObstacles(campus.buildings.find((b) => b.name === 'G Deck') as DeckData)
+// urban life's deck by piedmont ave, a floor up over the street, and its corner tower
+const urbanLife = urbanLifeObstacles(
+  campus.buildings.find((b) => b.name === 'Urban Life Building') as UrbanLifeData,
+)
 
 export const world: World = {
   // buildings you can walk into are just their walls (with a doorway), the rest are solid.
@@ -86,6 +91,7 @@ export const world: World = {
     ...campus.buildings.filter((b, i) => !enterable.has(i) && !b.minHeight).map((b) => b.points),
     ...quad.planters.map((p) => p.points),
     gym.planter.map((p) => [p.x, p.z]),
+    urbanLife.deck.map((p) => [p.x, p.z]),
   ].map((points) => polygon(points as [number, number][])),
   walls: [
     ...interiors.flatMap((i) => i.walls),
@@ -125,6 +131,7 @@ export const world: World = {
     ...rsc.circles,
     ...lofts.circles,
     ...deck.circles,
+    urbanLife.tower,
     // the traffic lights' poles
     ...signalPoles().map((p) => ({ x: p.x, z: p.z, radius: 0.2 })),
   ],

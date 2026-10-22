@@ -1050,8 +1050,8 @@ const URBAN_LIFE = {
     [-4.8, 133.9],
   ],
   wingHeight: 18.9,
-  // 140 decatur st, overture's lidar
-  podiumHeight: 16.6,
+  // 140 decatur st, usgs lidar has its roof at 323.1m, over piedmont ave like the rest
+  podiumHeight: 15.7,
 }
 
 function urbanLife(b, podium) {
@@ -1134,10 +1134,10 @@ const COLLEGE_OF_EDUCATION = {
     { lat: 33.7532921, lon: -84.3889608 },
     { lat: 33.7534461, lon: -84.3892374 },
   ],
-  // to the top of the parapet over the middle of the block. the soffit over the ground floor is
-  // level and the streets drop 4.3m round the block (usgs), so the game's flat ground is their
-  // average. gsu's 2021 photo has 31.55m from the soffit to the top (fitted on the fins)
-  height: 36.05,
+  // to the top of the coping over the pryor st sidewalk at the doors (317.1m): usgs lidar has
+  // it at 356.1m. the streets drop 4.3m round the block, the soffit over the ground floor is
+  // level
+  height: 39,
   recess: 1,
   // the main doors on pryor st, meters from the decatur st corner: the middle two of the four
   // sliding doors in gsu's 2026 photo, in the middle of the blue canopy over them (mapillary 2019)

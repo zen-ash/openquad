@@ -33,13 +33,22 @@ export function surfaceAt(x: number, z: number, from = Infinity) {
   return best
 }
 
-// the hand-built buildings that have to agree with a neighbour: petit's bridge lands on the
-// research science center, and the practice facility shares petit's sidewalk. meters above
-// sea level, like docs/reference has them
-const DATUMS: Record<string, number> = {
+// the hand-built buildings drawn from a measured height, meters above sea level like
+// docs/reference has them. a number is where it stands, floor and all: petit's bridge lands
+// on the research science center at those heights. `from` is only where it's drawn from, its
+// doors are higher up than that street and its floor stays level with what's outside them
+const DATUMS: Record<string, number | { from: number }> = {
   'Petit Science Center': 306.5,
   'Research Science Center': 306.5,
-  'Practice Facility': 306.5,
+  // petit's sidewalk on piedmont ave, the door is in the court off decatur st
+  'Practice Facility': { from: 306.5 },
+  // piedmont ave at the south tower, the doors are on the plaza a floor up
+  'Urban Life Building': { from: 307.4 },
+  // the decatur st sidewalk under the terrace (the bridges clear the street from it), the
+  // doors are by courtland st further up the hill
+  'GSU Sports Arena': { from: 309.0 },
+  // the pryor st sidewalk at the doors, the block drops 2.3m from there (lidar has the roof)
+  'College of Education & Human Development': { from: 317.1 },
   // the police door's sidewalk (lidar), the terrain there is 0.25m low
   'One Park Place': 318.4,
   // the lofts and their deck share a wall, both on the edgewood ave sidewalk at the lofts' doors
@@ -56,6 +65,16 @@ const DATUMS: Record<string, number> = {
 
 type Building = { name?: string; points: number[][]; door?: number[] }
 
+// where a hand-built building is drawn from (Landmarks.tsx), its heights are over this
+export function baseOf(b: Building) {
+  const datum = b.name ? DATUMS[b.name] : undefined
+  if (datum === undefined) return floorOf(b)
+  return fromElevation(typeof datum === 'number' ? datum : datum.from)
+}
+
+// how far its floor is over that, for its doors and whatever's at their level
+export const liftOf = (b: Building) => floorOf(b) - baseOf(b)
+
 // how high a building's ground floor is. one you can walk into is level with what's outside
 // its door (a deck right outside counts, the courtland st buildings open onto the viaduct),
 // the rest stand on the middle of the ground under them
@@ -67,7 +86,7 @@ export function floorOf(b: Building) {
 }
 function findFloor(b: Building) {
   const datum = b.name ? DATUMS[b.name] : undefined
-  if (datum !== undefined) return fromElevation(datum)
+  if (typeof datum === 'number') return fromElevation(datum)
   if (b.door) {
     const [x, z] = b.door as [number, number]
     return Math.max(heightAt(x, z), ...decksAt(x, z, 3))

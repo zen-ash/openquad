@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { pointInPolygon } from '../game/collision'
-import { DOOR_WIDTH } from '../game/interiors'
+import { DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
+import { baseOf, floorOf } from '../game/surface'
+import { fromElevation, heightAt } from '../game/terrain'
 import campus from './campus.json'
 import {
   CANOPY,
@@ -26,13 +28,31 @@ const out = (s: (typeof sides)['pryor'], p: { x: number; z: number }) =>
   (p.x - s.p.x) * s.o.x + (p.z - s.p.z) * s.o.z
 
 describe('college of education', () => {
-  it('has nine rows of windows 3.3m apart over the ground floor', () => {
+  it('has nine rows of windows 3.64m apart over the ground floor', () => {
     expect(ROWS).toHaveLength(9)
     for (let i = 1; i < ROWS.length; i++) expect(ROWS[i]![0] - ROWS[i - 1]![0]).toBeCloseTo(PITCH)
-    // the first sill 1.75 over the soffit, a band of marble about 2m over the top row
-    expect(ROWS[0]![0] - SOFFIT).toBeCloseTo(1.75)
-    expect(coe.height).toBeCloseTo(36.05)
+    // the first sill about 1.9 over the soffit, a band of marble about 2m over the top row
+    expect(ROWS[0]![0] - SOFFIT).toBeCloseTo(1.93)
     expect(coe.height - ROWS.at(-1)![1]).toBeGreaterThan(1.8)
+  })
+
+  it('has its coping where usgs lidar has it, its floor level with the street at the doors', () => {
+    expect(baseOf(coe) + coe.height).toBeCloseTo(fromElevation(356.1), 1)
+    const [x, z] = coe.door!
+    expect(floorOf(coe)).toBeCloseTo(heightAt(x!, z!), 1)
+    expect(floorOf(coe)).toBeCloseTo(baseOf(coe), 1)
+    // the doors fit under the canopy
+    expect(CANOPY.y[0]! - (floorOf(coe) - baseOf(coe))).toBeGreaterThan(DOOR_HEIGHT + 0.2)
+  })
+
+  it('goes down to the ground on kimball way', () => {
+    let low = Infinity
+    for (const g of Object.values(parts)) {
+      g.computeBoundingBox()
+      low = Math.min(low, g.boundingBox!.min.y)
+    }
+    // the block is 2.3m lower at its kimball way end than at the doors
+    expect(low).toBeLessThan(-2.3)
   })
 
   it('has seven bays on pryor st and kimball way, five on the short sides', () => {

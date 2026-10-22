@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { pointInPolygon } from '../game/collision'
+import { baseOf, floorOf } from '../game/surface'
+import { heightAt } from '../game/terrain'
 import campus from './campus.json'
 import { buildingsGeometry } from './geometry'
 import {
@@ -95,6 +97,9 @@ describe('practice facility', () => {
     const [x, z, nx, nz] = gym.door!
     const [u, v] = uv({ x: x!, z: z! })
     expect(v).toBeCloseTo(27.8, 1)
+    // the floor inside is level with the court, a bit over piedmont ave's sidewalk
+    expect(floorOf(gym)).toBeCloseTo(heightAt(x!, z!), 1)
+    expect(floorOf(gym)).toBeGreaterThan(baseOf(gym))
     expect(u).toBeGreaterThan(46 + 1.2)
     expect(u).toBeLessThan(51.1 - 1.2)
     expect(pointInPolygon({ x: x! - nx! * 0.5, z: z! - nz! * 0.5 }, pts)).toBe(true)

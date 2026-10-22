@@ -1,5 +1,6 @@
 import type { Point } from '../game/collision'
-import { DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
+import { CEILING, DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
+import { baseOf, liftOf, lowestUnder } from '../game/surface'
 import type { Sign } from './landmarks'
 import {
   circle,
@@ -9,6 +10,7 @@ import {
   insideWalls,
   parts as collect,
   pt,
+  sink,
   solidPieces,
   wallQuad,
   type Hole,
@@ -24,9 +26,12 @@ import {
 // mapillary (2017-2021) and esri's satellite images. sources: docs/reference/urban-life.md
 //
 // on the frame, "a" is meters from the north tower toward the east one, "v" meters in
-// toward the west tower. on a wall, "u" is meters along it and "d" meters out from it
+// toward the west tower. on a wall, "u" is meters along it and "d" meters out from it.
+// heights are over piedmont ave at the south tower (surface.ts), the plaza with the doors is
+// a floor up from there (liftOf, the game's ground at the door)
 
 export type UrbanLifeData = {
+  name?: string
   points: number[][]
   height: number
   door?: number[]
@@ -81,21 +86,30 @@ const SLIT_IN = 0.15
 // the ground floor's round columns, under the piers, out in front of the glass
 const COLUMN = { r: 0.33, d: 0.45 }
 
-// the wing: storefront on the ground floor between round columns, three rows of windows in
-// long strips (gsu's 2026 photo from the plaza), level with the tower's ledge at the top
-// (gsu's 2010 photo), and its towers a bit higher
+// the wing stands on the plaza: storefront between round columns up to the band with the
+// name, then two rows of windows in long strips (gsu's 2026 photos from the plaza), the
+// slab's own rows. level with the slab's ledge at the top (gsu 2010, lidar 326.3m), and its
+// towers a bit higher
 export const WING_TOP = 18.9
-const WING_BANDS: [number, number][] = [
-  [GROUND, 6.3],
+export const WING_BANDS: [number, number][] = [
   [9.2, 10.1],
   [13.1, 14.4],
   [17.3, WING_TOP],
 ]
 const WING_TOWERS = 20.5
-// the link and 140 decatur st: brick with a deep precast band round the top (overture has
-// 16.6m for it)
-export const LINK_TOP = 16.6
-const TRIM = 13.4
+// the link and 140 decatur st: brick with a deep precast band round the top, the roof at
+// 323.1m (lidar)
+export const LINK_TOP = 15.7
+const TRIM = 12.5
+// on the slab's side toward the plaza and the deck by piedmont ave the floor at their level
+// is a storefront under the first band, round columns in front (gsu 2010, 2025)
+const STORE = ROWS[0]![1]
+// the deck between 140 decatur st, the slab and the corner of piedmont ave and decatur st:
+// pavers a floor up over brick on a white base, a solid parapet, a short brick tower on the
+// corner (gsu 2010, mapillary 2019, lidar: the deck at 313.3m, the tower 318m). a and v of
+// its edges on piedmont ave and decatur st, the tower's middle is on their corner
+export const DECK = { a: 58, v: 60.3, top: 5.9, white: 2.4, brick: 5.3, parapet: 7, wall: 0.3 }
+export const CORNER = { r: 2.7, top: 10.4 }
 
 // a wall of the slab: where things are on it, which bits are between two towers, and what
 // stands in front of the low parts (the wing, the link)
@@ -249,13 +263,21 @@ export function urbanLifeGeometry(b: UrbanLifeData) {
   }
 
   // a round tower, t in degrees (0 along the slab, 90 in toward the west tower), smooth
-  const drum = (a: number, v: number, t0: number, t1: number, y0: number, y1: number) => {
+  const drum = (
+    a: number,
+    v: number,
+    t0: number,
+    t1: number,
+    y0: number,
+    y1: number,
+    r = RADIUS,
+  ) => {
     const c = A(a, v)
     const step = 11.25
     for (let t = t0; t < t1 - 0.01; t += step) {
       const [ta, tb] = [t, t + step].map((x) => (x * Math.PI) / 180) as [number, number]
-      const p = A(a + Math.cos(ta) * RADIUS, v + Math.sin(ta) * RADIUS)
-      const q = A(a + Math.cos(tb) * RADIUS, v + Math.sin(tb) * RADIUS)
+      const p = A(a + Math.cos(ta) * r, v + Math.sin(ta) * r)
+      const q = A(a + Math.cos(tb) * r, v + Math.sin(tb) * r)
       const mid = { x: (p.x + q.x) / 2 - c.x, z: (p.z + q.z) / 2 - c.z }
       const l = Math.hypot(mid.x, mid.z)
       const geo = wallQuad(
@@ -264,7 +286,7 @@ export function urbanLifeGeometry(b: UrbanLifeData) {
         y0,
         y1,
         { x: mid.x / l, z: mid.z / l },
-        (t / 360) * 2 * Math.PI * RADIUS,
+        (t / 360) * 2 * Math.PI * r,
       )
       const pos = geo.getAttribute('position')
       const normal = geo.getAttribute('normal')
@@ -276,51 +298,76 @@ export function urbanLifeGeometry(b: UrbanLifeData) {
       add('brick', geo)
     }
   }
-  const lid = (a: number, v: number, y: number) => {
+  const lid = (a: number, v: number, y: number, r = RADIUS) => {
     const ring = Array.from({ length: 32 }, (_, i) => {
       const t = (i / 32) * Math.PI * 2
-      return A(a + Math.cos(t) * RADIUS, v + Math.sin(t) * RADIUS)
+      return A(a + Math.cos(t) * r, v + Math.sin(t) * r)
     })
     add('precast', flat(ring, y))
   }
 
+  // the plaza's level, where the doors are (the game's ground there), and the floor inside
+  // only goes up to the ceiling over it: a slit set into the wall lower than that would have
+  // the inside's ceiling across it (interiorGeometry.ts)
+  const plaza = liftOf(b)
+  const shallow = plaza + CEILING
+
   for (const face of Object.values(faces)) {
     const { at, o } = face
     const into = { x: -o.x, z: -o.z }
-    for (const [s0, s1] of face.sections) {
+    face.sections.forEach(([s0, s1], section) => {
       const ps = piers(s0, s1)
       const holes = slits(s0, s1)
+      // toward the plaza and the deck the first floor up is a storefront at their level, the
+      // street floor is under them. the deck by piedmont ave is the end of the long side
+      // nearest the south tower
+      const front = face === faces.sw || face === faces.nw
+      const from = face === faces.sw && section === 0 ? DECK.top : plaza
+      const below = (u: number) => face.covers.some((c) => u > c.u[0] - 0.5 && u < c.u[1] + 0.5)
 
-      // the ground floor: glass on the outline under a dark head, columns in front
-      // the game's door (Doors.tsx draws it) is a hole in the glass
-      const doorU =
-        (door.x - at(0).x) * (at(1).x - at(0).x) + (door.z - at(0).z) * (at(1).z - at(0).z)
-      const onFace = Math.abs((door.x - at(0).x) * o.x + (door.z - at(0).z) * o.z) < 0.1
-      const doorway: Hole[] =
-        onFace && doorU > s0 && doorU < s1
-          ? [[doorU - DOOR_WIDTH / 2, doorU + DOOR_WIDTH / 2, 0, DOOR_HEIGHT]]
-          : []
-      for (const [u0, u1, y0, y1] of uncovered(face, s0, s1, 0, GROUND)) {
-        const holes = doorway.map((h): Hole => [h[0] - u0, h[1] - u0, h[2], h[3]])
-        for (const [p0, p1, q0, q1] of solidPieces(u1 - u0, y0, Math.min(y1, HEAD), holes))
-          add('glass', glassQuad(at(u0 + p0), at(u0 + p1), q0, q1, o))
-        if (y1 > HEAD) add('precast', wallQuad(at(u0), at(u1), HEAD, y1, o, u0))
-      }
-      for (const [p0, p1] of ps) {
-        const u = (p0 + p1) / 2
-        if (face.covers.some((c) => u > c.u[0] - 0.5 && u < c.u[1] + 0.5)) continue
-        prism('precast', circle(at(u, COLUMN.d), COLUMN.r, 12), 0, GROUND)
+      if (front) {
+        // the storefront, and under it the plaza's edge where the game's ground is lower (the
+        // deck has its own walls)
+        for (const [u0, u1, y0, y1] of uncovered(face, s0, s1, 0, STORE)) {
+          if (y1 > from) add('glass', glassQuad(at(u0), at(u1), Math.max(y0, from), y1, o))
+          if (from === plaza && y0 < from)
+            add('precast', wallQuad(at(u0), at(u1), y0, Math.min(y1, from), o, u0))
+        }
+        for (const [p0, p1] of ps)
+          if (!below((p0 + p1) / 2))
+            prism('precast', circle(at((p0 + p1) / 2, COLUMN.d), COLUMN.r, 12), from, STORE)
+      } else {
+        // the ground floor: glass on the outline under a dark head, columns in front
+        // the game's door (Doors.tsx draws it) is a hole in the glass
+        const doorU =
+          (door.x - at(0).x) * (at(1).x - at(0).x) + (door.z - at(0).z) * (at(1).z - at(0).z)
+        const onFace = Math.abs((door.x - at(0).x) * o.x + (door.z - at(0).z) * o.z) < 0.1
+        const doorway: Hole[] =
+          onFace && doorU > s0 && doorU < s1
+            ? [[doorU - DOOR_WIDTH / 2, doorU + DOOR_WIDTH / 2, plaza, plaza + DOOR_HEIGHT]]
+            : []
+        for (const [u0, u1, y0, y1] of uncovered(face, s0, s1, 0, GROUND)) {
+          const holes = doorway.map((h): Hole => [h[0] - u0, h[1] - u0, h[2], h[3]])
+          for (const [p0, p1, q0, q1] of solidPieces(u1 - u0, y0, Math.min(y1, HEAD), holes))
+            add('glass', glassQuad(at(u0 + p0), at(u0 + p1), q0, q1, o))
+          if (y1 > HEAD) add('precast', wallQuad(at(u0), at(u1), HEAD, y1, o, u0))
+        }
+        for (const [p0, p1] of ps)
+          if (!below((p0 + p1) / 2))
+            prism('precast', circle(at((p0 + p1) / 2, COLUMN.d), COLUMN.r, 12), 0, GROUND)
       }
 
       // rows of brick with the slits
-      for (const [r0, r1] of ROWS)
+      const rows = front ? ROWS.slice(1) : ROWS
+      for (const [r0, r1] of rows)
         for (const [u0, u1, y0, y1] of uncovered(face, s0, s1, r0, r1)) {
           const inRange = holes
             .map(([h0, h1]): Hole => [Math.max(h0, u0) - u0, Math.min(h1, u1) - u0, y0, y1])
             .filter(([h0, h1]) => h1 - h0 > 0.05)
           for (const [p0, p1, q0, q1] of solidPieces(u1 - u0, y0, y1, inRange))
             add('brick', wallQuad(at(u0 + p0), at(u0 + p1), q0, q1, o, u0 + p0))
-          for (const [h0, h1] of inRange) recess(face, u0 + h0, u0 + h1, y0, y1, SLIT_IN)
+          const deep = r0 < shallow ? 0.02 : SLIT_IN
+          for (const [h0, h1] of inRange) recess(face, u0 + h0, u0 + h1, y0, y1, deep)
         }
 
       // the glass floor over the ledge, set back behind the piers
@@ -334,7 +381,7 @@ export function urbanLifeGeometry(b: UrbanLifeData) {
       }
 
       // the piers, in front of the brick rows and standing free in the glass floor
-      const gaps: [number, number][] = [...ROWS, DEEP]
+      const gaps: [number, number][] = [...rows, DEEP]
       for (const [p0, p1] of ps)
         for (const [g0, g1] of gaps)
           for (const [u0, u1, y0, y1] of uncovered(face, p0, p1, g0, g1)) {
@@ -351,7 +398,7 @@ export function urbanLifeGeometry(b: UrbanLifeData) {
       const between = (rows: [number, number][]) =>
         rows.slice(0, -1).map((r, i): [number, number] => [r[1], rows[i + 1]![0]])
       const bands: [number, number][] = [
-        [GROUND, ROWS[0]![0]],
+        ...(front ? [] : [[GROUND, ROWS[0]![0]] as [number, number]]),
         ...between(ROWS.slice(0, 3)),
         [DEEP[1], ROWS[3]![0]],
         ...between(ROWS.slice(3)),
@@ -371,7 +418,7 @@ export function urbanLifeGeometry(b: UrbanLifeData) {
       const [w0, w1] = into1(s0, s1, 0.05)
       box(face, w0, w1, PARAPET, b.height, -0.35, OUT, 'precast', { ends: false })
       add('precast', wallQuad(at(w0, -0.35), at(w1, -0.35), ROOF, b.height, into))
-    }
+    })
   }
 
   // the towers: round the outside to the top, all the way round over the roof
@@ -397,7 +444,8 @@ export function urbanLifeGeometry(b: UrbanLifeData) {
   onRoof(4, 14, 6, 16, 4)
   onRoof(25, 38, 8, 19, 5.5)
 
-  // the wing. its long sides: storefront between round columns, strips of windows over it
+  // the wing. its long sides: storefront on the plaza between round columns, strips of
+  // windows over it, and under it the plaza's edge where the game's ground is lower
   const wingSide = (from: Point, to: Point, o: Point) => {
     const len = Math.hypot(to.x - from.x, to.z - from.z)
     const dir = { x: (to.x - from.x) / len, z: (to.z - from.z) / len }
@@ -406,14 +454,18 @@ export function urbanLifeGeometry(b: UrbanLifeData) {
       z: from.z + dir.z * u + o.z * d,
     })
     const face: Face = { at, o, sections: [[0, len]], covers: [] }
-    // the passage goes through under the head
+    // the passage goes through under the band
     const uOf = (a: number) => (A(a, 0).x - from.x) * dir.x + (A(a, 0).z - from.z) * dir.z
     const [p0, p1] = [uOf(PASSAGE.from), uOf(PASSAGE.to)].sort((m, n) => m - n) as [number, number]
-    add('glass', glassQuad(at(0), at(p0), 0, HEAD, o))
-    add('glass', glassQuad(at(p1), at(len), 0, HEAD, o))
-    add('precast', wallQuad(at(0), at(len), HEAD, GROUND, o))
+    for (const [u0, u1] of [
+      [0, p0],
+      [p1, len],
+    ] as const) {
+      add('glass', glassQuad(at(u0), at(u1), plaza, STORE, o))
+      add('precast', wallQuad(at(u0), at(u1), 0, plaza, o, u0))
+    }
     const bays = [len / 3, (2 * len) / 3]
-    for (const u of bays) prism('precast', circle(at(u, COLUMN.d), COLUMN.r, 12), 0, GROUND)
+    for (const u of bays) prism('precast', circle(at(u, COLUMN.d), COLUMN.r, 12), plaza, STORE)
     for (const [y0, y1] of WING_BANDS) box(face, 0, len, y0, y1, 0, OUT, 'precast', { ends: false })
     for (const [y0, y1] of WING_BANDS.slice(0, -1).map((b, i): [number, number] => [
       b[1],
@@ -436,14 +488,16 @@ export function urbanLifeGeometry(b: UrbanLifeData) {
     [PASSAGE.from, ahead],
     [PASSAGE.to, back],
   ] as const) {
+    const at = doorV - WING.from
     const holes: Hole[] =
       a === PASSAGE.to
-        ? [[doorV - WING.from - DOOR_WIDTH / 2, doorV - WING.from + DOOR_WIDTH / 2, 0, DOOR_HEIGHT]]
+        ? [[at - DOOR_WIDTH / 2, at + DOOR_WIDTH / 2, plaza, plaza + DOOR_HEIGHT]]
         : []
-    for (const [u0, u1, y0, y1] of solidPieces(WING.to - WING.from, 0, HEAD, holes))
+    for (const [u0, u1, y0, y1] of solidPieces(WING.to - WING.from, plaza, STORE, holes))
       add('glass', glassQuad(A(a, WING.from + u0), A(a, WING.from + u1), y0, y1, o))
+    add('precast', wallQuad(A(a, WING.from), A(a, WING.to), 0, plaza, o))
   }
-  add('precast', flat(rect(PASSAGE.from, PASSAGE.to, WING.from, WING.to), HEAD, false))
+  add('precast', flat(rect(PASSAGE.from, PASSAGE.to, WING.from, WING.to), STORE, false))
 
   // brick with a precast band at the top: the wing's end, the bits between its towers and
   // its sides, the link's sides
@@ -471,10 +525,33 @@ export function urbanLifeGeometry(b: UrbanLifeData) {
   brickWall(A(LINK.from, W - DEEP_IN), A(LINK.from, LINK.out), back, LINK_TOP)
   brickWall(A(LINK.to, W - DEEP_IN), A(LINK.to, LINK.out), ahead, LINK_TOP)
   add('precast', flat(rect(LINK.from, LINK.to, W - DEEP_IN, LINK.out), LINK_TOP))
-  // 140 decatur st: brick with the deep band round the top
+  // 140 decatur st: brick with the deep band round the top, down on decatur st
   const podium = b.landmark!.podium.map(pt)
   prism('brick', podium, 0, TRIM, false)
   prism('precast', podium, TRIM, LINK_TOP)
+
+  // the deck: on the two streets a white base, brick and a solid parapet over the pavers,
+  // the short tower on their corner. its other sides are against the slab and 140 decatur st
+  const deck = deckOutline(b)
+  const middle = {
+    x: deck.reduce((m, p) => m + p.x, 0) / deck.length,
+    z: deck.reduce((m, p) => m + p.z, 0) / deck.length,
+  }
+  for (const [p, q] of [0, 1, 2].map((i) => [deck[i]!, deck[i + 1]!] as const)) {
+    const len = Math.hypot(q.x - p.x, q.z - p.z)
+    let o = { x: (q.z - p.z) / len, z: -(q.x - p.x) / len }
+    if (o.x * (p.x - middle.x) + o.z * (p.z - middle.z) < 0) o = { x: -o.x, z: -o.z }
+    const by = (c: Point, k: number) => ({ x: c.x - o.x * k, z: c.z - o.z * k })
+    add('precast', wallQuad(p, q, 0, DECK.white, o))
+    add('brick', wallQuad(p, q, DECK.white, DECK.brick, o))
+    add('precast', wallQuad(p, q, DECK.brick, DECK.parapet, o))
+    const [pi, qi] = [by(p, DECK.wall), by(q, DECK.wall)]
+    add('precast', wallQuad(pi, qi, DECK.top, DECK.parapet, { x: -o.x, z: -o.z }))
+    add('precast', flat([p, q, qi, pi], DECK.parapet))
+  }
+  add('brick', flat(deck, DECK.top))
+  drum(DECK.a, DECK.v, 0, 360, 0, CORNER.top, CORNER.r)
+  lid(DECK.a, DECK.v, CORNER.top, CORNER.r)
 
   // letters on the parapet: the name on both ends, gsu near the corners on the long sides
   const letters = (face: Face, u: number, text: string, size: number) => {
@@ -499,14 +576,15 @@ export function urbanLifeGeometry(b: UrbanLifeData) {
   const entrance = A(WING.end / 2, WING.to + OUT + 0.06)
   signs.push({
     x: entrance.x,
-    y: (GROUND + WING_BANDS[0]![1]) / 2,
+    y: (WING_BANDS[0]![0] + WING_BANDS[0]![1]) / 2,
     z: entrance.z,
     rot: Math.atan2(sw.x, sw.z),
     text: 'URBAN LIFE CENTER',
     scale: 1.3,
   })
 
-  // inside the ground floor: glass along the straight walls of the slab and the wing
+  // inside, on the plaza's level: glass along the storefronts of the wing and the slab's side
+  // toward the plaza. toward student center east and piedmont ave it's a floor up there
   const on = (p: Point, q: Point, a: number | null, v: number | null) =>
     [p, q].every((x) =>
       a === null ? Math.abs(-f.dOf(x) - v!) < 0.05 : Math.abs(f.aOf(x) - a) < 0.05,
@@ -516,9 +594,40 @@ export function urbanLifeGeometry(b: UrbanLifeData) {
     outline,
     door,
     (p, q) =>
-      [0, W, WING.from, WING.to].some((v) => on(p, q, null, v)) ||
-      [0, L, PASSAGE.to].some((a) => on(p, q, a, null)),
+      [W, WING.from, WING.to].some((v) => on(p, q, null, v)) ||
+      [0, PASSAGE.to].some((a) => on(p, q, a, null)),
   )
 
-  return { parts: merged(), inside, signs, first: ['brick'] }
+  // and everything standing on the ground goes on down to the lowest bit of it
+  const parts = merged()
+  const low = Math.min(
+    ...[b.points, b.landmark!.podium, deck.map((p) => [p.x, p.z])].map(lowestUnder),
+  )
+  sink(parts, low - baseOf(b) - 0.3)
+  return { parts, inside, signs, first: ['brick'] }
+}
+
+// the deck by piedmont ave: its corner on decatur st by 140 decatur st, the corner on both
+// streets (the tower's), along piedmont ave to the slab's south tower, round it and along the
+// slab to the link, then 140 decatur st back to the start
+export function deckOutline(b: UrbanLifeData) {
+  const { A, L, W } = urbanLifeFrame(b)
+  const [, link, east, south] = b.landmark!.podium.map(pt) as Point[]
+  const k = RADIUS * Math.SQRT1_2
+  return [
+    south!,
+    A(DECK.a, DECK.v),
+    A(DECK.a, W + RADIUS + 0.9),
+    A(L + k, W + k),
+    A(L - RADIUS, W),
+    A(LINK.to, W),
+    link!,
+    east!,
+  ]
+}
+
+// what's solid outside: the deck and its tower (game/world.ts)
+export function urbanLifeObstacles(b: UrbanLifeData) {
+  const { A } = urbanLifeFrame(b)
+  return { deck: deckOutline(b), tower: { ...A(DECK.a, DECK.v), radius: CORNER.r } }
 }

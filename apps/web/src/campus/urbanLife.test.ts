@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { pointInPolygon } from '../game/collision'
+import { closestOnSegment, pointInPolygon } from '../game/collision'
+import { baseOf, floorOf, lowestUnder } from '../game/surface'
+import { fromElevation, heightAt } from '../game/terrain'
 import campus from './campus.json'
 import { buildingsGeometry } from './geometry'
 import {
+  DECK,
+  deckOutline,
   DEEP,
   LEDGE,
   PARAPET,
@@ -16,6 +20,7 @@ import {
   urbanLifeGeometry,
   WIDTH,
   WING,
+  WING_TOP,
   type UrbanLifeData,
 } from './urbanLife'
 
@@ -95,7 +100,41 @@ describe('urban life building', () => {
       (b) => (b.landmark as { with?: string } | undefined)?.with === 'Urban Life Building',
     )
     expect(podium).toBeDefined()
-    expect(podium!.height).toBeCloseTo(16.6)
+    expect(podium!.height).toBeCloseTo(15.7)
+  })
+
+  it('stands on piedmont ave with its doors on the plaza a floor up', () => {
+    // drawn from piedmont ave (the parapet 358.2m), the floor inside level with the plaza
+    expect(baseOf(ul) + ul.height).toBeCloseTo(fromElevation(358.2), 1)
+    const [x, z] = ul.door!
+    expect(floorOf(ul)).toBeCloseTo(heightAt(x!, z!), 1)
+    expect(floorOf(ul) - baseOf(ul)).toBeGreaterThan(3)
+    // the wing's top is level with the slab's ledge however high the plaza is
+    expect(WING_TOP).toBeGreaterThan(LEDGE[1])
+    expect(WING_TOP - LEDGE[1]).toBeLessThan(0.5)
+    // everything reaches the ground on piedmont ave
+    let low = Infinity
+    for (const g of Object.values(parts)) {
+      g.computeBoundingBox()
+      low = Math.min(low, g.boundingBox!.min.y)
+    }
+    expect(low).toBeLessThan(lowestUnder(ul.points) - baseOf(ul))
+  })
+
+  it('has the deck by piedmont ave solid, off the sidewalks', () => {
+    const deck = deckOutline(ul)
+    const walk = campus.paths.filter((p) =>
+      p.points.some(([x, z]) => Math.hypot(x! - deck[1]!.x, z! - deck[1]!.z) < 60),
+    )
+    for (const { width, points } of walk)
+      for (let i = 1; i < points.length; i++) {
+        const [a, b] = [points[i - 1]!, points[i]!]
+        for (const p of deck) {
+          const c = closestOnSegment(p, { x: a[0]!, z: a[1]! }, { x: b[0]!, z: b[1]! })
+          expect(Math.hypot(c.x - p.x, c.z - p.z)).toBeGreaterThan(width / 2)
+        }
+      }
+    expect(pointInPolygon(A(DECK.a - 5, DECK.v - 5), deck)).toBe(true)
   })
 
   it('is left out of the regular buildings mesh', () => {

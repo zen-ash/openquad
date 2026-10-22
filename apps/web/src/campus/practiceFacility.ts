@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import type { Point } from '../game/collision'
 import { DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
+import { liftOf } from '../game/surface'
 import type { Sign } from './landmarks'
 import {
   circle,
@@ -25,6 +26,7 @@ import {
 // "v" meters in from the street, toward the arena. y is meters over the piedmont ave sidewalk
 
 export type PracticeFacilityData = {
+  name?: string
   points: number[][]
   height: number
   door?: number[]
@@ -340,15 +342,20 @@ export function practiceFacilityGeometry(b: PracticeFacilityData) {
   wallV('metal', 50.8, 0.1, 27.5, FASCIA, COPING, -1)
 
   // the short wall in the court off decatur st, with the game's door. no photo shows a door
-  // anywhere, it's a plain steel frame here
+  // anywhere, it's a plain steel frame here. it's at the court's level, a bit over piedmont
+  // ave's sidewalk
   const t = f.aOf(door)
-  const holes: Hole[] = [[t - 46 - DOOR_WIDTH / 2, t - 46 + DOOR_WIDTH / 2, 0, DOOR_HEIGHT]]
+  const sill = liftOf(b)
+  const holes: Hole[] = [
+    [t - 46 - DOOR_WIDTH / 2, t - 46 + DOOR_WIDTH / 2, sill, sill + DOOR_HEIGHT],
+  ]
   for (const [s0, s1, y0, y1] of solidPieces(51.1 - 46, 0, FASCIA, holes))
     wallU('concrete', 27.8, 46 + s0, 46 + s1, y0, y1, 1)
   const [d0, d1] = [t - DOOR_WIDTH / 2, t + DOOR_WIDTH / 2]
-  box('metal', [d0 - 0.1, d0], [27.8, 27.9], [0, DOOR_HEIGHT + 0.1])
-  box('metal', [d1, d1 + 0.1], [27.8, 27.9], [0, DOOR_HEIGHT + 0.1])
-  box('metal', [d0, d1], [27.8, 27.9], [DOOR_HEIGHT, DOOR_HEIGHT + 0.1], 'sw ne')
+  const head = sill + DOOR_HEIGHT
+  box('metal', [d0 - 0.1, d0], [27.8, 27.9], [sill, head + 0.1])
+  box('metal', [d1, d1 + 0.1], [27.8, 27.9], [sill, head + 0.1])
+  box('metal', [d0, d1], [27.8, 27.9], [head, head + 0.1], 'sw ne')
   box('metal', [45.95, 50.8], [27.5, 27.85], [FASCIA, COPING], 'sw')
   wallU('concrete', 27.5, 46, 50.8, ROOF, FASCIA, -1)
   // and the short walls at the other end of the party wall

@@ -35,7 +35,7 @@ import { studentCenterWestMaterials } from '../campus/studentCenterWestMaterials
 import { universityBookstoreMaterials } from '../campus/universityBookstoreMaterials'
 import { universityLoftsMaterials } from '../campus/universityLoftsMaterials'
 import { urbanLifeMaterials } from '../campus/urbanLifeMaterials'
-import { floorOf, lowestUnder } from '../game/surface'
+import { baseOf, lowestUnder } from '../game/surface'
 import Label from './Label'
 
 const materials: Record<string, Record<string, THREE.Material>> = {
@@ -122,9 +122,10 @@ function NameSign({ sign }: { sign: Sign }) {
   )
 }
 
-// under a hand-built building where the ground falls away from its floor: plain concrete
-// walls round its outline from just below the ground up to the floor. all of them are one
-// mesh: one each was a few more draws a frame for every building in view
+// under a hand-built building where the ground falls away from where it's drawn from: plain
+// concrete walls round its outline from just below the ground up to its walls. some draw
+// their own walls on down (bottomOf), they only get one where the ground's lower still. all
+// of them are one mesh: one each was a few more draws a frame for every building in view
 const plinth = precast({ color: '#8f8a82', panel: [3, 1.5], joint: 0.01, tone: 0.03, dirt: 0.5 })
 let plinths: THREE.BufferGeometry | null | undefined
 function allPlinths() {
@@ -135,11 +136,20 @@ function allPlinths() {
       // the open decks draw their own sides down to the ground
       return geo && !geo.open
     })
-    .map((b) => plinthGeometry(b.points, floorOf(b)))
+    .map((b) => plinthGeometry(b.points, baseOf(b), bottomOf(landmarkGeometry(b)!.parts)))
     .filter((g): g is THREE.BufferGeometry => !!g)
   return (plinths = walls.length ? mergeGeometries(walls) : null)
 }
-function plinthGeometry(points: number[][], floor: number) {
+function bottomOf(parts: Record<string, THREE.BufferGeometry>) {
+  return Math.min(
+    0,
+    ...Object.values(parts).map((g) => {
+      if (!g.boundingBox) g.computeBoundingBox()
+      return g.boundingBox!.min.y
+    }),
+  )
+}
+function plinthGeometry(points: number[][], floor: number, bottom: number) {
   const outline = points.map(([x, z]) => ({ x: x!, z: z! }))
   const area = outline.reduce((a, p, i) => {
     const q = outline[(i + 1) % outline.length]!
@@ -154,11 +164,11 @@ function plinthGeometry(points: number[][], floor: number) {
       ]) - floor,
       0,
     )
-    if (low > -0.02) return []
+    if (low > bottom - 0.02) return []
     const len = Math.hypot(b.x - a.x, b.z - a.z) || 1
     const sign = area > 0 ? 1 : -1
     const out = { x: (-(b.z - a.z) / len) * sign, z: ((b.x - a.x) / len) * sign }
-    return [wallQuad(a, b, low - 0.3, 0.02, out)]
+    return [wallQuad(a, b, low - 0.3, bottom + 0.02, out)]
   })
   return walls.length ? mergeGeometries(walls).translate(0, floor, 0) : null
 }
@@ -199,9 +209,9 @@ export default function Landmarks() {
         const geo = landmarkGeometry(b)
         const mats = b.name ? materials[b.name] : undefined
         if (!geo || !mats) return null
-        // drawn as if the ground were flat at its floor (surface.ts), so it stands there and
-        // gets a plinth down to the ground wherever the ground is lower
-        const floor = floorOf(b)
+        // drawn as if the ground were flat where it's drawn from (surface.ts), so it stands
+        // there and gets a plinth down to the ground wherever the ground is lower
+        const floor = baseOf(b)
         return (
           <group key={b.name} position-y={floor}>
             {Object.entries(geo.parts).map(([part, g]) =>
