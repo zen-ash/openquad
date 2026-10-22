@@ -2,7 +2,7 @@
 // loads. Only needs to run again if the map should be updated: `pnpm campus`
 //
 // Map data (c) OpenStreetMap contributors, ODbL.
-import { writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 // hurt park, pretty much the middle of campus. this is (0, 0) in the game
@@ -2061,14 +2061,23 @@ function main(elements) {
   }
 }
 
-const res = await fetch('https://overpass-api.de/api/interpreter', {
-  method: 'POST',
-  headers: { 'user-agent': 'openquad (student project)' },
-  body: new URLSearchParams({ data: query }),
-})
-if (!res.ok) throw new Error(`overpass said ${res.status}, it's probably busy. try again in a bit`)
+// OSM=file keeps overpass's answer there and uses it next time: the same map for builds
+// made side by side, and no waiting for a busy overpass
+async function download() {
+  const res = await fetch('https://overpass-api.de/api/interpreter', {
+    method: 'POST',
+    headers: { 'user-agent': 'openquad (student project)' },
+    body: new URLSearchParams({ data: query }),
+  })
+  if (!res.ok)
+    throw new Error(`overpass said ${res.status}, it's probably busy. try again in a bit`)
+  return res.text()
+}
+const saved = process.env.OSM
+const answer = saved && existsSync(saved) ? readFileSync(saved, 'utf8') : await download()
+if (saved) writeFileSync(saved, answer)
 
-const campus = main((await res.json()).elements)
+const campus = main(JSON.parse(answer).elements)
 
 const gsu = campus.buildings.filter((b) => b.gsu).length
 const doors = campus.buildings.filter((b) => b.door).length
