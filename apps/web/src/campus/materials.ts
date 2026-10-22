@@ -3,6 +3,7 @@ import {
   abs,
   attribute,
   bool,
+  cameraPosition,
   dFdx,
   dFdy,
   dot,
@@ -17,7 +18,10 @@ import {
   min,
   mix,
   mod,
+  normalize,
   normalMap,
+  normalWorld,
+  positionWorld,
   select,
   sin,
   smoothstep,
@@ -31,7 +35,8 @@ import {
 } from 'three/tsl'
 import { MeshStandardNodeMaterial, type Node, type WebGPURenderer } from 'three/webgpu'
 import { outsideCutout } from './cutout'
-import { night } from './facade'
+import { DAY_INSIDE, night } from './facade'
+import { room } from './rooms'
 import {
   texture,
   textureAverage,
@@ -527,6 +532,9 @@ export function metal(p: {
   })
 }
 
+// rooms behind windows: how wide along the wall, and how bright by day (rooms.ts)
+const ROOM = 3.6
+
 const glassNodes = once(() => {
   // landmark.ts glassQuad(): uvs from the window's corner, aPane its size and a random number
   const size = attribute('aPane', 'vec3')
@@ -555,14 +563,33 @@ const glassNodes = once(() => {
     panel,
   )
   const lit = step(float(1).sub(f('lit')), fract(size.z.mul(13.7)))
+  // a room behind it (rooms.ts), like the regular buildings' windows: rooms 3.6m wide along
+  // the wall, each window's floor a bit below its bottom edge
+  const across = normalize(vec3(normalWorld.z, 0, normalWorld.x.negate()))
+  const view = normalize(positionWorld.sub(cameraPosition))
+  const ray = vec3(dot(view, across), view.y, dot(view, normalWorld).negate())
+  const at = vec2(fract(dot(positionWorld, across).div(ROOM)).mul(ROOM), meters.y.add(0.9))
+  const inside = room(ray, at, float(ROOM), size.y.add(1.3), fract(size.z.mul(3.1)))
+  const through = float(1).sub(float(1).sub(max(ray.z, 0)).pow(5))
+  const glow = vec3(1, 0.8, 0.55)
+    .mul(lit)
+    .mul(night)
+    .mul(fract(size.z.mul(7.3)).mul(0.4).add(0.5))
+    .mul(2.2)
   return {
     colorNode: mix(glass, rgb('frameColor'), bar),
     roughnessNode: mix(f('roughness'), 0.45, bar),
     metalnessNode: mix(f('metalness'), 0.3, bar),
-    emissiveNode: vec3(1, 0.8, 0.55)
-      .mul(lit)
-      .mul(night)
-      .mul(fract(size.z.mul(7.3)).mul(0.4).add(0.5))
+    emissiveNode: inside
+      .mul(
+        glow.add(
+          float(1)
+            .sub(night)
+            .mul(DAY_INSIDE)
+            .mul(fract(size.z.mul(5.7)).mul(1.6).add(0.3)),
+        ),
+      )
+      .mul(through)
       .mul(float(1).sub(bar))
       .mul(float(1).sub(panel)),
   } satisfies Nodes

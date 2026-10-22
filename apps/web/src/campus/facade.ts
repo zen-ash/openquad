@@ -2,6 +2,7 @@ import {
   abs,
   attribute,
   bool,
+  cameraPosition,
   cameraViewMatrix,
   dot,
   float,
@@ -27,6 +28,7 @@ import {
 import { MeshStandardNodeMaterial, type Node } from 'three/webgpu'
 import { DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
 import { outsideCutout } from './cutout'
+import { room } from './rooms'
 import { texture as load, unpackNormal } from './textures'
 
 // facade styles, stored per vertex in the aStyle attribute
@@ -42,6 +44,8 @@ export const GROUND_WINDOW_WALL = [0.08, 0.1, 0.92, 0.9]
 
 // 0 in the day, 1 at night. set by the sky every so often
 export const night = uniform(0)
+// how bright a room behind a window is by day, next to the light outside
+export const DAY_INSIDE = 0.09
 
 // the usual shader "random": the same number for the same input, all over the place
 export const hash = (p: Node<'vec3'>) =>
@@ -195,9 +199,18 @@ export function facadeMaterial() {
   )
     .mul(0.6)
     .add(0.35)
+  // a room behind every window (rooms.ts): the view ray in the wall's own directions, into
+  // the window's cell. by day it's dim next to the sky in the glass, at night the lit ones
+  // glow warm. less of it at a grazing angle, where the glass is more of a mirror
+  const view = normalize(positionWorld.sub(cameraPosition))
+  const ray = vec3(dot(view.xz, along), view.y, dot(view.xz, wn.xz).negate())
+  const inside = room(ray, cell.mul(vec2(colWidth, floorHeight)), colWidth, floorHeight, h)
+  const through = float(1).sub(float(1).sub(max(ray.z, 0)).pow(5))
+  const glow = select(lit, vec3(1, 0.78, 0.48).mul(brightness).mul(night).mul(2.2), vec3(0))
   material.emissiveNode = select(
-    isGlass.and(lit),
-    vec3(1, 0.78, 0.48).mul(brightness).mul(night),
+    isGlass.and(deck.not()),
+    // some rooms darker (blinds, nobody in), some brighter (lights on in the day too)
+    inside.mul(glow.add(float(1).sub(night).mul(DAY_INSIDE).mul(h.mul(1.6).add(0.3)))).mul(through),
     vec3(0),
   )
   material.roughnessNode = select(isGlass, 0.06, 0.9)
