@@ -77,8 +77,8 @@ as Petit across the street).
   wall.
 - **Where it meets the arena**: the party wall at v 26.9 is shared. I draw my roof up to it
   and no wall there; the arena draws its wall over my roof and the two end walls that stand on
-  it. My inside walls along it are 5cm in, the arena's are on the same line facing the other
-  way.
+  it, from 316.5m (its own heights are over 309.0m, mine over 306.5m). My inside walls along it
+  are 5cm in, the arena's are on the same line facing the other way.
 - **Colors**: a neutral light grey, not tan like the arena. The 2021 overcast photo has it 1.8
   times as light as Petit's brick. In the game, with both buildings' walls facing the same way
   in the morning shade, it's 128 against Petit's brick 70 (1.83). The game's light turned the
@@ -107,6 +107,14 @@ as Petit across the street).
   orange where the photo's is blue-grey (Library South has the same). In the sun, the small
   shadows (in the gaps between the ribs, on the band under the coping) don't show: they're
   smaller than the sun's shadow bias.
+
+## The ground
+
+It's drawn from the Piedmont Ave sidewalk (306.5m, `DATUMS` in game/surface.ts, `{ from:
+306.5 }`), the same as Petit across the street. The door is in the court off Decatur St,
+where the game's ground is 307.16m: the floor inside is level with that, and the door and its
+frame are drawn 0.66m up from the sidewalk. Before, the floor was at 306.5m and walking in
+dropped you 0.66m.
 
 ## The game's door
 
@@ -164,3 +172,6 @@ same before/now builds, 22 spots, 4 min preheat, median of 4 rounds, ms a frame:
 
 pf close's "before" (9.75) came out under its own gpu time (11.57), so its 2 ms is mostly that
 one low number; the gpu passes add 0.45 ms (the low gym shows more of the arena behind it).
+
+After the terrain (Oct 2026): only the door moved up, same parts, no new shaders. Frame
+cost: measured after the merge.

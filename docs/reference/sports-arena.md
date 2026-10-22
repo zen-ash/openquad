@@ -110,21 +110,33 @@ GSU links (the files behind https://map.concept3d.com/?id=1108#!m/516039 and #!m
 
 The ground drops 2.7m along Decatur St, the back drive is a floor up, the Courtland St bridge
 is 11-12m over Decatur St, and the practice facility next door and Petit stand on ground
-2.5m lower. The game is flat, so I picked one height for the arena's ground: the Decatur St
-sidewalk under the terrace (309.0m). That puts the bridges right over the game's Decatur St
-and the main doors within 1.3m. What it costs:
+2.5m lower. Every height here is over the Decatur St sidewalk under the terrace (309.0m),
+which puts the bridges right over Decatur St. In the game (since the terrain, Oct 2026):
 
-- the back shows about 3.5m more base than real (that bit is buried under the back drive),
-- the Courtland St side shows its whole height from the game's ground, where in reality the
-  Courtland St bridge hides everything under about 11m,
-- the arena sits 2.5m low next to the practice facility and Petit: over the practice
-  facility's roof 2.5m of the ribs are hidden that show in the Piedmont Ave photo,
-- the court by the practice facility is 2.2m down in reality, in the game it's at the
-  ground with the canopy over the door at 4.5m.
+- the arena is drawn from there (`DATUMS` in game/surface.ts, `{ from: 309.0 }`), so its
+  roof is at 333.85m and the louvre boxes at 339.7m like the lidar has them,
+- the floor inside is level with the ground at the doors by Courtland St (310.25m, 1.25m up
+  the hill), and the doors, their storefront, the awning and its sign are drawn from there,
+  with a plain base under the storefront,
+- the ticket office stands on the paving in front of it (0.9m up), the service doors on
+  Courtland St, the dock door at the back, the door and canopy in the court by the practice
+  facility and the loading dock well's wall are at the game's ground where they are,
+- every wall that stands on the sidewalk goes on down to the lowest ground under the
+  building (campus/landmark.ts `sink`): the east tower, the end wall, the columns and steps
+  under the terrace and the bridges' piers reach Decatur St where it drops toward Piedmont
+  Ave, so there's no plinth.
 
-The practice facility (drawn by itself) draws everything under its roof at 10.3m. The
-arena's walls and the end walls' blades over it start at 10m, so they meet its roof with no
-gap. Inside walls along the party wall sit 5cm in.
+The practice facility draws everything under its roof, 10.3m over its own datum (306.5m,
+2.5m under the arena's). The arena's walls and the end walls' blades over it start at 7.5m
+over 309.0m (316.5m), 0.3m under its roof, so they meet it with no gap. Before this they
+started at 10m over the arena's ground, and with the arena on the game's ground at its doors
+there was a 3.5m black gap between the practice facility's roof and the ribs. Inside walls
+along the party wall sit 5cm in.
+
+Still off: the Courtland St side shows its whole height from the game's ground, where in
+reality the Courtland St bridge hides everything under about 11m, and the court by the
+practice facility is the game's
+ground (307.0m), a little higher than the real court.
 
 ## The game's door
 
@@ -205,3 +217,6 @@ nothing changed), so the arena itself adds 0.9 ms there, like other buildings cl
 old spots moved -0.45..+0.98 ms (gpu within 0.25). A 2 minute walk past it was clean (1% and
 0.1% low 16.8 ms, no spikes) in 3 of 4 tries; the other had gpu waits, no shader builds, and
 the same build was clean the next time.
+
+After it was put on the terrain (Oct 2026, the ground level section): the same 7 parts, no
+new shaders, 2.7k triangles. Frame cost: measured after the merge.

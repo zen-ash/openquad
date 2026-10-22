@@ -23,6 +23,7 @@ Newest first. "Facade" is which side of the building it shows.
 | Mapillary toddwiese 2019, networklanman 2021, nhhecker 2019, lxmatl3 2017, jackdripper 2015-2016                                   | 2015-2021           | CC BY-SA 4.0                 | Decatur St, Pryor St, Five Points                            | checking: the facade is the same in all of them                                                                                                                                                                                                               |
 | Overture Maps, release 2026-09-23                                                                                                  | 2026                | ODbL / CDLA                  | -                                                            | 26m, but that's microsoft's estimate (no lidar here): not used                                                                                                                                                                                                |
 | USGS elevation point query                                                                                                         | -                   | public domain                | -                                                            | ground round the block: 318.3m at the Pryor St end of 40-42 Pryor, 316.6 at Pryor and Decatur, 315.6 at Decatur and Kimball, 314.0 at the Kimball end of 40-42 Pryor                                                                                          |
+| USGS 3DEP lidar (GA statewide 2018, EPT on AWS)                                                                                    | 2018                | public domain                | roof                                                         | the coping (356.1m), the roof (355.1m), the box on the roof (361.9m), the ground round the block                                                                                                                                                              |
 | OpenStreetMap ways 252608873, 1284447023                                                                                           | 2024-05-18          | ODbL                         | -                                                            | the outline (it's right), 10 floors, 40-42 Pryor St against the south side                                                                                                                                                                                    |
 | GSU Concept3D descriptions (295214, 900472) and the education.gsu.edu clinic page                                                  | 2025-2026           | GSU                          | text                                                         | "10-story building at the corner of Pryor Street and Decatur Street", the main entrance on Pryor St, the dock on Kimball Way                                                                                                                                  |
 
@@ -44,13 +45,19 @@ GSU links (the files behind https://map.concept3d.com/?id=1108#!m/295214):
 - **Plan**: osm's box is right (the roof on the satellite is within a meter), and it's the
   face of the marble. Seven bays on Pryor St and Kimball Way, five on Decatur St and the south
   side, 6.1-6.2m each.
-- **Height**: 36.05m to the top. The soffit over the ground floor is level, but the ground
-  drops 4.3m round the block (usgs): the game's flat ground is the average, Decatur St at
-  the middle of the block. Gsu's 2021 photo has 31.55m from the soffit to the top (the fins
-  give its scale). Overture's 26m is an estimate and wrong.
-- **Up the building**: the ground floor to the soffit at 4.5m, then nine rows of windows 3.3m
-  apart (1.45m of glass, 1.85m of marble), the first sill 1.75m over the soffit, and a 1.95m
-  band of marble at the top with a thin coping. Ten floors, like gsu says.
+- **Height**: usgs lidar (2018) has the coping at 356.1m, the roof at 355.1m and the box on
+  the roof at 361.9m: 39m over the Pryor St sidewalk at the doors (317.1m). The soffit over
+  the ground floor is level and the ground drops 4.3m round the block. The photos only give
+  the proportions: gsu's 2021 photo has 9.5 rows' worth from the soffit to the top, the 2019
+  one from Park Place 1.3 rows from the sidewalk at Pryor St and Decatur St (316.6m) to the
+  soffit. With the lidar's top that's rows 3.64m apart and the soffit at 321.3m. The first
+  build had 3.3m rows and the soffit 4.5m over a made up flat ground (the camera fits got the
+  scale 10% small), so the whole building was 3m too low. Overture's 26m is an estimate and
+  wrong.
+- **Up the building**: the ground floor to the soffit at 4.2m over the doors, then nine rows
+  of windows 3.64m apart (1.6m of glass, 2.04m of marble), the first sill 1.93m over the
+  soffit, and a 2.15m band of marble at the top with a thin coping. Ten floors, like gsu
+  says.
 - **Bays**: four panes to a bay with thin aluminium mullions, the glass a little behind the
   marble. Each spandrel is four slabs of white marble, the joints on the mullion lines. A
   marble fin about 0.3m wide stands out on every bay line, and a square post on every corner
@@ -92,6 +99,19 @@ GSU links (the files behind https://map.concept3d.com/?id=1108#!m/295214):
 - The south side above 40-42 Pryor St: windows from the fourth row up (40-42 is about 15.5m in
   the 2021 photo, 14m in the game).
 - Uniform rows: the photos give 3.2m at the bottom to 3.4m at the top, probably the lenses.
+
+## The ground
+
+The block drops from 318.0m at the Pryor St end of 40-42 Pryor St to 316.6m at Pryor St and
+Decatur St and 314.7m at the Kimball Way end. The building is drawn from the Pryor St
+sidewalk at its doors (`DATUMS` in game/surface.ts, `{ from: 317.1 }`), so the roof stays
+where the lidar has it and the floor inside is level with the street at the doors. The
+canopy is 3.15m over the doors' sill. Down Kimball Way the vents, the dock's roll up door,
+the back door and its canopy and the white marble panels stand on the game's ground where
+they are, and every wall standing on the ground (the brick, the louvres, the piers and the
+corner posts) goes on down to the lowest ground under the building (campus/landmark.ts
+`sink`), so the ground floor is 5.7m tall at the Decatur St and Kimball Way corner and there's
+no plinth. On Pryor St the screens and louvres just start in the ground where it's higher.
 
 ## The game's door and the set back ground floor
 
@@ -136,3 +156,6 @@ the college of education's own:
 8 parts is more than the others, but the building is out at five points, away from every other
 hand-built building, and close up the flat marble and the dark soffit are cheaper than the
 generic facade's windows were.
+
+After it was put on the terrain and made the lidar's height (Oct 2026): the same 8 parts, no
+new shaders, 1.3k triangles. Frame cost: measured after the merge.

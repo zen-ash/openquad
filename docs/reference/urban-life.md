@@ -25,6 +25,7 @@ Newest first. "Facade" is which side of the building it shows.
 | Commons: File:Student Center, GSU.JPG                                                                                 | 2013-12-03          | CC BY-SA 3.0, Michael Rivera | the side toward student center east and the northwest end, from courtland st and gilmer st         | checking the letters on the parapet                                                                                                                                                                                     |
 | Overture Maps, release 2026-09-23                                                                                     | 2026                | ODbL / CDLA                  | -                                                                                                  | usgs lidar: 49.0m and 49.4m on the two osm bits next to the northeast side (it lands on urban life's roof), 16.6m for 140 decatur st                                                                                    |
 | USGS elevation point query                                                                                            | -                   | public domain                | -                                                                                                  | ground heights: the south tower's base on piedmont ave 307.4m, the plaza 311.2m, the courtland st bridge by student center west ~316m, the north tower 309.0m                                                           |
+| USGS 3DEP lidar (GA statewide 2018, EPT on AWS)                                                                       | 2018                | public domain                | all                                                                                                | the plaza's and the deck's pavers (313.3m), the wing's roof (326.3m), 140 decatur st's roof (323.1m), the deck's outline and its corner tower (318m), the slab's roof (357.7m)                                          |
 | OpenStreetMap ways 252608915, 252608874                                                                               | -                   | ODbL                         | -                                                                                                  | the outline and its seven round towers, 12 floors, 140 decatur st                                                                                                                                                       |
 | GSU Concept3D description (295229)                                                                                    | 2025-2026           | GSU                          | text                                                                                               | the entrances: a ramp from decatur st, one from the b lot, two from the urban life plaza, the bridge to student center east on the second floor. "G floor"                                                              |
 
@@ -69,20 +70,28 @@ GSU links (the files behind https://map.concept3d.com/?id=1108#!m/295229):
   sides near the north and the south towers, dark bronze.
 - **Colors**: in gsu's 2025 photo in the sun the brick is 0.69 as bright as the bands and a
   pinkish grey (r > b > g); the bands and piers a warm off white.
-- **The wing**: storefront on the ground floor behind round cream columns, three strips of
-  windows between cream spandrels, its top about level with the slab's ledge (2010).
-  "URBAN LIFE CENTER" over its doors (2026, the plate is drawn with the blue square where
-  GSU's logo is).
-- **140 decatur st**: a brick box with a deep cream band round the top (2010), 16.6m
-  (lidar). Drawn with urban life, with the bit joining it to the slab.
+- **The wing**: it stands on the plaza, a floor up from piedmont ave: storefront behind round
+  cream columns up to the band with "URBAN LIFE CENTER" on it, then two strips of windows
+  between cream spandrels, the slab's own rows (gsu's 2026 photos have the storefront and two
+  strips under the top band). Its top is level with the slab's ledge (2010; lidar 326.3m,
+  18.9m over piedmont ave). The plate is drawn with the blue square where GSU's logo is.
+- **140 decatur st**: a brick box with a deep cream band round the top (2010), its roof at
+  323.1m (lidar, 15.7m over piedmont ave), standing on decatur st. Drawn with urban life,
+  with the bit joining it to the slab.
+- **The deck by piedmont ave**: between 140 decatur st, the slab and the corner of piedmont
+  ave and decatur st, pavers a floor up (lidar 313.3m) over brick on a white base with a
+  solid precast parapet, and a short brick tower on the corner (lidar 318m). The slab's side
+  over it has a storefront at the deck's level under its first band (2010).
 
 ## Not verified
 
-- The street floor: from piedmont ave and decatur st the plaza is a deck a floor up, over a
-  brick podium with a white base and a short wide tower on the corner (2019). The game is
-  flat, so the slab stands on the game's ground with glass and columns at the bottom, like
-  the arcade gsu's 2026 photos show under the plaza. The deck, the podium and the short
-  tower aren't drawn.
+- The deck: its outline is from the lidar (pavers at 313.3m between x 0..22, z 250..282 in
+  game meters) and two photos, the short tower's place on its corner is good to 2-3m (the
+  2019 photo from piedmont ave and the 2010 one put it a few meters apart). The openings in
+  its brick on decatur st (2010) and the wall lights are left out. It's solid: you can't
+  get up onto it (in real life it's reached from the plaza and by stairs from decatur st).
+- The lidar has the roof at 357.7m and the towers' tops at 358.8-358.9m, the game has the
+  parapet at 358.2m and the towers at 359.7m. Within a meter, left as the photos had it.
 - The wing's side toward student center east and its end toward student center west: made
   like the plaza side (not in any photo). The real plaza side steps back at its east end.
 - The side toward student center east below the ledge: behind the generic box osm has there
@@ -109,6 +118,30 @@ wasn't paved and nothing walked onto it. Now:
   310m (it was 532m round by decatur st, over the 478m the test allows).
 
 In real life the plaza end has glass doors and the walk through is a lobby, not open air.
+
+## The ground
+
+Piedmont ave at the south tower is 307.4m and the plaza with the doors a floor up: lidar has
+its pavers at 313.3m, and the deck by piedmont ave at the same height. Decatur st runs from
+307.2m at piedmont ave up to 309-310m, the side toward student center east is at 308.5-310m.
+
+The building is drawn from piedmont ave (`DATUMS` in game/surface.ts, `{ from: 307.4 }`), so
+the parapet is at 358.2m and the wing's top at 326.3m wherever the plaza is. The floor inside
+is the game's ground at the door (311.68m), and everything at the plaza's level is drawn
+from there: the wing's storefront, the passage and its door, the storefront on the slab's
+side toward the plaza. The game's terrain is usgs bare earth, which runs under the plaza's
+deck, so the game's plaza is 1.6m lower than the real one (311.7 against 313.3m) and a
+rounded hump instead of a flat deck. That makes the storefronts on the plaza 4.9m tall
+instead of 3.3m; if the terrain gets the deck one day, they come out right by themselves.
+
+Toward piedmont ave and student center east the slab has its tall street floor at the
+street. On the plaza side its first floor up is a storefront at the plaza's level, with the
+plaza's edge (plain precast) under it where the game's ground is lower. Every wall that
+stands on the ground goes on down to the lowest ground under the building
+(campus/landmark.ts `sink`), so there's no plinth.
+
+Before this the whole building stood on the game's ground at the door: 4.3m too tall, with
+140 decatur st floating over decatur st and a plain plinth under the slab.
 
 ## Cost
 
@@ -141,3 +174,7 @@ taking turns, hot plateau on AC, 4 min preheat, 2 rounds thrown away and the med
 
 Every spot is within +0.8 ms, but scw grilles goes over 14 ms (it was 13.70 before). The
 gpu passes there only add up to about +0.25 ms (shadows +0.04, ao +0.09, scene +0.08).
+
+After it was put on the terrain (Oct 2026, the ground section): the same 3 parts and
+materials, no new shaders, about 10k triangles (the plaza side lost its street floor, the
+wing a row, the deck added about 300). Frame cost: measured after the merge.
