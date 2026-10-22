@@ -80,6 +80,11 @@ const VIEWS = [
   { name: 'university-lofts', from: [129, 2.5, 52], at: [140, 25, 25], player: [128.6, 54.5] },
   // piedmont ave at armstrong st: the deck's cable rails and storefront, the lofts' blank wall
   { name: 'lofts-parking', from: [222, 1.5, 80], at: [160, 9, 25], player: [224.9, 82.6] },
+  { name: 'g-deck', from: [-268.99, 3, 182.41], at: [-192.92, 12, 246.76], player: [-272, 179.8] },
+  { name: 'm-deck', from: [139.17, 1.5, 147.15], at: [208.36, 11, 75.79], player: [136.4, 150] },
+  { name: 'n-deck', from: [36.25, 1.6, 327.67], at: [133.23, 26, 327.1], player: [32.25, 327.7] },
+  { name: 'k-deck', from: [70, 1.6, 360], at: [130, 8, 300], player: [68, 362] },
+  { name: 's-deck', from: [163.53, 1.5, 331.14], at: [230.71, 14, 258.55], player: [160.8, 334.1] },
   {
     name: 'library-north-inside',
     from: [-93.8, 1.7, 142.9],
