@@ -36,6 +36,7 @@ const query = `[out:json][timeout:90];
   way["amenity"="parking"](${bbox});
   node["natural"="tree"](${bbox});
   node["amenity"="fountain"](${bbox});
+  node["highway"="traffic_signals"](${bbox});
 );
 out geom;`
 
@@ -1849,6 +1850,7 @@ function main(elements) {
   // crosswalks. not drawn as paths, but gps needs them to get across roads
   const crossings = []
   const plazas = []
+  const signals = []
   const trees = []
 
   for (const el of elements) {
@@ -1918,6 +1920,13 @@ function main(elements) {
       const points = ring(el.geometry)
       if (points) parks.push(points)
       if (points && tags.name) areas.push({ name: tags.name, points })
+      continue
+    }
+
+    // traffic lights (Signals.tsx), where the node is: the middle of a junction or a stop line
+    if (el.type === 'node' && tags.highway === 'traffic_signals') {
+      const p = toLocal(el)
+      if (inside(p)) signals.push(p)
       continue
     }
 
@@ -2082,6 +2091,7 @@ function main(elements) {
     roads: walkRoads,
     paths: walkPaths,
     crossings: walkCrossings,
+    signals,
     parks,
     lawns,
     lots,

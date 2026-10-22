@@ -14,6 +14,7 @@ import { polygon, type Point, type Segment, type World } from './collision'
 import { footprint, furnish, isOver, LOW, type Item } from './furniture'
 import { enterable, interiors } from './interiors'
 import { benches, bins } from './streetFurniture'
+import { signalPoles } from './signals'
 import { decksAt } from './surface'
 import { fromElevation, heightAt } from './terrain'
 
@@ -106,6 +107,8 @@ export const world: World = {
     ...arena.circles,
     ...rec.circles,
     ...rsc.circles,
+    // the traffic lights' poles
+    ...signalPoles().map((p) => ({ x: p.x, z: p.z, radius: 0.2 })),
   ],
   halfSize: campus.halfSize,
 }
