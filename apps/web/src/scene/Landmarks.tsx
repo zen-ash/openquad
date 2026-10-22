@@ -36,6 +36,7 @@ import { universityBookstoreMaterials } from '../campus/universityBookstoreMater
 import { universityLoftsMaterials } from '../campus/universityLoftsMaterials'
 import { urbanLifeMaterials } from '../campus/urbanLifeMaterials'
 import { baseOf, lowestUnder } from '../game/surface'
+import { useSettings } from '../settings'
 import Label from './Label'
 
 const materials: Record<string, Record<string, THREE.Material>> = {
@@ -198,12 +199,59 @@ function FirstWhenNear({
   return <mesh ref={mesh} geometry={geometry} material={material} castShadow receiveShadow />
 }
 
+// a building's signs, only while the camera's close enough to make them out: 60m, more for
+// big letters (120 times their height, "GSU" up on urban life's parapet). every one is a few
+// draws a frame (the letters twice, they're see-through) wherever it's in view, behind walls
+// too: 123 of them, ~150 draws from one spot. all shown while the warm-up runs
+const SIGNS = 60
+const reachOf = (s: Sign) => {
+  const big = s.letters
+    ? (s.size ?? 0.3)
+    : s.text
+      ? (s.height ?? 0.75) * (s.scale ?? 1)
+      : Math.max(s.width ?? 1, s.height ?? 1)
+  return Math.max(SIGNS, big * 120)
+}
+function Signs({ signs, floor }: { signs: Sign[]; floor: number }) {
+  const groups = useRef<(THREE.Group | null)[]>([])
+  useFrame(({ camera }) => {
+    const warming = useSettings.getState().warming
+    const { x, y, z } = camera.position
+    signs.forEach((s, i) => {
+      const g = groups.current[i]
+      if (g) g.visible = warming || Math.hypot(s.x - x, s.y + floor - y, s.z - z) < reachOf(s)
+    })
+  })
+  return signs.map((s, i) => (
+    <group
+      key={i}
+      ref={(g) => {
+        groups.current[i] = g
+      }}
+    >
+      <NameSign sign={s} />
+    </group>
+  ))
+}
+
+// none of it moves: its matrices are worked out once, here, and three leaves them alone
+// after that (a few hundred objects, 0.6ms a frame). bits that show up later (the letters,
+// once the font's in) keep doing their own
+function freeze(root: THREE.Object3D | null) {
+  if (!root) return
+  root.traverse((o) => {
+    o.updateMatrix()
+    o.matrixAutoUpdate = false
+  })
+  root.updateMatrixWorld(true)
+}
+
 // the buildings drawn by hand from photos (campus/landmarks.ts). they're left out of
 // the regular buildings mesh
 export default function Landmarks() {
   const under = allPlinths()
   return (
-    <>
+    <group ref={freeze}>
       {under && <mesh geometry={under} material={plinth} castShadow receiveShadow />}
       {campus.buildings.map((b) => {
         const geo = landmarkGeometry(b)
@@ -228,12 +276,10 @@ export default function Landmarks() {
                 />
               ),
             )}
-            {geo.signs.map((s, i) => (
-              <NameSign key={i} sign={s} />
-            ))}
+            <Signs signs={geo.signs} floor={floor} />
           </group>
         )
       })}
-    </>
+    </group>
   )
 }

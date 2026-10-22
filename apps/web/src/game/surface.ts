@@ -10,18 +10,39 @@ const decks = [...campus.roads, ...campus.paths].filter((l): l is Deck => l.poin
 // how far up you can step without it being a different level
 const STEP = 0.6
 
-// every deck at a spot, as heights
+// the decks' segments by 16m square of the map, so a spot only looks at the ones near it
+// (everyone walking about asks every frame)
+type Segment = { a: number[]; b: number[]; half: number }
+const CELL = 16
+const REACH = 4
+const squares = new Map<number, Segment[]>()
+const square = (c: number, r: number) => r * 10000 + c
+for (const { width, points } of decks)
+  for (let i = 1; i < points.length; i++) {
+    const seg = { a: points[i - 1]!, b: points[i]!, half: width / 2 }
+    const pad = seg.half + REACH
+    const [x0, x1] = [Math.min(seg.a[0]!, seg.b[0]!) - pad, Math.max(seg.a[0]!, seg.b[0]!) + pad]
+    const [z0, z1] = [Math.min(seg.a[1]!, seg.b[1]!) - pad, Math.max(seg.a[1]!, seg.b[1]!) + pad]
+    for (let r = Math.floor(z0 / CELL); r <= Math.floor(z1 / CELL); r++)
+      for (let c = Math.floor(x0 / CELL); c <= Math.floor(x1 / CELL); c++) {
+        const key = square(c, r)
+        if (!squares.has(key)) squares.set(key, [])
+        squares.get(key)!.push(seg)
+      }
+  }
+
+// every deck at a spot, as heights (reach: up to 4m off the deck's edge)
 export function decksAt(x: number, z: number, reach = 0) {
   const out: number[] = []
-  for (const { width, points } of decks)
-    for (let i = 1; i < points.length; i++) {
-      const [ax, az, ah] = points[i - 1] as [number, number, number]
-      const [bx, bz, bh] = points[i] as [number, number, number]
-      const [dx, dz] = [bx - ax, bz - az]
-      const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)))
-      if (Math.hypot(ax + dx * t - x, az + dz * t - z) <= width / 2 + reach)
-        out.push(fromElevation(ah + (bh - ah) * t))
-    }
+  for (const { a, b, half } of squares.get(square(Math.floor(x / CELL), Math.floor(z / CELL))) ??
+    []) {
+    const [ax, az, ah] = a as [number, number, number]
+    const [bx, bz, bh] = b as [number, number, number]
+    const [dx, dz] = [bx - ax, bz - az]
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)))
+    if (Math.hypot(ax + dx * t - x, az + dz * t - z) <= half + reach)
+      out.push(fromElevation(ah + (bh - ah) * t))
+  }
   return out
 }
 

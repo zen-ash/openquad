@@ -313,8 +313,11 @@ export default function Effects() {
   useFrame((state, dt) => {
     // three works out every object's world matrix again for each render of the scene, and a
     // frame here is five of them (prepass, scene pass, three shadow cascades): 0.9ms of cpu
-    // at student center west. nothing moves in between, so once a frame is enough
+    // at student center west. nothing moves in between, so once a frame is enough. and the
+    // scene itself never moves: with its matrix on auto it made every object in it work its
+    // matrix out again, even the ones that never move (Landmarks.tsx freezes those)
     state.scene.matrixWorldAutoUpdate = false
+    state.scene.matrixAutoUpdate = false
     state.scene.updateMatrixWorld()
     const { quality, native } = useSettings.getState()
     if (quality !== 'high') {
