@@ -26,7 +26,7 @@ import { universityLoftsGeometry, type LoftsData } from './universityLofts'
 import { urbanLifeGeometry, type UrbanLifeData } from './urbanLife'
 import { sink } from './landmark'
 import { baseOf } from '../game/surface'
-import { heightAt } from '../game/terrain'
+import { terrainAt } from '../game/terrain'
 
 // buildings drawn by hand from photos instead of the regular buildings mesh, by name
 
@@ -149,7 +149,7 @@ function sunk(b: Data, geo: LandmarkGeometry) {
   let low = Infinity
   for (let x = Math.min(...xs) - 5; x <= Math.max(...xs) + 5; x += 2)
     for (let z = Math.min(...zs) - 5; z <= Math.max(...zs) + 5; z += 2)
-      low = Math.min(low, heightAt(x, z))
+      low = Math.min(low, terrainAt(x, z))
   const depth = low - baseOf(b) - 0.3
   if (depth < 0) sink(geo.parts, depth)
   return geo

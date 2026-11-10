@@ -89,7 +89,8 @@ GSU links (the files behind https://map.concept3d.com/?id=1108#!m/295229):
   game meters) and two photos, the short tower's place on its corner is good to 2-3m (the
   2019 photo from piedmont ave and the 2010 one put it a few meters apart). The openings in
   its brick on decatur st (2010) and the wall lights are left out. It's solid: you can't
-  get up onto it (in real life it's reached from the plaza and by stairs from decatur st).
+  get up onto it (in real life it's reached from the plaza and by stairs from decatur st),
+  though it's level with the plaza now.
 - The lidar has the roof at 357.7m and the towers' tops at 358.8-358.9m, the game has the
   parapet at 358.2m and the towers at 359.7m. Within a meter, left as the photos had it.
 - The wing's side toward student center east and its end toward student center west: made
@@ -125,56 +126,76 @@ Piedmont ave at the south tower is 307.4m and the plaza with the doors a floor u
 its pavers at 313.3m, and the deck by piedmont ave at the same height. Decatur st runs from
 307.2m at piedmont ave up to 309-310m, the side toward student center east is at 308.5-310m.
 
+The plaza is a deck over the parking under it (gsu's photo IMG_3445, the "b lot" on gsu's map)
+and the bare earth leaves it out: the game's ground there used to be a rounded hump at
+309.5-312.8m. Now it's a raised plaza (game/raised.ts, 'Urban Life plaza'), flat at 313.27m:
+
+- **Its outline**, traced on the lidar in the building's frame ("a" and "v"): from the wing
+  and the slab's side out to decatur st 57.3m in from the north tower (the lidar's edge,
+  1.3m past osm's), between student center west's wall and 140 decatur st. Where the sports
+  arena's bridges land it stops at osm's edge (56m), where their ends are.
+- **It goes on through the wing**: the passage with the game's door, and the terrace on the
+  far side at the same height (lidar 313.25m, 6m wide, a light well at 308.8m along it). From
+  the terrace steps go down toward student center east (osm's footway down them): a ramp in
+  the game ('Urban Life steps', 313.27m down to 310.1m over 10.7m), parapets either side.
+- **The planter** between the plaza and student center west (osm's lawn) is 0.7m up (lidar
+  314.0m, shrubs to 315m) with its own edge you can't walk over ('Urban Life planter').
+- **Its sides** (campus/urbanLifePlaza.ts, the building's own cream precast): on decatur st
+  a 4.5m wall with a band along the top that stands out a little, a base step, a coping on
+  the 1m parapet, and the garage's black grilles between piers in 6.4m bays (mapillary 2017
+  under the second bridge: a dark grille behind the bridge's piers). Under the bridges' ends
+  the wall carries on without the parapet. Collision all along. The terrace's edge and the
+  steps' cheek walls are the same precast, the planter is brick with a precast cap.
+- **The pavers**: fields of brick red pavers 2.4m square on a 3.2m grid, the plaza's light
+  concrete in the bands between (gsu's 2026 photo). They're a part of the building, the
+  library's brick family laid flat (running bond where the real ones are a square grid,
+  about the same size), pulled toward the camera like a ground layer or the plaza's own
+  ground covered them from a few meters away. The same in both looks; in the game look the
+  bands are its own plaza color.
+- **On the plaza** (gsu's 2026 photo, placed by eye): two brick planters with a precast cap
+  and low mounds of flowers in front of the wing, four round black picnic tables with four
+  seats each. Both are collision.
+- **The steps** toward student center east and the new ones on decatur st have real treads
+  and risers (0.17m) over the slope you walk up.
+- **The steps from decatur st** (osm's steps way, mapillary 2018 and 2021 dashcam): wide
+  steps from the sidewalk up into 140 decatur st's ground floor, set back 5m under it, to
+  glass doors at the plaza's height (313.27m). They're walkable ('Urban Life decatur st
+  steps' and its landing) and 140 decatur st's collision has the recess in it. Next to them
+  the "B" lot's driveway goes in under the building, a dark opening in a cream frame with
+  the blue sign. The photos show the steps going up into the building; I found nothing that
+  says they come out on the plaza (gsu's map has "a ramp from decatur st" as one of the
+  building's entrances), so they end at the doors. The way onto the plaza is still the
+  steps on the far side of the wing (the gps goes that way).
+
 The building is drawn from piedmont ave (`DATUMS` in game/surface.ts, `{ from: 307.4 }`), so
 the parapet is at 358.2m and the wing's top at 326.3m wherever the plaza is. The floor inside
-is the game's ground at the door (311.68m), and everything at the plaza's level is drawn
+is the ground at the door, the plaza (313.27m), and everything at the plaza's level is drawn
 from there: the wing's storefront, the passage and its door, the storefront on the slab's
-side toward the plaza. The game's terrain is usgs bare earth, which runs under the plaza's
-deck, so the game's plaza is 1.6m lower than the real one (311.7 against 313.3m) and a
-rounded hump instead of a flat deck. That makes the storefronts on the plaza 4.9m tall
-instead of 3.3m; if the terrain gets the deck one day, they come out right by themselves.
+side toward the plaza. They're 3.3m tall now, like gsu's 2026 photo (side by side). On the
+old hump they came out 4.9m.
 
 Toward piedmont ave and student center east the slab has its tall street floor at the
-street. On the plaza side its first floor up is a storefront at the plaza's level, with the
-plaza's edge (plain precast) under it where the game's ground is lower. Every wall that
-stands on the ground goes on down to the lowest ground under the building
-(campus/landmark.ts `sink`), so there's no plinth.
+street. On the plaza side its first floor up is a storefront at the plaza's level. Every wall
+that stands on the ground goes on down to the lowest ground under the building
+(campus/landmark.ts `sink`, the terrain itself under the plaza), so there's no plinth.
 
-Before this the whole building stood on the game's ground at the door: 4.3m too tall, with
-140 decatur st floating over decatur st and a plain plinth under the slab.
+Before the terrain the whole building stood on the game's ground at the door: 4.3m too tall,
+with 140 decatur st floating over decatur st and a plain plinth under the slab.
+
+Still not there: the real pavers are a square grid, the game's a running bond; the planters'
+flowers are green mounds (the photo has orange, pink and white ones); no umbrellas, square
+tables or chairs. The bridges' ends are closed (they aren't walkable in the game), the real
+ones come down onto the plaza with steps and a ramp. The planting beds and trees between the
+decatur st wall and the sidewalk, and the black railings on the parapets, are left out. The
+walls away from the second bridge aren't in any photo, they're drawn like it.
 
 ## Cost
 
-3 parts (precast, brick, glass), all casting shadows: the building is empty inside, and with
-the glass left out the sun came through the rows of windows onto the ground behind it.
-Everything is one of the library's families, so no new shaders: the warm-up builds 798
-shaders and 700 pipelines before and after.
-
-About 10.2k triangles (brick 5.9k, precast 3.3k, glass 1k). Prod builds in one browser,
-taking turns, hot plateau on AC, 4 min preheat, 2 rounds thrown away and the median of 4
-(ms at 1280x800@2, the game look). "before" is the build just before this (c7086a1):
-
-| spot            | before | now   | now - before |
-| --------------- | ------ | ----- | ------------ |
-| park            | 10.53  | 10.45 | -0.13        |
-| library north   | 10.15  | 11.05 | 0.68         |
-| dahlberg        | 11.70  | 11.38 | -0.32        |
-| sce             | 10.28  | 10.85 | 0.40         |
-| scw view        | 11.88  | 11.88 | -0.07        |
-| scw grilles     | 13.70  | 14.17 | 0.50         |
-| langdale street | 11.30  | 11.30 | -0.05        |
-| langdale close  | 13.17  | 13.75 | 0.58         |
-| cs street       | 11.72  | 11.00 | -0.57        |
-| cs close        | 12.30  | 12.83 | 0.53         |
-| ls street       | 11.72  | 11.62 | -0.22        |
-| ls close        | 13.65  | 13.98 | 0.28         |
-| ul street       | 9.63   | 10.08 | 0.25         |
-| ul close        | 11.18  | 11.72 | 0.77         |
-| ul plaza        | 12.70  | 10.88 | -2.25        |
-
-Every spot is within +0.8 ms, but scw grilles goes over 14 ms (it was 13.70 before). The
-gpu passes there only add up to about +0.25 ms (shadows +0.04, ao +0.09, scene +0.08).
-
-After it was put on the terrain (Oct 2026, the ground section): the same 3 parts and
-materials, no new shaders, about 10k triangles (the plaza side lost its street floor, the
-wing a row, the deck added about 300). Frame cost: measured after the merge.
+6 parts: precast, brick and glass, all casting shadows (the building is empty inside, and
+with the glass left out the sun came through the rows of windows onto the ground behind it),
+and for the plaza pavers, metal (the tables, the garage's grilles) and plants. Everything is
+one of the library's families, so no new shaders (the warm-up built 798 shaders and 700
+pipelines before the plaza). The pavers are the brick family with a polygon offset, a new
+pipeline state for that one material but the same shader. The pavers and the flowers don't
+cast shadows. About 14.9k triangles (10.2k before the plaza: its sides, planters, tables, steps
+and the recess under 140 decatur st). Frame cost measured after the merge.

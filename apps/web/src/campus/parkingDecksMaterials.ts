@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { clearGlass, concrete, glass, metal, precast } from './materials'
+import { clearGlass, concrete, glass, lawn, metal, precast } from './materials'
 import type { BandPart, PaintedPart, SteelPart } from './parkingDecks'
 
 // one set per style, every deck of a style shares it (each part is a draw call in every
@@ -124,4 +124,11 @@ export const bandDeckMaterials: Record<BandPart, THREE.Material> = {
   slab: steelDeckMaterials.slab,
   // the floodlight poles and the dark inside of the ways in
   pole: metal({ color: '#3a3530', roughness: 0.6 }),
+  // the toll plaza's canopy and booth, painted white: m's cream (the same material, no new
+  // shader)
+  white: paintedDeckMaterials.cream,
+  // the toll plaza's island curbs, painted yellow
+  yellow: precast({ color: '#d4ab3c', panel: [12, 12], joint: 0, tone: 0.03, dirt: 0.35 }),
+  // the planters' shrubs and the soil under them
+  green: lawn({ color: '#3d4b25', size: 1.6, saturation: 1, roughness: 0.95 }),
 }

@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { pointInPolygon } from '../game/collision'
-import { GRID, normalAt, type Grid } from '../game/terrain'
+import { RAISED, raisedAt, type Raised } from '../game/raised'
+import { GRID, ORIGIN, normalAt, type Grid } from '../game/terrain'
 
 type Outline = { points: number[][] }
 
@@ -60,36 +61,49 @@ function carver(grid: Grid, outlines: Outline[]) {
         }
     })
   }
+  // slivers from cuts through a corner are nothing, leave them out
+  const area = (p: number[][]) =>
+    p.reduce((t, q, i) => {
+      const n = p[(i + 1) % p.length]!
+      return t + q[0]! * n[1]! - n[0]! * q[1]!
+    }, 0) / 2
+  // poly cut along the outline edges that cross square c, r
+  const split = <T extends number[]>(poly: T[], c: number, r: number) => {
+    let pieces = [poly]
+    for (const { a, b } of squares.get(r * 100000 + c) ?? []) {
+      const s = (p: T) => (b[0]! - a[0]!) * (p[1]! - a[1]!) - (b[1]! - a[1]!) * (p[0]! - a[0]!)
+      pieces = pieces
+        .flatMap((p) => [clip(p, s), clip(p, (q) => -s(q))])
+        .filter((p) => p.length >= 3)
+    }
+    return pieces.filter((p) => Math.abs(area(p)) >= 1e-4)
+  }
   return {
     crossed: (c: number, r: number) => squares.has(r * 100000 + c),
+    split,
+    // and the bits inside the outlines left out
     carve<T extends number[]>(poly: T[], c: number, r: number) {
       const edges = squares.get(r * 100000 + c)
       if (!edges) return [poly]
-      let pieces = [poly]
-      for (const { a, b } of edges) {
-        const s = (p: T) => (b[0]! - a[0]!) * (p[1]! - a[1]!) - (b[1]! - a[1]!) * (p[0]! - a[0]!)
-        pieces = pieces
-          .flatMap((p) => [clip(p, s), clip(p, (q) => -s(q))])
-          .filter((p) => p.length >= 3)
-      }
       const owners = new Set(edges.map((e) => e.owner))
-      // slivers from cuts through a corner are nothing, leave them out
-      const area = (p: T[]) =>
-        p.reduce((t, q, i) => {
-          const n = p[(i + 1) % p.length]!
-          return t + q[0]! * n[1]! - n[0]! * q[1]!
-        }, 0) / 2
-      return pieces.filter((p) => {
-        if (Math.abs(area(p)) < 1e-4) return false
-        const m = {
-          x: p.reduce((t, q) => t + q[0]!, 0) / p.length,
-          z: p.reduce((t, q) => t + q[1]!, 0) / p.length,
-        }
-        return ![...owners].some((o) => pointInPolygon(m, o))
-      })
+      return split(poly, c, r).filter((p) => ![...owners].some((o) => pointInPolygon(middle(p), o)))
     },
   }
 }
+
+const middle = (p: number[][]) => ({
+  x: p.reduce((t, q) => t + q[0]!, 0) / p.length,
+  z: p.reduce((t, q) => t + q[1]!, 0) / p.length,
+})
+
+// what a piece of ground is on, a raised plaza (game/raised.ts) or the terrain (null), and
+// the height there
+const raisedOn = (p: number[][]) => {
+  const m = middle(p)
+  return raisedAt(m.x, m.z) ?? null
+}
+const heightOn = (grid: Grid, on: Raised | null, x: number, z: number) =>
+  on ? on.elevation(x, z) - ORIGIN : grid.height(x, z)
 
 // lays flat ground geometry (roads, lawns, plazas...) onto the ground's real shape. every
 // triangle is cut along the terrain's grid and its diagonals first, the same triangles the
@@ -104,37 +118,44 @@ export function drape(
   cut: Outline[] = [],
 ) {
   const { carve } = carver(grid, cut)
+  // pieces are cut along the raised plazas' edges too, and lifted onto them
+  const raised = carver(grid, RAISED)
   const geo = source.index ? source.toNonIndexed() : source
   const names = Object.keys(geo.attributes).filter((n) => n !== 'position' && n !== 'normal')
   const attrs = names.map((n) => geo.getAttribute(n) as THREE.BufferAttribute)
   const pos = geo.getAttribute('position') as THREE.BufferAttribute
   const outPos: number[] = []
+  const outNormals: number[] = []
   const outAttrs = attrs.map(() => [] as number[])
   const index: number[] = []
 
   // a corner of a clipped piece: x, z and its weights on the source triangle's corners
   type P = [x: number, z: number, wa: number, wb: number, wc: number]
   // corners shared by the pieces either side of a grid line are one vertex: the same spot
-  // (to a millimeter) with the same numbers. a quarter of the vertices, and the gpu draws
-  // the ground twice a frame (the depth prepass and the scene)
+  // (to a millimeter) with the same numbers, on the same ground (not across a raised plaza's
+  // edge). a quarter of the vertices, and the gpu draws the ground twice a frame (the depth
+  // prepass and the scene)
   const seen = new Map<number, number[]>()
   const values: number[] = []
   const all: number[] = []
-  const stride = attrs.reduce((n, a) => n + a.itemSize, 0)
-  const emit = (t: number, p: P) => {
+  const stride = attrs.reduce((n, a) => n + a.itemSize, 0) + 1
+  const emit = (t: number, p: P, on: Raised | null) => {
     values.length = 0
     for (const a of attrs)
       for (let c = 0; c < a.itemSize; c++) {
         const v = (i: number) => a.array[(t * 3 + i) * a.itemSize + c]!
         values.push(v(0) * p[2] + v(1) * p[3] + v(2) * p[4])
       }
+    values.push(on ? RAISED.indexOf(on) : -1)
     const key = (Math.round(p[0] * 1000) + 2 ** 20) * 2 ** 21 + Math.round(p[1] * 1000) + 2 ** 20
     const bucket = seen.get(key)
     if (bucket)
       for (const i of bucket)
         if (values.every((v, k) => Math.abs(all[i * stride + k]! - v) < 1e-4)) return i
     const i = outPos.length / 3
-    outPos.push(p[0], grid.height(p[0], p[1]) + lift, p[1])
+    outPos.push(p[0], heightOn(grid, on, p[0], p[1]) + lift, p[1])
+    // the ground's own slope, not the triangle's, so lighting doesn't show where it was cut
+    outNormals.push(...normalAt(p[0], p[1], on))
     let k = 0
     attrs.forEach((a, n) => {
       for (let c = 0; c < a.itemSize; c++) outAttrs[n]!.push(values[k++]!)
@@ -171,9 +192,11 @@ export function drape(
         for (const side of [1, -1]) {
           const half = clip(cellPoly, (p) => side * (p[0] - x0 - (p[1] - z0)))
           if (half.length < 3) continue
-          for (const piece of carve(half, c, r)) {
-            // a fan of triangles over each piece
-            const corners = piece.map((p) => emit(t, p))
+          for (const piece of carve(half, c, r).flatMap((p) => raised.split(p, c, r))) {
+            // a fan of triangles over each piece (steps draw their own treads)
+            const on = raisedOn(piece)
+            if (on?.stairs) continue
+            const corners = piece.map((p) => emit(t, p, on))
             for (let k = 1; k + 1 < piece.length; k++) {
               const [a, b, d] = [piece[0]!, piece[k]!, piece[k + 1]!]
               const area = (b[1] - a[1]) * (d[0] - a[0]) - (b[0] - a[0]) * (d[1] - a[1])
@@ -186,10 +209,7 @@ export function drape(
 
   const out = new THREE.BufferGeometry()
   out.setAttribute('position', new THREE.Float32BufferAttribute(outPos, 3))
-  // the ground's own slope, not the triangle's, so lighting doesn't show where it was cut
-  const normals = new Float32Array(outPos.length)
-  for (let i = 0; i < outPos.length; i += 3) normals.set(normalAt(outPos[i]!, outPos[i + 2]!), i)
-  out.setAttribute('normal', new THREE.BufferAttribute(normals, 3))
+  out.setAttribute('normal', new THREE.Float32BufferAttribute(outNormals, 3))
   names.forEach((n, k) =>
     out.setAttribute(n, new THREE.Float32BufferAttribute(outAttrs[k]!, attrs[k]!.itemSize)),
   )
@@ -216,6 +236,7 @@ export function terrainGeometry(
   } = {},
 ) {
   const carving = carver(grid, cut)
+  const raised = carver(grid, RAISED)
   // squares any building's wall crosses: kept even with all four corners in buildings (the
   // inside corner of an L, a gap between two), what's under the building is out of sight
   const walls = carver(grid, buildings)
@@ -247,16 +268,19 @@ export function terrainGeometry(
     for (let c = first; c <= last; c++)
       pos.push(grid.x(c), grid.height(grid.x(c), grid.z(r)), grid.z(r))
   const at = (c: number, r: number) => (r - first) * n + (c - first)
-  // each square split along the same diagonal heightAt uses, facing up. the cut ones are
-  // their own pieces, added at the end
-  const pieces: number[][][] = []
+  // each square split along the same diagonal heightAt uses, facing up. the cut ones and the
+  // ones on a raised plaza are their own pieces, added at the end
+  const pieces: { piece: number[][]; on: Raised | null }[] = []
   for (let r = first; r < last; r++)
     for (let c = first; c < last; c++) {
-      if (!keep(grid.x(c) + grid.cell / 2, grid.z(r) + grid.cell / 2)) continue
+      const [mx, mz] = [grid.x(c) + grid.cell / 2, grid.z(r) + grid.cell / 2]
+      if (!keep(mx, mz)) continue
+      const lifted = raised.crossed(c, r) || raisedAt(mx, mz)
       // a cut one is up to the carving: all its corners can be in buildings with a gap
       // between them
       if (!carving.crossed(c, r)) {
-        if ((!hidden(c, r) || walls.crossed(c, r)) && !inCut(c, r))
+        if (!((!hidden(c, r) || walls.crossed(c, r)) && !inCut(c, r))) continue
+        if (!lifted) {
           index.push(
             at(c, r),
             at(c + 1, r + 1),
@@ -265,7 +289,8 @@ export function terrainGeometry(
             at(c, r + 1),
             at(c + 1, r + 1),
           )
-        continue
+          continue
+        }
       }
       const [x0, z0, x1, z1] = [grid.x(c), grid.z(r), grid.x(c + 1), grid.z(r + 1)]
       for (const tri of [
@@ -280,7 +305,10 @@ export function terrainGeometry(
           [x1, z1],
         ],
       ])
-        pieces.push(...carving.carve(tri, c, r))
+        for (const piece of carving.carve(tri, c, r).flatMap((p) => raised.split(p, c, r))) {
+          const on = raisedOn(piece)
+          if (!on?.stairs) pieces.push({ piece, on })
+        }
     }
   if (ring) {
     // every edge vertex again, pushed straight out
@@ -302,9 +330,15 @@ export function terrainGeometry(
       index.push(a, b, fa, b, fb, fa)
     })
   }
-  for (const piece of pieces) {
+  // the terrain's own slope, the pieces' from what they're on
+  const normals: number[] = []
+  for (let i = 0; i < pos.length; i += 3) normals.push(...normalAt(pos[i]!, pos[i + 2]!, null))
+  for (const { piece, on } of pieces) {
     const base = pos.length / 3
-    for (const [x, z] of piece) pos.push(x!, grid.height(x!, z!), z!)
+    for (const [x, z] of piece) {
+      pos.push(x!, heightOn(grid, on, x!, z!), z!)
+      normals.push(...normalAt(x!, z!, on))
+    }
     for (let k = 1; k + 1 < piece.length; k++) {
       const [a, b, d] = [piece[0]!, piece[k]!, piece[k + 1]!]
       const area = (b[1]! - a[1]!) * (d[0]! - a[0]!) - (b[0]! - a[0]!) * (d[1]! - a[1]!)
@@ -314,8 +348,6 @@ export function terrainGeometry(
   const geo = new THREE.BufferGeometry()
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
   geo.setIndex(index)
-  const normals = new Float32Array(pos.length)
-  for (let i = 0; i < pos.length; i += 3) normals.set(normalAt(pos[i]!, pos[i + 2]!), i)
-  geo.setAttribute('normal', new THREE.BufferAttribute(normals, 3))
+  geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3))
   return geo
 }

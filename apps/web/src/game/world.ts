@@ -19,6 +19,7 @@ import { footprint, furnish, isOver, LOW, type Item } from './furniture'
 import { enterable, interiors } from './interiors'
 import { benches, bins } from './streetFurniture'
 import { signalPoles } from './signals'
+import { RAISED } from './raised'
 import { decksAt } from './surface'
 import { fromElevation, heightAt } from './terrain'
 
@@ -79,19 +80,38 @@ const deck = parkingObstacles(
 )
 // g deck's stair towers where they stand out of its outline
 const decks = deckObstacles(campus.buildings.find((b) => b.name === 'G Deck') as DeckData)
-// urban life's deck by piedmont ave, a floor up over the street, and its corner tower
-const urbanLife = urbanLifeObstacles(
-  campus.buildings.find((b) => b.name === 'Urban Life Building') as UrbanLifeData,
+// urban life's deck by piedmont ave, a floor up over the street, and its corner tower, 140
+// decatur st (with the way in off its steps), the planters and tables on the plaza
+const urbanLifeData = campus.buildings.find(
+  (b) => b.name === 'Urban Life Building',
+) as UrbanLifeData
+const urbanLife = urbanLifeObstacles(urbanLifeData)
+const podium = urbanLifeData.landmark!.podium
+const isPodium = (points: number[][]) =>
+  points.length === podium.length &&
+  points.every((p, i) => p[0] === podium[i]![0] && p[1] === podium[i]![1])
+
+// the raised plazas' sides with a parapet or a planter's edge (raised.ts): you can't walk off
+// them, or into the wall from below
+export const raisedWalls: Segment[] = RAISED.flatMap(({ outline, edges }) =>
+  outline.flatMap((a, i) => {
+    const b = outline[(i + 1) % outline.length]!
+    return typeof edges[i] === 'number' ? [{ ax: a.x, az: a.z, bx: b.x, bz: b.z }] : []
+  }),
 )
 
 export const world: World = {
   // buildings you can walk into are just their walls (with a doorway), the rest are solid.
   // except the ones up off the ground, you walk under those (the library link)
   buildings: [
-    ...campus.buildings.filter((b, i) => !enterable.has(i) && !b.minHeight).map((b) => b.points),
+    ...campus.buildings
+      .filter((b, i) => !enterable.has(i) && !b.minHeight && !isPodium(b.points))
+      .map((b) => b.points),
     ...quad.planters.map((p) => p.points),
     gym.planter.map((p) => [p.x, p.z]),
-    urbanLife.deck.map((p) => [p.x, p.z]),
+    ...[urbanLife.deck, urbanLife.podium, ...urbanLife.planters].map((o) =>
+      o.map((p) => [p.x, p.z]),
+    ),
   ].map((points) => polygon(points as [number, number][])),
   walls: [
     ...interiors.flatMap((i) => i.walls),
@@ -108,6 +128,7 @@ export const world: World = {
     ...lofts.walls,
     ...deck.walls,
     ...decks,
+    ...raisedWalls,
   ],
   circles: [
     ...campus.trees.map(([x, z]) => ({ x: x!, z: z!, radius: TREE_RADIUS })),
@@ -132,6 +153,7 @@ export const world: World = {
     ...lofts.circles,
     ...deck.circles,
     urbanLife.tower,
+    ...urbanLife.tables,
     // the traffic lights' poles
     ...signalPoles().map((p) => ({ x: p.x, z: p.z, radius: 0.2 })),
   ],

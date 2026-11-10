@@ -1,7 +1,8 @@
 import * as THREE from 'three'
 import { pointInPolygon, type Point, type Segment } from '../game/collision'
 import { decksAt, floorOf, lowestUnder } from '../game/surface'
-import { fromElevation, heightAt } from '../game/terrain'
+import { fromElevation, heightAt, terrainAt } from '../game/terrain'
+import { raisedSides } from './decks'
 import { clip, solidPieces, type Hole } from './landmark'
 import type { LandmarkGeometry, Sign } from './landmarks'
 
@@ -35,7 +36,8 @@ export type PaintedPart = 'cream' | 'dark' | 'slab' | 'floor' | 'soffit' | 'lamp
 // g: precast the exposed aggregate panels, screen the dark bronze framed screens in the
 // openings, glass the stair towers', slab the roof, pole the floodlights and the dark
 // inside of the ways in
-export type BandPart = 'precast' | 'screen' | 'glass' | 'slab' | 'pole'
+export type BandPart =
+  'precast' | 'screen' | 'glass' | 'slab' | 'pole' | 'white' | 'yellow' | 'green'
 export type Part = SteelPart | PaintedPart | BandPart
 
 type Range = [number, number]
@@ -113,6 +115,8 @@ type Band = {
   // where the "G DECK" lightbox is: [a, w, which floor] on the first tower, facing out
   lightbox: number[]
   letter: string
+  // the toll plaza out in front (tollPlaza)
+  toll?: Toll
 }
 
 export const TIER = 2.8
@@ -219,6 +223,37 @@ export const DECKS: Record<string, Steel | Painted | Band> = {
     ],
     lightbox: [2.4, 47.2, 5],
     letter: 'G',
+    // gsu's 2018 photo from central ave and the lidar. a is meters out from the plaza side
+    // (negative), w along it
+    toll: {
+      canopy: {
+        a: -45.5,
+        posts: [9, 16.3, 23.6, 31],
+        bars: ['6\'-6"    CLEARANCE    6\'-6"', 'DO NOT ENTER', 'DO NOT ENTER'],
+      },
+      islands: [
+        { a: [-50.5, -31], w: [15.9, 19.9] },
+        { a: [-50.5, -34], w: [23.3, 23.9] },
+      ],
+      booth: [-37, 18.2],
+      arms: [
+        { a: -40.5, w: [15.9, 10] },
+        { a: -40.5, w: [23.9, 29.5] },
+      ],
+      lights: [
+        [-31.5, 17.9],
+        [-24, 34.4],
+        [-14, 1.9],
+      ],
+      planter: { a: [-47, -6], w: [0, 2.6] },
+      bowls: [
+        [-48, 27.4],
+        [-44, 27.4],
+        [-40, 27.4],
+        [-36, 27.4],
+      ],
+      pergola: { a: [-47, -17], w: [32.9, 35.7] },
+    },
   },
   // floors 3.1m apart (the piedmont ave photo, and the 7'-0" entrance), the roof is "LEVEL 7"
   // at 327.0 (lidar). the south east bay is the ramp: lidar has the roof's 324.0 -> 327.0
@@ -467,6 +502,16 @@ function collector() {
     tri(part, [k[0]!, k[1]!, k[2]!], [u[0]!, u[1]!, u[2]!], pane)
     tri(part, [k[0]!, k[2]!, k[3]!], [u[0]!, u[2]!, u[3]!], pane)
   }
+  // a ready made geometry, normals and all (round things)
+  const geo = (part: Part, g: THREE.BufferGeometry) => {
+    const b = (bufs[part] ??= { pos: [], nor: [], uv: [], pane: [] })
+    const n = g.index ? g.toNonIndexed() : g
+    b.pos.push(...n.getAttribute('position').array)
+    b.nor.push(...n.getAttribute('normal').array)
+    const uv = n.getAttribute('uv')
+    for (let i = 0; i < n.getAttribute('position').count; i++)
+      b.uv.push(uv ? uv.getX(i) : 0, uv ? uv.getY(i) : 0)
+  }
   const done = () =>
     Object.fromEntries(
       Object.entries(bufs).map(([part, b]) => {
@@ -478,7 +523,7 @@ function collector() {
         return [part, geo]
       }),
     ) as Record<Part, THREE.BufferGeometry>
-  return { tri, quad, done }
+  return { tri, quad, geo, done }
 }
 
 /** the deck's box as a frame: game coords from (a, w) and back, heights from its floor */
@@ -511,9 +556,10 @@ export function deckFrame(b: DeckData) {
     v: (y: number) => y - base,
     // a height measured above sea level, over the deck's floor
     rel: (elevation: number) => fromElevation(elevation) - floor,
+    // the ground itself: g's lower floors go on down under its toll plaza
     ground: (a: number, v: number) => {
       const p = at(a, v)
-      return heightAt(p.x, p.z) - floor
+      return terrainAt(p.x, p.z) - floor
     },
     p3: (a: number, v: number, y: number): V3 => {
       const p = at(a, v)
@@ -1051,7 +1097,7 @@ function steelDeck(b: DeckData, d: Steel): LandmarkGeometry {
   // stair towers: painted block, one or two sides glass in a thin dark frame
   for (const t of towers) {
     const c = t.corners.map(([x, z]) => ({ x: x!, z: z! }))
-    const low = Math.min(...c.map((p) => heightAt(p.x, p.z))) - f.floor - 0.3
+    const low = Math.min(...c.map((p) => terrainAt(p.x, p.z))) - f.floor - 0.3
     const top = rel(t.top)
     const mx = c.reduce((s, p) => s + p.x, 0) / 4
     const mz = c.reduce((s, p) => s + p.z, 0) / 4
@@ -2131,6 +2177,8 @@ function bandDeck(b: DeckData, d: Band): LandmarkGeometry {
       )
   }
 
+  if (d.toll) tollPlaza(d.toll, f, c, signs)
+
   // courtland st's sidewalk is narrower in the game than for real, where it runs up to the
   // deck: the strip between, at the sidewalk's height
   const se = outline.flatMap((p, i) => {
@@ -2159,9 +2207,338 @@ function bandDeck(b: DeckData, d: Band): LandmarkGeometry {
     parts: done(),
     inside: { solid: [], glass: [] },
     signs,
-    noShadow: ['screen', 'glass'],
+    noShadow: ['screen', 'glass', 'yellow'],
     open: true,
   }
+}
+
+// g's toll plaza in front of its plaza side (game/raised.ts has the plaza itself): its sides,
+// the lanes in from central ave between curbed islands painted yellow, the canopy over them
+// with a blue bar in each lane, the booth with its gate arms, signs and the red lightbox, the
+// planter with big round shrubs along the south west side, concrete bowls and a white
+// pergola along the north east side, tall lights with box heads. a is meters out from the
+// plaza side (negative), w along it from its south west end
+type Toll = {
+  canopy: { a: number; posts: number[]; bars: string[] }
+  islands: { a: Range; w: Range }[]
+  booth: number[]
+  arms: { a: number; w: Range }[]
+  lights: number[][]
+  planter: { a: Range; w: Range }
+  bowls: number[][]
+  pergola: { a: Range; w: Range }
+}
+// the plaza's sides: a band along the top that stands out a little, like g's floors, a base
+// along the bottom, and a coping on the parapets
+const EDGE_BAND = 0.9
+const EDGE_OUT = 0.06
+const BASE = 0.45
+const COPING = 0.3
+
+function tollPlaza(t: Toll, f: Frame, c: ReturnType<typeof collector>, signs: Sign[]) {
+  const { plate, side, box } = shapes(f, c)
+  const signAt = signer(f)
+  // the plaza's height at (a, w), over g's floor
+  const y = (a: number, w: number) => {
+    const p = f.at(a, w)
+    return heightAt(p.x, p.z) - f.floor
+  }
+  const aw = (p: Point) => {
+    const [a, w] = f.aw(p)
+    return P(a, w)
+  }
+  const rect = (a: Range, w: Range) => [P(a[0], w[0]), P(a[1], w[0]), P(a[1], w[1]), P(a[0], w[1])]
+  // a plate's height at its corners nearest p or q
+  const ends = (p: AW, q: AW, yp: number, yq: number) => (w: number, a: number) =>
+    Math.hypot(a - p.x, w - p.z) < Math.hypot(a - q.x, w - q.z) ? yp : yq
+
+  for (const sd of raisedSides('G Deck')) {
+    const [p, q] = [aw(sd.p), aw(sd.q)]
+    const o = aw({ x: sd.p.x + sd.out.x, z: sd.p.z + sd.out.z })
+    const out = P(o.x - p.x, o.z - p.z)
+    const by = (c0: AW, k: number) => P(c0.x + out.x * k, c0.z + out.z * k)
+    const [t0, t1] = sd.top.map((v) => v - f.floor) as [number, number]
+    const [g0, g1] = sd.ground.map((v) => v - f.floor) as [number, number]
+    const [u0, u1] = sd.u
+    const h = sd.parapet
+    const tall = Math.min(t0 - g0, t1 - g1) > EDGE_BAND + BASE + 0.3
+    const band: Range = tall ? [t0 - EDGE_BAND, t1 - EDGE_BAND] : [g0 - 0.3, g1 - 0.3]
+    if (tall) {
+      side('precast', p, q, [g0 - 0.3, g1 - 0.3], band, out, u0, u1)
+      // the base, a step out at the bottom
+      const [pb, qb] = [by(p, EDGE_OUT), by(q, EDGE_OUT)]
+      side('precast', pb, qb, [g0 - 0.3, g1 - 0.3], [g0 + BASE, g1 + BASE], out, u0, u1)
+      plate('precast', [p, q, qb, pb], ends(p, q, g0 + BASE, g1 + BASE), true)
+    }
+    // the band (and the parapet over it) a little out from the wall
+    const [pf, qf] = [by(p, tall ? EDGE_OUT : 0), by(q, tall ? EDGE_OUT : 0)]
+    side('precast', pf, qf, band, [t0 + h, t1 + h], out, u0, u1)
+    if (tall) plate('precast', [p, q, qf, pf], ends(p, q, band[0], band[1]), false)
+    if (h <= 0) continue
+    // the parapet's inside and its coping
+    const [pi, qi] = [by(p, -COPING + EDGE_OUT), by(q, -COPING + EDGE_OUT)]
+    side('precast', pi, qi, [t0, t1], [t0 + h, t1 + h], P(-out.x, -out.z), u0, u1)
+    plate('precast', [pf, qf, qi, pi], ends(p, q, t0 + h, t1 + h), true)
+    for (const [end, at, s0] of [
+      [sd.first, p, -1],
+      [sd.last, q, 1],
+    ] as const) {
+      if (!end) continue
+      const dirAW = P((q.x - p.x) * s0, (q.z - p.z) * s0)
+      const yy = at === p ? t0 : t1
+      side(
+        'precast',
+        by(at, EDGE_OUT),
+        by(at, -COPING + EDGE_OUT),
+        [yy, yy],
+        [yy + h, yy + h],
+        dirAW,
+        0,
+        COPING,
+      )
+    }
+  }
+
+  // the islands between the lanes: a curb painted yellow, concrete on top. they follow the
+  // plaza down its apron to central ave, in two pieces either side of where it starts
+  for (const is of t.islands)
+    for (const a of [
+      [is.a[0], Math.min(is.a[1], -47)],
+      [Math.max(is.a[0], -47), is.a[1]],
+    ] as Range[]) {
+      if (a[1] - a[0] < 0.1) continue
+      const c = rect(a, is.w)
+      const outs = [P(0, -1), P(1, 0), P(0, 1), P(-1, 0)]
+      c.forEach((p, i) => {
+        const q = c[(i + 1) % 4]!
+        const len = Math.hypot(q.x - p.x, q.z - p.z)
+        side(
+          'yellow',
+          p,
+          q,
+          [y(p.x, p.z) - 0.1, y(q.x, q.z) - 0.1],
+          [y(p.x, p.z) + 0.15, y(q.x, q.z) + 0.15],
+          outs[i]!,
+          0,
+          len,
+        )
+      })
+      plate('slab', c, (w, aa) => y(aa, w) + 0.15, true)
+    }
+  // the lanes' arrows: in toward g on the way in, out toward central ave on the two ways out
+  const arrow = (a: number, w: number, dirA: number) => {
+    const h = y(a, w) + 0.012
+    const [s0, s1] = [a - 1.4 * dirA, a + 0.6 * dirA]
+    plate('white', rect([Math.min(s0, s1), Math.max(s0, s1)], [w - 0.09, w + 0.09]), () => h, true)
+    const tip = a + 1.5 * dirA
+    plate(
+      'white',
+      dirA > 0
+        ? [P(s1, w - 0.42), P(tip, w), P(s1, w + 0.42)]
+        : [P(s1, w + 0.42), P(tip, w), P(s1, w - 0.42)],
+      () => h,
+      true,
+    )
+  }
+  arrow(-43, 12.6, 1)
+  arrow(-43, 21.6, -1)
+  arrow(-43, 27.5, -1)
+
+  // the canopy: a thin white beam on slim posts, the bars hung under it
+  const { a: ca, posts, bars } = t.canopy
+  const [w0, w1] = [posts[0]!, posts[posts.length - 1]!]
+  const ground = Math.min(...posts.map((w) => y(ca, w)))
+  const beam = ground + 2.75
+  for (const w of posts)
+    box('white', [ca - 0.08, ca + 0.08], [w - 0.08, w + 0.08], y(ca, w) - 0.1, beam)
+  const beamA: Range = [ca - 0.11, ca + 0.11]
+  box('white', beamA, [w0 - 0.15, w1 + 0.15], beam, beam + 0.28)
+  plate('white', rect(beamA, [w0 - 0.15, w1 + 0.15]), () => beam, false)
+  const [nw, se] = [P(-1, 0), P(1, 0)]
+  bars.forEach((text, i) => {
+    const w = (posts[i]! + posts[i + 1]!) / 2
+    const bar = { width: 3.6, height: 0.26, plate: '#2f55c2' }
+    signs.push(
+      signAt(ca, w, ground + 2.12, nw, bar, 0, 0.02),
+      signAt(ca, w, ground + 2.12, nw, { ...white, text, size: 0.15 }, 0, 0.04),
+      signAt(ca, w, ground + 2.12, se, bar, 0, 0.02),
+    )
+  })
+
+  // the booth on its island: a white box with glass all round over a waist high wall, a white
+  // band and roof on top
+  const [ba, bw] = t.booth as [number, number]
+  const isl =
+    Math.min(
+      ...t.islands
+        .map((is) => (bw > is.w[0] && bw < is.w[1] ? is : null))
+        .filter((x) => x)
+        .map((is) => y(is!.a[0], is!.w[0])),
+    ) + 0.15
+  const [ra, rw]: [Range, Range] = [
+    [ba - 1.1, ba + 1.1],
+    [bw - 0.75, bw + 0.75],
+  ]
+  box('white', ra, rw, isl, isl + 1)
+  const cs = rect(ra, rw)
+  const outs = [P(0, -1), P(1, 0), P(0, 1), P(-1, 0)]
+  cs.forEach((p, i) => {
+    const q = cs[(i + 1) % 4]!
+    const [g0, g1] = [f.at(p.x, p.z), f.at(q.x, q.z)]
+    const len = Math.hypot(g1.x - g0.x, g1.z - g0.z)
+    c.quad(
+      'glass',
+      [
+        f.p3(p.x, p.z, isl + 1),
+        f.p3(q.x, q.z, isl + 1),
+        f.p3(q.x, q.z, isl + 2.2),
+        f.p3(p.x, p.z, isl + 2.2),
+      ],
+      [
+        [0, 0],
+        [len, 0],
+        [len, 1.2],
+        [0, 1.2],
+      ],
+      f.dir(outs[i]!.x, outs[i]!.z),
+      [len, 1.2, i / 4],
+    )
+  })
+  const [ea, ew]: [Range, Range] = [
+    [ra[0] - 0.12, ra[1] + 0.12],
+    [rw[0] - 0.12, rw[1] + 0.12],
+  ]
+  box('white', ea, ew, isl + 2.2, isl + 2.6)
+  plate('white', rect(ea, ew), () => isl + 2.2, false)
+  // the red lightbox and the "faculty & staff" sign on posts at the island's end, in front
+  const [la, lw] = [ba - 6, bw - 1.5]
+  box('pole', [la - 0.04, la + 0.04], [lw - 0.04, lw + 0.04], isl, isl + 2.1)
+  signs.push(signAt(la, lw, isl + 2.4, nw, { width: 1.3, height: 0.55, plate: '#c8322a' }, 0, 0.05))
+  signs.push(signAt(la, lw, isl + 2.4, se, { width: 1.3, height: 0.55, plate: '#3a3a3a' }, 0, 0.05))
+  const [fa, fw] = [ba - 8, bw - 1.2]
+  box('pole', [fa - 0.03, fa + 0.03], [fw - 0.03, fw + 0.03], isl, isl + 1.5)
+  signs.push(
+    signAt(fa, fw, isl + 1.35, nw, { width: 0.72, height: 1.05, plate: '#23409a' }, 0, 0.04),
+    signAt(fa, fw, isl + 1.6, nw, { ...white, text: 'FACULTY & STAFF', size: 0.09 }, 0, 0.06),
+    signAt(fa, fw, isl + 1.45, nw, { ...white, text: 'PARKING ONLY', size: 0.09 }, 0, 0.06),
+    signAt(fa, fw, isl + 1.15, nw, { ...white, text: 'STUDENT PARKING', size: 0.07 }, 0, 0.06),
+    signAt(fa, fw, isl + 1.03, nw, { ...white, text: 'AFTER 4PM', size: 0.07 }, 0, 0.06),
+  )
+  // gate arms, red and white, over the lanes from a post on the island
+  for (const arm of t.arms) {
+    const [wa, wb] = arm.w
+    const h = y(arm.a, wa) + 0.15
+    box(
+      'white',
+      [arm.a - 0.18, arm.a + 0.18],
+      [wa - 0.18 * Math.sign(wb - wa), wa + 0.18 * Math.sign(wb - wa)].sort(
+        (m, n) => m - n,
+      ) as Range,
+      h,
+      h + 1,
+    )
+    const n = 5
+    for (let k = 0; k < n; k++) {
+      const w = wa + ((wb - wa) * (k + 0.5)) / n
+      signs.push(
+        signAt(
+          arm.a,
+          w,
+          h + 0.9,
+          nw,
+          { width: Math.abs(wb - wa) / n, height: 0.08, plate: k % 2 ? '#f2f2ee' : '#c8202a' },
+          0,
+          0.2,
+        ),
+      )
+    }
+  }
+
+  // tall lights with a box head
+  for (const [a, w] of t.lights as [number, number][]) {
+    const g = y(a, w)
+    box('pole', [a - 0.1, a + 0.1], [w - 0.1, w + 0.1], g - 0.1, g + 9)
+    box('pole', [a - 0.45, a + 0.45], [w - 0.24, w + 0.24], g + 9, g + 9.22)
+    plate('pole', rect([a - 0.45, a + 0.45], [w - 0.24, w + 0.24]), () => g + 9, false)
+  }
+
+  // the planter along the south west side: the side's parapet is its outside, an inside wall,
+  // dark soil, the round shrubs
+  const { a: pa, w: pw } = t.planter
+  const pg = Math.max(...rect(pa, pw).map((p) => y(p.x, p.z)))
+  const pt = pg + 1
+  side(
+    'precast',
+    P(pa[0], pw[1]),
+    P(pa[1], pw[1]),
+    [pg - 0.1, pg - 0.1],
+    [pt, pt],
+    P(0, 1),
+    0,
+    pa[1] - pa[0],
+  )
+  plate('precast', rect(pa, [pw[1], pw[1] + 0.25]), () => pt, true)
+  box('precast', [pa[0], pa[0] + 0.25], pw, pg - 0.1, pt)
+  box('precast', [pa[1] - 0.25, pa[1]], pw, pg - 0.1, pt)
+  plate('green', rect(pa, pw), () => pt - 0.15, true)
+  let k = 0
+  for (let a = pa[0] + 1.3; a < pa[1] - 0.9; a += 2.1) {
+    const r = 0.95 + 0.25 * Math.sin(k * 2.3)
+    shrub(c, f.p3(a, (pw[0] + pw[1]) / 2 + 0.1 * Math.sin(k * 1.7), pt + r * 0.55), r, k++)
+  }
+
+  // concrete bowls with flowers along the lot by the pergola
+  for (const [a, w] of t.bowls as [number, number][]) {
+    const g = y(a, w)
+    const ring = Array.from({ length: 16 }, (_, i) => {
+      const th = (i / 16) * Math.PI * 2
+      return P(a + Math.cos(th) * 0.5, w + Math.sin(th) * 0.5)
+    })
+    ring.forEach((p, i) => {
+      const q = ring[(i + 1) % ring.length]!
+      side(
+        'slab',
+        p,
+        q,
+        [g - 0.1, g - 0.1],
+        [g + 0.55, g + 0.55],
+        P(p.x + q.x - 2 * a, p.z + q.z - 2 * w),
+        i * 0.2,
+        i * 0.2 + 0.2,
+      )
+    })
+    plate('green', ring, () => g + 0.5, true)
+    shrub(c, f.p3(a, w, g + 0.6), 0.38, k++)
+  }
+
+  // the white pergola: frames across every 3m, rails along the top
+  const { a: ga, w: gw } = t.pergola
+  for (let a = ga[0]; a <= ga[1] + 0.01; a += 3) {
+    for (const w of gw)
+      box('white', [a - 0.07, a + 0.07], [w - 0.07, w + 0.07], y(a, w) - 0.1, y(a, w) + 2.75)
+    box(
+      'white',
+      [a - 0.07, a + 0.07],
+      [gw[0] - 0.3, gw[1] + 0.3],
+      y(a, gw[0]) + 2.75,
+      y(a, gw[0]) + 2.95,
+    )
+  }
+  for (const w of gw) box('white', ga, [w - 0.06, w + 0.06], y(ga[0], w) + 2.95, y(ga[0], w) + 3.07)
+}
+
+// a round shrub: a lumpy ball, lit like one
+function shrub(c: ReturnType<typeof collector>, [x, yy, z]: V3, r: number, seed: number) {
+  const g = new THREE.SphereGeometry(r, 9, 6)
+  const pos = g.getAttribute('position')
+  for (let i = 0; i < pos.count; i++) {
+    const [px, py, pz] = [pos.getX(i), pos.getY(i), pos.getZ(i)]
+    const k = 1 + 0.09 * Math.sin(px * 7 + seed) * Math.cos(pz * 6 - seed) + 0.06 * Math.sin(py * 9)
+    pos.setXYZ(i, px * k, py * k * 0.8, pz * k)
+  }
+  g.computeVertexNormals()
+  g.translate(x, yy, z)
+  c.geo('green', g)
 }
 
 /**
@@ -2171,10 +2548,35 @@ function bandDeck(b: DeckData, d: Band): LandmarkGeometry {
 export function deckObstacles(b: DeckData): Segment[] {
   const d = b.name ? DECKS[b.name] : undefined
   if (d?.style !== 'band') return []
-  return d.towers.flatMap((t) =>
+  const towers = d.towers.flatMap((t) =>
     t.corners.map(([ax, az], i) => {
       const [bx, bz] = t.corners[(i + 1) % t.corners.length]!
       return { ax: ax!, az: az!, bx: bx!, bz: bz! }
     }),
   )
+  if (!d.toll) return towers
+  // and on the toll plaza: the booth, the planter's inside wall, the bowls, posts and poles
+  const f = deckFrame(b)
+  const t = d.toll
+  const square = (a: Range, w: Range) => {
+    const c = [f.at(a[0], w[0]), f.at(a[1], w[0]), f.at(a[1], w[1]), f.at(a[0], w[1])]
+    return c.map((p, i) => {
+      const q = c[(i + 1) % 4]!
+      return { ax: p.x, az: p.z, bx: q.x, bz: q.z }
+    })
+  }
+  const around = (a: number, w: number, r: number) => square([a - r, a + r], [w - r, w + r])
+  const [ba, bw] = t.booth as [number, number]
+  return [
+    ...towers,
+    ...square([ba - 1.1, ba + 1.1], [bw - 0.75, bw + 0.75]),
+    ...square(t.planter.a, t.planter.w),
+    ...t.bowls.flatMap(([a, w]) => around(a!, w!, 0.5)),
+    ...t.lights.flatMap(([a, w]) => around(a!, w!, 0.1)),
+    ...t.canopy.posts.map((w) => around(t.canopy.a, w, 0.08)).flat(),
+    ...t.arms.flatMap((arm) => around(arm.a, arm.w[0], 0.18)),
+    ...[t.pergola.a[0], t.pergola.a[1]].flatMap((a) =>
+      t.pergola.w.flatMap((w) => around(a, w, 0.07)),
+    ),
+  ]
 }

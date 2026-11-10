@@ -3,6 +3,13 @@ import { CEILING, DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
 import { baseOf, liftOf, lowestUnder } from '../game/surface'
 import type { Sign } from './landmarks'
 import {
+  DRIVEWAY,
+  plazaObstacles,
+  podiumWithRecess,
+  RECESS,
+  urbanLifePlaza,
+} from './urbanLifePlaza'
+import {
   circle,
   flat,
   frame,
@@ -40,7 +47,7 @@ export type UrbanLifeData = {
 
 // few parts, each is a draw call in every pass. the glass casts shadows: the building is
 // empty inside, and light came through the rows of glass onto the ground behind it
-export type Part = 'precast' | 'brick' | 'glass'
+export type Part = 'precast' | 'brick' | 'glass' | 'pavers' | 'metal' | 'plants'
 
 // same numbers as build-campus.mjs: the towers, the wing and the bit joining the slab to
 // 140 decatur st
@@ -525,10 +532,73 @@ export function urbanLifeGeometry(b: UrbanLifeData) {
   brickWall(A(LINK.from, W - DEEP_IN), A(LINK.from, LINK.out), back, LINK_TOP)
   brickWall(A(LINK.to, W - DEEP_IN), A(LINK.to, LINK.out), ahead, LINK_TOP)
   add('precast', flat(rect(LINK.from, LINK.to, W - DEEP_IN, LINK.out), LINK_TOP))
-  // 140 decatur st: brick with the deep band round the top, down on decatur st
+  // 140 decatur st: brick with the deep band round the top, down on decatur st. on decatur st
+  // the way in at the top of the wide steps is set back under it, and the b lot's driveway
+  // goes in next to it (urbanLifePlaza.ts)
   const podium = b.landmark!.podium.map(pt)
-  prism('brick', podium, 0, TRIM, false)
+  const pm = {
+    x: podium.reduce((m, p) => m + p.x, 0) / podium.length,
+    z: podium.reduce((m, p) => m + p.z, 0) / podium.length,
+  }
+  podium.forEach((p, i) => {
+    const q = podium[(i + 1) % podium.length]!
+    const len = Math.hypot(q.x - p.x, q.z - p.z)
+    const dir = { x: (q.x - p.x) / len, z: (q.z - p.z) / len }
+    let o = { x: dir.z, z: -dir.x }
+    if (o.x * ((p.x + q.x) / 2 - pm.x) + o.z * ((p.z + q.z) / 2 - pm.z) < 0)
+      o = { x: -o.x, z: -o.z }
+    if (i !== 3) {
+      add('brick', wallQuad(p, q, 0, TRIM, o))
+      return
+    }
+    const at = (u: number, d = 0) => ({
+      x: p.x + dir.x * u - o.x * d,
+      z: p.z + dir.z * u - o.z * d,
+    })
+    const inTop = plaza + 3.4
+    const holes: Hole[] = [
+      [RECESS.from, RECESS.to, 0, inTop],
+      [DRIVEWAY.from, DRIVEWAY.to, 0, DRIVEWAY.top],
+    ]
+    for (const [u0, u1, v0, v1] of solidPieces(len, 0, TRIM, holes))
+      add('brick', wallQuad(at(u0), at(u1), v0, v1, o, u0))
+    const back = { x: -dir.x, z: -dir.z }
+    // the way in: brick sides and back, the doors at the top of the steps, a precast soffit
+    const { from, to, depth } = RECESS
+    add('brick', wallQuad(at(from), at(from, depth), 0, inTop, dir))
+    add('brick', wallQuad(at(to), at(to, depth), 0, inTop, back))
+    add('precast', flat([at(from), at(to), at(to, depth), at(from, depth)], inTop, false))
+    const doors = plaza + 2.9
+    add('brick', wallQuad(at(from, depth), at(to, depth), 0, plaza, o))
+    add('glass', glassQuad(at(from, depth), at(to, depth), plaza, doors, o))
+    add('brick', wallQuad(at(from, depth), at(to, depth), doors, inTop, o))
+    // the driveway: cream sides and lintel, dark inside
+    const dw = DRIVEWAY
+    add('precast', wallQuad(at(dw.from), at(dw.from, dw.depth), 0, dw.top, dir))
+    add('precast', wallQuad(at(dw.to), at(dw.to, dw.depth), 0, dw.top, back))
+    add(
+      'precast',
+      flat([at(dw.from), at(dw.to), at(dw.to, dw.depth), at(dw.from, dw.depth)], dw.top, false),
+    )
+    add('metal', wallQuad(at(dw.from, dw.depth), at(dw.to, dw.depth), 0, dw.top, o))
+    // the b lot's blue sign over it
+    const sign = at((dw.from + dw.to) / 2, -0.04)
+    signs.push({
+      x: sign.x,
+      y: dw.top + 0.5,
+      z: sign.z,
+      rot: Math.atan2(o.x, o.z),
+      text: 'B',
+      plate: '#2f55c2',
+      color: '#ffffff',
+      weight: 700,
+      height: 0.7,
+    })
+  })
   prism('precast', podium, TRIM, LINK_TOP)
+
+  // the plaza: its sides, pavers, planters, tables and steps
+  urbanLifePlaza(add, A, baseOf(b))
 
   // the deck: on the two streets a white base, brick and a solid parapet over the pavers,
   // the short tower on their corner. its other sides are against the slab and 140 decatur st
@@ -604,7 +674,8 @@ export function urbanLifeGeometry(b: UrbanLifeData) {
     ...[b.points, b.landmark!.podium, deck.map((p) => [p.x, p.z])].map(lowestUnder),
   )
   sink(parts, low - baseOf(b) - 0.3)
-  return { parts, inside, signs, first: ['brick'] }
+  // the pavers lie on the plaza and the flowers are low, neither needs a shadow
+  return { parts, inside, signs, first: ['brick'], noShadow: ['pavers', 'plants'] }
 }
 
 // the deck by piedmont ave: its corner on decatur st by 140 decatur st, the corner on both
@@ -629,5 +700,11 @@ export function deckOutline(b: UrbanLifeData) {
 // what's solid outside: the deck and its tower (game/world.ts)
 export function urbanLifeObstacles(b: UrbanLifeData) {
   const { A } = urbanLifeFrame(b)
-  return { deck: deckOutline(b), tower: { ...A(DECK.a, DECK.v), radius: CORNER.r } }
+  return {
+    deck: deckOutline(b),
+    tower: { ...A(DECK.a, DECK.v), radius: CORNER.r },
+    // 140 decatur st with its way in off the steps, the planters and tables on the plaza
+    podium: podiumWithRecess(b.landmark!.podium.map(pt)),
+    ...plazaObstacles(A),
+  }
 }

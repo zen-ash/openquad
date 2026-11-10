@@ -42,6 +42,7 @@ import {
   toonRoad,
 } from '../campus/toon'
 import { localPlayer } from '../game/localPlayer'
+import { RAISED } from '../game/raised'
 import { daylight, sunDirection, sunPosition, timeFor } from '../game/sun'
 import { game, today, toon, useSettings } from '../settings'
 import Buildings from './Buildings'
@@ -178,16 +179,17 @@ function onGround(geo: BufferGeometry, lift: number, cut: { points: number[][] }
 }
 // the buildings you can walk into: the ground stops at their walls, their own floor is inside
 const enterable = campus.buildings.filter((b) => b.door && !b.minHeight)
+const toll = RAISED.filter((r) => r.by === 'G Deck')
 
-// roads and paths on the ground, and bridges at their decks' height
-
-function lines(all: LineData[], lift: number) {
+// roads and paths on the ground, and bridges at their decks' height. nothing inside cut
+function lines(all: LineData[], lift: number, cut: { points: number[][] }[] = []) {
   const ground = onGround(
     linesGeometry(
       all.filter((l) => !onDeck(l)),
       0,
     ),
     lift,
+    cut,
   )
   const decks = linesGeometry(all.filter(onDeck), lift)
   // indexed like the draped ones, or they can't be merged
@@ -251,7 +253,9 @@ function Ground() {
       plazas: areas(campus.plazas, 0.003),
       // under the lawns, which sit on top of it
       pavers: areas(campus.quad.pavers, 0.0015),
-      roads: lines(campus.roads, 0.004),
+      // g deck's toll plaza is concrete lanes, not osm's asphalt service roads (parkingDecks.ts
+      // paints its lanes)
+      roads: lines(campus.roads, 0.004, toll),
       crosswalks: crosswalks(),
       paths: lines(campus.paths, 0.005),
     }),

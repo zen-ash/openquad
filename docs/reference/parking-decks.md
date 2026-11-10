@@ -74,7 +74,8 @@ research/parking-decks folder (not in the repo).
   panels over the top two floors, the middle one stands 0.45m higher with a long screen at the
   top and solid panels under it in places, the south end is lower. Courtland St: solid on the
   sidewalk floor and the top one, screens between (the 2019 photo, by eye). The other sides have
-  screens all along (no photo). Under the plaza (levels 1-2) the plaza side is solid.
+  screens all along (no photo). Under the plaza (levels 1-2) the plaza side is solid: it's
+  under the toll plaza's deck now, you only see it from inside g.
 - **Towers**: the north one (lift shaft, glass stair facing Library South) to 338.4, the south
   one (glass stair on Collins St) to 338.5, plain precast in 1.5m courses. They stand a bit past
   osm's outline, world.ts walls them in (deckObstacles).
@@ -82,10 +83,58 @@ research/parking-decks folder (not in the repo).
   door, kept), Collins St on level 1 by the south tower; blue clearance bars, the small G plate.
   The "G DECK" lightbox on the north tower's plaza side at level 5.
 - **Roof**: 8 floodlights (two heads on a t) along the ramp bay, low walls along it.
+- **The toll plaza**: see below.
 - **Courtland St's sidewalk** is ~2m narrower in the game than for real, where it runs up to
   G: G draws a concrete strip at the sidewalk's height in the gap.
 
-## M Deck (70)
+## G's toll plaza
+
+The lot on the plaza side, where cars come in off Central Ave and drive into g's third floor.
+It's on a structure: the lidar has it at 318.2-318.45m as building and vegetation points, not
+ground, the parking under it shows through the windows in g's level 1 wall (gsu's 2026
+photo IMG_3433), and round it the ground is 6m lower: a 3.5m wide service alley at 311.9m
+along classroom south and its wing, the gap by the 90 central ave garage at 312.5m and the
+drive between g and library south at 312.0m. Usgs's bare earth leaves the structure out, so
+the game's terrain went down from Central Ave to 312.5m at g.
+
+- **In the game** it's a raised plaza (game/raised.ts, the three 'G Deck toll plaza' ones):
+  flat at 318.33m, traced on the lidar in g's own frame, its south west side in line with g's
+  end, the north east one 36.3m along g's plaza side (40.5m at g's wall). heightAt() and so
+  surfaceAt(), the ground's drawing (the terrain's squares and every ground layer are cut
+  along its edges and lifted onto it, campus/drape.ts) and the cars all go by it. Under it
+  the terrain is untouched.
+- **Where it meets Central Ave**: the street goes down the hill along the plaza's end (lidar
+  318.9m at the south west end, 317.5m at the north east one), the plaza is level. The last
+  5m out to the sidewalk are two planes from the plaza's 318.33m to the street's line (the
+  'apron' ones), so the plaza meets osm's bridge sidewalk along Central Ave within 0.2m all
+  along and there's no step for cars or people (before: 0.5-1.3m, the bare earth's blur).
+- **Its surface**: the plaza's own concrete (the ground layer under everything), osm's
+  asphalt service roads are cut out on it (Campus.tsx), the lanes are drawn by
+  parkingDecks.ts: two islands with curbs painted yellow, concrete on top, following the
+  apron down to the street, white arrows (in on the clearance lane, out on the two others).
+- **The canopy** (gsu's 2018 photo from Central Ave, side by side, and the lidar): a thin
+  white beam (0.28m deep) on four slim posts, 45m out from g, 2.75m up, the 6'-6" clearance
+  bar over the way in and "DO NOT ENTER" over the two ways out. White is m's cream material.
+- **The island by the booth**: the booth 9m past the canopy (its size from the photo), the red
+  lightbox on its post, the blue "FACULTY & STAFF PARKING ONLY / STUDENT PARKING AFTER 4PM"
+  sign, gate arms in red and white over two lanes, a tall dark light with a box head. Two
+  more of those lights by the pergola and the planter.
+- **The sides**: the walls are g's own exposed aggregate precast (its panel joints), with a
+  band along the top that stands out 6cm like g's floors, a base step at the bottom and a
+  coping on the 1m parapets (the alley, the gap, the short bit at the north end). Collision
+  along the parapets (world.ts raisedWalls). The south west parapet is the outside of a
+  planter 2.6m deep with big round shrubs (the photo's right side), the north east side has
+  concrete bowls with flowers and the white pergola along the alley (the photo's left side,
+  the lidar's posts every 3m). The booth, planter, bowls and posts are collision
+  (deckObstacles).
+- G's own walls: the frame's ground is the terrain itself (terrainAt), so its lower floors
+  on the plaza side are still drawn, under the plaza.
+- **Not verified**: the walls round the structure aren't in any photo (no mapillary or gsu
+  photo of the gap or the alley), they're drawn like g's own lower floors. The pergola, the
+  bowls, the lights other than the one in the photo and where the islands start and end are
+  from the lidar and by eye.
+
+## M Deck (70)## M Deck (70)
 
 - **Outline**: redrawn on the lidar (osm was 0.3-1m off): the box, the elevator tower on the
   Dahlberg Hall drive, the pedestrian entrance's tower 1m out on Gilmer St. 'M Deck' left
@@ -137,10 +186,11 @@ research/parking-decks folder (not in the repo).
 
 ## What still differs from the photos
 
-- **G's toll plaza**: the plaza is a lot on a structure at 318.3m, the game's terrain is bare
-  earth there (it slopes from Central Ave down to 312.5 at G). So from the plaza spot the camera
-  floats 6m up, the plaza, its canopy, booth and planters are missing, and G's plaza side shows
-  its two lower floors (drawn solid, like the plaza's wall).
+- **G's toll plaza**: no parking stalls painted (the cars come from elsewhere), no cones,
+  the yellow paint is only on the islands' curbs, the shrubs are smooth round balls and the
+  bowls' flowers green mounds. The realistic look's concrete is the ground everywhere's,
+  darker and greyer than the plaza in the 2018 photo. The walls round it are guesses (see
+  above).
 - G's Courtland St side is by eye from an unfitted photo; the north east and south west sides
   have no photo at all. The panels are lighter in the game than in the plaza photo.
 - M's Auditorium Pl side and its way in: no photo, drawn like Piedmont Ave. Its floodlight
@@ -160,6 +210,10 @@ Measured after the merge. 0 new shaders: on the dev server's join warm-up, 802 s
 and 707 pipelines with the decks drawn and with them hidden (the same run). Parts per deck
 (each is a draw call in every pass): steel 8 (slab, floor, soffit, steel, mesh, lamp, block,
 glass; mesh and lamp are see through and cast no shadows), M 7 (cream, dark, slab, floor,
-soffit, lamp, glass), G 5 (precast, screen, glass, slab, pole). Triangles: N 8.8k, K 9.0k, S
-6.8k, M 4.7k, G 3.9k. The chain link is a see through material (two faces, out and in), not
-geometry.
+soffit, lamp, glass), G 8 (precast, screen, glass, slab, pole, and for the toll plaza white
+(the canopy, booth, pergola and arrows: m's cream material), yellow (the island curbs, no
+shadows) and green (shrubs and soil, the library's lawn family)). Triangles: N 8.8k, K 9.0k,
+S 6.8k, M 4.7k, G 8.4k (3.9k before the toll plaza: its walls, shrubs and dressing are 4.5k,
+the shrubs 2.1k of them), plus 37 signs on g (the toll plaza's bars, signs, lightbox and gate
+arms are 26 plates). The chain link is a see through material (two faces, out and in), not
+geometry. No new shaders: every new part is a library family already built.

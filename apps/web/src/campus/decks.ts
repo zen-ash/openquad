@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
-import { heightAt, fromElevation } from '../game/terrain'
+import { pointInPolygon, type Point } from '../game/collision'
+import { RAISED } from '../game/raised'
+import { heightAt, fromElevation, ORIGIN } from '../game/terrain'
 import { onDeck, type LineData } from './geometry'
 
 // how deep a bridge's deck is under its surface, and how far apart its piers are
@@ -112,4 +114,64 @@ export function deckStructure(lines: LineData[]) {
     })
   }
   return parts.length ? mergeGeometries(parts) : null
+}
+
+// the raised plazas' sides (game/raised.ts), for the building that draws them: in pieces of
+// a meter or so along each edge, with the plaza's top and the ground just outside at each
+// end (heights in the game), which way is out, and the parapet. a side only goes where the
+// ground outside is lower, or there's a parapet
+export type Side = {
+  p: Point
+  q: Point
+  // meters along the edge at p and q
+  u: [number, number]
+  top: [number, number]
+  ground: [number, number]
+  out: Point
+  parapet: number
+  // where its edge starts and ends (parapets get ends there)
+  first: boolean
+  last: boolean
+  plaza: string
+}
+const STEP = 1
+export function raisedSides(by: string) {
+  const sides: Side[] = []
+  for (const r of RAISED.filter((r) => r.by === by)) {
+    const top = (x: number, z: number) => r.elevation(x, z) - ORIGIN
+    r.outline.forEach((a, i) => {
+      const kind = r.edges[i]
+      if (kind === null || kind === undefined) return
+      const b = r.outline[(i + 1) % r.outline.length]!
+      const len = Math.hypot(b.x - a.x, b.z - a.z)
+      const [dx, dz] = [(b.x - a.x) / len, (b.z - a.z) / len]
+      const mid = { x: (a.x + b.x) / 2 - dz * 0.05, z: (a.z + b.z) / 2 + dx * 0.05 }
+      const out = pointInPolygon(mid, r.outline) ? { x: dz, z: -dx } : { x: -dz, z: dx }
+      const parapet = typeof kind === 'number' ? kind : 0
+      const n = Math.max(1, Math.ceil(len / STEP))
+      for (let k = 0; k < n; k++) {
+        const [t0, t1] = [(k * len) / n, ((k + 1) * len) / n]
+        const [p, q] = [t0, t1].map((t) => ({ x: a.x + dx * t, z: a.z + dz * t })) as [Point, Point]
+        const ground = [p, q].map((c) => heightAt(c.x + out.x * 0.05, c.z + out.z * 0.05)) as [
+          number,
+          number,
+        ]
+        const tops: [number, number] = [top(p.x, p.z), top(q.x, q.z)]
+        if (parapet === 0 && Math.max(tops[0] - ground[0], tops[1] - ground[1]) < 0.01) continue
+        sides.push({
+          p,
+          q,
+          u: [t0, t1],
+          top: tops,
+          ground,
+          out,
+          parapet,
+          first: k === 0,
+          last: k === n - 1,
+          plaza: r.name,
+        })
+      }
+    })
+  }
+  return sides
 }

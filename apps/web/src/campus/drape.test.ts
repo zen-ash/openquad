@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { pointInPolygon } from '../game/collision'
+import { raisedAt } from '../game/raised'
 import { isNear } from '../game/terrain'
 import campus from './campus.json'
 import { terrainGeometry } from './drape'
@@ -48,8 +49,13 @@ describe('terrainGeometry', () => {
           x: (a.x + b.x) / 2 + ((b.z - a.z) / len) * 0.05,
           z: (a.z + b.z) / 2 - ((b.x - a.x) / len) * 0.05,
         }
+        // (steps draw their own treads, no ground under them)
         for (const out of [p, q])
-          if (!others.some((s) => pointInPolygon(out, s)) && isNear(out.x, out.z))
+          if (
+            !others.some((s) => pointInPolygon(out, s)) &&
+            isNear(out.x, out.z) &&
+            !raisedAt(out.x, out.z)?.stairs
+          )
             if (!triangles.some((t) => covers(t, out))) holes++
       })
     expect(holes).toBe(0)

@@ -1,6 +1,6 @@
 import campus from '../campus/campus.json'
 import { interiorAt } from './interiors'
-import { fromElevation, heightAt } from './terrain'
+import { fromElevation, heightAt, terrainAt } from './terrain'
 
 // what you stand on: the ground (terrain.ts), or a bridge's deck (courtland st is a viaduct
 // 8m over decatur st and collins st). roads and paths on a bridge have the deck's height as a
@@ -116,14 +116,15 @@ function findFloor(b: Building) {
   return hs[Math.floor(hs.length / 2)]!
 }
 
-// and how low the ground gets along its walls, for the bottom of its walls
+// and how low the ground gets along its walls, for the bottom of its walls (under a raised
+// plaza too)
 export function lowestUnder(points: number[][]) {
   let low = Infinity
   points.forEach(([ax, az], i) => {
     const [bx, bz] = points[(i + 1) % points.length] as [number, number]
     const steps = Math.max(1, Math.ceil(Math.hypot(bx - ax!, bz - az!) / 2))
     for (let k = 0; k <= steps; k++)
-      low = Math.min(low, heightAt(ax! + ((bx - ax!) * k) / steps, az! + ((bz - az!) * k) / steps))
+      low = Math.min(low, terrainAt(ax! + ((bx - ax!) * k) / steps, az! + ((bz - az!) * k) / steps))
   })
   return low
 }

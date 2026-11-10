@@ -1,5 +1,6 @@
 import { FENCE } from '@quad/shared'
 import data from '../campus/terrain.json'
+import { raisedAt, type Raised } from './raised'
 
 // the ground's real shape (scripts/build-terrain.mjs, usgs bare earth): heights every 4m
 // over the map, in meters above hurt park's ground, which is y = 0. past the edge of the
@@ -81,13 +82,22 @@ for (let r = 0; r < size; r++)
   }
 export const GRID = gridOf(1)
 
-// the ground's height at a spot (meters, y = 0 at hurt park)
-export const heightAt = GRID.height
+// the ground's height at a spot (meters, y = 0 at hurt park): the terrain, or a raised plaza
+// on it (raised.ts), they're drawn the same way (campus/drape.ts)
+export function heightAt(x: number, z: number) {
+  const r = raisedAt(x, z)
+  return r ? r.elevation(x, z) - ORIGIN : GRID.height(x, z)
+}
 
-// which way the ground faces there, [x, y, z]
-export function normalAt(x: number, z: number) {
-  const dx = heightAt(x + 1, z) - heightAt(x - 1, z)
-  const dz = heightAt(x, z + 1) - heightAt(x, z - 1)
+// the ground itself, under a raised plaza too: walls go on down past them to it
+export const terrainAt = GRID.height
+
+// which way the ground faces there, [x, y, z]. `on` is the raised plaza it's on, or null for
+// the terrain (their edges are on both)
+export function normalAt(x: number, z: number, on: Raised | null = raisedAt(x, z) ?? null) {
+  const h = on ? on.elevation : GRID.height
+  const dx = h(x + 1, z) - h(x - 1, z)
+  const dz = h(x, z + 1) - h(x, z - 1)
   const l = Math.hypot(dx, 2, dz)
   return [-dx / l, 2 / l, -dz / l] as const
 }

@@ -159,11 +159,17 @@ wall with a rail round it, and you still can't walk into it.
 osm has the two footbridges as footways on the ground (bridge=yes), so in the game they were
 paths across Decatur St where there's no crosswalk. build-campus.mjs leaves those two ways
 out now and the arena draws the bridges up in the air, no collision under them. On the far
-side they land on the Urban Life plaza, a deck about 4.3m up that the game draws on the
-ground. So each bridge ends at the plaza's edge (where osm's plaza starts) with its end
-closed, on two pairs of square piers: one at the back of the sidewalk and one at the
-plaza's edge, both in the 2019 photo. The piers, the terrace's columns, the steps under the
-terrace and the flagpole are collision circles and a wall in game/world.ts
+side they land on the Urban Life plaza, a deck at 313.27m (lidar), which the game has as a
+raised plaza since Nov 2026 (game/raised.ts, docs/reference/urban-life.md). Each bridge ends
+at the plaza's edge (where osm's plaza starts, the plaza's wall goes on under them with no
+parapet) with its end closed, on two pairs of square piers: one at the back of the sidewalk
+and one at the plaza's edge, both in the 2019 photo. Their undersides (313.0m) are just under
+the pavers and their walkways (314.45m) a step over them, the lidar has the walkways at
+314.0-314.4m where they meet the plaza. Before the plaza was raised the game's ground there
+was 1.6m lower and the bridges ended in the air. The real ends are open, with steps and a
+ramp down onto the plaza (gsu's 2025 photo of the plaza); the bridges aren't walkable in the
+game, so they stay closed. The piers, the terrace's columns, the steps under the terrace and
+the flagpole are collision circles and a wall in game/world.ts
 (arenaObstacles). The star in the game look that was under the terrace moved 3.6m out of the
 steps.
 

@@ -93,8 +93,8 @@ describe('parking decks', () => {
     expect([...styles].sort()).toEqual(['band', 'painted', 'steel'])
   })
 
-  it('walls in the bits of g deck towers past its outline', () => {
-    expect(deckObstacles(deck('G Deck'))).toHaveLength(8)
+  it('walls in the bits of g deck towers past its outline, and the toll plaza booth and posts', () => {
+    expect(deckObstacles(deck('G Deck')).length).toBeGreaterThan(8)
     expect(deckObstacles(deck('N Deck'))).toHaveLength(0)
   })
 
