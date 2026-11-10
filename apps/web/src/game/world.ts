@@ -14,14 +14,16 @@ import { rscObstacles, type RscData } from '../campus/researchScience'
 import { annexObstacles, type AnnexData } from '../campus/scienceAnnex'
 import { loftsObstacles, type LoftsData } from '../campus/universityLofts'
 import { urbanLifeObstacles, type UrbanLifeData } from '../campus/urbanLife'
-import { polygon, type Point, type Segment, type World } from './collision'
+import { pointInPolygon, polygon, type Point, type Segment, type World } from './collision'
 import { footprint, furnish, isOver, LOW, type Item } from './furniture'
 import { enterable, interiors } from './interiors'
+import { corners, parkedCars } from './parking'
 import { benches, bins } from './streetFurniture'
 import { signalPoles } from './signals'
 import { RAISED } from './raised'
-import { decksAt } from './surface'
+import { decksAt, floorOf } from './surface'
 import { fromElevation, heightAt } from './terrain'
+import { drivingBoxes } from './traffic'
 
 const TREE_RADIUS = 0.8
 const { quad } = campus
@@ -100,6 +102,19 @@ export const raisedWalls: Segment[] = RAISED.flatMap(({ outline, edges }) =>
   }),
 )
 
+// the parked cars you can walk into: on the ground, or on the floor you walk on in a deck
+// (collisions are flat, so not the ones on the levels over your head)
+const decked = campus.buildings.filter((b) => /Deck|Lofts Parking/.test(b.name ?? ''))
+const parked = parkedCars().filter((c) => {
+  const deck = decked.find((b) =>
+    pointInPolygon(
+      c,
+      b.points.map(([x, z]) => ({ x: x!, z: z! })),
+    ),
+  )
+  return Math.abs(c.y - (deck ? floorOf(deck) : heightAt(c.x, c.z))) < 1.2
+})
+
 export const world: World = {
   // buildings you can walk into are just their walls (with a doorway), the rest are solid.
   // except the ones up off the ground, you walk under those (the library link)
@@ -112,6 +127,7 @@ export const world: World = {
     ...[urbanLife.deck, urbanLife.podium, ...urbanLife.planters].map((o) =>
       o.map((p) => [p.x, p.z]),
     ),
+    ...parked.map((c) => corners(c).map((p) => [p.x, p.z])),
   ].map((points) => polygon(points as [number, number][])),
   walls: [
     ...interiors.flatMap((i) => i.walls),
@@ -158,6 +174,9 @@ export const world: World = {
     ...signalPoles().map((p) => ({ x: p.x, z: p.z, radius: 0.2 })),
   ],
   halfSize: campus.halfSize,
+  // the cars driving by nudge you aside (they can't wait for anyone, everyone sees the same
+  // traffic)
+  moving: () => drivingBoxes(false),
 }
 
 // the sides of bridges with a drop beside them: walls, but only for someone up on the deck.
@@ -191,7 +210,11 @@ const deckEdges: Segment[] = [...campus.roads, ...campus.paths]
       })
     }),
   )
-const deckWorld: World = { ...world, walls: [...world.walls, ...deckEdges] }
+const deckWorld: World = {
+  ...world,
+  walls: [...world.walls, ...deckEdges],
+  moving: () => drivingBoxes(true),
+}
 
 // furniture only matters in the building you're in, and all of it together is a lot of walls
 const furnished = new Map<number, { world: World; tall: Segment[]; hopping: World; low: Item[] }>()

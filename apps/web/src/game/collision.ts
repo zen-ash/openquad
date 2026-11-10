@@ -105,6 +105,25 @@ export type World = {
   walls: Segment[]
   circles: Circle[]
   halfSize: number
+  // things that move about (cars driving by): where they are now, as boxes
+  moving?: () => Box[]
+}
+
+// a box turned to face heading (radians, like a player's), half its length and width
+export type Box = { x: number; z: number; heading: number; half: number; side: number }
+
+// pushes a circle out of a turned box, out the nearest side (a driving car nudges you aside)
+function outOfBox(p: Point, radius: number, b: Box): Point {
+  const [fx, fz] = [Math.sin(b.heading), Math.cos(b.heading)]
+  const [dx, dz] = [p.x - b.x, p.z - b.z]
+  // in the box's own frame: along its length, and to its side
+  const along = dx * fx + dz * fz
+  const side = dx * fz - dz * fx
+  const [l, w] = [b.half + radius, b.side + radius]
+  if (Math.abs(along) >= l || Math.abs(side) >= w) return p
+  const [inL, inW] = [l - Math.abs(along), w - Math.abs(side)]
+  const [na, ns] = inL < inW ? [Math.sign(along || 1) * l, side] : [along, Math.sign(side || 1) * w]
+  return { x: b.x + fx * na + fz * ns, z: b.z + fz * na - fx * ns }
 }
 
 export function resolveCollisions(p: Point, radius: number, world: World): Point {
@@ -114,6 +133,7 @@ export function resolveCollisions(p: Point, radius: number, world: World): Point
     for (const b of world.buildings) out = outOfPolygon(out, radius, b)
     for (const w of world.walls) out = outOfSegment(out, radius, w)
     for (const c of world.circles) out = outOfCircle(out, radius, c)
+    for (const b of world.moving?.() ?? []) out = outOfBox(out, radius, b)
   }
 
   const edge = world.halfSize - radius

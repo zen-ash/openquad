@@ -375,7 +375,7 @@ export default function Campus() {
       <PantherQuad />
       <Fountain />
       <StreetFurniture />
-      {!game && !toon && <Signals />}
+      {!toon && <Signals />}
       {game ? <GameTrees /> : toon ? <ToonTrees /> : <Trees />}
       {game && (
         <>

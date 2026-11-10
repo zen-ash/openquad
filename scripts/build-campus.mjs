@@ -2493,9 +2493,16 @@ function main(elements) {
       if (bridge && DECKS[el.id]) points = deckPoints(points, DECKS[el.id])
 
       if (ROAD_WIDTH[tags.highway]) {
+        // one way streets point the way the traffic goes (traffic.ts)
+        if (tags.oneway === '-1') points.reverse()
         const road = { width: ROAD_WIDTH[tags.highway] * SCALE, points }
         if (tags.name) road.name = tags.name
         if (bridge) road.bridge = true
+        if (['yes', '1', '-1'].includes(tags.oneway)) road.oneway = true
+        if (Number(tags.lanes) > 0) road.lanes = Number(tags.lanes)
+        // two way with more lanes one way than the other: how many go along the points
+        if (!road.oneway && Number(tags['lanes:forward']) > 0)
+          road.forward = Number(tags['lanes:forward'])
         roads.push(road)
       } else if (PATH_WIDTH[tags.highway]) {
         const path = { width: PATH_WIDTH[tags.highway] * SCALE, points }

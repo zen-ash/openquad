@@ -4,16 +4,15 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { attribute, mod, select, uniform, vec3 } from 'three/tsl'
 import { MeshStandardNodeMaterial } from 'three/webgpu'
 import { metal } from '../campus/materials'
-import { signalPoles } from '../game/signals'
+import { clock, CYCLE, LAMP_ON, roundStart, signalPoles } from '../game/signals'
 import { surfaceAt } from '../game/surface'
 import { still } from '../settings'
 
 // traffic lights on mast arms at the junctions (game/signals.ts): black steel like downtown's,
-// the heads hanging off the end of the arm. the two roads of a junction take turns: a minute
-// round, 25s green, 3s yellow, then red while the other road goes
+// the heads hanging off the end of the arm. the two roads of a junction take turns, on the
+// same clock and round as the traffic (signals.ts lightAt)
 const POLE = 6.2
 const ARM_AT = 5.9
-const CYCLE = 60
 
 const poles = signalPoles()
 const steel = metal({ color: '#25272a', roughness: 0.5 })
@@ -25,14 +24,14 @@ const geometry = {
   lamp: new THREE.CircleGeometry(0.11, 14),
 }
 
-// the game's clock for the lights: from the time of day, so everyone sees the same lights,
-// held still for the screenshot tests
-const time = uniform(still ? 0 : (Date.now() / 1000) % (CYCLE * 100))
-// each lamp's color and when in the minute it's on (red, yellow, green)
+// the real clock (a frame's dt adds up wrong when the tab is in the background), held still
+// for the screenshot tests
+const time = uniform(clock(still) % (CYCLE * 100))
+// each lamp's color and when in the round it's on (red, yellow, green)
 const LAMPS = [
-  { color: [1, 0.08, 0.03], on: [28, CYCLE] },
-  { color: [1, 0.62, 0.05], on: [25, 28] },
-  { color: [0.1, 1, 0.45], on: [0, 25] },
+  { color: [1, 0.08, 0.03], on: LAMP_ON.red },
+  { color: [1, 0.62, 0.05], on: LAMP_ON.yellow },
+  { color: [0.1, 1, 0.45], on: LAMP_ON.green },
 ]
 const lampMaterial = new MeshStandardNodeMaterial({ color: '#111', roughness: 0.3 })
 {
@@ -71,7 +70,7 @@ function build() {
       ),
       at(geometry.head, new THREE.Matrix4().compose(tip, facing, one)),
     )
-    const cycle = p.offset + p.road * (CYCLE / 2)
+    const cycle = roundStart(p.offset, p.road)
     LAMPS.forEach((lamp, k) => {
       const spot = tip
         .clone()
@@ -90,8 +89,8 @@ function build() {
 const built = poles.length ? build() : null
 
 export default function Signals() {
-  useFrame((_, dt) => {
-    if (!still) time.value = (time.value + dt) % (CYCLE * 100)
+  useFrame(() => {
+    time.value = clock(still) % (CYCLE * 100)
   })
   if (!built) return null
   return (
