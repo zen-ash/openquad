@@ -173,7 +173,7 @@ const TOWER_PARTS = {
   886352430: { podium: 20 }, // 25 park place, the annex behind it is low
   886349852: { height: 84, podium: 20 }, // the mix
   536726595: { height: 52, podium: 22 }, // one 12 courtland
-  886352432: { height: 69, podium: 15 }, // southern bell
+  886352432: {}, // southern bell, drawn by hand (SOUTHERN_BELL)
   886357427: { podium: 10 }, // healey
 }
 
@@ -2300,6 +2300,72 @@ function parkingDeck(b) {
   b.door = [...at(...d.door.at), cm(A[0] * oa + W[0] * ow), cm(A[1] * oa + W[1] * ow)]
 }
 
+// two skyline towers north of campus, drawn by hand in the web app (campus/southernBell.ts,
+// campus/peachtree191.ts). neither is gsu's: no door, no inside.
+//
+// the southern bell telephone company building (1929, built up to 14 floors by 1963, at&t's
+// exchange) behind the volunteer center deck. osm has it as a tower part on the whole block's
+// outline. the tower goes on the lidar's parapet lines and the outline under it is cut down to
+// the low service wing east of it (lidar: 5-18m, one 12m box here), or its 15m box stood round
+// the tower's walls
+const SOUTHERN_BELL = {
+  way: 886352432,
+  name: 'Southern Bell Building',
+  outline: [
+    [12.9, -212.3],
+    [12.9, -163.2],
+    [-55, -163.2],
+    [-55, -212.3],
+  ],
+  // the parapet, over peachtree center ave at the entrance (315.8m)
+  height: 67.7,
+  wing: [
+    [12.9, -195.3],
+    [43, -194.5],
+    [42.9, -183.9],
+    [59.3, -183.8],
+    [59.1, -176.7],
+    [44.9, -176.6],
+    [44.9, -177.8],
+    [12.9, -178.2],
+  ],
+  wingHeight: 12,
+}
+
+function southernBell(tower, wing) {
+  tower.name = SOUTHERN_BELL.name
+  tower.points = SOUTHERN_BELL.outline
+  tower.height = SOUTHERN_BELL.height
+  tower.landmark = {}
+  wing.points = SOUTHERN_BELL.wing
+  wing.height = SOUTHERN_BELL.wingHeight
+}
+
+// 191 peachtree tower (1990): two granite towers with temple crowns on a base, the atrium on
+// peachtree st. osm's outline had the low bits round the block in it and went up 235m as one
+// slab. this one is the lidar's base, the atrium and the low strip on peachtree center ave
+const PEACHTREE_191 = {
+  name: '191 Peachtree Tower',
+  outline: [
+    [-190, -559],
+    [-162, -559],
+    [-162, -549.2],
+    [-81.4, -549.2],
+    [-81.4, -512.4],
+    [-162, -512.4],
+    [-162, -509],
+    [-190, -509],
+  ],
+  // the crowns' finials, over peachtree center ave (319.3m)
+  height: 233,
+}
+
+function peachtree191(b) {
+  b.points = PEACHTREE_191.outline
+  b.height = PEACHTREE_191.height
+  b.landmark = {}
+}
+
 function main(elements) {
   const buildings = []
   const roads = []
@@ -2324,7 +2390,8 @@ function main(elements) {
     if (el.type === 'way' && TOWER_PARTS[el.id]) {
       const points = ring(el.geometry)
       const part = TOWER_PARTS[el.id]
-      if (points) towers.push({ ...part, points, height: part.height ?? heightOf(tags) })
+      if (points)
+        towers.push({ ...part, way: el.id, points, height: part.height ?? heightOf(tags) })
       continue
     }
 
@@ -2520,6 +2587,8 @@ function main(elements) {
   const loftsDeck = buildings.find((b) => b.name === 'University Lofts Parking')
   if (lofts) universityLofts(lofts, loftsDeck)
   for (const b of buildings) if (PARKING_DECKS[b.name]) parkingDeck(b)
+  const p191 = buildings.find((b) => b.name === PEACHTREE_191.name)
+  if (p191) peachtree191(p191)
   paths.push({ width: PATH_WIDTH.footway * SCALE, points: URBAN_LIFE.unity })
   for (const b of NEW_BUILDINGS) buildings.push({ ...b, height: b.height * SCALE, gsu: true })
   const sce = buildings.find((b) => b.name === 'Student Center East')
@@ -2542,7 +2611,9 @@ function main(elements) {
     if (t.podium) under.height = round(t.podium * SCALE)
     if (!cut.has(under)) under.points = inset(under.points, 0.1)
     cut.add(under)
-    buildings.push({ name: under.name, height: round(t.height * SCALE), points: t.points })
+    const tower = { name: under.name, height: round(t.height * SCALE), points: t.points }
+    if (t.way === SOUTHERN_BELL.way) southernBell(tower, under)
+    buildings.push(tower)
   }
 
   // hurt park's fountain. it hasn't worked in years, the memorial wall to joel hurt curves

@@ -17,12 +17,14 @@ import {
   paintedDeckMaterials,
   steelDeckMaterials,
 } from './parkingDecksMaterials'
+import { peachtree191Materials } from './peachtree191Materials'
 import { petitScienceMaterials } from './petitScienceMaterials'
 import { practiceFacilityMaterials } from './practiceFacilityMaterials'
 import { recCenterMaterials } from './recCenterMaterials'
 import { researchScienceMaterials } from './researchScienceMaterials'
 import { researchTowerMaterials } from './researchTowerMaterials'
 import { scienceAnnexMaterials } from './scienceAnnexMaterials'
+import { southernBellMaterials } from './southernBellMaterials'
 import { sportsArenaMaterials } from './sportsArenaMaterials'
 import { studentCenterEastMaterials } from './studentCenterEastMaterials'
 import { studentCenterWestMaterials } from './studentCenterWestMaterials'
@@ -62,6 +64,8 @@ export const landmarkMaterials: Record<string, Record<string, THREE.Material>> =
   'S Deck': steelDeckMaterials,
   'M Deck': paintedDeckMaterials,
   'G Deck': bandDeckMaterials,
+  'Southern Bell Building': southernBellMaterials,
+  '191 Peachtree Tower': peachtree191Materials,
   'Hurt Building': hurtBuildingMaterials,
 }
 

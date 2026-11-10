@@ -13,12 +13,14 @@ import { loftsParkingGeometry, type ParkingData } from './loftsParking'
 import { naturalScienceGeometry, type NscData } from './naturalScience'
 import { oneParkGeometry, type OneParkData } from './onePark'
 import { parkingDeckGeometry, type DeckData } from './parkingDecks'
+import { peachtree191Geometry, type PeachtreeData } from './peachtree191'
 import { petitScienceGeometry, type PetitData } from './petitScience'
 import { practiceFacilityGeometry, type PracticeFacilityData } from './practiceFacility'
 import { recCenterGeometry, type RecData } from './recCenter'
 import { researchScienceGeometry, type RscData } from './researchScience'
 import { researchTowerGeometry, type TowerData } from './researchTower'
 import { scienceAnnexGeometry, type AnnexData } from './scienceAnnex'
+import { southernBellGeometry, type SouthernBellData } from './southernBell'
 import { sportsArenaGeometry, type ArenaData } from './sportsArena'
 import { studentCenterEastGeometry, type StudentCenterData } from './studentCenterEast'
 import { studentCenterWestGeometry, type StudentCenterWestData } from './studentCenterWest'
@@ -97,6 +99,8 @@ type Data = LibraryNorthData &
   LoftsData &
   ParkingData &
   DeckData &
+  SouthernBellData &
+  PeachtreeData &
   HurtData
 const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Library North': libraryNorthGeometry,
@@ -128,6 +132,8 @@ const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'S Deck': parkingDeckGeometry,
   'M Deck': parkingDeckGeometry,
   'G Deck': parkingDeckGeometry,
+  'Southern Bell Building': southernBellGeometry,
+  '191 Peachtree Tower': peachtree191Geometry,
   'Hurt Building': hurtBuildingGeometry,
 }
 

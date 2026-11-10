@@ -87,6 +87,10 @@ const VIEWS = [
   { name: 'n-deck', from: [36.25, 1.6, 327.67], at: [133.23, 26, 327.1], player: [32.25, 327.7] },
   { name: 'k-deck', from: [70, 1.6, 360], at: [130, 8, 300], player: [68, 362] },
   { name: 's-deck', from: [163.53, 1.5, 331.14], at: [230.71, 14, 258.55], player: [160.8, 334.1] },
+  // the skyline north of campus: southern bell's microwave shaft from the edgewood ave end of
+  // courtland st (lemay's 2019 photo), and 191 peachtree's crowns behind it from edgewood ave
+  { name: 'southern-bell', from: [81.83, 1.5, -12.06], at: [-25, 55, -180], player: [84.1, -8.8] },
+  { name: 'peachtree-191', from: [-60, 1.6, -35], at: [-125, 150, -530], player: [-58, -33] },
   {
     name: 'library-north-inside',
     from: [-93.8, 1.7, 142.9],

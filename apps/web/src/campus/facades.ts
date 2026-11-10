@@ -88,13 +88,6 @@ const LOOKS: Record<string, Look> = {
   'Classroom South': { wall: 'glass', color: '#c9ccce' },
 
   // the skyline round campus, from commons/mapillary photos (2015-2026)
-  // warm gray granite, punched windows and tall glass bays
-  '191 Peachtree Tower': {
-    wall: 'concrete',
-    color: '#c9bdb0',
-    frame: '#3f4347',
-    window: [4.1, 4.1, 0.45, 0.6],
-  },
   // dark bronze glass, a mullion every 2.7m (the white piers aren't drawn)
   'State of Georgia Building': { wall: 'glass', color: '#4a4037', window: [2.7, 3.7, 0.9, 0.85] },
   // nearly black bronze metal, ribbon windows
@@ -145,7 +138,7 @@ const LOOKS: Record<string, Look> = {
     frame: '#e8e6e1',
     window: [2.4, 2.95, 0.4, 0.5],
   },
-  // southern bell: buff art deco stone, small windows, tall switching floors
+  // southern bell's low wing east of the tower (the tower's drawn by hand): buff stone
   'AT&T': {
     wall: 'concrete',
     color: '#cfc5b2',

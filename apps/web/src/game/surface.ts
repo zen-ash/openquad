@@ -85,6 +85,11 @@ const DATUMS: Record<string, number | { from: number }> = {
   'S Deck': 303.95,
   'M Deck': 308.4,
   'G Deck': 321.3,
+  // skyline towers (lidar): southern bell from peachtree center ave at its entrance (the
+  // block drops 5m to its south east corner), 191 peachtree from peachtree center ave (peachtree
+  // st behind it is 9.5m higher)
+  'Southern Bell Building': 315.8,
+  '191 Peachtree Tower': 319.3,
 }
 
 type Building = { name?: string; points: number[][]; door?: number[] }
