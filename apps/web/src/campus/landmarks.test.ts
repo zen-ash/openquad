@@ -41,8 +41,9 @@ describe.each(landmarks.map((b) => [b.name!, b] as const))('%s', (_, b) => {
   })
 
   it('has inside walls the whole way round, except the doorway', () => {
-    // a parking deck is open, its floors and sides are what you see from inside too
-    if (geo.open) {
+    // a parking deck is open, its floors and sides are what you see from inside too. one with
+    // no door (the hurt building and the skyline towers aren't gsu's) has no inside at all
+    if (geo.open || !b.door) {
       expect(geo.inside.solid.length + geo.inside.glass.length).toBe(0)
       return
     }

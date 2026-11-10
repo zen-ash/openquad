@@ -145,7 +145,6 @@ const MEASURED_HEIGHTS = {
 const LIDAR_HEIGHTS = {
   42779040: 76, // the ritz-carlton
   270470030: 64, // the landmark
-  24232553: 69, // hurt building
   102162996: 46.5, // bethel towers
   252608923: 113, // 34 peachtree, the roof under its penthouse
   262879648: 80, // 55 marietta
@@ -1984,6 +1983,62 @@ function onePark(b, olympia, lines) {
   })
 }
 
+// the hurt building (45 edgewood ave / 50 hurt plaza, 1913-26), across peachtree center ave
+// from hurt park: two 17 floor wings on edgewood ave and hurt plaza meeting at a rotunda on the
+// apex, a light court between them over the base on peachtree center ave. not gsu's. drawn in
+// campus/hurtBuilding.ts. osm's outline is the whole triangle, court and all, and its rotunda
+// is too small. redrawn from usgs's lidar (2018): the roof edges, less the cornice (0.85m, the
+// lidar's ground comes to 0.25m of that on edgewood ave)
+const HURT_BUILDING = {
+  // the base going round: edgewood ave from the apex to the chamfer on peachtree center ave,
+  // the end of the edgewood wing, the base across the court (1.1m back), the end of the hurt
+  // plaza wing, hurt plaza back to the apex
+  corners: [
+    [-209.95, -24.78],
+    [-121.02, -24.9],
+    [-118.01, -18.54],
+    [-127.1, -5.65],
+    [-128.2, -5.66],
+    [-140.77, 11.1],
+    [-150.31, 26.6],
+    [-213.75, -10.84],
+  ],
+  // the court over the base: from the edgewood wing's end along its wall to the back and out
+  // along the hurt plaza wing's
+  court: [
+    [-127.1, -5.65],
+    [-159.2, -5.96],
+    [-159.41, 0.11],
+    [-140.77, 11.1],
+  ],
+  // the rotunda's middle is this far out from the apex, and its columns' outside this far from
+  // that (esri's newest image has its balustrade about 5m round, the lidar 6.2m with the cornice)
+  rotunda: { out: 3.9, radius: 5.33 },
+  // the top of the penthouse over the peachtree center ave sidewalk (311.3m, lidar 388.7m)
+  height: 77.4,
+}
+
+function hurtBuilding(b) {
+  const { corners, court, rotunda } = HURT_BUILDING
+  const cm = (x) => Math.round(x * 100) / 100
+  // the rotunda goes round the middle of the apex side, the last one
+  const [p, q] = [corners.at(-1), corners[0]]
+  const len = Math.hypot(q[0] - p[0], q[1] - p[1])
+  const dir = [(q[0] - p[0]) / len, (q[1] - p[1]) / len]
+  const out = [dir[1], -dir[0]]
+  const c = [0, 1].map((k) => (p[k] + q[k]) / 2 + out[k] * rotunda.out)
+  // it leaves the apex where its circle crosses it, and goes round the outside
+  const from = Math.atan2(-out[1], -out[0]) + Math.acos(rotunda.out / rotunda.radius)
+  const arc = []
+  for (let i = 0; i <= 12; i++) {
+    const t = from + ((2 * Math.PI - 2 * Math.acos(rotunda.out / rotunda.radius)) * i) / 12
+    arc.push([c[0] + Math.cos(t) * rotunda.radius, c[1] + Math.sin(t) * rotunda.radius])
+  }
+  b.points = [...corners, ...arc].map((pt) => pt.map(cm))
+  b.height = HURT_BUILDING.height
+  b.landmark = { corners, court, rotunda: c.map(cm) }
+}
+
 // the university lofts (135 edgewood ave, 2002): gsu's loft apartments, metal shingles round
 // a courtyard, stepping up from 6 floors on edgewood ave and auditorium pl to a 14 floor
 // tower and arm, with a 2 storey wing curving into the courtyard. drawn in
@@ -2459,6 +2514,8 @@ function main(elements) {
   if (olympia) delete olympia.olympia
   const opp = buildings.find((b) => b.name === 'One Park Place')
   if (opp) onePark(opp, olympia, [...paths, ...crossings])
+  const hurt = buildings.find((b) => b.name === 'Hurt Building')
+  if (hurt) hurtBuilding(hurt)
   const lofts = buildings.find((b) => b.name === 'University Lofts')
   const loftsDeck = buildings.find((b) => b.name === 'University Lofts Parking')
   if (lofts) universityLofts(lofts, loftsDeck)

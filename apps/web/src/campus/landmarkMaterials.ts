@@ -5,6 +5,7 @@ import { collegeOfEducationMaterials } from './collegeOfEducationMaterials'
 import { courtlandBuildingMaterials } from './courtlandBuildingMaterials'
 import { courtlandNorthMaterials } from './courtlandNorthMaterials'
 import { dahlbergMaterials } from './dahlbergMaterials'
+import { hurtBuildingMaterials } from './hurtBuildingMaterials'
 import { langdaleHallMaterials } from './langdaleHallMaterials'
 import { libraryNorthMaterials } from './libraryNorthMaterials'
 import { librarySouthMaterials } from './librarySouthMaterials'
@@ -61,6 +62,7 @@ export const landmarkMaterials: Record<string, Record<string, THREE.Material>> =
   'S Deck': steelDeckMaterials,
   'M Deck': paintedDeckMaterials,
   'G Deck': bandDeckMaterials,
+  'Hurt Building': hurtBuildingMaterials,
 }
 
 // see-through glass and the parts in noShadow don't cast shadows, everything else does

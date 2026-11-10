@@ -72,6 +72,9 @@ const DATUMS: Record<string, number | { from: number }> = {
   'College of Education & Human Development': { from: 317.1 },
   // the police door's sidewalk (lidar), the terrain there is 0.25m low
   'One Park Place': 318.4,
+  // the peachtree center ave sidewalk at the chamfer (lidar), the lowest round it: the street
+  // climbs 4.7m to the apex, its base's floors stay level and the sidewalk cuts across them
+  'Hurt Building': 311.3,
   // the lofts and their deck share a wall, both on the edgewood ave sidewalk at the lofts' doors
   'University Lofts': 304.3,
   'University Lofts Parking': 304.3,

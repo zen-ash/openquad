@@ -145,13 +145,6 @@ const LOOKS: Record<string, Look> = {
     frame: '#e8e6e1',
     window: [2.4, 2.95, 0.4, 0.5],
   },
-  // pale gray glazed brick, buff terra cotta under the windows
-  'Hurt Building': {
-    wall: 'brick',
-    color: '#c6c6c2',
-    frame: '#e0dbcc',
-    window: [2.7, 3.7, 0.5, 0.7],
-  },
   // southern bell: buff art deco stone, small windows, tall switching floors
   'AT&T': {
     wall: 'concrete',
