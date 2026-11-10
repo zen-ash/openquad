@@ -46,6 +46,7 @@ import { RAISED } from '../game/raised'
 import { daylight, sunDirection, sunPosition, timeFor } from '../game/sun'
 import { game, today, toon, useSettings } from '../settings'
 import Buildings from './Buildings'
+import Cars from './Cars'
 import Collectibles from './Collectibles'
 import Doors from './Doors'
 import EntranceMarkers from './EntranceMarkers'
@@ -376,6 +377,7 @@ export default function Campus() {
       <Fountain />
       <StreetFurniture />
       {!toon && <Signals />}
+      <Cars />
       {game ? <GameTrees /> : toon ? <ToonTrees /> : <Trees />}
       {game && (
         <>
