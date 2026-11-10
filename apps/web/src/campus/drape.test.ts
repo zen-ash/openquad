@@ -31,10 +31,10 @@ describe('terrainGeometry', () => {
     expect(inside).toHaveLength(0)
   })
 
-  it('still has ground right up to their walls', () => {
+  it('has ground right up to every building', () => {
     const others = solid.map((b) => b.points.map(([x, z]) => ({ x: x!, z: z! })))
     let holes = 0
-    for (const o of outlines)
+    for (const o of others)
       o.forEach((a, i) => {
         const b = o[(i + 1) % o.length]!
         const len = Math.hypot(b.x - a.x, b.z - a.z)

@@ -24,6 +24,9 @@ import { studentCenterWestGeometry, type StudentCenterWestData } from './student
 import { universityBookstoreGeometry, type UniversityBookstoreData } from './universityBookstore'
 import { universityLoftsGeometry, type LoftsData } from './universityLofts'
 import { urbanLifeGeometry, type UrbanLifeData } from './urbanLife'
+import { sink } from './landmark'
+import { baseOf } from '../game/surface'
+import { heightAt } from '../game/terrain'
 
 // buildings drawn by hand from photos instead of the regular buildings mesh, by name
 
@@ -132,6 +135,22 @@ export function landmarkGeometry(b: { name?: string; landmark?: unknown }) {
   const build = b.name && b.landmark ? builders[b.name] : undefined
   if (!build) return null
   let geo = cache.get(b.name!)
-  if (!geo) cache.set(b.name!, (geo = build(b as Data)))
+  if (!geo) cache.set(b.name!, (geo = sunk(b as Data, build(b as Data))))
+  return geo
+}
+
+// a building is drawn from one height and the ground can be lower on another side: every wall
+// standing on that height carries on down past the lowest ground within 5m of it, steps and
+// bases out past the outline too. the plinth only went round the outline, so there was sky
+// under anything that stood out from it
+function sunk(b: Data, geo: LandmarkGeometry) {
+  const xs = b.points.map((p) => p[0]!)
+  const zs = b.points.map((p) => p[1]!)
+  let low = Infinity
+  for (let x = Math.min(...xs) - 5; x <= Math.max(...xs) + 5; x += 2)
+    for (let z = Math.min(...zs) - 5; z <= Math.max(...zs) + 5; z += 2)
+      low = Math.min(low, heightAt(x, z))
+  const depth = low - baseOf(b) - 0.3
+  if (depth < 0) sink(geo.parts, depth)
   return geo
 }

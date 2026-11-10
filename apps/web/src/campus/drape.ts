@@ -216,23 +216,31 @@ export function terrainGeometry(
   } = {},
 ) {
   const carving = carver(grid, cut)
+  // squares any building's wall crosses: kept even with all four corners in buildings (the
+  // inside corner of an L, a gap between two), what's under the building is out of sight
+  const walls = carver(grid, buildings)
   const [first, last] = [grid.column(-grid.half) + 1, grid.column(grid.half) - 1]
   const n = last - first + 1
+  // whether all four corners of a square are inside these outlines
+  const allIn = (outlines: Outline[]) => {
+    const inside = new Set<number>()
+    for (const b of outlines) {
+      const outline = b.points.map(([x, z]) => ({ x: x!, z: z! }))
+      const xs = outline.map((p) => p.x)
+      const zs = outline.map((p) => p.z)
+      const [c0, c1] = [grid.column(Math.min(...xs)), grid.column(Math.max(...xs)) + 1]
+      const [r0, r1] = [grid.row(Math.min(...zs)), grid.row(Math.max(...zs)) + 1]
+      for (let r = r0; r <= r1; r++)
+        for (let c = c0; c <= c1; c++)
+          if (pointInPolygon({ x: grid.x(c), z: grid.z(r) }, outline)) inside.add(r * 100000 + c)
+    }
+    return (c: number, r: number) =>
+      [0, 1].every((dr) => [0, 1].every((dc) => inside.has((r + dr) * 100000 + c + dc)))
+  }
   // squares with all four corners inside a building are left out: nobody sees them, and on a
   // slope the ground under a building comes up through its floor on the uphill side
-  const under = new Set<number>()
-  for (const b of buildings) {
-    const outline = b.points.map(([x, z]) => ({ x: x!, z: z! }))
-    const xs = outline.map((p) => p.x)
-    const zs = outline.map((p) => p.z)
-    const [c0, c1] = [grid.column(Math.min(...xs)), grid.column(Math.max(...xs)) + 1]
-    const [r0, r1] = [grid.row(Math.min(...zs)), grid.row(Math.max(...zs)) + 1]
-    for (let r = r0; r <= r1; r++)
-      for (let c = c0; c <= c1; c++)
-        if (pointInPolygon({ x: grid.x(c), z: grid.z(r) }, outline)) under.add(r * 100000 + c)
-  }
-  const hidden = (c: number, r: number) =>
-    [0, 1].every((dr) => [0, 1].every((dc) => under.has((r + dr) * 100000 + c + dc)))
+  const hidden = allIn(buildings)
+  const inCut = allIn(cut)
   const pos: number[] = []
   const index: number[] = []
   for (let r = first; r <= last; r++)
@@ -248,7 +256,7 @@ export function terrainGeometry(
       // a cut one is up to the carving: all its corners can be in buildings with a gap
       // between them
       if (!carving.crossed(c, r)) {
-        if (!hidden(c, r))
+        if ((!hidden(c, r) || walls.crossed(c, r)) && !inCut(c, r))
           index.push(
             at(c, r),
             at(c + 1, r + 1),
