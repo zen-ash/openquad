@@ -220,12 +220,39 @@ export function parts<P extends string>() {
     }
   }
 
+  /**
+   * A block hidden inside a hollow building, only there for its shadow: above the ground
+   * floor's ceiling the buildings are empty, and a low sun shone in the windows on one side
+   * and out the other's (the window glass doesn't cast). walls facing out, no lid (the roof
+   * is over it) or floor (the ceiling under it casts). see landmarks.test.ts
+   */
+  const core = (part: P, c: Point[], y0: number, y1: number) => {
+    for (const { p, q, len, out } of edges(c))
+      if (len > 0.01) add(part, wallQuad(p, q, y0, y1, out))
+  }
+
   const merged = () =>
     Object.fromEntries(
       Object.entries<THREE.BufferGeometry[]>(all).map(([k, v]) => [k, mergeGeometries(v)]),
     ) as Record<P, THREE.BufferGeometry>
 
-  return { add, prism, block, wall, inside, merged }
+  return { add, prism, block, wall, core, inside, merged }
+}
+
+/** an outline moved d in all round, each corner where its two moved edges meet */
+export function inset(outline: Point[], d: number) {
+  const e = edges(
+    outline.filter((p, i) => {
+      const q = outline[(i + 1) % outline.length]!
+      return Math.hypot(q.x - p.x, q.z - p.z) > 0.05
+    }),
+  )
+  return e.map((cur, i) => {
+    const prev = e.at(i - 1)!
+    // a sharp corner would send its point miles off
+    const k = d / Math.max(1 + prev.out.x * cur.out.x + prev.out.z * cur.out.z, 0.3)
+    return { x: cur.p.x - (prev.out.x + cur.out.x) * k, z: cur.p.z - (prev.out.z + cur.out.z) * k }
+  })
 }
 
 /**

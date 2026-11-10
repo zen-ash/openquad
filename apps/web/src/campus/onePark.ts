@@ -5,6 +5,7 @@ import {
   flat,
   frame,
   glassQuad,
+  inset,
   insideWalls,
   parts as collect,
   pt,
@@ -169,7 +170,7 @@ export function oppOutline(b: OneParkData) {
 }
 
 export function oneParkGeometry(b: OneParkData): LandmarkGeometry {
-  const { add, inside, merged } = collect<Part>()
+  const { add, core, inside, merged } = collect<Part>()
   const signs: Sign[] = []
   const sides = oppSides(b)
   const { park, decatur, west, edgewood, center, curve, party } = sides
@@ -365,6 +366,12 @@ export function oneParkGeometry(b: OneParkData): LandmarkGeometry {
   ]
   lid('dark', soffit, SOFFIT, false)
   lid('dark', soffit, SOFFIT + 0.8, false)
+  // and a block just inside the marble floors, from there to the roof: the floors are empty
+  // and a low sun came in the window strips on one side and out the other (landmark.ts core).
+  // under it one just inside the ground floor's outline, up from its ceiling (over that it's
+  // the dark transom, and the olympia building against the west side)
+  core('marble', inset(sides.corners, 0.4), SOFFIT + 0.85, ROOF - 0.1)
+  core('marble', inset(b.points.map(pt), 0.3), CEILING, SOFFIT + 0.9)
 
   // the ground floor glass. edgewood ave's in meters from park place, its frame is the other way
   const E = (s: number) => edgewood.len - s

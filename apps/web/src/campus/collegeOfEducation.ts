@@ -8,6 +8,7 @@ import {
   edges,
   flat,
   glassQuad,
+  inset,
   parts as collect,
   pt,
   sink,
@@ -197,7 +198,7 @@ function screens(s: Side): [number, number][] {
 }
 
 export function collegeOfEducationGeometry(b: CollegeOfEducationData) {
-  const { add, inside, merged } = collect<Part>()
+  const { add, core, inside, merged } = collect<Part>()
   const signs: Sign[] = []
   const H = b.height
   const sides = coeSides(b)
@@ -579,6 +580,10 @@ export function collegeOfEducationGeometry(b: CollegeOfEducationData) {
       scale: 0.48,
     })
   }
+
+  // a block just inside the ground floor's walls, up to the roof, so a low sun doesn't come in
+  // one side and out the dark windows under the soffit (landmark.ts core)
+  core('marble', inset(outline, 0.3), lift + CEILING, ROOF - 0.1)
 
   // inside the ground floor: walls round the outline, glass at the lobby
   const glassy: [number, number][] = [[2 * pryor.bay, 4 * pryor.bay]]

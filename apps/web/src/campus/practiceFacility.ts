@@ -1,12 +1,13 @@
 import * as THREE from 'three'
 import type { Point } from '../game/collision'
-import { DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
+import { CEILING, DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
 import { liftOf } from '../game/surface'
 import type { Sign } from './landmarks'
 import {
   circle,
   flat,
   frame,
+  inset,
   insideWalls,
   parts as collect,
   pt,
@@ -162,7 +163,7 @@ function poly(pts: THREE.Vector3[], n: THREE.Vector3) {
 }
 
 export function practiceFacilityGeometry(b: PracticeFacilityData) {
-  const { add, prism, inside, merged } = collect<Part>()
+  const { add, prism, core, inside, merged } = collect<Part>()
   const signs: Sign[] = []
   const { f, P } = practiceFrame(b)
   const outline = b.points.map(pt)
@@ -368,6 +369,18 @@ export function practiceFacilityGeometry(b: PracticeFacilityData) {
 
   // the roof: a white membrane, the box and the duct on it
   lid('roof', OUTLINE.slice(0, 8), ROOF)
+  // blocks just inside the walls, under the roof and the wing's: the gym's empty and the party
+  // wall's the arena's, a low sun came in over its roof and out under it (landmark.ts core)
+  const wing: [number, number][] = [
+    [WING.u, WING.v[0]],
+    [-0.15, WING.v[0]],
+    [-0.15, WING.v[1]],
+    [WING.u, WING.v[1]],
+  ]
+  const floor = liftOf(b) + CEILING
+  const plan = (c: [number, number][]) => c.map(([u, v]) => P(u, v))
+  core('concrete', inset(plan(OUTLINE.slice(0, 8)), 0.3), floor, ROOF - 0.1)
+  core('concrete', inset(plan(wing), 0.3), floor, WING.roof - 0.1)
   box('concrete', UNIT.u, UNIT.v, [ROOF, UNIT.top], 'bottom')
   box('concrete', DUCT.u, DUCT.v, [ROOF, DUCT.top], 'bottom')
 

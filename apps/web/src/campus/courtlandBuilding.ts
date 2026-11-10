@@ -1,10 +1,11 @@
 import type { Segment } from '../game/collision'
-import { DOOR_HEIGHT } from '../game/interiors'
+import { CEILING, DOOR_HEIGHT } from '../game/interiors'
 import { courtlandFrame } from './courtlandNorth'
 import type { Sign } from './landmarks'
 import {
   flat,
   glassQuad,
+  inset,
   insideWalls,
   parts as collect,
   solidPieces,
@@ -106,7 +107,7 @@ export const WING: [number, number][] = [
 ]
 
 export function courtlandBuildingGeometry(b: CourtlandBuildingData) {
-  const { add, inside, merged } = collect<Part>()
+  const { add, core, inside, merged } = collect<Part>()
   const signs: Sign[] = []
   const { A, D } = courtlandFrame(b)
   const outline = b.points.map(([x, z]) => ({ x: x!, z: z! }))
@@ -262,6 +263,9 @@ export function courtlandBuildingGeometry(b: CourtlandBuildingData) {
   const [pv0, pv1] = PENTHOUSE.v
   box('brick', [pu0, pu1], [pv0, pv1], [ROOF, PENTHOUSE.top - CAP], 'uvV')
   holed('brick', pu1, 1, pv0, pv1, BACK_TOP - CAP, PENTHOUSE.top - CAP, [LOUVRE])
+  // and a block in it behind the louvre, for the shadows (landmark.ts core)
+  const house = [A(pu0, pv0), A(pu1, pv0), A(pu1, pv1), A(pu0, pv1)]
+  core('brick', inset(house, 0.3), ROOF, PENTHOUSE.top - CAP - 0.1)
   pane(pu1 + 0.01, 1, LOUVRE)
   box(
     'metal',
@@ -339,6 +343,10 @@ export function courtlandBuildingGeometry(b: CourtlandBuildingData) {
     color: '#cfc9bd',
     weight: 500,
   })
+
+  // a block just inside the walls up to the roof: it's empty inside and a low sun came in the
+  // windows on one side and out the other's (landmark.ts core)
+  core('brick', inset(outline, 0.3), CEILING, ROOF - 0.1)
 
   // inside the ground floor: walls round the outline
   insideWalls(inside, outline, door, () => false)

@@ -3,73 +3,13 @@ import { useRef } from 'react'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import campus from '../campus/campus.json'
-import { artsHumanitiesMaterials } from '../campus/artsHumanitiesMaterials'
-import { classroomSouthMaterials } from '../campus/classroomSouthMaterials'
-import { collegeOfEducationMaterials } from '../campus/collegeOfEducationMaterials'
-import { courtlandBuildingMaterials } from '../campus/courtlandBuildingMaterials'
-import { courtlandNorthMaterials } from '../campus/courtlandNorthMaterials'
-import { dahlbergMaterials } from '../campus/dahlbergMaterials'
-import { langdaleHallMaterials } from '../campus/langdaleHallMaterials'
 import { wallQuad } from '../campus/landmark'
 import { landmarkGeometry, type Sign } from '../campus/landmarks'
-import { libraryNorthMaterials } from '../campus/libraryNorthMaterials'
+import { casts, landmarkMaterials as materials } from '../campus/landmarkMaterials'
 import { precast } from '../campus/materials'
-import { librarySouthMaterials } from '../campus/librarySouthMaterials'
-import { loftsParkingMaterials } from '../campus/loftsParkingMaterials'
-import { naturalScienceMaterials } from '../campus/naturalScienceMaterials'
-import { oneParkMaterials } from '../campus/oneParkMaterials'
-import {
-  bandDeckMaterials,
-  paintedDeckMaterials,
-  steelDeckMaterials,
-} from '../campus/parkingDecksMaterials'
-import { petitScienceMaterials } from '../campus/petitScienceMaterials'
-import { practiceFacilityMaterials } from '../campus/practiceFacilityMaterials'
-import { recCenterMaterials } from '../campus/recCenterMaterials'
-import { researchScienceMaterials } from '../campus/researchScienceMaterials'
-import { researchTowerMaterials } from '../campus/researchTowerMaterials'
-import { scienceAnnexMaterials } from '../campus/scienceAnnexMaterials'
-import { sportsArenaMaterials } from '../campus/sportsArenaMaterials'
-import { studentCenterEastMaterials } from '../campus/studentCenterEastMaterials'
-import { studentCenterWestMaterials } from '../campus/studentCenterWestMaterials'
-import { universityBookstoreMaterials } from '../campus/universityBookstoreMaterials'
-import { universityLoftsMaterials } from '../campus/universityLoftsMaterials'
-import { urbanLifeMaterials } from '../campus/urbanLifeMaterials'
 import { baseOf, lowestUnder } from '../game/surface'
 import { useSettings } from '../settings'
 import Label from './Label'
-
-const materials: Record<string, Record<string, THREE.Material>> = {
-  'Library North': libraryNorthMaterials,
-  'Dahlberg Hall': dahlbergMaterials,
-  'Arts & Humanities': artsHumanitiesMaterials,
-  'Research Tower': researchTowerMaterials,
-  'Student Center East': studentCenterEastMaterials,
-  'Student Center West': studentCenterWestMaterials,
-  'Langdale Hall': langdaleHallMaterials,
-  'Classroom South': classroomSouthMaterials,
-  'Library South': librarySouthMaterials,
-  'Urban Life Building': urbanLifeMaterials,
-  'College of Education & Human Development': collegeOfEducationMaterials,
-  'Petit Science Center': petitScienceMaterials,
-  'University Bookstore': universityBookstoreMaterials,
-  'Practice Facility': practiceFacilityMaterials,
-  'GSU Sports Arena': sportsArenaMaterials,
-  'Student Recreation Center': recCenterMaterials,
-  'Natural Science Center': naturalScienceMaterials,
-  'Courtland North': courtlandNorthMaterials,
-  'Courtland Building': courtlandBuildingMaterials,
-  'Research Science Center': researchScienceMaterials,
-  'Science Annex': scienceAnnexMaterials,
-  'One Park Place': oneParkMaterials,
-  'University Lofts': universityLoftsMaterials,
-  'University Lofts Parking': loftsParkingMaterials,
-  'N Deck': steelDeckMaterials,
-  'K Deck': steelDeckMaterials,
-  'S Deck': steelDeckMaterials,
-  'M Deck': paintedDeckMaterials,
-  'G Deck': bandDeckMaterials,
-}
 
 // white sign with the name in gsu blue. the real ones have the logo where the blue
 // square is, but that's gsu's trademark
@@ -270,8 +210,7 @@ export default function Landmarks() {
                   key={part}
                   geometry={g}
                   material={mats[part]}
-                  // see-through glass doesn't cast shadows
-                  castShadow={!mats[part]!.transparent && !geo.noShadow?.includes(part)}
+                  castShadow={casts(geo, mats, part)}
                   receiveShadow
                 />
               ),

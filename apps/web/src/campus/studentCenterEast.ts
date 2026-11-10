@@ -344,6 +344,12 @@ export function studentCenterEastGeometry(b: StudentCenterData) {
   cap('coping', c[1], c[2], piedmont.out, H)
   cap('coping', c[2], c[3], toE, H)
   const main = [N, E, S, W]
+  // the roofs have an underside: a roof faces the sun, it never casts (the shadows are drawn
+  // from what faces away), and the sun came in through it and out the lobby's glass
+  const roof = (c: Point[], y: number) => {
+    add('roof', flat(c, y))
+    add('soffit', flat(c, y - 0.05, false))
+  }
   const a = (p: Point) => piedmont.aOf(p)
   const middle = clip(
     clip(main, (p) => a(p) - b0),
@@ -354,13 +360,10 @@ export function studentCenterEastGeometry(b: StudentCenterData) {
     clip(main, (p) => a(p) - b1),
     clip(middle, (p) => -bd - piedmont.dOf(p)),
   ])
-    add('roof', flat(r, H - 0.02))
-  add(
-    'roof',
-    flat(
-      clip(middle, (p) => piedmont.dOf(p) + bd),
-      BALLROOM_TOP - 0.02,
-    ),
+    roof(r, H - 0.02)
+  roof(
+    clip(middle, (p) => piedmont.dOf(p) + bd),
+    BALLROOM_TOP - 0.02,
   )
   // rooftop units where the satellite has them, [a, d, width, depth, height] off piedmont
   const unit = ([ua, ud, w, d, h]: readonly number[], y: number) =>
@@ -649,7 +652,7 @@ export function studentCenterEastGeometry(b: StudentCenterData) {
       if (len < 0.05 || (onCut(p) && onCut(q)) || (onLobby(p) && onLobby(q))) continue
       cap('coping', p, q, out, WING)
     }
-    add('roof', flat(wing, WING - 0.02))
+    roof(wing, WING - 0.02)
     for (const [x, z, w] of [
       [14.4, 137.5, 0.8],
       [12.9, 141.6, 1.2],
@@ -770,6 +773,13 @@ export function studentCenterEastGeometry(b: StudentCenterData) {
       }
     }
     add('roof', flat(lobby, LOBBY - 0.02))
+    // its ceiling, and its back wall over the inside's ceiling where it's open to the rest of
+    // the building: a low sun came in through the roof (a roof faces the sun, it doesn't
+    // cast) and on the far side, through the empty floors, and out the top of the glass
+    for (const { p, q, out } of edges(lobby))
+      if (!outline.some((k) => same(k, p)) || !outline.some((k) => same(k, q)))
+        add('white', wallQuad(p, q, CEILING, LOBBY - 0.05, { x: -out.x, z: -out.z }))
+    add('soffit', flat(lobby, LOBBY - 0.07, false))
   }
 
   insideWalls()

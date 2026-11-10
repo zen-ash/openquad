@@ -1,11 +1,12 @@
 import * as THREE from 'three'
 import type { Point, Segment } from '../game/collision'
-import { DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
+import { CEILING, DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
 import type { Sign } from './landmarks'
 import {
   circle,
   flat,
   glassQuad,
+  inset,
   insideWalls,
   parts as collect,
   solidPieces,
@@ -181,7 +182,7 @@ const leanRoof = (u: number) => LEAN.eave + (u - LEAN.u[0]) * 0.56
 const blockRoof = (u: number) => BLOCK.eave + (u - LEAN.u[0]) * ((BLOCK.top - BLOCK.eave) / 7.5)
 
 export function recCenterGeometry(b: RecData) {
-  const { add, inside, merged } = collect<Part>()
+  const { add, core, inside, merged } = collect<Part>()
   const signs: Sign[] = []
   const { A, uvOf, D } = recFrame(b)
   const outline = b.points.map(([x, z]) => ({ x: x!, z: z! }))
@@ -1063,6 +1064,21 @@ export function recCenterGeometry(b: RecData) {
     color: ink,
     weight: 600,
   })
+
+  // blocks just inside the walls up to each roof: it's empty inside and a low sun came in the
+  // glass on one side and out the other's (landmark.ts core). the main box's floors go out
+  // over the colonnade from its soffit up, to under the dark slope up to the roof
+  const coreOf = (c: [number, number][], y0: number, y1: number) => {
+    const at = c.map(([u, v]) => A(u, v))
+    core('white', inset(at, 0.3), y0, y1)
+  }
+  coreOf(rect(...MAIN.u, FACE.v, MAIN.back), FACE.soffit + 0.1, FACE.top - 0.1)
+  coreOf(rect(...MAIN.u, SLOPE[1], MAIN.back), FACE.top - 0.5, MAIN.roof - 0.1)
+  coreOf(rect(...MAIN.u, SHOP, MAIN.back), CEILING, FACE.soffit + 0.3)
+  coreOf(rect(...ATRIUM.u, ...ATRIUM.v), CEILING, VALLEY - 0.1)
+  coreOf(rect(COURT, WING.u[1], ...WING.v), WING.under + 0.1, WING_TOP - 0.1)
+  coreOf(GYM, CEILING, GYM_TOP - 0.1)
+  coreOf(rect(...SW_WING.u, ...SW_WING.v), CEILING, SW_WING.top - 0.1)
 
   // inside the ground floor: glass where the storefronts are (the colonnade, the notch, under
   // the wing), the pool's glass wall and the wing's glass end. by the outline's corner numbers

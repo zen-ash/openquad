@@ -2,7 +2,15 @@ import * as THREE from 'three'
 import type { Point, Segment } from '../game/collision'
 import { CEILING, DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
 import type { Sign } from './landmarks'
-import { edges, glassQuad, parts as collect, solidPieces, wallQuad, type Hole } from './landmark'
+import {
+  edges,
+  glassQuad,
+  inset,
+  parts as collect,
+  solidPieces,
+  wallQuad,
+  type Hole,
+} from './landmark'
 
 // the science annex (29 peachtree center ave): chemistry, biology and physics labs over a gsu
 // parking level ("i lot"). light grey precast with two rows of punched windows and a ribbon
@@ -173,7 +181,7 @@ export function annexFrame(b: AnnexData) {
 }
 
 export function scienceAnnexGeometry(b: AnnexData) {
-  const { add, inside, merged } = collect<Part>()
+  const { add, core, inside, merged } = collect<Part>()
   const signs: Sign[] = []
   const { A, avOf, D } = annexFrame(b)
   const outline = b.points.map(([x, z]) => ({ x: x!, z: z! }))
@@ -791,6 +799,20 @@ export function scienceAnnexGeometry(b: AnnexData) {
     ),
     [0, 0, 1],
   )
+
+  // a block behind the walls up to the roof (the slot's windows are 0.6m in): a low sun came
+  // in the windows and out the back, where the garage stands against it (landmark.ts core).
+  // and on up under the north end's higher roof
+  core('precast', inset(outline, 0.8), CEILING, ROOF - 0.1)
+  const head = [
+    [WING.back, w0],
+    [WING.back, w1],
+    [WING.garage, garageAt(WING.garage)],
+    [HEAD.a, garageAt(HEAD.a)],
+    [HEAD.a, HEAD.v],
+    [WING.back, HEAD.v],
+  ].map(([a, v]) => A(a!, v!))
+  core('precast', inset(head, 0.3), ROOF - 0.5, WING_TOP - 0.2)
 
   // inside the ground floor: walls round the outline with the doorway, glass where the
   // front's windows are. against the shops, the natural science center and the garage

@@ -1,9 +1,10 @@
 import * as THREE from 'three'
 import type { Point, Segment } from '../game/collision'
-import { DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
+import { CEILING, DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
 import type { Sign } from './landmarks'
 import {
   glassQuad,
+  inset,
   insideWalls,
   parts as collect,
   solidPieces,
@@ -245,7 +246,7 @@ export function nscFrame(b: NscData) {
 }
 
 export function naturalScienceGeometry(b: NscData) {
-  const { add, inside, merged } = collect<Part>()
+  const { add, core, inside, merged } = collect<Part>()
   const signs: Sign[] = []
   const { A, uvOf, D } = nscFrame(b)
   const outline = b.points.map(([x, z]) => ({ x: x!, z: z! }))
@@ -652,12 +653,17 @@ export function naturalScienceGeometry(b: NscData) {
   ] as const)
     fu('metal', EAST + 0.01, a, z, COPING - CAP, COPING, 1)
 
+  // a block behind the brick, up to the roof: a low sun came in the ribbon windows on one side
+  // and out the other, and out the east wall's bottom, where the shops' and the annex's walls
+  // are (landmark.ts core). the east wall's ribbons are 0.35m in from the outline
+  core('precast', inset(outline, 0.6), CEILING, ROOF - 0.1)
+
   // the top floor, set back: plain precast
   fv('precast', -190.2, WEST, -195.8, ROOF, TOP, -1)
   fu('precast', -195.8, -190.2, -180.5, ROOF, TOP, 1)
   fv('precast', -180.5, -195.8, -183.5, ROOF, TOP, -1)
   fu('precast', -183.5, -180.5, -154, ROOF, TOP, 1)
-  fv('precast', -154, -183.5, WEST, ROOF, TOP, 1)
+  fv('precast', -154, WEST, -183.5, ROOF, TOP, 1)
   polygon('precast', ring(UPPER, TOP), [0, 0, 1], [], wide)
 
   // the roof's fans and units, and the stacks with their hoods

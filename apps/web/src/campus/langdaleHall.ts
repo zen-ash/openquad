@@ -6,6 +6,7 @@ import {
   flat,
   frame,
   glassQuad,
+  inset,
   parts as collect,
   pt,
   solidPieces,
@@ -200,7 +201,7 @@ export function langdaleWalls(b: LangdaleData) {
 }
 
 export function langdaleHallGeometry(b: LangdaleData) {
-  const { add, prism, inside, merged } = collect<Part>()
+  const { add, prism, core, inside, merged } = collect<Part>()
   const H = b.height
   const outline = b.points.map(pt)
   const signs: Sign[] = []
@@ -730,6 +731,11 @@ export function langdaleHallGeometry(b: LangdaleData) {
       return { x: c1.x + l1.dir.x * s, z: c1.z + l1.dir.z * s }
     })
     add('precast', flat(roof, ROOF))
+    // what keeps a low sun from shining in one window and out another (landmark.ts core):
+    // a block behind the deepest glass, and an underside to the roof (it faces the sun, it
+    // never casts)
+    add('precast', flat(roof, ROOF - 0.05, false))
+    core('precast', inset(outline, 0.6), CEILING, ROOF - 0.1)
     // a long penthouse in the same dark brick, a metal duct and a small box beside it (2018
     // photo from the south, the satellite)
     const box = (a0: number, a1: number, d0: number, d1: number) => [

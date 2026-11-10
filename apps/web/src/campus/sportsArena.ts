@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import type { Point, Segment } from '../game/collision'
-import { DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
+import { CEILING, DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
 import { baseOf, liftOf, lowestUnder } from '../game/surface'
 import { heightAt } from '../game/terrain'
 import type { Sign } from './landmarks'
@@ -9,6 +9,7 @@ import {
   edges,
   flat,
   glassQuad,
+  inset,
   insideWalls,
   parts as collect,
   sink,
@@ -204,7 +205,7 @@ export function signJoints(from: number, to: number) {
 }
 
 export function sportsArenaGeometry(b: ArenaData) {
-  const { add, prism, inside, merged } = collect<Part>()
+  const { add, prism, core, inside, merged } = collect<Part>()
   const signs: Sign[] = []
   const { A, uvOf, D } = arenaFrame(b)
   const outline = b.points.map(([x, z]) => ({ x: x!, z: z! }))
@@ -1021,6 +1022,29 @@ export function sportsArenaGeometry(b: ArenaData) {
       prism('metal', circle(c, 0.03, 4), rim, rim + 0.53, false)
     }
   }
+
+  // a block in the hall, behind the dark recess on courtland st, up to its roof: the arena's
+  // empty and a low sun came in one side and out the recess, the glass or the practice
+  // facility's side (landmark.ts core). and in front of it: behind the lobby's glass up to the
+  // roof there, and in the front towers
+  const coreOf = (c: [number, number][], d: number, top: number) => {
+    const at = c.map(([u, v]) => A(u, v))
+    core('precast', inset(at, d), lift + CEILING, top)
+  }
+  coreOf(rect(HALL.nw, HALL.se, HALL.ne, HALL.sw), 0.8, HALL.roof - 0.1)
+  const front: [number, number][] = [
+    [99, TOWERS.n.v[1]],
+    [SIGN_WALL.u[0], TOWERS.n.v[1]],
+    [SIGN_WALL.u[0], SIGN_WALL.back],
+    [SIGN_WALL.u[1], SIGN_WALL.back],
+    [SIGN_WALL.u[1], TOWERS.e.v[1]],
+    [146.5, TOWERS.e.v[1]],
+    [146.5, END.ne],
+    [99, END.ne],
+  ]
+  coreOf(front, 0.3, HALL.roof - 0.1)
+  for (const t of [TOWERS.n, TOWERS.e])
+    coreOf(rect(t.u[0], t.u[1], t.v[0], t.v[1]), 0.5, TOWER - 0.1)
 
   // inside the ground floor: the pavilion and the doors are glass. along the party wall
   // they're moved in a bit, the practice facility's walls are on the same line

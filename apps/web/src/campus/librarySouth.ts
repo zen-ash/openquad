@@ -5,10 +5,12 @@ import { classroomWalls } from './classroomSouth'
 import type { Sign } from './landmarks'
 import {
   circle,
+  clip,
   edges,
   flat,
   frame,
   glassQuad,
+  inset,
   parts as collect,
   pt,
   solidPieces,
@@ -189,7 +191,7 @@ const wallOf = (p: Point, q: Point, o: Point): Wall => {
 }
 
 export function librarySouthGeometry(b: LibrarySouthData) {
-  const { add, block, inside, merged } = collect<Part>()
+  const { add, block, core, inside, merged } = collect<Part>()
   const H = b.height
   const top = H - COPING
   const roof = H - 1
@@ -457,6 +459,12 @@ export function librarySouthGeometry(b: LibrarySouthData) {
     face('clear', w, e0, e1, DECK[1], SOFFIT, back)
     // a dim room behind it, or you'd see into the empty building
     lobby(w, e0, e1, DECK[1], SOFFIT - 0.4, back, back - 4)
+    // the soffit goes on in over it: the sun came down the empty building and out the top of
+    // the glass
+    add(
+      'dark',
+      flat([w.at(e0, back), w.at(e1, back), w.at(e1, back - 4), w.at(e0, back - 4)], SOFFIT, false),
+    )
     for (const u of [e0 + 1.6, e0 + 3.4, e0 + 5.2, e0 + 7.3, e1 - 1.5])
       lump('dark', w, u - 0.04, u + 0.04, DECK[1], SOFFIT, back + 0.07, back)
     for (const y of [DECK[1] + 2.1, DECK[1] + 2.9])
@@ -529,6 +537,23 @@ export function librarySouthGeometry(b: LibrarySouthData) {
   add('pavers', flat(outline, roof))
   block('metal', f, -19, -9, -22, -28, roof, roof + 2.5)
   block('metal', f, -3, 8, -6.5, -17, roof, roof + 3)
+
+  // a block behind the brick (landmark.ts core), so a low sun doesn't come in one slot window
+  // and out another. a meter in, behind the deep windows on courtland st, and under the
+  // soffit it keeps out of the plaza entrance's dim room
+  {
+    const p = plaza!
+    const uOf = (x: Point) => (x.x - p.p.x) * p.dir.x + (x.z - p.p.z) * p.dir.z
+    const dOf = (x: Point) => (x.x - p.p.x) * p.o.x + (x.z - p.p.z) * p.o.z
+    const [e0, e1] = ENTRY
+    core('brick', inset(outline, 1), SOFFIT + 0.2, roof - 0.1)
+    for (const side of [
+      (x: Point) => e0 - 0.3 - uOf(x),
+      (x: Point) => uOf(x) - e1 - 0.3,
+      (x: Point) => RECESS - ENTRY_DEPTH - 4.3 - dOf(x),
+    ])
+      core('brick', inset(clip(outline, side), 1), CEILING, SOFFIT + 0.4)
+  }
 
   // the plaza deck: from classroom south's end to the link, out to the curb, on round
   // columns along it (gsu 2018) and a leaning one by the link (mapillary 2019). its floor
@@ -628,6 +653,8 @@ export function librarySouthGeometry(b: LibrarySouthData) {
     lump('dark', w, -0.2, w.len + 0.2, CORNER_TOP - 0.3, CORNER_TOP, 0.28)
   }
   add('pavers', flat(corner, CORNER_TOP - 0.05))
+  // and its block for the shadows, behind the dim room behind the box's glass
+  core('cream', inset(corner, 1.6), 0, CORNER_TOP - 0.1)
 
   // the inside of the street floor walls: glass where the doors and the wide windows are
   const glassAt: { side: Side; hole: Hole }[] = [

@@ -7,6 +7,7 @@ import {
   flat,
   frame,
   glassQuad,
+  inset,
   parts as collect,
   pt,
   solidPieces,
@@ -155,7 +156,7 @@ export function classroomWalls(outline: Point[]) {
 }
 
 export function classroomSouthGeometry(b: ClassroomSouthData) {
-  const { add, inside, merged } = collect<Part>()
+  const { add, core, inside, merged } = collect<Part>()
   const H = b.height
   // the roof behind the parapet
   const roof = H - 0.6
@@ -482,6 +483,14 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
     lump('cream', w, CREAM[0], CREAM[1], CREAM_BOTTOM, LOBBY, 0.3, 0.02)
     // the tan box, round the corner onto central ave
     lump('tan', w, TAN[0], TAN[1] + 0.45, TAN_BOTTOM, LOBBY, 0.45, 0.02)
+    // their backs, a bit into the lobby (the sun came in their tops and out the glass)
+    for (const [part, [u0, u1], bottom] of [
+      ['cream', CREAM, CREAM_BOTTOM],
+      ['tan', [TAN[0], TAN[1] + 0.45], TAN_BOTTOM],
+    ] as const) {
+      const behind = wallOf(w.at(u1), w.at(u0), flip(w.o))
+      face(part, behind, 0, behind.len, bottom, LOBBY, 0.4)
+    }
     const aside = wallOf(w.at(TAN[1] + 0.45, 0.45), w.at(TAN[1] + 0.45, -3), flip(f.along))
     lump('tan', aside, 0, aside.len, TAN_BOTTOM, LOBBY, 0.45, 0)
     // the blue stripe down the cream box, and the logo up top (a plain blue square)
@@ -553,20 +562,24 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
   face('cream', notch, 0, notch.len, STAIR, LOBBY)
   const boxSide = wallOf(f.at(-2.9, -9.35), f.at(-2.9, STAIR_BACK), f.along)
   face('cream', boxSide, 0, boxSide.len, STAIR, LOBBY)
+  // and their insides, for the shadows: the lobby is open behind them
+  for (const w of [notch, boxSide]) {
+    const back = wallOf(w.at(w.len), w.p, flip(w.o))
+    face('cream', back, 0, back.len, STAIR, LOBBY, 0.02)
+  }
   // its back over the lower block, and the side of the deeper part
   over(f.at(DEEP[0], DEEP[1]), f.at(32.3, DEEP[1]), back, REAR - 0.6, false)
   over(f.at(DEEP[0], -27.7), f.at(DEEP[0], DEEP[1]), left, REAR - 0.6, false)
 
-  // the roofs, clipped out of osm's outline
+  // the roofs, clipped out of osm's outline. with an underside: a roof faces the sun, it
+  // doesn't cast (the shadows are drawn from what faces away), and the sun came in through it
+  // and out the glass under it
   const [aOf, dOf] = [(p: Point) => f.aOf(p), (p: Point) => f.dOf(p)]
-  const roofAt = (y: number, ...sides: ((p: Point) => number)[]) =>
-    add(
-      'tan',
-      flat(
-        sides.reduce((acc, side) => clip(acc, side), outline),
-        y,
-      ),
-    )
+  const roofAt = (y: number, ...sides: ((p: Point) => number)[]) => {
+    const c = sides.reduce((acc, side) => clip(acc, side), outline)
+    add('tan', flat(c, y))
+    add('tan', flat(c, y - 0.05, false))
+  }
   roofAt(
     roof,
     (p) => aOf(p) + 0.3,
@@ -602,6 +615,41 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
     (p) => -0.3 - aOf(p),
     (p) => dOf(p) - STAIR_BACK,
   )
+  // the hidden blocks that keep a low sun from shining through (landmark.ts core), just
+  // inside the walls (everything on them stands out in front of the outline): the slab and the lower block up to the lower roof, then the slab on up
+  // to its own. none in the lobby, that's glass you see into: the slab's end is marble there,
+  // like over the glass stair
+  const coreAt = (y0: number, y1: number, ...sides: ((p: Point) => number)[]) =>
+    core(
+      'marble',
+      inset(
+        sides.reduce((acc, side) => clip(acc, side), outline),
+        0.4,
+      ),
+      y0,
+      y1,
+    )
+  coreAt(CEILING, REAR - 0.7, (p) => aOf(p) + 0.3)
+  coreAt(
+    REAR - 1.5,
+    roof - 0.1,
+    (p) => aOf(p) + 0.3,
+    (p) => dOf(p) - BACK,
+  )
+  coreAt(
+    REAR - 1.5,
+    roof - 0.1,
+    (p) => aOf(p) - DEEP[0],
+    (p) => dOf(p) - DEEP[1],
+  )
+
+  // and the slab's end, where the lobby is open to it: up to the roof behind the glass stair,
+  // up to the marble over it in front of that
+  const slabEnd = wallOf(f.at(-0.3, BACK), f.at(-0.3, LOBBY_FRONT), left)
+  const stairAt = STAIR_BACK - BACK
+  face('marble', slabEnd, 0, stairAt, CEILING, roof)
+  face('marble', slabEnd, stairAt, slabEnd.len, CEILING, STAIR)
+
   // a stair house and a few units on the roof (satellite)
   const box = (a0: number, a1: number, d0: number, d1: number, h: number, part: Part) => {
     const w = wallOf(f.at(a0, d0), f.at(a1, d0), f.out)
@@ -622,7 +670,26 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
         Math.abs((p.x - e.p.x) * e.out.x + (p.z - e.p.z) * e.out.z) < 0.3
       )
     })
-  const wingWalls = classroomWalls(wing).filter((w) => !touching(w.at(w.len / 2)))
+  // osm has the wing's end on decatur street running on along the lobby in a line, and that
+  // came out as one wall, against the lobby in the middle: it was left out and the end had a
+  // hole in it. keep the bits of each wall that aren't against classroom south
+  const wingWalls = classroomWalls(wing).flatMap((w) => {
+    const steps = Math.ceil(w.len / 0.25)
+    const free = Array.from(
+      { length: steps },
+      (_, k) => !touching(w.at(((k + 0.5) * w.len) / steps)),
+    )
+    const runs: Wall[] = []
+    for (let k = 0; k < steps; k++) {
+      if (!free[k] || (k > 0 && free[k - 1])) continue
+      let e = k
+      while (e + 1 < steps && free[e + 1]) e++
+      const [u0, u1] = [(k * w.len) / steps, ((e + 1) * w.len) / steps]
+      if (u1 - u0 > 0.5)
+        runs.push(u0 < 0.01 && u1 > w.len - 0.01 ? w : wallOf(w.at(u0), w.at(u1), w.o))
+    }
+    return runs
+  })
   // the longest one is central ave, the one facing decatur street is its end
   const avenue = wingWalls.reduce((m, w) => (w.len > m.len ? w : m))
   for (const w of wingWalls) {
@@ -652,6 +719,25 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
     parapet(w, 0, w.len, WING_TOP - 0.6, WING_TOP, 0)
   }
   add('tan', flat(wing, WING_TOP - 0.6))
+  // its hidden block (no inside, so down to the ground), kept 3m clear of the glass stair and
+  // the glass corner. the roof over those gets an underside instead
+  {
+    const s = (p: Point) => (p.x - avenue.p.x) * avenue.dir.x + (p.z - avenue.p.z) * avenue.dir.z
+    const n = (p: Point) => -(p.x - avenue.p.x) * avenue.o.x - (p.z - avenue.p.z) * avenue.o.z
+    // the bit of the wing from s0 to s1 along central ave, more than n0 in from it
+    const piece = (s0: number, s1: number, n0 = -1e3) =>
+      [(p: Point) => s(p) - s0, (p: Point) => s1 - s(p), (p: Point) => n(p) - n0].reduce(
+        (acc, side) => clip(acc, side),
+        wing,
+      )
+    const corner = WING_CORNER + 3
+    const [s0, s1] = [avenue.len - WING_STAIR[1] - 3, avenue.len - WING_STAIR[0] + 3]
+    const pieces = [piece(corner, s0), piece(-1e3, corner + 1, corner), piece(s1, 1e3)]
+    for (const c of [...pieces, piece(s0 - 1, s1 + 1, 4)])
+      core('tan', inset(c, 0.4), 0, WING_TOP - 0.7)
+    for (const c of [piece(-1e3, corner + 1.5), piece(s0 - 1.5, s1 + 1.5)])
+      add('tan', flat(c, WING_TOP - 0.65, false))
+  }
 
   /**
    * Bands of panels, light, grey and tan, each piece 5-11m long. the same "random"

@@ -1,10 +1,11 @@
 import * as THREE from 'three'
 import type { Point, Segment } from '../game/collision'
-import { DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
+import { CEILING, DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
 import type { Sign } from './landmarks'
 import {
   flat,
   glassQuad,
+  inset,
   insideWalls,
   parts as collect,
   solidPieces,
@@ -149,7 +150,7 @@ function withPane(geo: THREE.BufferGeometry, w: number, h: number) {
 }
 
 export function courtlandNorthGeometry(b: CourtlandNorthData) {
-  const { add, prism, inside, merged } = collect<Part>()
+  const { add, prism, core, inside, merged } = collect<Part>()
   const signs: Sign[] = []
   const { A, uvOf, D } = courtlandFrame(b)
   const outline = b.points.map(([x, z]) => ({ x: x!, z: z! }))
@@ -533,6 +534,10 @@ export function courtlandNorthGeometry(b: CourtlandNorthData) {
     }
     box('concrete', [pu, pb], [v0, v1], [0, VIADUCT.top], 'UvVt')
   }
+
+  // a block just inside the walls up to the roof: it's empty inside and a low sun came in the
+  // windows on one side and out the other's (landmark.ts core)
+  core('cream', inset(outline, 0.3), CEILING, ROOF - 0.1)
 
   // inside the ground floor: walls round the outline. the arena's walls are 5cm behind the
   // back one

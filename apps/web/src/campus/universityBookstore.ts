@@ -8,6 +8,7 @@ import {
   flat,
   frame,
   glassQuad,
+  inset,
   insideWalls,
   parts as collect,
   pt,
@@ -224,7 +225,7 @@ export function bookstoreCorners(b: UniversityBookstoreData) {
 }
 
 export function universityBookstoreGeometry(b: UniversityBookstoreData) {
-  const { add, prism, inside, merged } = collect<Part>()
+  const { add, prism, core, inside, merged } = collect<Part>()
   const signs: Sign[] = []
   const c = bookstoreCorners(b)
   const { outline, f, run } = c
@@ -820,6 +821,11 @@ export function universityBookstoreGeometry(b: UniversityBookstoreData) {
     sc.map((p) => v3(p, screenTop)),
     UP,
   )
+
+  // a block just inside the walls up to the roof: it's empty inside, and a low sun came in the
+  // windows and out the glass, or under student center west's roof where the party wall
+  // stops (landmark.ts core)
+  core('stucco', inset(outline, 0.4), CEILING, ROOF - 0.1)
 
   // inside the ground floor: the notch's back wall is the glass one. along the party wall
   // they're moved in a bit, student center west's marble faces this way on the same line
