@@ -296,6 +296,8 @@ const ROOFS: Record<string, number> = {
   'K Deck': 0.04,
   'S Deck': 0.05,
   'M Deck': 0.05,
+  // t's roof was about two thirds full on the feb 2026 image
+  'T Deck': 0.65,
 }
 
 function deckCars(rand: () => number) {
@@ -357,6 +359,41 @@ function deckCars(rand: () => number) {
           ] as const)
             row(P(a, w0), P(a, w1), inward(s), onFloor(e), full, rand, out)
         }
+    } else if (d.style === 'spandrel') {
+      // along the sides on every floor (what you see through the openings), and the rows
+      // across the roof from the satellite. t is drawn from its outline, so game coords here
+      const [first, step, count] = d.floors
+      const sides = b.points.map(([x, z]) => ({ x: x!, z: z! }))
+      for (let i = 2; i <= count; i++) {
+        const full = levelFull(i - 1, count - 1, roof)
+        const y = onFloor(first + (i - 1) * step)
+        sides.forEach((p, k) => {
+          const q = sides[(k + 1) % sides.length]!
+          const len = Math.hypot(q.x - p.x, q.z - p.z)
+          if (len < 14) return
+          const u = { x: (q.x - p.x) / len, z: (q.z - p.z) / len }
+          let n = { x: u.z, z: -u.x }
+          if (!pointInPolygon({ x: (p.x + q.x) / 2 + n.x, z: (p.z + q.z) / 2 + n.z }, sides))
+            n = { x: -n.x, z: -n.z }
+          // none along the sides you can't see: the bell building's and 58 edgewood's
+          if (n.x > 0.7 || (n.z < -0.7 && (p.x + q.x) / 2 < -138)) return
+          const at = (s: number) => ({ x: p.x + u.x * s + n.x * 0.5, z: p.z + u.z * s + n.z * 0.5 })
+          row(at(4), at(len - 4), n, y, full, rand, out)
+        })
+        if (i < count) continue
+        for (const [x0, z0, x1, z1] of d.rows) {
+          const len = Math.hypot(x1! - x0!, z1! - z0!)
+          const n = { x: (z1! - z0!) / len, z: -(x1! - x0!) / len }
+          for (const s of [1, -1]) {
+            const o = { x: n.x * s * 0.3, z: n.z * s * 0.3 }
+            const line = [
+              { x: x0! + o.x, z: z0! + o.z },
+              { x: x1! + o.x, z: z1! + o.z },
+            ] as const
+            row(line[0], line[1], { x: n.x * s, z: n.z * s }, y, full, rand, out)
+          }
+        }
+      }
     }
   }
   return out

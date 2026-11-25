@@ -1,4 +1,4 @@
-# Parking decks (G, M, N, K, S): references
+# Parking decks (G, M, N, K, S, T): references
 
 What I built GSU's five parking decks inside the fence from: G Deck (121 Collins St), M Deck (33
 Auditorium Pl) and the N, K and S decks of the "99 Gilmer St" complex. They don't share a look,
@@ -11,6 +11,9 @@ floors, ramps, towers, ways in, signs):
   diamond at every floor, open between them, glass stair towers with white mullions.
 - **band** (G): exposed aggregate precast in deep two step bands, dark bronze framed screens in
   the openings, so it looks more like an office building than a deck.
+- **spandrel** (T, outside the fence): cream precast spandrel panels a bay long in front of the
+  columns, cable rails, a street floor of shops. Drawn from its outline (an L with a curved
+  corner), not a box.
 
 Everything here is reference only: no photos are in the repo, the measurements are my own.
 Photos I downloaded are kept outside the repo.
@@ -184,6 +187,63 @@ the game's terrain went down from Central Ave to 312.5m at g.
 - **Roof**: six poles with box lanterns along Jesse Hill Jr Dr (fitted photo), x braces across
   the south east half.
 
+## T Deck (84)
+
+43 Auburn Ave (GSU's map), the block between Auburn Ave, Peachtree Center Ave and Edgewood Ave,
+wrapped round 58 Edgewood. Outside the fence, seen from Edgewood Ave and Hurt Park. Note the
+street on its east side is Peachtree Center Ave, not Courtland St.
+
+Sources (reference only, downloads outside the repo):
+
+- GSU's Concept3D pin 700820: "T Deck entrance is located at 43 Auburn Avenue", three GSU photos
+  (exif Oct/Nov 2018): the Auburn Ave way in (cream spandrels between columns, three cable
+  rails, blue grey glazed tile on the street floor, the arched way in "6'8" CLEARANCE", a blue
+  blade sign, the round tiled stair at the west end), the roof (level "8" on the elevator
+  lobby, floodlight poles) and the round top of the helix on columns.
+- Mapillary (CC BY-SA): deirdreedsign 2019-12-16 15:53 at Edgewood and Peachtree Center Ave
+  (the glass stair, the curve, the brick street floor with shops and GSU's blue band),
+  SydneyIStroud 2022-09-07/13 (Edgewood street floor: post office and PawPrints, the way out;
+  Auburn Ave from the A Deck side: spandrel panels in front of the columns, roll shutters),
+  networklanman 2021-01-19 (Auburn and Peachtree Center Ave, dashcam). Nothing newer than 2022
+  on Mapillary; the roof on Esri's newest image is the same as the 2018 lidar.
+- USGS lidar 2018 for everything measured.
+
+Measurements:
+
+- **Outline**: lidar. North face 146.2 m north of hurt park west of x -111, 143.7 east of it
+  (osm had one straight line); east face -78.1; the curve at Edgewood and Peachtree Center Ave
+  from the lidar edge every 4m (osm's chamfer was close); south -43.6. The corner by 58
+  Edgewood is osm's (58 Edgewood's east part has a dark roof at 338.2, 0.7m under the deck's,
+  and a 2m gap). The stair core at the Auburn Ave west end stands 5.4m past osm's outline, next
+  to the Bell Building: a notch in the outline now.
+- **Floors**: roof (level 8) 338.9, parapet 340.1, level 1 at the Auburn Ave way in 317.3
+  (the datum), so 3.09m floors. Edgewood Ave (311-312.3) and Peachtree Center Ave (312.7-314.8)
+  are lower: the street floor wall goes up to the first spandrel that clears the sidewalk by
+  2.3m (level 1 on Edgewood, level 2 on Auburn and Peachtree Center Ave).
+- **Bays**: 5.8m (GSU's Auburn photo, the arch spans two). Spandrels 1.15m, openings 1.94m.
+- **Light well**: x -112..-101.5, z -125..-85, down to level 1 (lidar 317.6). The strip east
+  of it ramps down 2.5m going south on the roof (not drawn).
+- **Helix top**: a disc r 10.2 round (-122, -107.5), its parapet at 342.1, on six columns.
+- **Towers**: elevator lobby at Auburn and Peachtree Center Ave (top 344.4, glass to both
+  streets), the glass stair octagon at Edgewood Ave where the curve starts (344.8, its core to
+  347.2), the elevator by the Bell Building (347.4) with the round glazed tile stair (r 2.2,
+  342.3) in front of it on Auburn Ave.
+- Parked cars: rows along the sides on every floor, three double rows on the roof (about two
+  thirds full on the satellite).
+
+## What still differs from the photos (T)
+
+- The arched head of the Auburn Ave way in is a flat opening; the spandrels are flat, the real
+  ones bulge a little. The Auburn street floor is all tile (the 2022 photo has grey roll
+  shutters further east).
+- Floor heights on Auburn Ave come out ~1m lower than GSU's photo suggests (that camera isn't
+  properly fitted; the roof is right from the lidar).
+- The precast around the glass stair is a solid wall with reveals for real, here the deck's
+  spandrels run up to the tower. No storefront below the stair's glass.
+- No ramps inside (flat floors), no ramp on the roof's east strip, no floodlight poles or
+  canopy on the roof. Lights under the floors are white leds but only glow at night.
+- Colors: the cream is between GSU's whiter 2018 photo and Mapillary's tan.
+
 ## What still differs from the photos
 
 - **G's toll plaza**: no parking stalls painted (the cars come from elsewhere), no cones,
@@ -217,3 +277,9 @@ S 6.8k, M 4.7k, G 8.4k (3.9k before the toll plaza: its walls, shrubs and dressi
 the shrubs 2.1k of them), plus 37 signs on g (the toll plaza's bars, signs, lightbox and gate
 arms are 26 plates). The chain link is a see through material (two faces, out and in), not
 geometry. No new shaders: every new part is a library family already built.
+
+T: measured after the merge. 0 new shaders (precast, brick, glass, concrete, clearGlass and
+metal families, numbers in userData). 9 parts: cream, brick, tile, glass, slab, floor, soffit,
+lamp, dark (the cable rails); glass, lamp and dark cast no shadows. Triangles: 12.5k (cream
+6.8k, most of it the spandrel panels; the lamps 2.0k, the cable rails 1.7k), 10 signs, about
+230 parked cars (rows along the street sides on every floor and on the roof).

@@ -2310,6 +2310,48 @@ const PARKING_DECKS = {
     // the entrance on the south west end under "Enter"
     door: { at: [26, 0], out: [0, -1] },
   },
+  'T Deck': {
+    // lidar: osm's has the north side 2.5m short west of the step at x -111 and leaves out the
+    // stair core at the auburn ave end (a round tiled stair and the elevator) by the bell
+    // building. the curve at edgewood and peachtree center ave from the lidar too, the corner by
+    // 58 edgewood is osm's
+    outline: [
+      [-164.4, -88.3],
+      [-164.4, -133.5],
+      [-169.8, -133.5],
+      [-169.8, -147.2],
+      [-164.4, -147.2],
+      [-164.4, -146.2],
+      [-111, -146.2],
+      [-111, -143.7],
+      [-78.1, -143.7],
+      [-78.1, -104],
+      [-78.9, -96],
+      [-79.3, -86],
+      [-80.1, -80],
+      [-81.5, -76],
+      [-82.7, -72],
+      [-84.4, -68],
+      [-86.6, -64],
+      [-88.9, -60],
+      [-91.7, -56],
+      [-94.9, -52],
+      [-97.9, -48],
+      [-101, -43.6],
+      [-139.1, -43.6],
+      [-138.7, -88.3],
+    ],
+    body: [
+      [-164.4, -43.6],
+      [-78.1, -43.6],
+      [-78.1, -146.2],
+      [-164.4, -146.2],
+    ],
+    // the elevator's top (347.4m) over level 1 at the auburn ave entrance (317.3)
+    height: 30.1,
+    // the people door next to the way in on auburn ave (gsu's 2018 photo)
+    door: { at: [15.2, 102.6], out: [0, 1] },
+  },
 }
 
 function parkingDeck(b) {

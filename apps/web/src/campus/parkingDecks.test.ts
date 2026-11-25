@@ -107,3 +107,61 @@ describe('parking decks', () => {
     }
   })
 })
+
+describe('t deck', () => {
+  const t = deck('T Deck')
+  const pts = (b: { points: number[][] }) => b.points.map(([x, z]) => ({ x: x!, z: z! }))
+  const geo = parkingDeckGeometry(t)
+
+  it('keeps its place in the list and stands on level 1 at auburn ave', () => {
+    expect(campus.buildings.findIndex((b) => b.name === 'T Deck')).toBe(84)
+    expect(floorOf(t) + ORIGIN).toBeCloseTo(317.3, 2)
+  })
+
+  it('has its roof at the lidar height, the helix top 3m over it', () => {
+    const pos = geo.parts.slab!.getAttribute('position')
+    const heights = new Set<number>()
+    for (let i = 0; i < pos.count; i++)
+      heights.add(Math.round((pos.getY(i) + floorOf(t) + ORIGIN) * 10) / 10)
+    expect([...heights].sort()).toEqual([338.9, 341.2])
+  })
+
+  it('is drawn inside its own outline, none of it in 58 edgewood', () => {
+    const outline = pts(t)
+    const next = pts(campus.buildings.find((b) => b.name === '58 Edgewood')!)
+    const near = (p: { x: number; z: number }) =>
+      outline.some((a, i) => {
+        const b = outline[(i + 1) % outline.length]!
+        const [dx, dz] = [b.x - a.x, b.z - a.z]
+        const k = Math.max(
+          0,
+          Math.min(1, ((p.x - a.x) * dx + (p.z - a.z) * dz) / (dx * dx + dz * dz)),
+        )
+        return Math.hypot(a.x + dx * k - p.x, a.z + dz * k - p.z) < 0.05
+      })
+    let outside = 0
+    for (const g of Object.values(geo.parts)) {
+      const pos = g.getAttribute('position')
+      for (let i = 0; i < pos.count; i++) {
+        const p = { x: pos.getX(i), z: pos.getZ(i) }
+        expect(pointInPolygon(p, next)).toBe(false)
+        if (!pointInPolygon(p, outline) && !near(p)) outside++
+      }
+    }
+    expect(outside).toBe(0)
+  })
+
+  it('has its people door on auburn ave, facing out', () => {
+    const [x, z, nx, nz] = t.door!
+    expect(nz).toBe(-1)
+    expect(pointInPolygon({ x: x! + nx! * 0.5, z: z! + nz! * 0.5 }, pts(t))).toBe(false)
+    expect(pointInPolygon({ x: x! - nx! * 0.5, z: z! - nz! * 0.5 }, pts(t))).toBe(true)
+  })
+
+  it('is open and stays under 20k triangles', () => {
+    expect(geo.open).toBe(true)
+    let triangles = 0
+    for (const g of Object.values(geo.parts)) triangles += g.getAttribute('position').count / 3
+    expect(triangles).toBeLessThan(20000)
+  })
+})

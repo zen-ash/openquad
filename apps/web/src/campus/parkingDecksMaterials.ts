@@ -1,6 +1,6 @@
 import * as THREE from 'three'
-import { clearGlass, concrete, glass, lawn, metal, precast } from './materials'
-import type { BandPart, PaintedPart, SteelPart } from './parkingDecks'
+import { brick, clearGlass, concrete, glass, lawn, metal, precast } from './materials'
+import type { BandPart, PaintedPart, SpandrelPart, SteelPart } from './parkingDecks'
 
 // one set per style, every deck of a style shares it (each part is a draw call in every
 // pass, the materials are shared so it's no more shaders). colors from gsu's 2018 photos
@@ -131,4 +131,47 @@ export const bandDeckMaterials: Record<BandPart, THREE.Material> = {
   yellow: precast({ color: '#d4ab3c', panel: [12, 12], joint: 0, tone: 0.03, dirt: 0.35 }),
   // the planters' shrubs and the soil under them
   green: lawn({ color: '#3d4b25', size: 1.6, saturation: 1, roughness: 0.95 }),
+}
+
+// t: cream precast a little warmer and greyer than m's paint (the 2019 and 2022 street photos,
+// gsu's 2018 one in shade is whiter), joints at every column. the street floor is tan brick
+// with shops, blue grey glazed tile on auburn ave
+export const spandrelDeckMaterials: Record<SpandrelPart, THREE.Material> = {
+  cream: precast({
+    color: '#e4dac6',
+    panel: [5.8, 3.086],
+    offset: [0, 0.3],
+    joint: 0.01,
+    shade: 0.85,
+    tone: 0.025,
+    dirt: 0.4,
+  }),
+  brick: brick({ color: '#a88f76' }),
+  // long thin glazed tiles, set upright
+  tile: precast({
+    color: '#727b86',
+    panel: [0.11, 0.32],
+    joint: 0.006,
+    shade: 0.8,
+    tone: 0.06,
+    dirt: 0.15,
+  }),
+  // the stair towers' and the shops' glass, light frames
+  glass: glass({
+    color: '#3a464c',
+    pane: [1.4, 1.5],
+    mullion: 0.035,
+    frame: 0.06,
+    frameColor: '#d9d6cc',
+    lit: 0.6,
+    roughness: 0.1,
+    metalness: 0.4,
+  }),
+  slab: steelDeckMaterials.slab,
+  floor: steelDeckMaterials.floor,
+  soffit: steelDeckMaterials.soffit,
+  // white leds under the floors (gsu's 2018 photo), not the other decks' sodium orange
+  lamp: clearGlass({ color: '#fff1d6', frameColor: '#fff1d6', opacity: 0.95, glow: 3 }),
+  // the cable rails, steel
+  dark: metal({ color: '#55585c', roughness: 0.5 }),
 }

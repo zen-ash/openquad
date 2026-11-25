@@ -38,7 +38,11 @@ export type PaintedPart = 'cream' | 'dark' | 'slab' | 'floor' | 'soffit' | 'lamp
 // inside of the ways in
 export type BandPart =
   'precast' | 'screen' | 'glass' | 'slab' | 'pole' | 'white' | 'yellow' | 'green'
-export type Part = SteelPart | PaintedPart | BandPart
+// t: cream precast spandrels and columns, a tan brick street floor with shops (blue grey
+// glazed tile on auburn ave), the glass of the stair towers and shops, dark the cable rails
+export type SpandrelPart =
+  'cream' | 'brick' | 'tile' | 'glass' | 'slab' | 'floor' | 'soffit' | 'lamp' | 'dark'
+export type Part = SteelPart | PaintedPart | BandPart | SpandrelPart
 
 type Range = [number, number]
 
@@ -119,6 +123,30 @@ type Band = {
   toll?: Toll
 }
 
+// t: an l round 58 edgewood with a curved corner at edgewood and peachtree center ave, so it's
+// drawn from its outline, not a box. cream spandrels between columns all round with cable
+// rails over them, on a street floor of shops. points here are game coords
+type Spandrel = {
+  style: 'spandrel'
+  floors: [number, number, number]
+  parapet: number
+  // about how far apart the columns are along the sides
+  bay: number
+  // the light well down to level 1, open from level 2 up
+  well: number[][]
+  // the round top of the helix on the roof, up on columns: its middle, radius and top
+  helix: { at: number[]; r: number; top: number }
+  // stair and elevator towers: corners, top, which sides (from the first corner) are glass
+  towers: { corners: number[][]; top: number; glass: number[] }[]
+  // the round stair clad in glazed tile at the auburn ave end
+  round: { at: number[]; r: number; top: number }
+  // ways in for cars: from and to on the outline, how tall
+  ways: { from: number[]; to: number[]; tall: number }[]
+  // roof rows of parked cars from the satellite, as lines: [x0, z0, x1, z1]
+  rows: number[][]
+  letter: string
+}
+
 export const TIER = 2.8
 // the floor slab, the beam along its edge under it and the curb over it
 const SLAB = 0.22
@@ -133,7 +161,7 @@ const POST = 2.75
 // light poles on the roof with a box lantern on top
 const POLE = 5.5
 
-export const DECKS: Record<string, Steel | Painted | Band> = {
+export const DECKS: Record<string, Steel | Painted | Band | Spandrel> = {
   // 3m floors: level 1 on collins st under the viaduct (312.3), 3 on the toll plaza (318.3),
   // 4 on courtland st (321.3), the roof (8) at 333.3 with its parapet at 334.9 (lidar). the
   // ramp bay down the middle climbs 6% to the south east
@@ -456,6 +484,78 @@ export const DECKS: Record<string, Steel | Painted | Band> = {
     ],
     letter: 'S',
   },
+  // 3.09m floors from level 1 at the way in on auburn ave (317.3, lidar) to the roof (8, gsu's
+  // photo) at 338.9, the parapet at 340.1. edgewood and peachtree center ave are 3-6m lower, so
+  // there's a tall street floor of shops under level 1 or 2
+  'T Deck': {
+    style: 'spandrel',
+    floors: [317.3, 3.086, 8],
+    parapet: 340.1,
+    bay: 5.8,
+    well: [
+      [-112, -125],
+      [-101.5, -125],
+      [-101.5, -85],
+      [-112, -85],
+    ],
+    helix: { at: [-122, -107.5], r: 10.2, top: 342.1 },
+    towers: [
+      // the elevator lobby on the roof (level "8") at auburn ave and peachtree center ave,
+      // glass to both streets
+      {
+        corners: [
+          [-87, -143.7],
+          [-78.1, -143.7],
+          [-78.1, -136.5],
+          [-87, -136.5],
+        ],
+        top: 344.4,
+        glass: [0, 1],
+      },
+      // the glass stair at edgewood ave where the curve starts, an octagon (satellite) out to
+      // the sidewalk with its core standing over it
+      {
+        corners: octagon(-104.5, -48.8, 5.4),
+        top: 344.8,
+        glass: [7, 0, 1, 2],
+      },
+      { corners: octagon(-104.5, -48.8, 4), top: 347.2, glass: [] },
+      // the elevator by the bell building, glass to auburn ave beside the round stair
+      {
+        corners: [
+          [-169.8, -141.2],
+          [-164.4, -141.2],
+          [-164.4, -133.5],
+          [-169.8, -133.5],
+        ],
+        top: 347.4,
+        glass: [0],
+      },
+    ],
+    round: { at: [-167.2, -144.4], r: 2.2, top: 342.3 },
+    ways: [
+      // "6'8" CLEARANCE" under the arch on auburn ave, and the way out onto edgewood ave
+      { from: [-164.2, -146.2], to: [-152.5, -146.2], tall: 3.4 },
+      { from: [-127, -43.6], to: [-120, -43.6], tall: 4.2 },
+    ],
+    rows: [
+      [-152.5, -138, -152.5, -96],
+      [-131, -138, -131, -96],
+      [-135, -70, -105, -70],
+    ],
+    letter: 'T',
+  },
+}
+
+// an octagon's corners round (x, z), flat sides facing the streets
+function octagon(x: number, z: number, r: number) {
+  return Array.from({ length: 8 }, (_, k) => {
+    const a = ((22.5 + 45 * k) * Math.PI) / 180
+    return [
+      Math.round((x + r * Math.cos(a)) * 100) / 100,
+      Math.round((z + r * Math.sin(a)) * 100) / 100,
+    ]
+  })
 }
 
 type V3 = [number, number, number]
@@ -1296,6 +1396,7 @@ function sDeckSigns(f: Frame, d: Steel, signs: Sign[], roof: number) {
 export function parkingDeckGeometry(b: DeckData): LandmarkGeometry {
   const d = DECKS[b.name!]!
   if (d.style === 'steel') return steelDeck(b, d)
+  if (d.style === 'spandrel') return spandrelDeck(b, d)
   return d.style === 'painted' ? paintedDeck(b, d) : bandDeck(b, d)
 }
 
@@ -2579,4 +2680,416 @@ export function deckObstacles(b: DeckData): Segment[] {
       t.pergola.w.flatMap((w) => around(a, w, 0.07)),
     ),
   ]
+}
+
+// t's sides from its outline, in game coords: the columns, a spandrel at every floor over
+// the street floor, cable rails between, and the street floor's wall with shops (brick) or
+// glazed tile (auburn ave), the ways in cut through it
+function spandrelDeck(b: DeckData, d: Spandrel): LandmarkGeometry {
+  const f = deckFrame(b)
+  const c = collector()
+  const { quad, tri, done } = c
+  const signs: Sign[] = []
+  const [first, step, count] = d.floors
+  const F = (i: number) => f.rel(first + (i - 1) * step)
+  const top = f.rel(d.parapet)
+  const ground = (p: Point) => terrainAt(p.x, p.z) - f.floor
+  const pts = (list: number[][]) => list.map(([x, z]) => ({ x: x!, z: z! }))
+  const outline = pts(b.points)
+  const along = (p: Point, q: Point) => {
+    const len = Math.hypot(q.x - p.x, q.z - p.z)
+    return { x: (q.x - p.x) / len, z: (q.z - p.z) / len, len }
+  }
+  // which way is out of a polygon from its side p -> q
+  const outOf = (poly: Point[], p: Point, q: Point) => {
+    const u = along(p, q)
+    const n = { x: u.z, z: -u.x }
+    const m = { x: (p.x + q.x) / 2 + n.x * 0.01, z: (p.z + q.z) / 2 + n.z * 0.01 }
+    return pointInPolygon(m, poly) ? { x: -n.x, z: -n.z } : n
+  }
+  const off = (p: Point, u: Point, s: number, o: Point, t: number) => ({
+    x: p.x + u.x * s + o.x * t,
+    z: p.z + u.z * s + o.z * t,
+  })
+  const v3 = (p: Point, y: number): V3 => [p.x, y, p.z]
+
+  // an upright quad p -> q, bottoms and tops at each end, facing out. pane for glass
+  const wall = (
+    part: Part,
+    p: Point,
+    q: Point,
+    [b0, b1]: Range,
+    [t0, t1]: Range,
+    out: Point,
+    u0 = 0,
+    pane = false,
+  ) => {
+    const len = Math.hypot(q.x - p.x, q.z - p.z)
+    if (len < 0.005) return
+    const n = Math.sin(p.x * 12.9898 + p.z * 78.233 + b0 * 37.719) * 43758.5453
+    quad(
+      part,
+      [v3(p, b0), v3(q, b1), v3(q, t1), v3(p, t0)],
+      pane
+        ? [
+            [0, 0],
+            [len, 0],
+            [len, t1 - b1],
+            [0, t0 - b0],
+          ]
+        : [
+            [u0, f.v(b0)],
+            [u0 + len, f.v(b1)],
+            [u0 + len, f.v(t1)],
+            [u0, f.v(t0)],
+          ],
+      [out.x, 0, out.z],
+      pane ? [len, Math.max(t0 - b0, t1 - b1), n - Math.floor(n)] : undefined,
+    )
+  }
+  // a flat polygon at y, facing up or down
+  const flat = (part: Part, poly: Point[], y: number, up: boolean, holes: Point[][] = []) => {
+    const all = [...poly, ...holes.flat()]
+    const v2 = (ps: Point[]) => ps.map((p) => new THREE.Vector2(p.x, p.z))
+    for (const t of THREE.ShapeUtils.triangulateShape(v2(poly), holes.map(v2))) {
+      const k = t.map((i) => all[i]!)
+      tri(
+        part,
+        k.map((p) => v3(p, y)),
+        k.map((p) => [p.x, p.z + 50]),
+        undefined,
+        [0, up ? 1 : -1, 0],
+      )
+    }
+  }
+  // an upright prism round a polygon, its sides facing out (or in)
+  const prism = (part: Part, poly: Point[], y0: number, y1: number, lid = true, inward = false) => {
+    let u = 0
+    poly.forEach((p, i) => {
+      const q = poly[(i + 1) % poly.length]!
+      const o = outOf(poly, p, q)
+      wall(part, p, q, [y0, y0], [y1, y1], inward ? { x: -o.x, z: -o.z } : o, u)
+      u += Math.hypot(q.x - p.x, q.z - p.z)
+    })
+    if (lid) flat(part, poly, y1, !inward)
+  }
+  const ring = (x: number, z: number, r: number, n = 24) =>
+    Array.from({ length: n }, (_, k) => {
+      const a = (k / n) * Math.PI * 2
+      return { x: x + r * Math.cos(a), z: z + r * Math.sin(a) }
+    })
+  // a box standing on a side: `w` along it, `deep` in from p (on the outline)
+  const post = (p: Point, u: Point, out: Point, w: number, deep: number, y0: number, y1: number) =>
+    prism(
+      'cream',
+      [
+        off(p, u, -w / 2, out, 0),
+        off(p, u, w / 2, out, 0),
+        off(p, u, w / 2, out, -deep),
+        off(p, u, -w / 2, out, -deep),
+      ],
+      y0,
+      y1,
+    )
+  // a hole in a wall: its sides, head and sill `deep` in, and what's at the back
+  const reveal = (
+    p: Point,
+    u: Point,
+    out: Point,
+    [s0, s1]: Range,
+    [y0, y1]: Range,
+    part: Part,
+    back: Part,
+    deep: number,
+  ) => {
+    const [a0, a1] = [off(p, u, s0, out, 0), off(p, u, s1, out, 0)]
+    const [b0, b1] = [off(p, u, s0, out, -deep), off(p, u, s1, out, -deep)]
+    wall(part, a0, b0, [y0, y0], [y1, y1], u)
+    wall(part, a1, b1, [y0, y0], [y1, y1], { x: -u.x, z: -u.z })
+    flat(part, [a0, a1, b1, b0], y1, false)
+    flat(part, [a0, a1, b1, b0], y0, true)
+    wall(back, b0, b1, [y0, y0], [y1, y1], out, 0, back === 'glass')
+  }
+
+  const towers = d.towers.map((t) => ({ ...t, poly: pts(t.corners) }))
+  const [rx, rz] = d.round.at as [number, number]
+  const rr = d.round.r + 0.3
+  const roundBox = pts([
+    [rx - rr, rz - rr],
+    [rx + rr, rz - rr],
+    [rx + rr, rz + rr],
+    [rx - rr, rz + rr],
+  ])
+  const well = pts(d.well)
+  const ways = d.ways.map((w) => ({ ...w, from: pts([w.from])[0]!, to: pts([w.to])[0]! }))
+  const door = b.door ? { x: b.door[0]!, z: b.door[1]! } : undefined
+
+  outline.forEach((p, i) => {
+    const q = outline[(i + 1) % outline.length]!
+    const u = along(p, q)
+    const out = outOf(outline, p, q)
+    const at = (s: number, inset = 0) => off(p, u, s, out, -inset)
+    // the bits of this side not behind a tower or the round stair
+    const covered = (s: number) =>
+      [...towers.map((t) => t.poly), roundBox].some((poly) => pointInPolygon(at(s, 0.4), poly))
+    const free: Range[] = []
+    for (let s = 0; s <= u.len; s += 0.25) {
+      const last = free[free.length - 1]
+      if (covered(Math.min(s, u.len))) continue
+      if (last && s - last[1] < 0.3) last[1] = Math.min(s, u.len)
+      else free.push([s, Math.min(s, u.len)])
+    }
+    const g = (s: number) => ground(at(s))
+    const highest = Math.max(g(0), g(u.len), g(u.len / 2))
+    // the street floor goes up to the first spandrel that clears the sidewalk
+    let k = 1
+    while (k < count && F(k) - 0.3 < highest + 2.3) k++
+    const base = F(k) - 0.3
+    const tile = out.z < -0.7
+    for (const [s0, s1] of free.filter(([a, b]) => b - a > 0.8)) {
+      const n = Math.max(1, Math.round((s1 - s0) / d.bay))
+      const cols = Array.from({ length: n + 1 }, (_, j) =>
+        Math.min(Math.max(s0 + ((s1 - s0) * j) / n, s0 + 0.25), s1 - 0.25),
+      )
+      const low = Math.min(g(s0), g(s1)) - 0.3
+      // the ways in on this side, along it
+      const cut = ways.flatMap((w) => {
+        const onLine = Math.abs((w.from.x - p.x) * out.x + (w.from.z - p.z) * out.z) < 0.5
+        const sa = (w.from.x - p.x) * u.x + (w.from.z - p.z) * u.z
+        const sb = (w.to.x - p.x) * u.x + (w.to.z - p.z) * u.z
+        const [a, bb] = [Math.max(Math.min(sa, sb), s0), Math.min(Math.max(sa, sb), s1)]
+        return onLine && bb > a ? [[a, bb, Math.max(g(a), g(bb)) + w.tall] as const] : []
+      })
+      // the columns, behind the spandrels (from down the street the bands run on unbroken,
+      // the 2022 photo), standing on the way in's head where there's one under them
+      for (const s of cols) {
+        const w = cut.find(([a, bb]) => s > a - 0.3 && s < bb + 0.3)
+        post(at(s, 0.3), u, out, 0.5, 0.45, w ? w[2] : Math.min(g(s), low + 0.3) - 0.3, top)
+      }
+      // the spandrels on the outline, a panel a bay with a gap at each column (the parapet
+      // runs through), and the cable rails over them
+      for (let j = k; j <= count; j++) {
+        const [y0, y1] = [F(j) - 0.3, j === count ? top : F(j) + 0.85]
+        const panels: Range[] =
+          j === count ? [[s0, s1]] : cols.slice(1).map((c1, m) => [cols[m]! + 0.06, c1 - 0.06])
+        for (const [a, bb] of panels) {
+          const [p0, q0] = [at(a), at(bb)]
+          const [p1, q1] = [at(a, 0.22), at(bb, 0.22)]
+          wall('cream', p0, q0, [y0, y0], [y1, y1], out, a)
+          wall('cream', p1, q1, [y0, y0], [y1, y1], { x: -out.x, z: -out.z }, a)
+          wall('cream', p0, p1, [y0, y0], [y1, y1], { x: -u.x, z: -u.z })
+          wall('cream', q0, q1, [y0, y0], [y1, y1], u)
+          flat('cream', [p0, q0, q1, p1], y1, true)
+          flat('cream', [p0, q0, q1, p1], y0, false)
+        }
+        if (j === count) continue
+        for (const y of [1.05, 1.25, 1.45]) {
+          const [cp, cq] = [at(s0, 0.15), at(s1, 0.15)]
+          for (const o of [out, { x: -out.x, z: -out.z }])
+            wall('dark', cp, cq, [F(j) + y, F(j) + y], [F(j) + y + 0.025, F(j) + y + 0.025], o)
+        }
+      }
+      // the street floor's wall, 0.15 in. shop windows in every bay but on auburn ave
+      const holes: Hole[] = []
+      const backs: Part[] = []
+      for (let j = 1; j < cols.length; j++) {
+        const [c0, c1] = [cols[j - 1]!, cols[j]!]
+        const gb = Math.max(g(c0), g(c1))
+        if (cut.some(([a, bb]) => a < c1 - 0.1 && bb > c0 + 0.1)) continue
+        const ds = door ? (door.x - p.x) * u.x + (door.z - p.z) * u.z : -1
+        const onDoor =
+          door &&
+          Math.abs((door.x - p.x) * out.x + (door.z - p.z) * out.z) < 0.3 &&
+          ds > c0 &&
+          ds < c1
+        if (tile) {
+          if (onDoor) {
+            holes.push([ds - 0.55, ds + 0.55, g(ds), g(ds) + 2.4])
+            backs.push('glass')
+          }
+          continue
+        }
+        if (c1 - c0 < 2.4) continue
+        holes.push([c0 + 0.7, c1 - 0.7, gb + 0.45, Math.min(gb + 4.2, base - 0.7)])
+        backs.push('glass')
+      }
+      for (const [a, bb, tall] of cut) {
+        holes.push([a, bb, low, tall])
+        backs.push('soffit')
+      }
+      const [w0, w1] = [at(0, 0.15), at(u.len, 0.15)]
+      const wu = along(w0, w1)
+      const wp = (s: number) => off(w0, wu, s, out, 0)
+      for (const [a, bb, y0, y1] of solidPieces(u.len, low, base, holes))
+        if (bb > s0 && a < s1)
+          wall(
+            tile ? 'tile' : 'brick',
+            wp(Math.max(a, s0)),
+            wp(Math.min(bb, s1)),
+            [y0, y0],
+            [y1, y1],
+            out,
+            a,
+          )
+      holes.forEach(([a, bb, y0, y1], j) =>
+        reveal(
+          w0,
+          wu,
+          out,
+          [a, bb],
+          [y0, y1],
+          tile ? 'tile' : 'brick',
+          backs[j]!,
+          backs[j] === 'soffit' ? 4 : 0.2,
+        ),
+      )
+      // the street floor's top behind the wall, under the first open floor
+      if (k > 1) flat('soffit', [at(s0, 0.15), at(s1, 0.15), at(s1, 2), at(s0, 2)], base, false)
+    }
+  })
+
+  // the floors, the light well open from level 2 up with a wall round it on each floor. not
+  // out round the round stair (the outline's notch past the box)
+  const box = pts(b.landmark!.body)
+  const [bx, bz] = [Math.min(...box.map((p) => p.x)), Math.min(...box.map((p) => p.z))]
+  const floors = outline.filter((p) => p.x >= bx - 0.01 && p.z >= bz - 0.01)
+  for (let i = 1; i <= count; i++) {
+    flat(i === count ? 'slab' : 'floor', floors, F(i), true, i > 1 ? [well] : [])
+    if (i > 1) flat('soffit', floors, F(i) - SLAB, false, [well])
+    if (i > 1) prism('cream', well, F(i) - 0.3, F(i) + 1.0, false, true)
+  }
+  // the columns inside on a grid, and the lights between them near the sides
+  const xs = outline.map((p) => p.x)
+  const zs = outline.map((p) => p.z)
+  const nearSide = (p: Point, r: number) =>
+    outline.some((a, i) => distToSegment(p, a, outline[(i + 1) % outline.length]!) < r)
+  const clear = (p: Point) =>
+    pointInPolygon(p, outline) &&
+    !nearSide(p, 2.5) &&
+    !pointInPolygon(p, well) &&
+    !towers.some((t) => pointInPolygon(p, t.poly)) &&
+    Math.hypot(p.x - d.helix.at[0]!, p.z - d.helix.at[1]!) > d.helix.r + 1
+  for (let x = Math.min(...xs) + 6; x < Math.max(...xs) - 3; x += 8.6)
+    for (let z = Math.min(...zs) + 6; z < Math.max(...zs) - 3; z += 8.6) {
+      const p = { x, z }
+      if (clear(p)) {
+        const sq = [-1, 1, 1, -1].map((s, j) => ({
+          x: x + s * 0.25,
+          z: z + [-1, -1, 1, 1][j]! * 0.25,
+        }))
+        prism('floor', sq, ground(p) - 0.3, F(count) - SLAB, false)
+      }
+      const l = { x: x + 4.3, z: z + 4.3 }
+      if (!clear(l) || !nearSide(l, 9)) continue
+      for (let i = 2; i <= count; i++) {
+        const y = F(i) - SLAB
+        const sq = [-1, 1, 1, -1].map((s, j) => ({
+          x: l.x + s * 0.17,
+          z: l.z + [-1, -1, 1, 1][j]! * 0.17,
+        }))
+        prism('lamp', sq, y - 0.25, y, false)
+        flat('lamp', sq, y - 0.25, false)
+      }
+    }
+
+  // the towers: glass a floor tall on their glass sides with a thin cream band between
+  for (const t of towers) {
+    const low = Math.min(...t.poly.map((p) => ground(p))) - 0.3
+    const ttop = f.rel(t.top)
+    t.poly.forEach((p, i) => {
+      const q = t.poly[(i + 1) % t.poly.length]!
+      const u = along(p, q)
+      const out = outOf(t.poly, p, q)
+      const holes: Hole[] = []
+      if (t.glass.includes(i))
+        for (let y = low + 1.2; y < ttop - 1.5; y += step)
+          holes.push([0.25, u.len - 0.25, y, Math.min(y + step - 0.2, ttop - 0.9)])
+      for (const [a, bb, y0, y1] of solidPieces(u.len, low, ttop, holes))
+        wall('cream', off(p, u, a, out, 0), off(p, u, bb, out, 0), [y0, y0], [y1, y1], out, a)
+      for (const [a, bb, y0, y1] of holes)
+        reveal(p, u, out, [a, bb], [y0, y1], 'cream', 'glass', 0.12)
+    })
+    flat('cream', t.poly, ttop, true)
+  }
+
+  // the round stair in blue grey glazed tile, and the helix's round top up on columns
+  const [hx, hz] = d.helix.at as [number, number]
+  const roof = F(count)
+  const htop = f.rel(d.helix.top)
+  const deck = htop - 0.9
+  const roundP = ring(rx, rz, d.round.r)
+  prism('tile', roundP, Math.min(...roundP.map((p) => ground(p))) - 0.3, f.rel(d.round.top))
+  const disc = ring(hx, hz, d.helix.r, 32)
+  const inner = ring(hx, hz, d.helix.r - 0.25, 32)
+  prism('cream', disc, deck - 0.5, htop, false)
+  prism('cream', inner, deck, htop, false, true)
+  disc.forEach((p, i) => {
+    const q = disc[(i + 1) % disc.length]!
+    const [pi, qi] = [inner[i]!, inner[(i + 1) % inner.length]!]
+    flat('cream', [p, q, qi, pi], htop, true)
+  })
+  flat('slab', inner, deck, true)
+  flat('soffit', disc, deck - 0.5, false)
+  for (let k = 0; k < 6; k++) {
+    const a = (k / 6) * Math.PI * 2
+    const r = d.helix.r * 0.62
+    prism(
+      'cream',
+      ring(hx + r * Math.cos(a), hz + r * Math.sin(a), 0.35, 8),
+      roof,
+      deck - 0.5,
+      false,
+    )
+  }
+
+  // the signs: gsu's blue blade sticking out over the way in on auburn ave ("T" under the
+  // plain square where the logo is, both sides), its clearance bar, and the blue band with
+  // the square under the glass stair on edgewood ave
+  const sign = (p: Point, out: Point, y: number, s: Partial<Sign>, right = 0): Sign => ({
+    x: p.x + out.x * 0.03 + out.z * right,
+    y,
+    z: p.z + out.z * 0.03 - out.x * right,
+    rot: Math.atan2(out.x, out.z),
+    text: '',
+    ...s,
+  })
+  const [wa, wb] = [ways[0]!.from, ways[0]!.to]
+  const wm = { x: (wa.x + wb.x) / 2, z: (wa.z + wb.z) / 2 }
+  const wg = ground(wm)
+  const blade = { x: wm.x, z: wm.z - 0.6 }
+  for (const side of [1, -1]) {
+    const o = { x: side, z: 0 }
+    const b0 = { x: blade.x + side * 0.12, z: blade.z }
+    signs.push(
+      sign(b0, o, wg + 7.2, { width: 1.0, height: 3.4, plate: '#2f55c2' }),
+      sign(b0, o, wg + 8.3, { width: 0.5, height: 0.5, plate: '#5b86e0' }, 0),
+      sign(b0, o, wg + 7.3, { ...white, text: d.letter, size: 0.75 }),
+    )
+  }
+  const north = { x: 0, z: -1 }
+  signs.push(
+    sign(wm, north, wg + ways[0]!.tall - 0.35, { width: 6, height: 0.2, plate: '#2f55c2' }),
+    sign(wm, north, wg + ways[0]!.tall - 0.35, {
+      ...white,
+      text: '6\'8"      CLEARANCE      6\'8"',
+      size: 0.11,
+    }),
+  )
+  // the glass stair's south side (2019 photo)
+  const stair = towers[1]!.poly
+  const [s0, s1] = [stair[1]!, stair[2]!]
+  const mid = { x: (s0.x + s1.x) / 2, z: (s0.z + s1.z) / 2 }
+  const sg = ground(mid) + 4.9
+  signs.push(
+    sign(mid, { x: 0, z: 1 }, sg, { width: 4.6, height: 1.0, plate: '#1f3f8f' }),
+    sign(mid, { x: 0, z: 1 }, sg, { width: 0.65, height: 0.65, plate: '#3a68c8' }, -0.6),
+  )
+
+  return {
+    parts: done(),
+    inside: { solid: [], glass: [] },
+    signs,
+    noShadow: ['lamp', 'glass', 'dark'],
+    open: true,
+  }
 }

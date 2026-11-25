@@ -16,6 +16,7 @@ import { oneParkMaterials } from './oneParkMaterials'
 import {
   bandDeckMaterials,
   paintedDeckMaterials,
+  spandrelDeckMaterials,
   steelDeckMaterials,
 } from './parkingDecksMaterials'
 import { peachtree191Materials } from './peachtree191Materials'
@@ -65,6 +66,7 @@ export const landmarkMaterials: Record<string, Record<string, THREE.Material>> =
   'S Deck': steelDeckMaterials,
   'M Deck': paintedDeckMaterials,
   'G Deck': bandDeckMaterials,
+  'T Deck': spandrelDeckMaterials,
   'Southern Bell Building': southernBellMaterials,
   '191 Peachtree Tower': peachtree191Materials,
   'Hurt Building': hurtBuildingMaterials,

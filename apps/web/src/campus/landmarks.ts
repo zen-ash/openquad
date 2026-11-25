@@ -134,6 +134,7 @@ const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'S Deck': parkingDeckGeometry,
   'M Deck': parkingDeckGeometry,
   'G Deck': parkingDeckGeometry,
+  'T Deck': parkingDeckGeometry,
   'Southern Bell Building': southernBellGeometry,
   '191 Peachtree Tower': peachtree191Geometry,
   'Hurt Building': hurtBuildingGeometry,
