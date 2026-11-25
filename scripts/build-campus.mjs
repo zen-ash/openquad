@@ -133,8 +133,6 @@ const MEASURED_HEIGHTS = {
   'J Deck': 13.9,
   'Patton Hall': 16.5,
   'Piedmont North Dining Hall': 18.2,
-  // osm says 4 floors, but they're tall ones
-  'Helen M. Aderhold Learning Center': 21.9,
 }
 
 // osm's height is wrong for these (mostly floors x 3.92, or nothing at all): usgs lidar
@@ -2203,6 +2201,39 @@ function collegeOfLaw(b) {
   b.landmark = {}
 }
 
+// the helen m. aderhold learning center (60 luckie st, 2002): buff brick classrooms on the whole
+// block between luckie, forsyth and poplar st, an arcade along luckie st, a roof terrace with a
+// pergola and a dark fifth floor set back behind it. drawn in campus/aderhold.ts. osm's outline
+// is the brick ~1m in all round: redrawn on usgs's lidar (2018) as the ground floor's glass,
+// the back of the arcade on luckie st. the ground is the luckie st sidewalk (322.6m)
+const ADERHOLD = {
+  // the corner porch under the glass bay at peachtree, the arcade's back along luckie st, the
+  // pier at forsyth st, forsyth st, poplar st, the plaza side
+  points: [
+    [-310.66, -236.09],
+    [-310.76, -238.65],
+    [-342.52, -275.31],
+    [-340.48, -277.08],
+    [-341, -277.68],
+    [-343.96, -277.9],
+    [-386.14, -241.36],
+    [-386.35, -238.4],
+    [-354.14, -201.21],
+    [-351.17, -201],
+  ],
+  // the high block over the middle of the fifth floor (lidar 348.3m)
+  height: 25.7,
+  // the entrance in the grey slot in the middle of the arcade
+  door: [-326.93, -257.32, 0.7558, -0.6548],
+}
+
+function aderhold(b) {
+  b.points = ADERHOLD.points
+  b.height = ADERHOLD.height
+  b.door = ADERHOLD.door
+  b.landmark = {}
+}
+
 // the university lofts (135 edgewood ave, 2002): gsu's loft apartments, metal shingles round
 // a courtyard, stepping up from 6 floors on edgewood ave and auditorium pl to a 14 floor
 // tower and arm, with a 2 storey wing curving into the courtyard. drawn in
@@ -2921,6 +2952,8 @@ function main(elements) {
   if (ssc) studentSuccess(ssc)
   const law = buildings.find((b) => b.name === 'College of Law')
   if (law) collegeOfLaw(law)
+  const ald = buildings.find((b) => b.name === 'Helen M. Aderhold Learning Center')
+  if (ald) aderhold(ald)
   for (const b of buildings) if (PARKING_DECKS[b.name]) parkingDeck(b)
   const p191 = buildings.find((b) => b.name === PEACHTREE_191.name)
   if (p191) peachtree191(p191)

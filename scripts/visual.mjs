@@ -74,6 +74,9 @@ const VIEWS = [
   { name: 'college-of-law', from: [-214, 2.2, -232], at: [-192, 14, -290], player: [-214, -230] },
   // edgewood ave at park place, from the campus side: the banking hall and the tower over it
   { name: '25-park-place', from: [-262, 2, -31], at: [-228, 30, -100], player: [-264, -29] },
+  // peachtree st at woodruff park: the aderhold learning center's glass bay on the corner, the
+  // arcade along luckie st and the shops on the plaza side
+  { name: 'aderhold', from: [-276, 2, -227], at: [-330, 10, -244], player: [-274, -224] },
   {
     name: 'courtland-north',
     from: [-125.2, 3, 217.6],

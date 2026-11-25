@@ -1,4 +1,5 @@
 import type * as THREE from 'three'
+import { aderholdMaterials } from './aderholdMaterials'
 import { artsHumanitiesMaterials } from './artsHumanitiesMaterials'
 import { classroomSouthMaterials } from './classroomSouthMaterials'
 import { collegeOfEducationMaterials } from './collegeOfEducationMaterials'
@@ -81,6 +82,7 @@ export const landmarkMaterials: Record<string, Record<string, THREE.Material>> =
   'Student Success Center': studentSuccessMaterials,
   'College of Law': collegeOfLawMaterials,
   '25 Park Place': parkPlace25Materials,
+  'Helen M. Aderhold Learning Center': aderholdMaterials,
 }
 
 // see-through glass and the parts in noShadow don't cast shadows, everything else does

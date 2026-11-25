@@ -38,9 +38,9 @@ describe('buildingsGeometry', () => {
   })
 
   it('gives gsu buildings the look they have in photos', () => {
-    const aderhold = facadeOf({ name: 'Helen M. Aderhold Learning Center', height: 21.9 }, 0)
-    expect(aderhold.style).toBe(BRICK)
-    expect(aderhold.color).toBe('#dcc8a3')
+    const bethel = facadeOf({ name: 'Bethel Towers', height: 40 }, 0)
+    expect(bethel.style).toBe(BRICK)
+    expect(bethel.color).toBe('#a8765c')
     // strips of windows all along each floor
     expect(facadeOf({ name: 'Centennial Hall', height: 13.5 }, 0).window[2]).toBe(1)
   })
