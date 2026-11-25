@@ -283,3 +283,83 @@ metal families, numbers in userData). 9 parts: cream, brick, tile, glass, slab, 
 lamp, dark (the cable rails); glass, lamp and dark cast no shadows. Triangles: 12.5k (cream
 6.8k, most of it the spandrel panels; the lamps 2.0k, the cable rails 1.7k), 10 signs, about
 230 parked cars (rows along the street sides on every floor and on the roof).
+
+## A Deck (144)
+
+Faculty and staff parking at 42 Auburn Ave, between Peachtree Center Ave and the drive west of
+it, across Auburn Ave from T Deck. It's not a parking garage like the others: one covered floor
+with parking on the roof, so from the street it's a deep cream edge beam on slim round columns.
+It's a style of its own in parkingDecks.ts (`single`).
+
+### Sources
+
+| source                                                       | date                   | license              | shows                                                           | used for                                                                         |
+| ------------------------------------------------------------ | ---------------------- | -------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| GSU campus map (Concept3D 700971)                            | text read 2026-11-24   | GSU, reference only  | name, address, "faculty and staff parking"                      | what it is                                                                       |
+| Concept3D photos A_Deck_Atlanta_Campus\_ (6, Canon 5D, 24mm) | 2018-11-27 12:04-12:10 | GSU                  | the Peachtree Center Ave side, the west side, the roof, gates   | the look, the way in and its gate, the sign. the Peachtree Center Ave one fitted |
+| Mapillary 1232490850664505 (SydneyIStroud)                   | 2022-09-13 12:36       | CC BY-SA 4.0         | the Peachtree Center Ave sidewalk along the deck, looking south | square columns on the sides, white rails, the floor a curb under the sidewalk    |
+| Esri World Imagery Wayback, release 63116                    | 2026-02-02             | Esri, reference only | the roof                                                        | same roof as the lidar, about 30 cars on it (ROOFS), where the rows are          |
+| USGS 3DEP lidar (GA statewide 2018)                          | 2018                   | public domain        | all                                                             | the outline, the roof's heights, the sidewalks and drives round it               |
+
+The newest street photos are Mapillary's from September 2022 (Peachtree Center Ave, a few of
+the deck); the 2026 image has the same roof and outline. Commons not checked.
+
+### Measurements
+
+- **Outline** (lidar): 31.1 x 57.8m, west -107.6 / east -76.5 / south -164.2 / north -222, the
+  north west half (north of z -198) 1.5m wider to the west. Osm's box was about a meter off and
+  turned the other way.
+- **Roof** (lidar, no parapet points over it): 319.1 at the south east corner, 319.25 north
+  east, 319.5 south west, 320.1 north west, where it's level with the drive along the north side
+  and cars drive on (the gates in gsu's photos). Drawn bilinear between the corners.
+- **Covered floor**: level with Peachtree Center Ave's sidewalk at the way in (315.95) and
+  level along the east side (316.0 at the north end) while the sidewalk climbs to 316.6: the
+  2022 Mapillary photo has a curb down from the sidewalk into the deck there. Level with the
+  west drive at its south end (316.7). Datum 316.0, the sidewalk at the
+  way in. The floor runs into the hill to the north west (317.2 there, the drive outside is
+  ~319): the north side and the north end of the west side are retaining walls up to the beam.
+- **Edge beam**: from the Peachtree Center Ave photo, fitted as a level 24mm camera 9.6m out
+  and 1.95m up (the corner column and the next face column, 8.3m along): about 1m deep with a
+  low curb over the roof, ~2.35m clear under it. The west side photo (camera by eye) has it
+  deeper, ~1.1m with ~2m clear: the beam's bottom is bilinear too (318.3 south east, 318.8
+  south west, so 0.95m there and 2.1m clear, a test keeps 2.05m clear everywhere).
+- **Way in**: Peachtree Center Ave, 3.8-8.3m from the Auburn Ave corner, the gate island 7.5m
+  along with its arm, "DO NOT ENTER" hung under the beam. Pipe rails along the rest of the east
+  and south sides. The "A DECK" lightbox on the beam at the corner, with a plain blue square
+  where gsu's logo is.
+- **Columns**: on a 10.3 x 8.2m grid, square along the sides (the 2022 photo) and round inside
+  (the 2018 west side photo). The face columns line up with the photo's.
+- The south end of the west side is a solid wall (the west drive photo), a low planter a bay
+  further north.
+
+### In the game
+
+- 6 parts: tan (the beam, walls, columns, planter, gate island), rail (the white pipe rails,
+  poles, gate box and the roof's lines: m's cream), slab (the roof, a light grey coating), floor
+  (asphalt), soffit, lamp (white tubes). floor, soffit and lamp cast no shadows. All from the
+  library's families.
+- Parked cars: rows in `rows` (one each along the walls, a double one down the middle), on the
+  covered floor and the roof (ROOFS 0.3), with their own random numbers so the lots' cars
+  didn't move. The roof's lines are drawn where parking.ts puts the cars.
+- No collision past the outline (nothing stands out of it). It's outside the fence.
+
+### What still differs
+
+- Only 2018 photos, one fitted. The south side, the north side and the north end of the west
+  side have no photo; the north retaining wall and where the west side turns solid are guesses
+  from the ground heights.
+- The game's terrain along the north drive is ~1.3m under the real drive (the bare earth is
+  blurred there), so the roof's way in at the north west stands ~1m over the drive instead of
+  level with it.
+- The roof's curb is a guess (0.25m): the lidar has nothing over the roof at the edges and the
+  photo from the street shows nothing over the beam, but the roof photo has a low wall along
+  the south side.
+- No gate arms or ticket machines on the roof's way in, no yellow on the gate island, no plants
+  in the planter, the columns have no dark bases, and the roof's lines have no stop bars or
+  arrows.
+
+### Cost
+
+Measured after the merge. Expected: 0 new shaders (every part a library family already built,
+the materials new instances of them), 6 parts (3 casting: about 3 x 5 + 3 x 2 = 21 draws), ~3.2k
+triangles, 10 signs (only drawn within 60m).

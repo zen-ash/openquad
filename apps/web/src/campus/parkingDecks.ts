@@ -42,7 +42,11 @@ export type BandPart =
 // glazed tile on auburn ave), the glass of the stair towers and shops, dark the cable rails
 export type SpandrelPart =
   'cream' | 'brick' | 'tile' | 'glass' | 'slab' | 'floor' | 'soffit' | 'lamp' | 'dark'
-export type Part = SteelPart | PaintedPart | BandPart | SpandrelPart
+// a: tan the painted concrete (edge beam, walls, columns), rail the white pipe rails, poles
+// and the lines on the roof, slab the roof, floor the covered floor's asphalt, soffit the
+// roof's underside, lamp its tubes
+export type SinglePart = 'tan' | 'rail' | 'slab' | 'floor' | 'soffit' | 'lamp'
+export type Part = SteelPart | PaintedPart | BandPart | SpandrelPart | SinglePart
 
 type Range = [number, number]
 
@@ -147,6 +151,37 @@ type Spandrel = {
   letter: string
 }
 
+// a: one covered floor with parking on the roof. the roof and the floor under it slope, so
+// both are given at the box's corners (sw, se, ne, nw: w and s, then e and n), and in
+// between they're bilinear. the sides are by which way they face out of the box. along each
+// side it's open between the columns where there's room under the edge beam, else a
+// retaining wall (where the ground outside is up near the roof)
+type Side = 'west' | 'east' | 'south' | 'north'
+type Single = {
+  style: 'single'
+  roof: [number, number, number, number]
+  floor: [number, number, number, number]
+  // the edge beam's bottom, deeper on the west side (the roof's higher there)
+  beam: [number, number, number, number]
+  // the columns' lines across (a) and along (w)
+  columns: { a: number[]; w: number[] }
+  // bits of a side that are solid down to the ground, along it (w on west and east, a on
+  // south and north)
+  solid: Partial<Record<Side, Range[]>>
+  // the sides with pipe rails in the openings, and the gaps in them (the ways in)
+  rails: Partial<Record<Side, Range[]>>
+  // where cars drive onto the roof off the north drive: no curb along there
+  entry: Range
+  // a planter in front of the west side: [a, w] corners
+  planter: [Range, Range]
+  // light poles on the roof, [a, w]
+  poles: number[][]
+  // rows of spaces: the line their backs are on under the roof and on it, which way they go
+  // (along a). they run the deck's length, the roof's stop short of the north drive
+  rows: number[][]
+  letter: string
+}
+
 export const TIER = 2.8
 // the floor slab, the beam along its edge under it and the curb over it
 const SLAB = 0.22
@@ -161,7 +196,7 @@ const POST = 2.75
 // light poles on the roof with a box lantern on top
 const POLE = 5.5
 
-export const DECKS: Record<string, Steel | Painted | Band | Spandrel> = {
+export const DECKS: Record<string, Steel | Painted | Band | Spandrel | Single> = {
   // 3m floors: level 1 on collins st under the viaduct (312.3), 3 on the toll plaza (318.3),
   // 4 on courtland st (321.3), the roof (8) at 333.3 with its parapet at 334.9 (lidar). the
   // ramp bay down the middle climbs 6% to the south east
@@ -544,6 +579,42 @@ export const DECKS: Record<string, Steel | Painted | Band | Spandrel> = {
       [-135, -70, -105, -70],
     ],
     letter: 'T',
+  },
+  // one floor under the roof, the roof on the north drive's grade (lidar: 319.1 at the south
+  // east corner up to 320.1 at the north west one, where the drive comes in). the covered
+  // floor is level with peachtree center ave's sidewalk at the way in, and level along the
+  // east side while the sidewalk climbs (a curb down from it in mapillary's 2022 photo), and
+  // runs into the hill to the north west. gsu's 2018 photos (fitted on peachtree center ave):
+  // the edge beam is 1m deep there with a low curb over the roof, ~2.3m clear under it, and
+  // a bit deeper on the west side
+  'A Deck': {
+    style: 'single',
+    roof: [319.5, 319.1, 319.25, 320.1],
+    floor: [316.7, 315.95, 316.0, 317.2],
+    beam: [318.8, 318.3, 318.72, 319.35],
+    columns: { a: [0.3, 10.4, 20.7, 30.8], w: [0.3, 8.5, 16.7, 24.9, 33.1, 41.3, 49.5, 57.5] },
+    // the south end of the west side is a wall in the photo from the west drive, a planter
+    // a bay further on
+    solid: { west: [[0, 6.5]] },
+    // the way in on peachtree center ave next to the a deck sign, the gate in it
+    rails: { east: [[3.8, 8.3]], south: [] },
+    entry: [0, 19],
+    planter: [
+      [0, 1],
+      [12, 17],
+    ],
+    poles: [
+      [15.5, 20],
+      [15.5, 40],
+    ],
+    // the roof's east row is 2.5m in from the edge (feb 2026 image)
+    rows: [
+      [0.3, 0.3, 1],
+      [15.5, 14.05, -1],
+      [15.6, 14.15, 1],
+      [30.8, 28.6, -1],
+    ],
+    letter: 'A',
   },
 }
 
@@ -1397,6 +1468,7 @@ export function parkingDeckGeometry(b: DeckData): LandmarkGeometry {
   const d = DECKS[b.name!]!
   if (d.style === 'steel') return steelDeck(b, d)
   if (d.style === 'spandrel') return spandrelDeck(b, d)
+  if (d.style === 'single') return singleDeck(b, d)
   return d.style === 'painted' ? paintedDeck(b, d) : bandDeck(b, d)
 }
 
@@ -3090,6 +3162,250 @@ function spandrelDeck(b: DeckData, d: Spandrel): LandmarkGeometry {
     inside: { solid: [], glass: [] },
     signs,
     noShadow: ['lamp', 'glass', 'dark'],
+    open: true,
+  }
+}
+
+// a deck's roof and covered floor (single style) at a spot, game heights
+export function singleLevels(b: DeckData) {
+  const d = DECKS[b.name!] as Single
+  const f = deckFrame(b)
+  const bilinear =
+    ([sw, se, ne, nw]: number[]) =>
+    (a: number, w: number) => {
+      const [s, t] = [a / f.la, w / f.lw]
+      const y = sw! * (1 - s) * (1 - t) + se! * s * (1 - t) + ne! * s * t + nw! * (1 - s) * t
+      return fromElevation(y)
+    }
+  const [roof, floor, beam] = [bilinear(d.roof), bilinear(d.floor), bilinear(d.beam)]
+  return {
+    roof: (p: Point) => roof(...f.aw(p)),
+    floor: (p: Point) => floor(...f.aw(p)),
+    // the same in the deck's frame, over its datum
+    roofAt: (a: number, w: number) => roof(a, w) - f.floor,
+    floorAt: (a: number, w: number) => floor(a, w) - f.floor,
+    beamAt: (a: number, w: number) => beam(a, w) - f.floor,
+  }
+}
+
+// how far the edge beam's curb stands over the roof, the roof slab's depth, the pipe rails
+const LIP = 0.25
+const SOFFIT = 0.55
+const PIPE = 0.05
+// a parking space's width (parking.ts)
+const STALL = 2.7
+
+// a: one covered floor, parking on the roof. cream painted concrete: a deep edge beam all
+// round on slim columns, open between them with pipe rails, walls where the hill comes up
+// outside
+function singleDeck(b: DeckData, d: Single): LandmarkGeometry {
+  const f = deckFrame(b)
+  const c = collector()
+  const { plate, bar, box } = shapes(f, c)
+  const signs: Sign[] = []
+  const signAt = signer(f)
+  const { roofAt: R, floorAt: F, beamAt: B } = singleLevels(b)
+  const outline = b.points.map(([x, z]) => {
+    const [a, w] = f.aw({ x: x!, z: z! })
+    return P(a, w)
+  })
+  const inside = (p: AW) => pointInPolygon(p, outline)
+
+  plate('slab', outline, (w, a) => R(a, w), true)
+  plate('soffit', outline, (w, a) => R(a, w) - SOFFIT, false)
+  plate('floor', outline, (w, a) => F(a, w) + 0.02, true)
+
+  outline.forEach((p, i) => {
+    const q = outline[(i + 1) % outline.length]!
+    const len = Math.hypot(q.x - p.x, q.z - p.z)
+    const dir = P((q.x - p.x) / len, (q.z - p.z) / len)
+    let out = P(dir.z, -dir.x)
+    const mid = lerpP(p, q, 0.5)
+    if (inside(P(mid.x + out.x * 0.3, mid.z + out.z * 0.3))) out = P(-out.x, -out.z)
+    const inward = P(-out.x, -out.z)
+    const side: Side =
+      Math.abs(out.x) > Math.abs(out.z)
+        ? out.x < 0
+          ? 'west'
+          : 'east'
+        : out.z < 0
+          ? 'south'
+          : 'north'
+    const along = (pt: AW) => (side === 'west' || side === 'east' ? pt.z : pt.x)
+    const within = (ranges: Range[] | undefined, pt: AW) =>
+      !!ranges?.some(([r0, r1]) => along(pt) > r0 && along(pt) < r1)
+    const rails = d.rails[side]
+    const n = Math.max(1, Math.ceil(len / 2.5))
+    for (let k = 0; k < n; k++) {
+      const [u0, u1] = [(k * len) / n, ((k + 1) * len) / n]
+      const [p0, p1] = [lerpP(p, q, u0 / len), lerpP(p, q, u1 / len)]
+      const m = lerpP(p0, p1, 0.5)
+      // the ground just outside, the floor and the edge beam's bottom at each end
+      const go = (pt: AW) => f.ground(pt.x + out.x * 0.6, pt.z + out.z * 0.6)
+      const fb = (pt: AW) => B(pt.x, pt.z)
+      const base = (pt: AW) => Math.max(go(pt), F(pt.x, pt.z))
+      const solid = within(d.solid[side], m) || fb(m) - base(m) < 1.3
+      const top = (pt: AW) => (solid ? fb(pt) : Math.max(go(pt), F(pt.x, pt.z) + 0.06))
+      const low = (pt: AW) => Math.min(go(pt), F(pt.x, pt.z)) - 0.3
+      // the edge beam, and its curb over the roof except where cars drive on
+      const lip = side === 'north' && within([d.entry], m) ? 0 : LIP
+      bar(
+        'tan',
+        p0,
+        p1,
+        [fb(p0), fb(p1)],
+        [R(p0.x, p0.z) + lip, R(p1.x, p1.z) + lip],
+        inward,
+        0.3,
+        u0,
+        u1,
+      )
+      bar('tan', p0, p1, [low(p0), low(p1)], [top(p0), top(p1)], inward, 0.25, u0, u1)
+      if (solid || !rails || within(rails, m)) continue
+      // two pipe rails and a post, a little in from the edge
+      const [r0, r1] = [
+        P(p0.x + inward.x * 0.15, p0.z + inward.z * 0.15),
+        P(p1.x + inward.x * 0.15, p1.z + inward.z * 0.15),
+      ]
+      for (const h of [0.45, 0.95]) {
+        const [y0, y1] = [top(p0) + h, top(p1) + h]
+        bar('rail', r0, r1, [y0, y1], [y0 + PIPE, y1 + PIPE], inward, PIPE, u0, u1)
+      }
+      const h = PIPE / 2
+      box('rail', [r0.x - h, r0.x + h], [r0.z - h, r0.z + h], top(p0), top(p0) + 1, false)
+    }
+  })
+
+  // the columns under the roof: square ones along the sides (mapillary 2022), round inside
+  const [ca0, ca1] = [d.columns.a[0]!, d.columns.a.at(-1)!]
+  const [cw0, cw1] = [d.columns.w[0]!, d.columns.w.at(-1)!]
+  for (const a of d.columns.a)
+    for (const w of d.columns.w) {
+      if (!inside(P(a, w))) continue
+      const [y0, y1] = [F(a, w) - 0.1, R(a, w) - SOFFIT]
+      if (a === ca0 || a === ca1 || w === cw0 || w === cw1) {
+        box('tan', [a - 0.22, a + 0.22], [w - 0.22, w + 0.22], y0, y1, false)
+        continue
+      }
+      const p = f.at(a, w)
+      const g = new THREE.CylinderGeometry(0.18, 0.18, y1 - y0, 8, 1, true)
+      g.translate(p.x, (y0 + y1) / 2, p.z)
+      c.geo('tan', g)
+    }
+
+  // fluorescent tubes under the roof, two in each bay down the middle of each row
+  const { a: ca, w: cw } = d.columns
+  for (let i = 1; i < ca.length; i++)
+    for (let j = 1; j < cw.length; j++) {
+      const a = (ca[i - 1]! + ca[i]!) / 2
+      for (const s of [-0.25, 0.25]) {
+        const w = cw[j - 1]! + (cw[j]! - cw[j - 1]!) * (0.5 + s)
+        const y = R(a, w) - SOFFIT
+        box('lamp', [a - 0.07, a + 0.07], [w - 0.6, w + 0.6], y - 0.08, y, false)
+        plate(
+          'lamp',
+          [P(a - 0.07, w - 0.6), P(a + 0.07, w - 0.6), P(a + 0.07, w + 0.6), P(a - 0.07, w + 0.6)],
+          () => y - 0.08,
+          false,
+        )
+      }
+    }
+
+  // the white lines between the spaces on the roof, where parking.ts puts the cars
+  for (const [, line, s] of d.rows) {
+    const [w0, w1] = [1, f.lw - 7]
+    const n = Math.floor((w1 - w0) / STALL)
+    const [a0, a1] = [line!, line! + s! * 5.5].sort((x, y) => x - y) as Range
+    const stripe = (poly: AW[]) => plate('rail', poly, (w, a) => R(a, w) + 0.01, true)
+    for (let i = 0; i <= n; i++) {
+      const w = w0 + ((w1 - w0) * i) / n
+      stripe([P(a0, w - 0.05), P(a1, w - 0.05), P(a1, w + 0.05), P(a0, w + 0.05)])
+    }
+    stripe([P(line! - 0.05, w0), P(line! + 0.05, w0), P(line! + 0.05, w1), P(line! - 0.05, w1)])
+  }
+
+  // the planter by the west side (its plants aren't drawn)
+  const [pa, pw] = d.planter
+  const pf = F(pa[0], pw[0])
+  box('tan', pa, pw, pf - 0.3, pf + 0.7)
+
+  // light poles on the roof
+  for (const [a, w] of d.poles) {
+    const y = R(a!, w!)
+    box('rail', [a! - 0.1, a! + 0.1], [w! - 0.1, w! + 0.1], y, y + 9, false)
+    box('rail', [a! - 0.3, a! + 0.3], [w! - 0.25, w! + 0.25], y + 8.7, y + 9.05)
+  }
+
+  // the gate on the way in off peachtree center ave: a curb island, the box and its arm
+  const gap = d.rails.east?.[0]
+  if (gap) {
+    const la = f.la
+    const [g0, g1] = gap
+    const fl = F(la - 1, g1 - 0.8)
+    box('tan', [la - 1.6, la - 0.6], [g1 - 1.1, g1 - 0.5], fl, fl + 0.15)
+    box('rail', [la - 1.25, la - 0.95], [g1 - 0.95, g1 - 0.65], fl + 0.15, fl + 1.2)
+    const east = P(1, 0)
+    const arm = (g1 - 0.8 - (g0 + 0.3)) / 2
+    signs.push(
+      signAt(la - 1.1, g1 - 0.8 - arm, fl + 1, east, {
+        width: arm * 2,
+        height: 0.08,
+        plate: '#e9e5df',
+      }),
+      signAt(
+        la - 1.1,
+        g1 - 0.8 - arm,
+        fl + 1,
+        east,
+        { width: 0.5, height: 0.08, plate: '#c8202a' },
+        -0.5,
+        0.01,
+      ),
+      signAt(
+        la - 1.1,
+        g1 - 0.8 - arm,
+        fl + 1,
+        east,
+        { width: 0.5, height: 0.08, plate: '#c8202a' },
+        0.6,
+        0.01,
+      ),
+    )
+    // "DO NOT ENTER" hung under the edge beam over it
+    const y = B(la, (g0 + g1) / 2) - 0.12
+    signs.push(
+      signAt(la - 0.6, (g0 + g1) / 2, y, east, { width: 1.5, height: 0.13, plate: '#2f55c2' }),
+      signAt(
+        la - 0.6,
+        (g0 + g1) / 2,
+        y,
+        east,
+        { ...white, text: 'DO NOT ENTER', size: 0.08 },
+        0,
+        0.01,
+      ),
+    )
+  }
+
+  // the "A DECK" lightbox on the edge beam at the corner by auburn ave, a plain blue square
+  // where gsu's logo is
+  const corner = (R(f.la, 0) + LIP + B(f.la, 0)) / 2
+  const east = P(1, 0)
+  const at = (s: Partial<Sign>, right: number, dy: number, out: number) =>
+    signAt(f.la, 0.65, corner + dy, east, s, right, out)
+  signs.push(
+    at({ width: 2.1, height: 1.0, plate: '#21336f' }, 0, 0, 0.2),
+    at({ ...white, text: d.letter, size: 0.75 }, -0.55, 0, 0.21),
+    at({ width: 0.42, height: 0.42, plate: '#3a68c8' }, 0.38, 0.2, 0.21),
+    at({ width: 0.9, height: 0.025, plate: '#c8202a' }, 0.38, -0.09, 0.21),
+    at({ ...white, text: 'DECK', size: 0.2 }, 0.38, -0.27, 0.21),
+  )
+
+  return {
+    parts: c.done(),
+    inside: { solid: [], glass: [] },
+    signs,
+    noShadow: ['lamp', 'floor', 'soffit'],
     open: true,
   }
 }

@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { brick, clearGlass, concrete, glass, lawn, metal, precast } from './materials'
-import type { BandPart, PaintedPart, SpandrelPart, SteelPart } from './parkingDecks'
+import type { BandPart, PaintedPart, SinglePart, SpandrelPart, SteelPart } from './parkingDecks'
 
 // one set per style, every deck of a style shares it (each part is a draw call in every
 // pass, the materials are shared so it's no more shaders). colors from gsu's 2018 photos
@@ -174,4 +174,24 @@ export const spandrelDeckMaterials: Record<SpandrelPart, THREE.Material> = {
   lamp: clearGlass({ color: '#fff1d6', frameColor: '#fff1d6', opacity: 0.95, glow: 3 }),
   // the cable rails, steel
   dark: metal({ color: '#55585c', roughness: 0.5 }),
+}
+
+// a: cream painted concrete, darker and more tan than m's (the 2018 photo from peachtree
+// center ave, side by side at the same time of day), the roof's light grey coating, asphalt
+// under it and white tubes
+export const singleDeckMaterials: Record<SinglePart, THREE.Material> = {
+  tan: precast({
+    color: '#bcae8e',
+    panel: [9, 4],
+    joint: 0.006,
+    shade: 0.85,
+    tone: 0.03,
+    dirt: 0.45,
+  }),
+  // the pipe rails, poles and the roof's lines, painted white: m's cream is white enough
+  rail: paintedDeckMaterials.cream,
+  slab: concrete({ color: '#8f969a', roughness: 0.85 }),
+  floor: concrete({ color: '#58504a', roughness: 0.9, occlusion: 0.3 }),
+  soffit: concrete({ color: '#b5ab99', roughness: 0.9, occlusion: 0.3 }),
+  lamp: clearGlass({ color: '#f4f6ff', frameColor: '#f4f6ff', opacity: 0.95, glow: 3 }),
 }

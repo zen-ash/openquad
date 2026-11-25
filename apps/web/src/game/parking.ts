@@ -2,7 +2,14 @@ import { fenceDistance } from '@quad/shared'
 import campus from '../campus/campus.json'
 import { CAR_KINDS, type Car } from './cars'
 import { closestOnSegment, pointInPolygon, type Point } from './collision'
-import { DECKS, deckFrame, deckObstacles, TIER, type DeckData } from '../campus/parkingDecks'
+import {
+  DECKS,
+  deckFrame,
+  deckObstacles,
+  singleLevels,
+  TIER,
+  type DeckData,
+} from '../campus/parkingDecks'
 import {
   COLUMNS,
   DOCK,
@@ -298,6 +305,8 @@ const ROOFS: Record<string, number> = {
   'M Deck': 0.05,
   // t's roof was about two thirds full on the feb 2026 image
   'T Deck': 0.65,
+  // about 30 cars on a's roof in feb 2026
+  'A Deck': 0.3,
 }
 
 function deckCars(rand: () => number) {
@@ -393,6 +402,17 @@ function deckCars(rand: () => number) {
             row(line[0], line[1], { x: n.x * s, z: n.z * s }, y, full, rand, out)
           }
         }
+      }
+    } else if (d.style === 'single') {
+      // its rows of spaces on the covered floor (but not in the way in off peachtree center
+      // ave) and the roof (not where cars drive on)
+      const { roof: onRoof, floor } = singleLevels(b)
+      // its own random numbers, so adding it didn't move every car in the lots after it
+      const own = seeded(144)
+      for (const [a, top, s] of d.rows) {
+        const first = a! > f.la - 6 ? 8 : 1
+        row(P(a!, first), P(a!, f.lw - 1), inward(s!), floor, levelFull(0, 1, roof), own, out)
+        row(P(top!, 1), P(top!, f.lw - 7), inward(s!), onRoof, roof, own, out)
       }
     }
   }

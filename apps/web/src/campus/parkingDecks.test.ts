@@ -3,11 +3,18 @@ import { pointInPolygon } from '../game/collision'
 import { furnish } from '../game/furniture'
 import { interiors } from '../game/interiors'
 import { floorOf } from '../game/surface'
-import { ORIGIN } from '../game/terrain'
+import { heightAt, ORIGIN } from '../game/terrain'
 import campus from './campus.json'
 import { buildingsGeometry } from './geometry'
 import { ceilingsGeometry } from './interiorGeometry'
-import { DECKS, deckFrame, deckObstacles, parkingDeckGeometry, type DeckData } from './parkingDecks'
+import {
+  DECKS,
+  deckFrame,
+  deckObstacles,
+  parkingDeckGeometry,
+  singleLevels,
+  type DeckData,
+} from './parkingDecks'
 import { steelDeckMaterials } from './parkingDecksMaterials'
 
 const names = ['G Deck', 'M Deck', 'N Deck', 'K Deck', 'S Deck']
@@ -163,5 +170,55 @@ describe('t deck', () => {
     let triangles = 0
     for (const g of Object.values(geo.parts)) triangles += g.getAttribute('position').count / 3
     expect(triangles).toBeLessThan(20000)
+  })
+})
+
+describe('a deck', () => {
+  const a = deck('A Deck')
+  const geo = parkingDeckGeometry(a)
+
+  it('keeps a deck at its index, open and under 10k triangles', () => {
+    expect(campus.buildings.findIndex((b) => b.name === 'A Deck')).toBe(144)
+    expect(geo.open).toBe(true)
+    expect(geo.inside.solid).toHaveLength(0)
+    let triangles = 0
+    for (const g of Object.values(geo.parts)) triangles += g.getAttribute('position').count / 3
+    expect(triangles).toBeLessThan(10000)
+  })
+
+  it('has a deck roof at the lidar heights, up to the north drive at the north west', () => {
+    let [low, high] = [Infinity, -Infinity]
+    const pos = geo.parts.slab!.getAttribute('position')
+    for (let i = 0; i < pos.count; i++) {
+      low = Math.min(low, pos.getY(i))
+      high = Math.max(high, pos.getY(i))
+    }
+    const base = floorOf(a) + ORIGIN
+    expect(low + base).toBeCloseTo(319.1, 1)
+    expect(high + base).toBeCloseTo(320.1, 1)
+  })
+
+  it('stands a deck on the peachtree center ave sidewalk at its way in', () => {
+    expect(floorOf(a) + ORIGIN).toBeCloseTo(316, 2)
+    const f = deckFrame(a)
+    const p = f.at(f.la + 2, 6)
+    expect(Math.abs(heightAt(p.x, p.z) - floorOf(a))).toBeLessThan(0.4)
+  })
+
+  it('leaves room for cars under the edge beam of a deck everywhere', () => {
+    const f = deckFrame(a)
+    const { beamAt, floorAt, roofAt } = singleLevels(a)
+    for (let x = 0; x <= f.la; x += 3)
+      for (let w = 0; w <= f.lw; w += 3) {
+        expect(beamAt(x, w) - floorAt(x, w)).toBeGreaterThan(2.05)
+        expect(roofAt(x, w) - beamAt(x, w)).toBeGreaterThan(0.5)
+      }
+  })
+
+  it('has a door on a deck outline facing out', () => {
+    const [x, z, nx, nz] = a.door!
+    const pts = a.points.map(([px, pz]) => ({ x: px!, z: pz! }))
+    expect(pointInPolygon({ x: x! + nx! * 0.5, z: z! + nz! * 0.5 }, pts)).toBe(false)
+    expect(pointInPolygon({ x: x! - nx! * 0.5, z: z! - nz! * 0.5 }, pts)).toBe(true)
   })
 })

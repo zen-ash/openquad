@@ -126,7 +126,6 @@ const GSU_PARTS = new Set([252608874, 301958707, 840362899, 841030081, 801359976
 // the ones marked floors are counted from photos
 const MEASURED_HEIGHTS = {
   '148 Edgewood': 17.2,
-  'GSU Parking A Deck': 4.2,
   'Alumni Center': 7.9,
   'Centennial Hall': 13.5,
   'Greek Housing': 9.6,
@@ -2351,6 +2350,30 @@ const PARKING_DECKS = {
     height: 30.1,
     // the people door next to the way in on auburn ave (gsu's 2018 photo)
     door: { at: [15.2, 102.6], out: [0, 1] },
+  },
+  // one covered floor and parking on the roof, the roof at the north drive's grade. lidar: the
+  // roof's edges (osm's box was a meter off and turned the other way), the north west half is
+  // 1.5m wider. osm's 4.2m was about right
+  'A Deck': {
+    outline: [
+      [-76.5, -222],
+      [-76.5, -164.2],
+      [-107.6, -164.2],
+      [-107.6, -198],
+      [-109.1, -198],
+      [-109.1, -222],
+    ],
+    body: [
+      [-107.6, -164.2],
+      [-76.5, -164.2],
+      [-76.5, -222],
+      [-107.6, -222],
+    ],
+    // the roof's north west corner and its curb (320.45m) over the peachtree center ave
+    // sidewalk at the way in (316.0)
+    height: 4.45,
+    // where osm had it, on auburn ave by the corner with peachtree center ave
+    door: { at: [27.6, 0], out: [0, -1] },
   },
 }
 
