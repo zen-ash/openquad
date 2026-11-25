@@ -108,6 +108,8 @@ const VIEWS = [
     at: [-398.1, 20, -333.2],
     player: [-393.7, -368.3],
   },
+  // across edgewood ave near boulevard: the storefront, the stepped parapet and the sign
+  { name: 'sculpture-studio', from: [545, 1.7, -18], at: [530, 3.5, -38], player: [547, -16] },
   {
     name: 'courtland-north',
     from: [-125.2, 3, 217.6],

@@ -30,6 +30,7 @@ import { recCenterGeometry, type RecData } from './recCenter'
 import { researchScienceGeometry, type RscData } from './researchScience'
 import { researchTowerGeometry, type TowerData } from './researchTower'
 import { scienceAnnexGeometry, type AnnexData } from './scienceAnnex'
+import { sculptureStudioGeometry, type SculptureStudioData } from './sculptureStudio'
 import { southernBellGeometry, type SouthernBellData } from './southernBell'
 import { standardGeometry, type StandardData } from './standardBuilding'
 import { sportsArenaGeometry, type ArenaData } from './sportsArena'
@@ -130,7 +131,8 @@ type Data = LibraryNorthData &
   HaasHowellData &
   StandardData &
   RobinsonData &
-  CommerceData
+  CommerceData &
+  SculptureStudioData
 const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Library North': libraryNorthGeometry,
   'Dahlberg Hall': dahlbergGeometry,
@@ -178,6 +180,7 @@ const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Helen M. Aderhold Learning Center': aderholdGeometry,
   'Haas-Howell Building': haasHowellGeometry,
   'Standard Building': standardGeometry,
+  'Sculpture Studio': sculptureStudioGeometry,
 }
 
 // the scene and the interiors both need it, only build it once

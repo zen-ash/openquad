@@ -120,10 +120,11 @@ export function furnish(room: Interior): Item[] {
   const library = room.name.includes('Library')
   // the arena, the practice gym and the rec center are courts inside, not study rooms, the
   // natural and research science centers and the science annex are labs, the lofts'
-  // ground floor is shops and flats round a courtyard: just seats in a lobby by the door. the
-  // arena's glass lobby showed hundreds of tables from the street (and cost 2.5ms there)
+  // ground floor is shops and flats round a courtyard, the sculpture studio is a workshop: just
+  // seats in a lobby by the door. the arena's glass lobby showed hundreds of tables from the
+  // street (and cost 2.5ms there)
   const gym =
-    /Arena|Practice Facility|Recreation|Natural Science|Research Science|Science Annex|Lofts/.test(
+    /Arena|Practice Facility|Recreation|Natural Science|Research Science|Science Annex|Lofts|Sculpture/.test(
       room.name,
     )
 

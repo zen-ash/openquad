@@ -118,6 +118,8 @@ const DATUMS: Record<string, number | { from: number }> = {
   // broad st's sidewalk in the middle of each (lidar), it climbs 1.6m from marietta to walton
   'J. Mack Robinson College of Business': 320.6,
   'Commerce Building': 320.6,
+  // the edgewood ave sidewalk at the door (lidar), the lot falls 1.7m to the back
+  'Sculpture Studio': 298.5,
 }
 
 type Building = { name?: string; points: number[][]; door?: number[] }

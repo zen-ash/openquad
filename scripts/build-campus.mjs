@@ -61,6 +61,7 @@ const GSU_BUILDINGS = new Set([
   'GSU Citizens Trust Building',
   'GSU College of Law',
   'GSU Parking A Deck',
+  'GSU Sculpture Studio',
   'Greek Housing',
   'Haas-Howell Building',
   'Helen M. Aderhold Learning Center',
@@ -111,6 +112,7 @@ const GSU_NAMES = {
   'Loft Parking': 'University Lofts Parking',
   'Bell Building': 'Student Success Center',
   'Bennett A. Brown Commerce Building': 'Commerce Building',
+  'GSU Sculpture Studio': 'Sculpture Studio',
 }
 
 const isGsu = (tags) => GSU_BUILDINGS.has(tags.name)
@@ -2130,6 +2132,38 @@ function edgewood148(b) {
   b.landmark = {}
 }
 
+// the sculpture studio (gsu's art school, 246 edgewood ave ne), near boulevard: a one storey
+// red brick store building, a black storefront along edgewood ave and a false front parapet
+// with a raised middle, a shallow crowned roof behind it. drawn in campus/sculptureStudio.ts.
+// osm's box is 1.2m short of the front and a bit skewed: redrawn on usgs's lidar walls (2018,
+// esri's image has the same roof). the front is the storefront's glass, 0.15m behind the brick.
+// the ground is the edgewood ave sidewalk at the door (298.5m), it falls 1.7m to the back
+const SCULPTURE_STUDIO = {
+  points: [
+    [524.9, -72.4],
+    [543.6, -72.4],
+    [543.6, -33.85],
+    [524.9, -33.85],
+  ],
+  // the raised middle of the front parapet (lidar 305.65m)
+  height: 7.15,
+  // the double doors under the 246
+  door: [531.8, -33.85, 0, 1],
+  // osm's sidewalk runs along the old front, its east end goes out to the middle of the
+  // real sidewalk so the new front doesn't cut it off
+  sidewalk: { from: [539.1, -33.6], to: [539.1, -32.4] },
+}
+
+function sculptureStudio(b, paths) {
+  b.points = SCULPTURE_STUDIO.points
+  b.height = SCULPTURE_STUDIO.height
+  b.door = SCULPTURE_STUDIO.door
+  b.landmark = {}
+  const { from, to } = SCULPTURE_STUDIO.sidewalk
+  for (const p of paths)
+    for (const pt of p.points) if (pt[0] === from[0] && pt[1] === from[1]) pt.splice(0, 2, ...to)
+}
+
 // 55 park place (gsu's andrew young school of policy studies), across park place from woodruff
 // park: a 19 floor cream precast block with deep set windows, two wings on park place with the
 // entrance between them and the middle's top floors stepping back. drawn in
@@ -3099,6 +3133,8 @@ function main(elements) {
   if (e58) edgewood58(e58)
   const e148 = buildings.find((b) => b.name === '148 Edgewood')
   if (e148) edgewood148(e148)
+  const sculpt = buildings.find((b) => b.name === 'Sculpture Studio')
+  if (sculpt) sculptureStudio(sculpt, paths)
   const p55 = buildings.find((b) => b.name === '55 Park Place')
   if (p55) parkPlace55(p55)
   const ssc = buildings.find((b) => b.name === 'Student Success Center')
