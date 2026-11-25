@@ -63,6 +63,9 @@ const VIEWS = [
   // across edgewood ave from the corner of equitable pl: the sign box, the marble ground floor
   { name: '58-edgewood', from: [-207, 2.5, -27], at: [-180, 10, -48], player: [-209, -25] },
   { name: '55-park-place', from: [-258, 1.6, -178], at: [-190, 30, -198], player: [-260, -176] },
+  // across edgewood ave a bit to the east: the arch, the cornice and the east side over the
+  // greek housing
+  { name: '148-edgewood', from: [205, 1.7, -22], at: [190, 8, -45], player: [207, -20] },
   {
     name: 'student-success-center',
     from: [-214, 1.7, -173],

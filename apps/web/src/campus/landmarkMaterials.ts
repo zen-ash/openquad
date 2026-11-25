@@ -11,6 +11,7 @@ import { rialtoMaterials } from './rialtoMaterials'
 import { robinsonMaterials } from './robinsonCollegeMaterials'
 import { commerceMaterials } from './commerceBuildingMaterials'
 import { edgewood58Materials } from './edgewood58Materials'
+import { edgewood148Materials } from './edgewood148Materials'
 import { parkPlace55Materials } from './parkPlace55Materials'
 import { haasHowellMaterials } from './haasHowellMaterials'
 import { hurtBuildingMaterials } from './hurtBuildingMaterials'
@@ -83,6 +84,7 @@ export const landmarkMaterials: Record<string, Record<string, THREE.Material>> =
   '191 Peachtree Tower': peachtree191Materials,
   'Hurt Building': hurtBuildingMaterials,
   '58 Edgewood': edgewood58Materials,
+  '148 Edgewood': edgewood148Materials,
   '55 Park Place': parkPlace55Materials,
   'Student Success Center': studentSuccessMaterials,
   'College of Law': collegeOfLawMaterials,

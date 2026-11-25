@@ -127,7 +127,6 @@ const GSU_PARTS = new Set([252608874, 301958707, 840362899, 841030081, 801359976
 // mostly usgs lidar, the ones with decimals are microsoft's estimates from aerial photos.
 // the ones marked floors are counted from photos
 const MEASURED_HEIGHTS = {
-  '148 Edgewood': 17.2,
   'Alumni Center': 7.9,
   'Centennial Hall': 13.5,
   'Greek Housing': 9.6,
@@ -2103,6 +2102,34 @@ function edgewood58(b) {
   b.landmark = {}
 }
 
+// 148 edgewood: georgia railway and power's substation from 1926, gsu's since 1966 (the
+// photography department), empty now. gsu means to tear it down for a fraternity and sorority
+// plaza but it's still there. a four storey red brick box drawn in campus/edgewood148.ts.
+// redrawn on usgs's lidar walls (2018). the east side stays on the greek housing's wall (osm
+// has them sharing it, the lidar and the photos put the brick 0.3m further out, it's drawn
+// there over the housing's edge) and the front is 0.3m behind the lidar's, or osm's edgewood
+// ave sidewalk would run through it and get cut in two. the front is the windows' glass,
+// 0.2m behind the brick. the ground is the sidewalk at the door (303.9m)
+const EDGEWOOD_148 = {
+  points: [
+    [184.7, -64.6],
+    [199.95, -64.6],
+    [199.95, -38.8],
+    [184.7, -38.8],
+  ],
+  // the front's parapet (lidar 319.85m), the main roof is 15.6 and an east strip 12.6
+  height: 15.95,
+  // the door in the middle of the front, under the arch
+  door: [192.48, -38.8, 0, 1],
+}
+
+function edgewood148(b) {
+  b.points = EDGEWOOD_148.points
+  b.height = EDGEWOOD_148.height
+  b.door = EDGEWOOD_148.door
+  b.landmark = {}
+}
+
 // 55 park place (gsu's andrew young school of policy studies), across park place from woodruff
 // park: a 19 floor cream precast block with deep set windows, two wings on park place with the
 // entrance between them and the middle's top floors stepping back. drawn in
@@ -3070,6 +3097,8 @@ function main(elements) {
   if (lofts) universityLofts(lofts, loftsDeck)
   const e58 = buildings.find((b) => b.name === '58 Edgewood')
   if (e58) edgewood58(e58)
+  const e148 = buildings.find((b) => b.name === '148 Edgewood')
+  if (e148) edgewood148(e148)
   const p55 = buildings.find((b) => b.name === '55 Park Place')
   if (p55) parkPlace55(p55)
   const ssc = buildings.find((b) => b.name === 'Student Success Center')

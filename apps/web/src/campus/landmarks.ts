@@ -7,6 +7,7 @@ import { courtlandBuildingGeometry, type CourtlandBuildingData } from './courtla
 import { courtlandNorthGeometry, type CourtlandNorthData } from './courtlandNorth'
 import { dahlbergGeometry, type DahlbergData } from './dahlberg'
 import { edgewood58Geometry, type Edgewood58Data } from './edgewood58'
+import { edgewood148Geometry, type Edgewood148Data } from './edgewood148'
 import { parkPlace55Geometry, type ParkPlace55Data } from './parkPlace55'
 import { collegeOfLawGeometry, type CollegeOfLawData } from './collegeOfLaw'
 import { rialtoGeometry, type RialtoData } from './rialto'
@@ -119,6 +120,7 @@ type Data = LibraryNorthData &
   PeachtreeData &
   HurtData &
   Edgewood58Data &
+  Edgewood148Data &
   ParkPlace55Data &
   StudentSuccessData &
   CollegeOfLawData &
@@ -165,6 +167,7 @@ const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   '191 Peachtree Tower': peachtree191Geometry,
   'Hurt Building': hurtBuildingGeometry,
   '58 Edgewood': edgewood58Geometry,
+  '148 Edgewood': edgewood148Geometry,
   '55 Park Place': parkPlace55Geometry,
   'Student Success Center': studentSuccessGeometry,
   'College of Law': collegeOfLawGeometry,
