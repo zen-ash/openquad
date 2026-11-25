@@ -2234,6 +2234,27 @@ function aderhold(b) {
   b.landmark = {}
 }
 
+// the rialto center for the arts (80 forsyth st at luckie st, gsu's since 1996): a tall buff
+// brick box with a cornice, the blade sign and marquee on the corner, the lobby's glass on
+// luckie st. drawn in campus/rialto.ts. osm's outline matches usgs's lidar (2018) within half a
+// meter, kept. roof 343.3-343.7m, 21m over the forsyth st sidewalk at the corner (322.6m).
+// osm's door was on the back alley: moved to the doors under the marquee on forsyth st
+const RIALTO = { height: 21.4, door: 6.5 }
+
+function rialto(b) {
+  const [p, q] = b.points
+  const len = Math.hypot(q[0] - p[0], q[1] - p[1])
+  const along = [(q[0] - p[0]) / len, (q[1] - p[1]) / len]
+  b.height = RIALTO.height
+  b.door = [
+    Math.round((p[0] + along[0] * RIALTO.door) * 100) / 100,
+    Math.round((p[1] + along[1] * RIALTO.door) * 100) / 100,
+    Math.round(along[1] * 100) / 100,
+    Math.round(-along[0] * 100) / 100,
+  ]
+  b.landmark = {}
+}
+
 // the university lofts (135 edgewood ave, 2002): gsu's loft apartments, metal shingles round
 // a courtyard, stepping up from 6 floors on edgewood ave and auditorium pl to a 14 floor
 // tower and arm, with a 2 storey wing curving into the courtyard. drawn in
@@ -2954,6 +2975,8 @@ function main(elements) {
   if (law) collegeOfLaw(law)
   const ald = buildings.find((b) => b.name === 'Helen M. Aderhold Learning Center')
   if (ald) aderhold(ald)
+  const rialtoCenter = buildings.find((b) => b.name === 'Rialto Center for the Arts')
+  if (rialtoCenter) rialto(rialtoCenter)
   for (const b of buildings) if (PARKING_DECKS[b.name]) parkingDeck(b)
   const p191 = buildings.find((b) => b.name === PEACHTREE_191.name)
   if (p191) peachtree191(p191)

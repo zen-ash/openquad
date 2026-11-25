@@ -29,7 +29,7 @@ function NameSign({ sign }: { sign: Sign }) {
         scale-x={sign.wide ?? 1}
         fontSize={sign.size ?? 0.3}
         fontWeight={sign.weight}
-        lineHeight={1.25}
+        lineHeight={sign.line ?? 1.25}
         textAlign="center"
         color={sign.color ?? '#3b3d40'}
       >

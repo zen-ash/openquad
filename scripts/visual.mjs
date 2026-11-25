@@ -72,6 +72,9 @@ const VIEWS = [
   // park place at the corner of woodruff park: the stone front, the glass box on jwd, the library's
   // glass at the south corner
   { name: 'college-of-law', from: [-214, 2.2, -232], at: [-192, 14, -290], player: [-214, -230] },
+  // across the forsyth st / luckie st corner: the blade sign, the marquee, the banners on forsyth
+  // st and the lobby's glass on luckie st
+  { name: 'rialto', from: [-331, 1.7, -291.7], at: [-353, 11, -293.2], player: [-331, -288] },
   // edgewood ave at park place, from the campus side: the banking hall and the tower over it
   { name: '25-park-place', from: [-262, 2, -31], at: [-228, 30, -100], player: [-264, -29] },
   // peachtree st at woodruff park: the aderhold learning center's glass bay on the corner, the

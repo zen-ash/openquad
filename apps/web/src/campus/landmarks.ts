@@ -9,6 +9,7 @@ import { dahlbergGeometry, type DahlbergData } from './dahlberg'
 import { edgewood58Geometry, type Edgewood58Data } from './edgewood58'
 import { parkPlace55Geometry, type ParkPlace55Data } from './parkPlace55'
 import { collegeOfLawGeometry, type CollegeOfLawData } from './collegeOfLaw'
+import { rialtoGeometry, type RialtoData } from './rialto'
 import { hurtBuildingGeometry, type HurtData } from './hurtBuilding'
 import { langdaleHallGeometry, type LangdaleData } from './langdaleHall'
 import { libraryNorthGeometry, type LibraryNorthData } from './libraryNorth'
@@ -54,6 +55,8 @@ export type Sign = {
   weight?: number
   // squeezes the letters to this much of their width, for condensed type
   wide?: number
+  // line spacing of the letters in font sizes, tighter for a stack of single letters
+  line?: number
   scale?: number
   plate?: string
   // the plate's height, before scale (it's sized to the text otherwise)
@@ -116,7 +119,8 @@ type Data = LibraryNorthData &
   StudentSuccessData &
   CollegeOfLawData &
   ParkPlace25Data &
-  AderholdData
+  AderholdData &
+  RialtoData
 const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Library North': libraryNorthGeometry,
   'Dahlberg Hall': dahlbergGeometry,
@@ -156,6 +160,7 @@ const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   '55 Park Place': parkPlace55Geometry,
   'Student Success Center': studentSuccessGeometry,
   'College of Law': collegeOfLawGeometry,
+  'Rialto Center for the Arts': rialtoGeometry,
   '25 Park Place': parkPlace25Geometry,
   'Helen M. Aderhold Learning Center': aderholdGeometry,
 }

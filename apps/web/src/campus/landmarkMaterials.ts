@@ -7,6 +7,7 @@ import { courtlandBuildingMaterials } from './courtlandBuildingMaterials'
 import { courtlandNorthMaterials } from './courtlandNorthMaterials'
 import { dahlbergMaterials } from './dahlbergMaterials'
 import { collegeOfLawMaterials } from './collegeOfLawMaterials'
+import { rialtoMaterials } from './rialtoMaterials'
 import { edgewood58Materials } from './edgewood58Materials'
 import { parkPlace55Materials } from './parkPlace55Materials'
 import { hurtBuildingMaterials } from './hurtBuildingMaterials'
@@ -81,6 +82,7 @@ export const landmarkMaterials: Record<string, Record<string, THREE.Material>> =
   '55 Park Place': parkPlace55Materials,
   'Student Success Center': studentSuccessMaterials,
   'College of Law': collegeOfLawMaterials,
+  'Rialto Center for the Arts': rialtoMaterials,
   '25 Park Place': parkPlace25Materials,
   'Helen M. Aderhold Learning Center': aderholdMaterials,
 }
