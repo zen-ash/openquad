@@ -227,6 +227,51 @@ function Signs({ signs, floor }: { signs: Sign[]; floor: number }) {
   ))
 }
 
+// a building further than 150m off is left out of the prepass (userData.far, Effects.tsx).
+// one check a building, not one a part. all near while the warm-up runs, so the prepass
+// shaders get built
+const FAR = 150
+const box = new THREE.Box3()
+const boxes = new WeakMap<object, THREE.Box3>()
+function boxOf(parts: Record<string, THREE.BufferGeometry>) {
+  let b = boxes.get(parts)
+  if (!b) {
+    b = new THREE.Box3()
+    for (const g of Object.values(parts)) {
+      if (!g.boundingBox) g.computeBoundingBox()
+      b.union(box.copy(g.boundingBox!))
+    }
+    boxes.set(parts, b)
+  }
+  return b
+}
+function Building({
+  parts,
+  floor,
+  children,
+}: {
+  parts: Record<string, THREE.BufferGeometry>
+  floor: number
+  children: React.ReactNode
+}) {
+  const whole = boxOf(parts)
+  const group = useRef<THREE.Group>(null)
+  const far = useRef(false)
+  useFrame(({ camera }) => {
+    if (!group.current) return
+    near.copy(camera.position).setY(camera.position.y - floor)
+    const now = !useSettings.getState().warming && whole.distanceToPoint(near) > FAR
+    if (now === far.current) return
+    far.current = now
+    group.current.traverse((o) => (o.userData.far = now))
+  })
+  return (
+    <group ref={group} position-y={floor}>
+      {children}
+    </group>
+  )
+}
+
 // none of it moves: its matrices are worked out once, here, and three leaves them alone
 // after that (a few hundred objects, 0.6ms a frame). bits that show up later (the letters,
 // once the font's in) keep doing their own
@@ -254,7 +299,7 @@ export default function Landmarks() {
         // there and gets a plinth down to the ground wherever the ground is lower
         const floor = baseOf(b)
         return (
-          <group key={b.name} position-y={floor}>
+          <Building key={b.name} parts={geo.parts} floor={floor}>
             {Object.entries(geo.parts).map(([part, g]) =>
               geo.first?.includes(part) ? (
                 <FirstWhenNear key={part} geometry={g} material={mats[part]!} floor={floor} />
@@ -279,7 +324,7 @@ export default function Landmarks() {
               ),
             )}
             <Signs signs={geo.signs} floor={floor} />
-          </group>
+          </Building>
         )
       })}
     </group>

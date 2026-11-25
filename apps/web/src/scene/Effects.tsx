@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import {
   NoToneMapping,
   RedFormat,
+  type Object3D,
   SRGBColorSpace,
   Vector2,
   type DepthTexture,
@@ -112,6 +113,24 @@ function buildOnce<T>(node: T): T {
   return node
 }
 
+// buildings far off (Landmarks.tsx, userData.far) aren't drawn into the prepass: it's only
+// there for the ambient occlusion, a meter or so round corners, a few pixels from 150m. a
+// third of the draws at hurt park. not with layers: the prepass and the scene pass share
+// three's render list and the prepass is drawn from inside the scene pass, so a shorter list
+// broke the scene pass halfway through
+let prepassTarget: unknown = null
+const skipping = new WeakSet<object>()
+function skipFarInPrepass(renderer: WebGPURenderer) {
+  if (skipping.has(renderer)) return
+  skipping.add(renderer)
+  const r = renderer as unknown as { renderObject(object: Object3D, ...rest: unknown[]): void }
+  const draw = r.renderObject.bind(renderer)
+  r.renderObject = (object, ...rest) => {
+    if (object.userData.far && renderer.getRenderTarget() === prepassTarget) return
+    draw(object, ...rest)
+  }
+}
+
 // khronos' pbr neutral with its shoulder from 0.55 instead of 0.76: in sun, pale stone and
 // white precast came out flat white (250) wherever exposure put them, photos keep them at
 // about 235 with their texture. below 0.55 (shade, grass, brick) it's the same curve
@@ -137,7 +156,7 @@ export default function Effects() {
   const taaOn = useSettings((s) => s.taa)
   const mapping = useSettings((s) => s.toneMapping)
 
-  const { pipeline, lit, resize } = useMemo(() => {
+  const { pipeline, lit, resize, prePass } = useMemo(() => {
     // the scene is drawn smaller than the screen, a bit off center every frame, and taau
     // (below) puts the frames together into a sharp full size picture. that's the
     // antialiasing too, so no msaa
@@ -303,10 +322,14 @@ export default function Effects() {
       // it's all blur, a quarter size is plenty (0.1ms less than half, looks the same)
       glare.setResolutionScale(scale / 4)
     }
-    return { pipeline, lit, resize }
+    return { pipeline, lit, resize, prePass }
   }, [gl, scene, camera, taaOn, mapping])
 
   useEffect(() => () => pipeline.dispose(), [pipeline])
+  useEffect(() => {
+    prepassTarget = prePass.renderTarget
+    skipFarInPrepass(gl)
+  }, [gl, prePass])
   const sized = useRef<{ pipeline: RenderPipeline; scale: number } | null>(null)
 
   // priority 1 takes the rendering over from fiber
