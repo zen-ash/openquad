@@ -72,6 +72,8 @@ const VIEWS = [
   // park place at the corner of woodruff park: the stone front, the glass box on jwd, the library's
   // glass at the south corner
   { name: 'college-of-law', from: [-214, 2.2, -232], at: [-192, 14, -290], player: [-214, -230] },
+  // edgewood ave at park place, from the campus side: the banking hall and the tower over it
+  { name: '25-park-place', from: [-262, 2, -31], at: [-228, 30, -100], player: [-264, -29] },
   {
     name: 'courtland-north',
     from: [-125.2, 3, 217.6],

@@ -22,6 +22,7 @@ import {
   singleDeckMaterials,
   steelDeckMaterials,
 } from './parkingDecksMaterials'
+import { parkPlace25Materials } from './parkPlace25Materials'
 import { peachtree191Materials } from './peachtree191Materials'
 import { petitScienceMaterials } from './petitScienceMaterials'
 import { practiceFacilityMaterials } from './practiceFacilityMaterials'
@@ -79,6 +80,7 @@ export const landmarkMaterials: Record<string, Record<string, THREE.Material>> =
   '55 Park Place': parkPlace55Materials,
   'Student Success Center': studentSuccessMaterials,
   'College of Law': collegeOfLawMaterials,
+  '25 Park Place': parkPlace25Materials,
 }
 
 // see-through glass and the parts in noShadow don't cast shadows, everything else does

@@ -195,13 +195,6 @@ const LOOKS: Record<string, Look> = {
     frame: '#e8e2d4',
     window: [2.3, 3.8, 0.55, 0.55],
   },
-  // white stone fins and dark glass, all the way up (replaces the old one)
-  '25 Park Place': {
-    wall: 'concrete',
-    color: '#e0e0dc',
-    frame: '#2e3134',
-    window: [1.7, 3.8, 0.62, 0.7],
-  },
   // rose granite (its height is 50 in campus.json, real 206)
   'Georgia-Pacific Tower': {
     wall: 'concrete',

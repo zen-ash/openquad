@@ -35,7 +35,9 @@ describe('campus doors', () => {
       const out = { x: x + nx, z: z + nz }
       const inside = { x: x - nx, z: z - nz }
       expect(pointInPolygon(inside, own.points)).toBe(true)
-      expect(shapes.some((s) => pointInPolygon(out, s.points))).toBe(false)
+      // its own parts can be over the way in (25 park place's tower over its colonnade)
+      const others = shapes.filter((_, i) => campus.buildings[i]!.landmark?.with !== b.name)
+      expect(others.some((s) => pointInPolygon(out, s.points))).toBe(false)
     },
   )
 })

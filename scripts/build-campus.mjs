@@ -168,7 +168,7 @@ const TOWER_PARTS = {
   479134202: {},
   479134203: {},
   479134204: {},
-  886352430: { podium: 20 }, // 25 park place, the annex behind it is low
+  886352430: {}, // 25 park place, drawn by hand (PARK_PLACE_25)
   886349852: { height: 84, podium: 20 }, // the mix
   536726595: { height: 52, podium: 22 }, // one 12 courtland
   886352432: {}, // southern bell, drawn by hand (SOUTHERN_BELL)
@@ -2560,6 +2560,96 @@ function peachtree191(b) {
   b.landmark = {}
 }
 
+// 25 park place (1969, the trust company of georgia's tower, gsu's since 2007) on woodruff park,
+// and its 1973 banking hall on edgewood ave (now gsu's creative media industries institute).
+// drawn by hand in the web app (campus/parkPlace25.ts). osm has the tower as a part on the
+// whole lot: the tower goes on the lidar's walls (2018, its fins and ledges) and the lot under
+// it becomes the ground floor's line, the lobby glass behind the colonnade on the plaza and
+// park place, the link and the banking hall's glass in under its overhang. the tower is drawn
+// with it (no name of its own). the ground is the plaza at the main doors (318.8m)
+const PARK_PLACE_25 = {
+  way: 886352430,
+  points: [
+    [-230.45, -140.85],
+    [-205.95, -140.85],
+    [-205.95, -84.45],
+    [-211, -84.45],
+    [-211, -71.8],
+    [-208.4, -71.8],
+    [-208.4, -47.2],
+    [-255.5, -47.2],
+    [-255.5, -71.8],
+    [-228, -71.8],
+    [-228, -84.45],
+    [-230.45, -84.45],
+  ],
+  // the banking hall's top floor (lidar 336.6m), the tower's coping is 433.0
+  height: 17.8,
+  // the revolving door in the middle of the lobby's glass on the plaza
+  door: [-230.45, -113.6, -1, 0],
+  tower: [
+    [-232.45, -142.85],
+    [-205.95, -142.85],
+    [-205.95, -84.45],
+    [-232.45, -84.45],
+  ],
+  towerHeight: 114.2,
+  // the plaza from the tower and the banking hall out to park place's curb (osm's road 4.5m
+  // out from its middle), round the patio in front of the link
+  plaza: [
+    [-232.45, -146.3],
+    [-232.45, -84.45],
+    [-228, -84.45],
+    [-228, -73],
+    [-258, -73],
+    [-258, -46],
+    [-279, -46],
+    [-277.1, -49.45],
+    [-255.3, -97.85],
+    [-253.3, -102.25],
+  ],
+}
+
+// gsu's planters on the plaza, a young tree in each: rows 6m apart along the tower, the ones
+// that fit before the curb. Trees.tsx picks a tree's kind and size from where it stands, so
+// each is nudged till it comes out a small street tree (the oaks are far too big for a planter)
+function plazaPlanters() {
+  const out = []
+  for (let row = 0; row < 7; row++) {
+    const z = -92 - row * 6
+    for (let col = 0; col < 4; col++) {
+      const x = -236.5 - col * 4 - (row % 2) * 2
+      if (pointInPolygon([x - 2.5, z], PARK_PLACE_25.plaza)) out.push(streetTree([x, z]))
+    }
+  }
+  return out
+}
+function streetTree([x, z]) {
+  // Trees.tsx's rand(): salt 5 is the kind (street from 0.72), 1 the size
+  const rand = ([px, pz], salt) => {
+    const n = Math.sin(px * 12.9898 + pz * 78.233 + salt * 37.719) * 43758.5453
+    return n - Math.floor(n)
+  }
+  let best = [x, z]
+  for (let i = -8; i <= 8; i++)
+    for (let j = -8; j <= 8; j++) {
+      const p = [round(x + i / 10), round(z + j / 10)]
+      if (rand(p, 5) >= 0.72 && (rand(best, 5) < 0.72 || rand(p, 1) < rand(best, 1))) best = p
+    }
+  return best
+}
+
+function parkPlace25(tower, lot) {
+  lot.points = PARK_PLACE_25.points
+  lot.height = PARK_PLACE_25.height
+  lot.door = PARK_PLACE_25.door
+  lot.landmark = { planters: plazaPlanters() }
+  delete tower.name
+  tower.points = PARK_PLACE_25.tower
+  tower.height = PARK_PLACE_25.towerHeight
+  tower.landmark = { with: lot.name }
+}
+
 function main(elements) {
   const buildings = []
   const roads = []
@@ -2822,6 +2912,7 @@ function main(elements) {
     cut.add(under)
     const tower = { name: under.name, height: round(t.height * SCALE), points: t.points }
     if (t.way === SOUTHERN_BELL.way) southernBell(tower, under)
+    if (t.way === PARK_PLACE_25.way) parkPlace25(tower, under)
     buildings.push(tower)
   }
 
@@ -2846,6 +2937,12 @@ function main(elements) {
   parks.push(...quad.parks)
   areas.push(quad.area)
   trees.push(...quad.trees)
+  // 25 park place's plaza and the trees in its planters, last so nothing else moves
+  const p25 = buildings.find((b) => b.landmark?.planters)
+  if (p25) {
+    plazas.push(PARK_PLACE_25.plaza)
+    trees.push(...p25.landmark.planters)
+  }
 
   // osm has footpaths that go through buildings (covered passages, indoor corridors).
   // buildings are solid in the game, so cut those bits out
