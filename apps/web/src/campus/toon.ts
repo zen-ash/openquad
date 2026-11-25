@@ -277,7 +277,7 @@ export const toonPaving = once(() => {
 // the panther quad's pavers: red bricks with light bands, like the real ones
 export const toonPavers = once(() => {
   const m = ground('#ffffff', 1)
-  m.colorNode = quadBrick(vec3(0.62, 0.3, 0.22), vec3(0.9, 0.89, 0.86))
+  m.colorNode = quadBrick(vec3(0.78, 0.64, 0.54), vec3(0.96, 0.96, 0.94))
   return m
 })
 

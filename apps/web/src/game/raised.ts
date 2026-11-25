@@ -187,6 +187,31 @@ export const RAISED_PLAZAS: Record<string, Data> = {
     edges: [null, 'open', 'open', 'open'],
     stairs: true,
   },
+  // the long stair with steel rails beside library north, from the quad up to the courtland
+  // sidewalk (the stair photo from the opening, nov 2026), and a landing at the top
+  'Panther Quad library stair': {
+    by: 'Panther Quad',
+    top: [316.65, 316.65, 314.1],
+    points: [
+      [-68.7, 150],
+      [-71.4, 153.1],
+      [-83.5, 142.7],
+      [-80.9, 139.6],
+    ],
+    edges: [null, 'open', 'open', 'open'],
+    stairs: true,
+  },
+  'Panther Quad library landing': {
+    by: 'Panther Quad',
+    top: 316.65,
+    points: [
+      [-67.1, 151.5],
+      [-69.7, 154.5],
+      [-71.4, 153.1],
+      [-68.7, 150],
+    ],
+    edges: [null, 'open', null, 'open'],
+  },
 }
 
 // the elevation on one at x, z: flat, or the plane through its first three points

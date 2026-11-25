@@ -11,12 +11,12 @@ const POLE = 11
 // colors from gsu's opening photos (nov 2026): near white concrete steps, the column's white
 // georgia marble with grey streaks, brushed steel, a dark bronze panther, fresh mulch
 const materials: Record<Part, THREE.Material> = {
-  concrete: concrete({ color: '#bdbab2', roughness: 0.85 }),
+  concrete: concrete({ color: '#aaa9a5', roughness: 0.85 }),
   marble: marble({ color: '#e2e2de', slab: [1.6, 1.25], veins: 1.2, joint: [0.005, 0.3] }),
   metal: metal({ color: '#b9bcbf', roughness: 0.35, metalness: 0.7 }),
   blue: plain({ color: '#1f4aa0', roughness: 0.5 }),
   bronze: metal({ color: '#3b3a35', roughness: 0.4, metalness: 0.6 }),
-  soil: plain({ color: '#6b4630', roughness: 1 }),
+  soil: plain({ color: '#433323', roughness: 1 }),
   shrub: plain({ color: '#4a5e34', roughness: 0.9 }),
 }
 // small things that don't need to be in the shadow passes

@@ -49,9 +49,9 @@ export const grassMaterial = textured('grass', '#80bd70', 1, 2)
 export const sidewalkMaterial = textured('sidewalk', '#e8ebf0', 0.85, 4)
 // everything that isn't a road, a sidewalk or grass. downtown that's mostly concrete
 export const pavingMaterial = textured('sidewalk', '#c4c8d2', 0.9, 0)
-// the panther quad's brick: red brown 10x20cm bricks in a herringbone lined up with
-// courtland st, light concrete bands across it at 45 degrees (gsu's opening photos, nov
-// 2026). gives the brick color (or the band's), x0.9-1.1 per brick, darker in the joints.
+// the panther quad's brick: warm grey brown 10x20cm bricks in a herringbone lined up with
+// courtland st, near white concrete bands across it at 45 degrees (gsu's opening photos, nov
+// 2026, colors as ratios to the bands and the lawn in them). gives the brick color (or the band's), x0.9-1.1 per brick, darker in the joints.
 // shared by the three looks
 export function quadBrick(brick: Node<'vec3'>, band: Node<'vec3'>) {
   const d = positionWorld.xz.sub(vec2(-3, 78))
@@ -87,8 +87,10 @@ export function quadBrick(brick: Node<'vec3'>, band: Node<'vec3'>) {
   return mix(bricks, band, select(onBand, float(1), float(0)))
 }
 export const paversMaterial = textured('sidewalk', '#ffffff', 0.85, 1)
+// bluish because the sidewalk texture under them is tan: in sun they come out at the photo's
+// colors (brick 127 106 92, bands about 160 155 150 at 11:30)
 paversMaterial.colorNode = materialColor.rgb.mul(
-  quadBrick(vec3(0.78, 0.44, 0.33), vec3(0.85, 0.83, 0.79)),
+  quadBrick(vec3(0.5, 0.49, 0.52), vec3(0.6, 0.78, 1)),
 )
 
 export const roadMaterial = textured('asphalt', '#9a9a9a', 0.9, 3)

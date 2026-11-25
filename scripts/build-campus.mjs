@@ -355,19 +355,45 @@ function pantherQuad(lines, crossings) {
       lawn.push(at([ca + Math.cos(t) * 8, cb + Math.sin(t) * 8]))
     }
 
-  // the bank up to the courtland sidewalk: terraced steps at the lawn and a planted strip
-  // above them, the same at the library end where the ground comes up again. [bottom edge a,
-  // b, top edge b, a] with the step count
-  // and the stair up to the courtland sidewalk by library north (rise is the least a step goes up)
+  // the bank up to the courtland sidewalk: seat steps along the lawn's far side and a planted
+  // strip above them. [bottom edge a, b, top edge b, a], the step count and the least a step
+  // goes up. the long stair by library north is in raised.ts
   const terraces = [
     {
       steps: 6,
       rise: 0.3,
-      points: [at([26, 17.5]), at([70, 17.5]), at([70, 12.1]), at([26, 12.1])],
+      points: [at([24, 17.5]), at([74, 17.5]), at([74, 12.1]), at([24, 12.1])],
     },
-    { steps: 10, rise: 0.15, points: [at([83, 15]), at([90, 15]), at([90, 1]), at([83, 1])] },
   ]
-  const beds = [rect(24, 74, 1.2, 11.6), rect(73, 82, 1.2, 16)].map((r) => r.map(at))
+  // mulch beds that follow the ground: the bank along courtland, a strip along the lawn's
+  // far side, one along the greenway by library north, one at the foot of the planters
+  const beds = [
+    rect(22, 76, 1.2, 11.6),
+    rect(27, 72, 48.2, 51),
+    rect(80, 96, 52, 57.5),
+    rect(76, 88, 21.5, 26),
+  ].map((r) => r.map(at))
+  // and raised ones with a level top, stepping down the slope at the library end
+  const planters = [
+    rect(73, 82, 1, 6.5),
+    rect(73, 82, 7.5, 13),
+    rect(73, 81, 14, 20),
+    rect(84, 96, 1, 8),
+    rect(84, 96, 9, 15),
+  ].map((r) => r.map(at))
+  // young trees, thin ones (drawn by pantherQuad.ts, not the full grown map trees)
+  const saplings = [
+    ...[30, 40, 50, 60, 70].map((a) => at([a, 6.5])),
+    ...[31, 39, 47, 55, 63, 71].map((a) => at([a, 49.6])),
+    ...[84, 92].map((a) => at([a, 54.8])),
+    ...[79, 85].map((a) => at([a, 23.7])),
+    ...[
+      [77.5, 4],
+      [77.5, 16.5],
+      [90, 4.5],
+      [90, 12],
+    ].map(at),
+  ]
   // bronzie in front of library north's lobby, side on to its glass, heading toward courtland
   const bronzie = [...at([88, 34]), Math.atan2(v[1], -v[0])]
   beds.push(rect(86, 90, 31, 37).map(at))
@@ -388,12 +414,20 @@ function pantherQuad(lines, crossings) {
     closed,
     parks: [lawn],
     // no old trees on the lawn, the plaza or the steps
-    clear: [lawn, rect(-1, 23, -1, 35).map(at), ...terraces.map((t) => t.points), ...beds],
+    clear: [
+      lawn,
+      rect(-1, 23, -1, 35).map(at),
+      ...terraces.map((t) => t.points),
+      ...beds,
+      ...planters,
+    ],
     area: { name: 'Panther Quad', gsu: true, points: outline },
     trees,
     quad: {
       pavers: [outline, gilmer, rect(76, 101, 0, 60).map(at)],
       beds,
+      planters,
+      saplings,
       terraces,
       column: [...at([10, 17]), round(Math.atan2(-u[1], u[0]))],
       flags: [at([3, 4]), at([6, 4]), at([9, 4])],

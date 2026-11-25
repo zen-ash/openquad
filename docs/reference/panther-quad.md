@@ -46,6 +46,11 @@ old Gilmer corner (-3, 78) toward library north, v in toward Arts & Humanities.
   by the person next to it in the Rough Draft photo.
 - Brick: about 10 x 20cm in a herringbone, light concrete bands about 0.6m wide at 45 degrees
   every ~9m (the high photo, the plaza photos).
+- Colors (second round, from the high photo in sun): brick 124 104 90, bands 159 154 148, mulch
+  119 87 55, concrete 146 144 137, lawn 125 115 70 (sRGB). The game at 11:30 on the same view:
+  brick 129 109 95, bands 161 155 148, mulch 124 89 62. The pavers' colors are bluish in the
+  code because the sidewalk texture under them is tan. The lawn is the map's grass (greener
+  than the new November sod), not changed.
 
 ## What's in the game
 
@@ -57,27 +62,35 @@ old Gilmer corner (-3, 78) toward library north, v in toward Arts & Humanities.
   are young and thin and the game's trees are full grown, they hid the quad.
 - game/raised.ts: 'Panther Quad plaza' (the corner, flat at 313.8, the courtland sidewalk's
   height there) and 'Panther Quad steps' down to the lawn at 312.25, so you walk up them.
+- game/raised.ts also has 'Panther Quad library stair' (from the quad at 314.1 up 2.5m to the
+  Courtland sidewalk, 4m wide, beside library north's wall south of its lobby) and a landing at
+  the top, so you walk up it.
 - campus/pantherQuad.ts draws it all: the column (marble, steel corners, a plain blue square
-  where GSU's flame is on two faces), flagpoles, the plaza's walls with a coping, the steps with
-  rails, seat steps up the bank along Courtland and a stair up to the Courtland sidewalk by
-  library north, mulch beds with shrubs, bronzie (a plain shape, not the sculpture) on its
-  block. scene/PantherQuad.tsx gives them library materials, the flags are one mesh.
+  where GSU's flame is on two faces), flagpoles, the plaza's walls with a coping, the steps and
+  the library stair with steel rails (sides and middle), seat steps along the lawn's whole far
+  side (u 24-74), mulch beds with low shrubs that follow the ground (the Courtland bank, a strip
+  along the lawn's far side, the greenway by library north, one at the foot of the planters),
+  five raised planters with level tops stepping down the slope at the library end with rails
+  where they stand over 0.8m, young trees (a thin trunk and three leaf lumps, the map's trees are
+  all full grown), bronzie (a plain shape, not the sculpture) on its block. scene/PantherQuad.tsx gives them library materials, the flags are one mesh.
 - ground.ts quadBrick(): the herringbone and bands, the same pattern in all three looks.
 - Library North's paver patch out front is gone (the quad's brick covers it).
-- Collision: bronzie's block, the column, the poles (game/world.ts).
+- Collision: bronzie's block, the raised planters, the column, the poles (game/world.ts).
 
 ## What still differs
 
 - The layout is from the renderings plus the photos by eye. The photo from the stair by library
-  north (rd-greenway) shows the lawn sitting further toward Courtland and wider than mine, a
-  long stair with steel rails from library north's side down to a grey paved porch with
-  benches, and the seat steps along the whole far side of the lawn. I have a shorter stair to
-  the Courtland sidewalk, no porch, and my terraces only along part of the lawn.
+  north (rd-greenway) shows the lawn sitting further toward Courtland and wider than mine, and
+  the stair's foot on a grey paved porch with benches (no porch here). Where the long stair
+  goes and how high (2.5m here, it looks more like 4m in the photo, the game's ground is 2m
+  high there) is my reading of one photo; I couldn't line a camera up on the stair itself.
+- The planters at the library end are placed by eye from the high photo; the real ones are
+  lower with more of them and steps between.
 - The ground is the 2018 bare earth with Sparks Hall filled in: it rises 2m at the library end,
   where the real quad looks flat. The lawn follows the terrain (±0.3m).
 - The high photo (rd-students) shows the near end of the lawn closer to the camera, blue
-  umbrellas and Adirondack chairs, light poles, and stepped concrete planters with rails at the
-  Courtland end. Not there.
+  umbrellas and Adirondack chairs and light poles. Not there. It's in sun in the photo; the
+  game's Library North shades that part of the plaza at any time I tried (11:30-14:00).
 - The lawn was still fenced off (blue mesh) at the opening for the new sod: not drawn.
 - The column's lettered steel strip (GEORGIA STATE UNIVERSITY up one corner) and its blue lights
   at night aren't there (signs can't run vertically, no glow). Its cornice is simpler.
@@ -85,12 +98,13 @@ old Gilmer corner (-3, 78) toward library north, v in toward Arts & Humanities.
   the glass) is from one telephoto photo by eye.
 - The Ground Crew Grove's place (in front of Arts & Humanities by the plaza) and its plaque are
   from the rendering, no photo of it yet. The grey pavers under its trees aren't drawn.
-- Shrubs are low lumps; the real beds have small grey-green shrubs spaced out in red mulch.
+- Shrubs and the young trees' leaves are 8 triangle lumps (they read a bit like green
+  diamonds close up); the real young trees are bare or yellow in November.
 
 ## Cost
 
 Measured after the merge. 7 meshes (concrete, marble, metal, blue, bronze, soil, shrub) plus one
 for the three flags, from the library's families (no new shaders except the brick pattern, which
-replaced the old paver pattern in the same three ground materials). About 5.5k triangles (2.3k
-of them shrubs). Only concrete, marble and bronze cast shadows. The brick pattern looks at four
+replaced the old paver pattern in the same three ground materials). About 8k triangles (3.5k
+of them shrubs and leaves, 2.3k concrete) after the second round (was 5.5k). Only concrete, marble and bronze cast shadows. The brick pattern looks at four
 nearby repeats per pixel on the pavers layer only.

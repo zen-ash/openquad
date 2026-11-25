@@ -76,7 +76,7 @@ const v3 = (p: Point, y: number) => new THREE.Vector3(p.x, y, p.z)
 // a round bar from a to b (poles, rails, legs)
 function bar(a: THREE.Vector3, b: THREE.Vector3, r: number, sides = 6) {
   const len = a.distanceTo(b)
-  const geo = new THREE.CylinderGeometry(r, r, len, sides, 1, false).toNonIndexed()
+  const geo = new THREE.CylinderGeometry(r, r, len, sides, 1, true).toNonIndexed()
   const dir = new THREE.Vector3().subVectors(b, a).normalize()
   geo.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir))
   geo.translate((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2)
@@ -282,9 +282,9 @@ function terraces(add: Add) {
       }
       prev = tops
     }
-    // rails up both sides of a stair
+    // rails up both sides of a stair, and one down the middle of a wide one
     if (rise < 0.2)
-      for (const s of [0.03, 0.97]) {
+      for (const s of len > 3 ? [0.03, 0.5, 0.97] : [0.03, 0.97]) {
         const p = line(0, s)
         const q = line(1, s)
         const [yp, yq] = [heightAt(p.x, p.z) + 0.9, prev[Math.round(s * m)]! + 0.9]
@@ -308,67 +308,115 @@ function terraces(add: Add) {
   }
 }
 
-// the planting beds: mulch a bit over the ground with a concrete edge, shrubs in them
+// the planting beds: mulch a bit over the ground with a concrete edge, shrubs in them. the
+// raised planters have a level top and rails where they stand high over the ground
 function beds(add: Add) {
-  quad.beds.forEach((points, b) => {
-    const [a0, b0, b1, a1] = points.map(pt) as [Point, Point, Point, Point]
-    const lenA = Math.hypot(b0.x - a0.x, b0.z - a0.z)
-    const lenB = Math.hypot(a1.x - a0.x, a1.z - a0.z)
-    const [m, n] = [Math.max(1, Math.ceil(lenA / 2)), Math.max(1, Math.ceil(lenB / 2))]
-    const at = (s: number, t: number) => lerp(lerp(a0, b0, s), lerp(a1, b1, s), t)
-    const y = (p: Point) => heightAt(p.x, p.z) + BED
-    for (let i = 0; i < m; i++)
-      for (let j = 0; j < n; j++) {
-        const ps = [
-          at(i / m, j / n),
-          at((i + 1) / m, j / n),
-          at((i + 1) / m, (j + 1) / n),
-          at(i / m, (j + 1) / n),
-        ]
-        const [c0, c1, c2, c3] = ps.map((p) => v3(p, y(p))) as THREE.Vector3[]
-        add('soil', face(c0!, c1!, c2!, c3!, UP))
-      }
-    // the edge
-    const ring = [a0, b0, b1, a1]
-    const mid = lerp(a0, b1, 0.5)
-    ring.forEach((p, i) => {
-      const q = ring[(i + 1) % 4]!
-      const l = Math.hypot(q.x - p.x, q.z - p.z)
-      const k = Math.max(1, Math.ceil(l / 2))
-      for (let s = 0; s < k; s++) {
-        const [u, w] = [lerp(p, q, s / k), lerp(p, q, (s + 1) / k)]
-        const [gu, gw] = [terrainAt(u.x, u.z) - 0.2, terrainAt(w.x, w.z) - 0.2]
-        const c = lerp(u, w, 0.5)
-        const out = { x: c.x - mid.x, z: c.z - mid.z }
-        add('concrete', face(v3(u, gu), v3(w, gw), v3(w, y(w) + 0.06), v3(u, y(u) + 0.06), out))
-      }
-    })
-    // shrubs, the same every time
-    const shrub = new THREE.IcosahedronGeometry(1, 0)
-    for (let i = 0.5; i < lenA / 1.9; i++)
-      for (let j = 0.5; j < lenB / 1.9; j++) {
-        const r = rand(b * 1000 + i * 37 + j)
-        if (r < 0.35) continue
-        const p = at((i * 1.9 + (r - 0.5)) / lenA, (j * 1.9 + (rand(r * 99) - 0.5)) / lenB)
-        if (Math.hypot(p.x - quad.bronzie[0]!, p.z - quad.bronzie[1]!) < 1.5) continue
-        const s = 0.2 + r * 0.2
-        const m4 = new THREE.Matrix4().compose(
-          new THREE.Vector3(p.x, y(p) + s * 0.25, p.z),
-          new THREE.Quaternion().setFromEuler(new THREE.Euler(r * 3, r * 6, r * 2)),
-          new THREE.Vector3(s, s * 0.65, s),
-        )
-        // round normals so they read as soft lumps, not cut stones
-        const g = lump(shrub, m4)
-        const pos = g.getAttribute('position')
-        const nor = g.getAttribute('normal')
-        const c = new THREE.Vector3().setFromMatrixPosition(m4)
-        for (let k = 0; k < pos.count; k++) {
-          const n = new THREE.Vector3().fromBufferAttribute(pos, k).sub(c).normalize()
-          nor.setXYZ(k, n.x, n.y, n.z)
-        }
-        add('shrub', g)
-      }
+  quad.beds.forEach((points, b) => bed(add, points.map(pt), b, null))
+  quad.planters.forEach((points, b) => {
+    const c = points.map(pt)
+    bed(add, c, 100 + b, Math.max(...c.map((p) => heightAt(p.x, p.z))) + 0.4)
   })
+  for (const [x, z] of quad.saplings as [number, number][]) sapling(add, { x, z })
+}
+
+function bed(add: Add, c: Point[], b: number, level: number | null) {
+  const [a0, b0, b1, a1] = c as [Point, Point, Point, Point]
+  const lenA = Math.hypot(b0.x - a0.x, b0.z - a0.z)
+  const lenB = Math.hypot(a1.x - a0.x, a1.z - a0.z)
+  const [m, n] = [Math.max(1, Math.ceil(lenA / 2)), Math.max(1, Math.ceil(lenB / 2))]
+  const at = (s: number, t: number) => lerp(lerp(a0, b0, s), lerp(a1, b1, s), t)
+  const y = (p: Point) => level ?? heightAt(p.x, p.z) + BED
+  for (let i = 0; i < m; i++)
+    for (let j = 0; j < n; j++) {
+      const ps = [
+        at(i / m, j / n),
+        at((i + 1) / m, j / n),
+        at((i + 1) / m, (j + 1) / n),
+        at(i / m, (j + 1) / n),
+      ]
+      const [c0, c1, c2, c3] = ps.map((p) => v3(p, y(p))) as THREE.Vector3[]
+      add('soil', face(c0!, c1!, c2!, c3!, UP))
+    }
+  // the edge
+  const lip = level === null ? 0.06 : 0.1
+  const mid = lerp(a0, b1, 0.5)
+  c.forEach((p, i) => {
+    const q = c[(i + 1) % 4]!
+    const l = Math.hypot(q.x - p.x, q.z - p.z)
+    const k = Math.max(1, Math.ceil(l / 2))
+    for (let s = 0; s < k; s++) {
+      const [u, w] = [lerp(p, q, s / k), lerp(p, q, (s + 1) / k)]
+      const [gu, gw] = [terrainAt(u.x, u.z) - 0.2, terrainAt(w.x, w.z) - 0.2]
+      const e = lerp(u, w, 0.5)
+      const out = { x: e.x - mid.x, z: e.z - mid.z }
+      const [yu, yw] = [y(u) + lip, y(w) + lip]
+      add('concrete', face(v3(u, gu), v3(w, gw), v3(w, yw), v3(u, yu), out))
+      if (level === null) continue
+      add('concrete', face(v3(u, yu), v3(w, yw), lerpUp(w, mid, yw), lerpUp(u, mid, yu), UP))
+    }
+  })
+  // a rail along a side where it stands well over the ground
+  if (level !== null)
+    c.forEach((p, i) => {
+      const q = c[(i + 1) % 4]!
+      const e = lerp(p, q, 0.5)
+      if (level - terrainAt(e.x, e.z) < 0.8) return
+      const [a, b] = [v3(p, level + 1.0), v3(q, level + 1.0)]
+      add('metal', bar(a, b, 0.025))
+      add('metal', bar(v3(p, level), a, 0.025))
+    })
+  // shrubs, the same every time
+  for (let i = 0.5; i < lenA / 1.5; i++)
+    for (let j = 0.5; j < lenB / 1.5; j++) {
+      const r = rand(b * 1000 + i * 37 + j)
+      if (r < 0.25) continue
+      const p = at(
+        (i * 1.5 + (r - 0.5) * 0.8) / lenA,
+        (j * 1.5 + (rand(r * 99) - 0.5) * 0.8) / lenB,
+      )
+      if (Math.hypot(p.x - quad.bronzie[0]!, p.z - quad.bronzie[1]!) < 1.5) continue
+      const s = 0.18 + r * 0.2
+      shrub(add, new THREE.Vector3(p.x, y(p) + s * 0.2, p.z), [s, s * 0.7, s], r)
+    }
+}
+
+// the top of a planter's wall, 0.2m in toward the middle
+function lerpUp(p: Point, mid: Point, yy: number) {
+  const l = Math.hypot(mid.x - p.x, mid.z - p.z) || 1
+  return v3({ x: p.x + ((mid.x - p.x) / l) * 0.2, z: p.z + ((mid.z - p.z) / l) * 0.2 }, yy)
+}
+
+// a low lump, 8 triangles with round normals so it reads as soft, not a cut stone
+const LUMP = new THREE.OctahedronGeometry(1, 0)
+function shrub(add: Add, at: THREE.Vector3, size: number[], r: number) {
+  const m4 = new THREE.Matrix4().compose(
+    at,
+    new THREE.Quaternion().setFromEuler(new THREE.Euler(r * 0.6, r * 6, r * 0.4)),
+    new THREE.Vector3(...size),
+  )
+  const g = lump(LUMP, m4)
+  const pos = g.getAttribute('position')
+  const nor = g.getAttribute('normal')
+  for (let k = 0; k < pos.count; k++) {
+    const n = new THREE.Vector3().fromBufferAttribute(pos, k).sub(at).normalize()
+    nor.setXYZ(k, n.x, n.y, n.z)
+  }
+  add('shrub', g)
+}
+
+// a young tree: a thin trunk and a few small lumps of leaves (the map's trees are all full
+// grown, the new ones on the quad are 3-4m whips)
+function sapling(add: Add, p: Point) {
+  const g = heightAt(p.x, p.z)
+  const r = rand(p.x * 7 + p.z)
+  const h = 3.2 + r * 0.8
+  add('bronze', bar(v3(p, g), v3(p, g + h), 0.05, 5))
+  for (const [dx, dy, dz, k] of [
+    [0, h, 0, 0.75],
+    [0.35, h - 0.6, 0.2, 0.6],
+    [-0.3, h - 0.9, -0.25, 0.55],
+  ])
+    shrub(add, new THREE.Vector3(p.x + dx!, g + dy!, p.z + dz!), [k!, k! * 1.3, k!], r)
 }
 
 const rand = (n: number) => {
@@ -474,7 +522,10 @@ export function pantherQuadObstacles() {
   const block = [f.at(-1.2, -0.48), f.at(1.2, -0.48), f.at(1.2, 0.48), f.at(-1.2, 0.48)]
   const [cx, cz] = quad.column as [number, number]
   return {
-    blocks: [block.map((p) => [p.x, p.z] as [number, number])],
+    blocks: [
+      block.map((p) => [p.x, p.z] as [number, number]),
+      ...(quad.planters as [number, number][][]),
+    ],
     circles: [
       { x: cx, z: cz, radius: 1.2 },
       ...(quad.flags as [number, number][]).map(([fx, fz]) => ({ x: fx, z: fz, radius: 0.2 })),

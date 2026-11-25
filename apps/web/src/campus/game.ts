@@ -135,7 +135,7 @@ export const gamePaving = once(() => {
 // the panther quad's brick, the same pattern as the realistic look a little brighter
 export const gamePavers = once(() => {
   const m = ground('#ffffff', 0.85, 1)
-  m.colorNode = quadBrick(vec3(0.5, 0.22, 0.15), vec3(0.85, 0.84, 0.8))
+  m.colorNode = quadBrick(vec3(0.72, 0.58, 0.47), vec3(0.95, 0.94, 0.92))
   return m
 })
 
