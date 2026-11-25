@@ -100,6 +100,8 @@ const DATUMS: Record<string, number | { from: number }> = {
   '55 Park Place': 321.7,
   // the auburn ave sidewalk at the door (lidar), equitable pl falls 2m along its side
   'Student Success Center': 318.1,
+  // the park place sidewalk at the entrance (lidar), the drive behind it is 2-4m lower
+  'College of Law': 323.6,
 }
 
 type Building = { name?: string; points: number[][]; door?: number[] }

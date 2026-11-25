@@ -77,7 +77,6 @@ const LOOKS: Record<string, Look> = {
     window: [5, 3.5, 0.16, 0.9],
   },
   // new glass buildings
-  'College of Law': { wall: 'glass', color: '#2a2d30' },
   'Classroom South': { wall: 'glass', color: '#c9ccce' },
 
   // the skyline round campus, from commons/mapillary photos (2015-2026)

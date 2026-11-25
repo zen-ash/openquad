@@ -69,6 +69,9 @@ const VIEWS = [
     at: [-186, 9, -140],
     player: [-216, -176],
   },
+  // park place at the corner of woodruff park: the stone front, the glass box on jwd, the library's
+  // glass at the south corner
+  { name: 'college-of-law', from: [-214, 2.2, -232], at: [-192, 14, -290], player: [-214, -230] },
   {
     name: 'courtland-north',
     from: [-125.2, 3, 217.6],

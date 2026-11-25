@@ -2134,6 +2134,39 @@ function studentSuccess(b) {
   b.landmark = {}
 }
 
+// the college of law (85 park place, 2015): beige limestone on park place with a terrace on
+// top, the law library's glass over it under a big flat roof that hangs out over the terrace
+// and john wesley dobbs ave, a lower glass box on the corner. drawn in campus/collegeOfLaw.ts.
+// osm's outline is about right but has the roof's edge on jwd: redrawn on usgs's lidar (2018),
+// the north wall 3m in under the roof (2017/2019 street photos). the ground is the park place
+// sidewalk at the entrance (323.6m), the back drive is 2-4m lower
+const COLLEGE_OF_LAW = {
+  // the glass box's corner on jwd, along the roof's edge to the stone face behind it, the
+  // north wall under the roof, the east side on the drive, the south side, park place's stone
+  // face, the box's south side
+  points: [
+    [-193.4, -318.6],
+    [-181.4, -315.1],
+    [-182.14, -312.2],
+    [-140.6, -300.2],
+    [-140.6, -252.8],
+    [-198.5, -252.8],
+    [-186.8, -295.3],
+    [-193.4, -295.3],
+  ],
+  // the roof (lidar 358.9m)
+  height: 35.3,
+  // the doors on park place in the box's west side, under the sign
+  door: [-193.4, -299.5, -1, 0],
+}
+
+function collegeOfLaw(b) {
+  b.points = COLLEGE_OF_LAW.points
+  b.height = COLLEGE_OF_LAW.height
+  b.door = COLLEGE_OF_LAW.door
+  b.landmark = {}
+}
+
 // the university lofts (135 edgewood ave, 2002): gsu's loft apartments, metal shingles round
 // a courtyard, stepping up from 6 floors on edgewood ave and auditorium pl to a 14 floor
 // tower and arm, with a 2 storey wing curving into the courtyard. drawn in
@@ -2760,6 +2793,8 @@ function main(elements) {
   if (p55) parkPlace55(p55)
   const ssc = buildings.find((b) => b.name === 'Student Success Center')
   if (ssc) studentSuccess(ssc)
+  const law = buildings.find((b) => b.name === 'College of Law')
+  if (law) collegeOfLaw(law)
   for (const b of buildings) if (PARKING_DECKS[b.name]) parkingDeck(b)
   const p191 = buildings.find((b) => b.name === PEACHTREE_191.name)
   if (p191) peachtree191(p191)
