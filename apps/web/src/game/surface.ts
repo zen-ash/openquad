@@ -98,6 +98,8 @@ const DATUMS: Record<string, number | { from: number }> = {
   '58 Edgewood': 314.4,
   // the terrace along park place in front of the doors (lidar), auburn ave behind falls 4.6m
   '55 Park Place': 321.7,
+  // the auburn ave sidewalk at the door (lidar), equitable pl falls 2m along its side
+  'Student Success Center': 318.1,
 }
 
 type Building = { name?: string; points: number[][]; door?: number[] }

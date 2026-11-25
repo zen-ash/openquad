@@ -64,6 +64,12 @@ const VIEWS = [
   { name: '58-edgewood', from: [-207, 2.5, -27], at: [-180, 10, -48], player: [-209, -25] },
   { name: '55-park-place', from: [-258, 1.6, -178], at: [-190, 30, -198], player: [-260, -176] },
   {
+    name: 'student-success-center',
+    from: [-214, 1.7, -173],
+    at: [-186, 9, -140],
+    player: [-216, -176],
+  },
+  {
     name: 'courtland-north',
     from: [-125.2, 3, 217.6],
     at: [-127.8, 5, 248.6],

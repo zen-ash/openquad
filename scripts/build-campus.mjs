@@ -109,6 +109,7 @@ const GSU_NAMES = {
   'Sports Annex': 'Practice Facility',
   'GSU Parking A Deck': 'A Deck',
   'Loft Parking': 'University Lofts Parking',
+  'Bell Building': 'Student Success Center',
 }
 
 const isGsu = (tags) => GSU_BUILDINGS.has(tags.name)
@@ -2105,6 +2106,34 @@ function parkPlace55(b) {
   b.landmark = {}
 }
 
+// the student success center (25-27 auburn ave, the old southern bell exchange, opened by gsu
+// in oct 2025): two buildings, 1907 and 1922. the 1907 one on the equitable pl corner, red
+// brick over a limestone ground floor with fluted columns, stone quoins and a deep bracketed
+// cornice, its long side plain brick with arched windows. the 1922 one next to it, cream terra
+// cotta with paired windows and a parapet of little piers. drawn in campus/studentSuccess.ts.
+// osm's box is a little skewed and short, redrawn square on usgs's lidar walls (2018). the
+// front is the ground floor's glass, 0.3m behind the stone. the ground is the auburn ave
+// sidewalk at the door (318.1m), equitable pl falls 2m to the back
+const STUDENT_SUCCESS = {
+  points: [
+    [-198.1, -146.4],
+    [-170.1, -146.4],
+    [-170.1, -89],
+    [-198.1, -89],
+  ],
+  // the elevator's penthouse on the roof (lidar 342.3m), the cornice is 18.3
+  height: 24.2,
+  // the doors in the 1907 building's east bay
+  door: [-187, -146.4, 0, -1],
+}
+
+function studentSuccess(b) {
+  b.points = STUDENT_SUCCESS.points
+  b.height = STUDENT_SUCCESS.height
+  b.door = STUDENT_SUCCESS.door
+  b.landmark = {}
+}
+
 // the university lofts (135 edgewood ave, 2002): gsu's loft apartments, metal shingles round
 // a courtyard, stepping up from 6 floors on edgewood ave and auditorium pl to a 14 floor
 // tower and arm, with a 2 storey wing curving into the courtyard. drawn in
@@ -2729,6 +2758,8 @@ function main(elements) {
   if (e58) edgewood58(e58)
   const p55 = buildings.find((b) => b.name === '55 Park Place')
   if (p55) parkPlace55(p55)
+  const ssc = buildings.find((b) => b.name === 'Student Success Center')
+  if (ssc) studentSuccess(ssc)
   for (const b of buildings) if (PARKING_DECKS[b.name]) parkingDeck(b)
   const p191 = buildings.find((b) => b.name === PEACHTREE_191.name)
   if (p191) peachtree191(p191)
