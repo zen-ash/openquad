@@ -231,7 +231,7 @@ export function urbanLifePlaza(add: Add, A: At, base: number) {
   }
 
   // the treads and risers of the steps (you walk up the slope under them)
-  for (const r of RAISED.filter((x) => x.stairs)) {
+  for (const r of RAISED.filter((x) => x.stairs && x.by === 'Urban Life Building')) {
     const [p0, p1, p2, p3] = r.outline as [Point, Point, Point, Point]
     const hTop = yOn(r, p0)
     const hBottom = yOn(r, p3)

@@ -5,6 +5,7 @@ import { parkingObstacles, type ParkingData } from '../campus/loftsParking'
 import { wingWalls, type CourtlandBuildingData } from '../campus/courtlandBuilding'
 import { courtlandObstacles, type CourtlandNorthData } from '../campus/courtlandNorth'
 import { nscObstacles, type NscData } from '../campus/naturalScience'
+import { pantherQuadObstacles } from '../campus/pantherQuad'
 import { deckObstacles, type DeckData } from '../campus/parkingDecks'
 import { arenaObstacles, type ArenaData } from '../campus/sportsArena'
 import { BED, memorialWall } from '../campus/fountain'
@@ -26,7 +27,7 @@ import { fromElevation, heightAt } from './terrain'
 import { drivingBoxes } from './traffic'
 
 const TREE_RADIUS = 0.8
-const { quad } = campus
+const quadObstacles = pantherQuadObstacles()
 
 // the edge of the part of campus you can walk around in (packages/shared/src/fence.ts).
 // it's just walls, so you slide along it like any other wall
@@ -122,7 +123,7 @@ export const world: World = {
     ...campus.buildings
       .filter((b, i) => !enterable.has(i) && !b.minHeight && !isPodium(b.points))
       .map((b) => b.points),
-    ...quad.planters.map((p) => p.points),
+    ...quadObstacles.blocks,
     gym.planter.map((p) => [p.x, p.z]),
     ...[urbanLife.deck, urbanLife.podium, ...urbanLife.planters].map((o) =>
       o.map((p) => [p.x, p.z]),
@@ -148,7 +149,7 @@ export const world: World = {
   ],
   circles: [
     ...campus.trees.map(([x, z]) => ({ x: x!, z: z!, radius: TREE_RADIUS })),
-    { x: quad.monument[0]!, z: quad.monument[1]!, radius: 1 },
+    ...quadObstacles.circles,
     // benches are two circles along their length
     ...benches.flatMap((b) =>
       [-0.5, 0.5].map((k) => ({
@@ -160,7 +161,6 @@ export const world: World = {
     ...bins.map((b) => ({ x: b.x, z: b.z, radius: 0.3 })),
     // the fountain, out to the edge of its flower beds
     { x: campus.fountain[0]!, z: campus.fountain[1]!, radius: BED },
-    ...quad.flags.map(([x, z]) => ({ x: x!, z: z!, radius: 0.2 })),
     ...coe.circles,
     gym.pole,
     ...arena.circles,

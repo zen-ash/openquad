@@ -42,6 +42,7 @@ import {
   toonRoad,
 } from '../campus/toon'
 import { localPlayer } from '../game/localPlayer'
+import { pointInPolygon } from '../game/collision'
 import { RAISED } from '../game/raised'
 import { daylight, sunDirection, sunPosition, timeFor } from '../game/sun'
 import { game, today, toon, useSettings } from '../settings'
@@ -197,6 +198,27 @@ function lines(all: LineData[], lift: number, cut: { points: number[][] }[] = []
   decks.setIndex([...Array(decks.getAttribute('position').count).keys()])
   return mergeGeometries([planarUv(ground), decks])
 }
+// the panther quad is brick right across, the old sidewalks over it are only kept for the
+// gps: drawn only where they're off the quad
+function offQuad(all: LineData[]) {
+  const quads = campus.quad.pavers.map((p) => p.map(([x, z]) => ({ x: x!, z: z! })))
+  const on = (a: number[], b: number[]) => {
+    const mid = { x: (a[0]! + b[0]!) / 2, z: (a[1]! + b[1]!) / 2 }
+    return quads.some((q) => pointInPolygon(mid, q))
+  }
+  return all.flatMap((l) => {
+    const runs: LineData[] = []
+    let run: number[][] = [l.points[0]!]
+    for (let i = 1; i < l.points.length; i++) {
+      if (on(l.points[i - 1]!, l.points[i]!)) {
+        if (run.length > 1) runs.push({ ...l, points: run })
+        run = [l.points[i]!]
+      } else run.push(l.points[i]!)
+    }
+    if (run.length > 1) runs.push({ ...l, points: run })
+    return runs
+  })
+}
 // the crossings (osm footway=crossing), a meter short at each end so they stay on the road,
 // with their width negative: that's how the road shader knows to paint the bars (ground.ts)
 function crosswalks() {
@@ -258,7 +280,7 @@ function Ground() {
       // paints its lanes)
       roads: lines(campus.roads, 0.004, toll),
       crosswalks: crosswalks(),
-      paths: lines(campus.paths, 0.005),
+      paths: lines(offQuad(campus.paths), 0.005),
     }),
     [],
   )

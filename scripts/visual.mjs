@@ -116,6 +116,8 @@ const VIEWS = [
     inside: 'Library North',
   },
   { name: 'fence-edge', from: [15, 4, -22], at: [40, 8, -100], player: [14, -19] },
+  // the panther quad from the stair by library north, the lawn and the sparks column
+  { name: 'panther-quad', from: [-70, 3, 128], at: [-22, 1, 76], player: [-72, 130] },
   { name: 'night', from: [-30, 4, -10], at: [40, 12, 50], player: [-32, -12], time: '23:00' },
   // the game look: its ground, trees, sky, a star and an entrance marker
   { name: 'game-park', from: [0, 4, 55], at: [0, 8, -60], player: [0, 58], style: 'game' },

@@ -158,6 +158,35 @@ export const RAISED_PLAZAS: Record<string, Data> = {
     ],
     edges: [0, 0, 0, null],
   },
+  // the panther quad's plaza round the sparks column at the courtland / gilmer corner, level
+  // with the courtland sidewalk there (the lawn is ~1.5m lower). gsu's opening photos show
+  // the steps down to the lawn with rails and the plaza walled on its grove side.
+  // docs/reference/panther-quad.md
+  'Panther Quad plaza': {
+    by: 'Panther Quad',
+    top: 313.8,
+    points: [
+      [-3, 78],
+      [-14.7, 91.7],
+      [-26.9, 81.2],
+      [-39, 70.8],
+      [-40.5, 69.5],
+      [-28.8, 55.9],
+    ],
+    edges: [null, 'open', null, 'open', 'open', 'open'],
+  },
+  'Panther Quad steps': {
+    by: 'Panther Quad',
+    top: [313.8, 313.8, 312.25],
+    points: [
+      [-26.9, 81.2],
+      [-39, 70.8],
+      [-41.6, 73.9],
+      [-29.5, 84.3],
+    ],
+    edges: [null, 'open', 'open', 'open'],
+    stairs: true,
+  },
 }
 
 // the elevation on one at x, z: flat, or the plane through its first three points

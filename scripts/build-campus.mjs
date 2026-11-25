@@ -291,15 +291,28 @@ const NEW_BUILDINGS = [
 ]
 
 // the panther quad. sparks hall came down at the end of 2025 and this stretch of gilmer
-// street closed, so hurt park, the sparks hall site and the greenway are one big quad now.
-// osm doesn't have it yet, so it's laid out by eye from gsu's campus map. meters from hurt
-// park. u runs along courtland street from the old gilmer corner, v goes in toward arts &
-// humanities
+// street closed, the quad opened nov 19 2026 (docs/reference/panther-quad.md). laid out from
+// gsu's opening photos and its renderings: the sparks column on a raised plaza at the
+// courtland / gilmer corner, steps down to the lawn, terraced planting along courtland, a
+// promenade with trees where gilmer was, a grove in front of arts & humanities and bronzie
+// by library north. meters from hurt park. u runs along courtland street from the old gilmer
+// corner, v goes in toward arts & humanities (along gilmer)
 function pantherQuad(lines, crossings) {
+  // gilmer between peachtree center and courtland
+  const closed = (road) =>
+    road.name?.startsWith('Gilmer') &&
+    road.points.every(([x, z]) => x > -103 && x < 8 && z > -26 && z < 79)
+  const open = lines.filter((l) => !closed(l))
   const o = [-3, 78]
   const u = [-0.651, 0.759]
   const v = [-0.759, -0.651]
   const at = ([a, b]) => [round(o[0] + u[0] * a + v[0] * b), round(o[1] + u[1] * a + v[1] * b)]
+  const rect = (a0, a1, b0, b1) => [
+    [a0, b0],
+    [a1, b0],
+    [a1, b1],
+    [a0, b1],
+  ]
 
   // follows the old gilmer sidewalk, courtland, the greenway path and arts & humanities
   const outline = [
@@ -315,7 +328,7 @@ function pantherQuad(lines, crossings) {
     [-69, 63],
     [-67, 48],
   ]
-  // where the road was, now lawn joined onto hurt park
+  // where the road was, brick now, a promenade from the plaza to peachtree center ave
   const gilmer = [
     [-99, -22],
     [-72.6, -16],
@@ -328,74 +341,63 @@ function pantherQuad(lines, crossings) {
     [-47, 40],
     [-105, -10],
   ]
-  const lawns = [
-    // the big one toward the library, one by the fountain, a strip along arts & humanities
-    [
-      [40, 6],
-      [74, 6],
-      [78, 22],
-      [62, 30],
-      [44, 24],
-    ],
-    [
-      [4, 10],
-      [14, 8],
-      [16, 26],
-      [6, 30],
-    ],
-    [
-      [8, 52],
-      [44, 52],
-      [44, 58],
-      [8, 60],
-    ],
-  ].map((l) => l.map(at))
-  const planter = [
-    [22, 36],
-    [40, 30],
-    [34, 48],
-  ].map(at)
-
-  // a row of trees down the middle of where the road was, it's too narrow for the grid
-  const middle = [
-    [-97, -17.6],
-    [-79.3, 0.5],
-    [-41.4, 34.5],
-    [1.2, 72.7],
+  // the lawn, a long rounded rectangle down the middle of where sparks hall stood
+  const lawn = []
+  const corners = [
+    [66, 39, 0],
+    [33, 39, Math.PI / 2],
+    [33, 27, Math.PI],
+    [66, 27, (Math.PI * 3) / 2],
   ]
-  const row = []
-  for (let i = 1; i < middle.length; i++) {
-    const [ax, az] = middle[i - 1]
-    const [bx, bz] = middle[i]
-    const n = Math.round(Math.hypot(bx - ax, bz - az) / 9)
-    for (let k = 0; k < n; k++)
-      row.push([round(ax + ((bx - ax) * k) / n), round(az + ((bz - az) * k) / n)])
-  }
+  for (const [ca, cb, start] of corners)
+    for (let k = 0; k <= 4; k++) {
+      const t = start + (k / 4) * (Math.PI / 2)
+      lawn.push(at([ca + Math.cos(t) * 8, cb + Math.sin(t) * 8]))
+    }
+
+  // the bank up to the courtland sidewalk: terraced steps at the lawn and a planted strip
+  // above them, the same at the library end where the ground comes up again. [bottom edge a,
+  // b, top edge b, a] with the step count
+  // and the stair up to the courtland sidewalk by library north (rise is the least a step goes up)
+  const terraces = [
+    {
+      steps: 6,
+      rise: 0.3,
+      points: [at([26, 17.5]), at([70, 17.5]), at([70, 12.1]), at([26, 12.1])],
+    },
+    { steps: 10, rise: 0.15, points: [at([83, 15]), at([90, 15]), at([90, 1]), at([83, 1])] },
+  ]
+  const beds = [rect(24, 74, 1.2, 11.6), rect(73, 82, 1.2, 16)].map((r) => r.map(at))
+  // bronzie in front of library north's lobby, side on to its glass, heading toward courtland
+  const bronzie = [...at([88, 34]), Math.atan2(v[1], -v[0])]
+  beds.push(rect(86, 90, 31, 37).map(at))
 
   const trees = [
-    // not on a crosswalk, gps walks people across those
-    ...row.filter((p) => !crossings.some((l) => distToLine(p, l.points) < 2)),
-    ...plantParkTrees([gilmer, ...lawns], lines, 8),
-    // a few in the planter
-    ...[
-      [30, 38],
-      [36, 36],
-      [33, 43],
-    ].map(at),
-  ]
+    // gilmer's two rows, staying off the crosswalks the gps walks people across
+    ...[-3, -13.5].flatMap((a) =>
+      Array.from({ length: 16 }, (_, i) => at([a, 8 + i * 8])).filter(
+        (p) => !crossings.some((l) => distToLine(p, l.points) < 2.5),
+      ),
+    ),
+    // the ground crew grove. the rest of the new trees are still young and thin, the lawn
+    // is open in the photos
+    ...[4, 10, 16].flatMap((a) => [40, 46, 52].map((b) => at([a, b]))),
+  ].filter((p) => !open.some((l) => distToLine(p, l.points) < l.width / 2 + 0.5))
+
   return {
-    // gilmer between peachtree center and courtland
-    closed: (road) =>
-      road.name?.startsWith('Gilmer') &&
-      road.points.every(([x, z]) => x > -103 && x < 8 && z > -26 && z < 79),
-    parks: [gilmer, ...lawns],
+    closed,
+    parks: [lawn],
+    // no old trees on the lawn, the plaza or the steps
+    clear: [lawn, rect(-1, 23, -1, 35).map(at), ...terraces.map((t) => t.points), ...beds],
     area: { name: 'Panther Quad', gsu: true, points: outline },
     trees,
     quad: {
-      pavers: [outline],
-      planters: [{ height: 0.6, points: planter }],
-      monument: at([18, 18]),
-      flags: [at([5, 6]), at([8, 5])],
+      pavers: [outline, gilmer, rect(76, 101, 0, 60).map(at)],
+      beds,
+      terraces,
+      column: [...at([10, 17]), round(Math.atan2(-u[1], u[0]))],
+      flags: [at([3, 4]), at([6, 4]), at([9, 4])],
+      bronzie: bronzie.map((n) => Math.round(n * 100) / 100),
     },
   }
 }
@@ -2936,7 +2938,17 @@ function main(elements) {
   const quad = pantherQuad([...roads, ...paths], crossings)
   parks.push(...quad.parks)
   areas.push(quad.area)
-  trees.push(...quad.trees)
+  // osm's bits of grass from before are brick now
+  const onQuad = (a) => quad.quad.pavers.some((q) => pointInPolygon(centroid(a), q))
+  const grass = lawns.filter((l) => !onQuad(l))
+  lawns.length = 0
+  lawns.push(...grass)
+  const paved = plazas.filter((p) => !onQuad(p))
+  plazas.length = 0
+  plazas.push(...paved)
+  const kept = trees.filter((t) => !quad.clear.some((c) => pointInPolygon(t, c)))
+  trees.length = 0
+  trees.push(...kept, ...quad.trees)
   // 25 park place's plaza and the trees in its planters, last so nothing else moves
   const p25 = buildings.find((b) => b.landmark?.planters)
   if (p25) {

@@ -1,6 +1,24 @@
 import * as THREE from 'three'
-import { abs, attribute, fract, materialColor, select, vec3 } from 'three/tsl'
-import { MeshStandardNodeMaterial } from 'three/webgpu'
+import {
+  abs,
+  attribute,
+  dot,
+  float,
+  floor,
+  fract,
+  fwidth,
+  materialColor,
+  max,
+  min,
+  mix,
+  positionWorld,
+  select,
+  smoothstep,
+  vec2,
+  vec3,
+} from 'three/tsl'
+import { MeshStandardNodeMaterial, type Node } from 'three/webgpu'
+import { hash } from './facade'
 import { packedNormalMap, texture, type TextureName } from './textures'
 
 // the ground is layers a few cm apart. from far away (the join screen) that's too close
@@ -31,8 +49,47 @@ export const grassMaterial = textured('grass', '#80bd70', 1, 2)
 export const sidewalkMaterial = textured('sidewalk', '#e8ebf0', 0.85, 4)
 // everything that isn't a road, a sidewalk or grass. downtown that's mostly concrete
 export const pavingMaterial = textured('sidewalk', '#c4c8d2', 0.9, 0)
-// the panther quad's tan pavers
-export const paversMaterial = textured('sidewalk', '#f4e6cc', 0.85, 1)
+// the panther quad's brick: red brown 10x20cm bricks in a herringbone lined up with
+// courtland st, light concrete bands across it at 45 degrees (gsu's opening photos, nov
+// 2026). gives the brick color (or the band's), x0.9-1.1 per brick, darker in the joints.
+// shared by the three looks
+export function quadBrick(brick: Node<'vec3'>, band: Node<'vec3'>) {
+  const d = positionWorld.xz.sub(vec2(-3, 78))
+  const u = dot(d, vec2(-0.651, 0.759))
+  const v = dot(d, vec2(-0.759, -0.651))
+  const fromBand = (t: Node<'float'>) => abs(fract(t.div(9).add(0.5)).sub(0.5)).mul(9)
+  const onBand = min(fromBand(u.add(v).mul(0.7071)), fromBand(u.sub(v).mul(0.7071))).lessThan(0.3)
+  // in brick widths. the pattern repeats every (1, 1) and (2, -2): a flat brick at [0, 2] x
+  // [0, 1] and a standing one at [2, 3] x [-1, 1]. one of four nearby repeats holds the point
+  const q = vec2(u, v).div(0.1)
+  const s = floor(q.x.add(q.y).div(2))
+  const t = floor(q.x.sub(q.y).div(4))
+  let e: Node<'float'> = float(-1)
+  let id: Node<'vec3'> = vec3(0)
+  for (const [di, dj] of [
+    [0, 0],
+    [-1, 0],
+    [0, 1],
+    [-1, 1],
+  ] as const) {
+    const i = s.add(di)
+    const j = t.add(dj)
+    const r = q.sub(vec2(i.add(j.mul(2)), i.sub(j.mul(2))))
+    const flat = min(min(r.x, float(2).sub(r.x)), min(r.y, float(1).sub(r.y)))
+    const standing = min(min(r.x.sub(2), float(3).sub(r.x)), min(r.y.add(1), float(1).sub(r.y)))
+    const here = max(flat, standing)
+    id = select(here.greaterThan(e), vec3(i, j, select(standing.greaterThan(flat), 1, 0)), id)
+    e = max(e, here)
+  }
+  const joint = float(1).sub(smoothstep(0.004, fwidth(u).add(0.004), e.mul(0.1)))
+  const tone = hash(id)
+  const bricks = brick.mul(tone.mul(0.25).add(0.88)).mul(joint.mul(-0.4).add(1))
+  return mix(bricks, band, select(onBand, float(1), float(0)))
+}
+export const paversMaterial = textured('sidewalk', '#ffffff', 0.85, 1)
+paversMaterial.colorNode = materialColor.rgb.mul(
+  quadBrick(vec3(0.78, 0.44, 0.33), vec3(0.85, 0.83, 0.79)),
+)
 
 export const roadMaterial = textured('asphalt', '#9a9a9a', 0.9, 3)
 // the crosswalks: strips of the same asphalt just over the road, so the texture carries on

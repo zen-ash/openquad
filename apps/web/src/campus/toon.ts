@@ -30,6 +30,7 @@ import { MeshToonNodeMaterial, type Node } from 'three/webgpu'
 import { DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
 import { outsideCutout } from './cutout'
 import { hash, night } from './facade'
+import { quadBrick } from './ground'
 
 // the cartoon look (?style=toon): flat bright colors lit in a few hard bands instead of
 // pbr. same buildings and map, just drawn differently
@@ -273,14 +274,10 @@ export const toonPaving = once(() => {
   return m
 })
 
-// the panther quad's pavers: small blue-grey bricks in rows
+// the panther quad's pavers: red bricks with light bands, like the real ones
 export const toonPavers = once(() => {
-  const m = ground('#b9c6dc', 1)
-  const row = floor(p.y.div(0.4))
-  const g = fract(vec2(p.x.div(0.8).add(mod(row, 2).mul(0.5)), p.y.div(0.4)))
-  const e = min(min(g.x, float(1).sub(g.x)).mul(0.8), min(g.y, float(1).sub(g.y)).mul(0.4))
-  const tone = hash(vec3(floor(p.x.div(0.8).add(mod(row, 2).mul(0.5))), row, 1)).mul(0.06)
-  m.colorNode = materialColor.rgb.mul(float(0.97).add(tone)).mul(ink(e, 0.02).mul(-0.12).add(1))
+  const m = ground('#ffffff', 1)
+  m.colorNode = quadBrick(vec3(0.62, 0.3, 0.22), vec3(0.9, 0.89, 0.86))
   return m
 })
 

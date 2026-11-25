@@ -69,5 +69,4 @@ export const libraryNorthMaterials: Record<Part, THREE.Material> = {
   terrace: paving({ color: '#736757', size: 1.5, saturation: 1 }),
   green: lawn({ color: '#32370e', size: 2, saturation: 1, roughness: 1 }),
   metal: metal({ color: '#9ca2a8', roughness: 0.5, metalness: 0.5 }),
-  pavers: paving({ color: '#7a6951', size: 1.2, saturation: 1 }),
 }

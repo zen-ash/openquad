@@ -21,6 +21,7 @@ import {
 import { MeshStandardNodeMaterial, type Node } from 'three/webgpu'
 import campus from './campus.json'
 import { hash } from './facade'
+import { quadBrick } from './ground'
 
 // the game look (?style=game): the buildings stay the real ones, the ground around them
 // goes bright and friendly. still pbr, lit by the same sun and sky as the buildings, just
@@ -131,15 +132,10 @@ export const gamePaving = once(() => {
   return m
 })
 
-// the panther quad's pavers, a friendly blue like gsu's drawings of it
+// the panther quad's brick, the same pattern as the realistic look a little brighter
 export const gamePavers = once(() => {
-  const m = ground('#6a8fd0', 0.85, 1)
-  const row = floor(p.y.div(0.4))
-  const shifted = p.x.div(0.8).add(mod(row, 2).mul(0.5))
-  const g = fract(vec2(shifted, p.y.div(0.4)))
-  const e = min(min(g.x, float(1).sub(g.x)).mul(0.8), min(g.y, float(1).sub(g.y)).mul(0.4))
-  const tone = hash(vec3(floor(shifted), row, 1)).mul(0.08)
-  m.colorNode = materialColor.rgb.mul(float(0.95).add(tone)).mul(line(e, 0.02).mul(-0.14).add(1))
+  const m = ground('#ffffff', 0.85, 1)
+  m.colorNode = quadBrick(vec3(0.5, 0.22, 0.15), vec3(0.85, 0.84, 0.8))
   return m
 })
 
