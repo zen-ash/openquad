@@ -138,13 +138,6 @@ const LOOKS: Record<string, Look> = {
     frame: '#2a3036',
     window: [2.9, 3.6, 0.8, 0.8],
   },
-  // white stone, narrow recessed windows
-  'Bennett A. Brown Commerce Building': {
-    wall: 'concrete',
-    color: '#dcdad3',
-    frame: '#2f3235',
-    window: [4, 3.7, 0.3, 0.6],
-  },
   // orange-red brick apartments, white window frames
   'Bethel Towers': {
     wall: 'brick',

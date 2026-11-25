@@ -8,6 +8,8 @@ import { courtlandNorthMaterials } from './courtlandNorthMaterials'
 import { dahlbergMaterials } from './dahlbergMaterials'
 import { collegeOfLawMaterials } from './collegeOfLawMaterials'
 import { rialtoMaterials } from './rialtoMaterials'
+import { robinsonMaterials } from './robinsonCollegeMaterials'
+import { commerceMaterials } from './commerceBuildingMaterials'
 import { edgewood58Materials } from './edgewood58Materials'
 import { parkPlace55Materials } from './parkPlace55Materials'
 import { haasHowellMaterials } from './haasHowellMaterials'
@@ -85,6 +87,8 @@ export const landmarkMaterials: Record<string, Record<string, THREE.Material>> =
   'Student Success Center': studentSuccessMaterials,
   'College of Law': collegeOfLawMaterials,
   'Rialto Center for the Arts': rialtoMaterials,
+  'J. Mack Robinson College of Business': robinsonMaterials,
+  'Commerce Building': commerceMaterials,
   '25 Park Place': parkPlace25Materials,
   'Helen M. Aderhold Learning Center': aderholdMaterials,
   'Haas-Howell Building': haasHowellMaterials,

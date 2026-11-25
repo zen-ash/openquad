@@ -11,6 +11,8 @@ import { parkPlace55Geometry, type ParkPlace55Data } from './parkPlace55'
 import { collegeOfLawGeometry, type CollegeOfLawData } from './collegeOfLaw'
 import { rialtoGeometry, type RialtoData } from './rialto'
 import { haasHowellGeometry, type HaasHowellData } from './haasHowell'
+import { robinsonGeometry, type RobinsonData } from './robinsonCollege'
+import { commerceGeometry, type CommerceData } from './commerceBuilding'
 import { hurtBuildingGeometry, type HurtData } from './hurtBuilding'
 import { langdaleHallGeometry, type LangdaleData } from './langdaleHall'
 import { libraryNorthGeometry, type LibraryNorthData } from './libraryNorth'
@@ -124,7 +126,9 @@ type Data = LibraryNorthData &
   AderholdData &
   RialtoData &
   HaasHowellData &
-  StandardData
+  StandardData &
+  RobinsonData &
+  CommerceData
 const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Library North': libraryNorthGeometry,
   'Dahlberg Hall': dahlbergGeometry,
@@ -165,6 +169,8 @@ const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Student Success Center': studentSuccessGeometry,
   'College of Law': collegeOfLawGeometry,
   'Rialto Center for the Arts': rialtoGeometry,
+  'J. Mack Robinson College of Business': robinsonGeometry,
+  'Commerce Building': commerceGeometry,
   '25 Park Place': parkPlace25Geometry,
   'Helen M. Aderhold Learning Center': aderholdGeometry,
   'Haas-Howell Building': haasHowellGeometry,

@@ -113,6 +113,9 @@ const DATUMS: Record<string, number | { from: number }> = {
   'Haas-Howell Building': 322.0,
   // fairlie st at the doors (lidar), within 0.5m all round
   'Standard Building': 320.5,
+  // broad st's sidewalk in the middle of each (lidar), it climbs 1.6m from marietta to walton
+  'J. Mack Robinson College of Business': 320.6,
+  'Commerce Building': 320.6,
 }
 
 type Building = { name?: string; points: number[][]; door?: number[] }

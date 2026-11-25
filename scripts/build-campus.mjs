@@ -110,6 +110,7 @@ const GSU_NAMES = {
   'GSU Parking A Deck': 'A Deck',
   'Loft Parking': 'University Lofts Parking',
   'Bell Building': 'Student Success Center',
+  'Bennett A. Brown Commerce Building': 'Commerce Building',
 }
 
 const isGsu = (tags) => GSU_BUILDINGS.has(tags.name)
@@ -146,14 +147,12 @@ const LIDAR_HEIGHTS = {
   262879648: 80, // 55 marietta
   536690082: 97, // peachtree center south tower
   345615607: 68, // the metropolitan
-  252608870: 63, // bennett a. brown
   270880829: 70, // candler building
   1103001627: 80, // reflection
   287320828: 87, // the james h floyd twin towers
   270880941: 42, // grady
   42738913: 27, // lanier parking
   354881427: 36, // college of law
-  252608883: 56, // robinson college of business
 }
 
 // a few towers are drawn in osm as building:part ways standing on a low outline. only these
@@ -2312,6 +2311,53 @@ function standardBuilding(b) {
   b.landmark = {}
 }
 
+// the robinson college of business, 35 broad st: the empire building (1901), later the
+// citizens and southern bank's, gsu's since 1993. 14 floors, a white limestone base and cream
+// terra cotta over it, from broad st (62.4m, osm's outline is right but has an extra point on
+// the back) round marietta and walton st. drawn in campus/robinsonCollege.ts. usgs lidar
+// (2018): cornice 376.2m, roof 375.0, over broad st's sidewalk in the middle (320.6m)
+const ROBINSON = {
+  points: [
+    [-454.1, -85.7],
+    [-406.62, -126.19],
+    [-390.79, -107.62],
+    [-438.27, -67.13],
+  ],
+  height: 55.6,
+  // the "35" doors under the middle arch on broad st (gsu 2026)
+  door: [-430.36, -105.94, -0.649, -0.761],
+}
+
+function robinsonCollege(b) {
+  b.points = ROBINSON.points
+  b.height = ROBINSON.height
+  b.door = ROBINSON.door
+  b.landmark = {}
+}
+
+// the commerce building, 34 broad st (1960, built for the commerce club): a white box across
+// broad st from robinson, its top floor set back on broad and marietta st, black granite and a
+// blue canopy on the ground floor. drawn in campus/commerceBuilding.ts. outline redrawn on the
+// lidar (osm's was 3m short on the marietta side): roof 383.2m over broad st's 320.6
+const COMMERCE = {
+  points: [
+    [-469.22, -99.15],
+    [-443.72, -120.41],
+    [-461.0, -141.15],
+    [-486.51, -119.9],
+  ],
+  height: 62.6,
+  // the gold doors at the walton end of the broad st side (gsu 2022)
+  door: [-446.33, -118.23, 0.64, 0.768],
+}
+
+function commerceBuilding(b) {
+  b.points = COMMERCE.points
+  b.height = COMMERCE.height
+  b.door = COMMERCE.door
+  b.landmark = {}
+}
+
 // the university lofts (135 edgewood ave, 2002): gsu's loft apartments, metal shingles round
 // a courtyard, stepping up from 6 floors on edgewood ave and auditorium pl to a 14 floor
 // tower and arm, with a 2 storey wing curving into the courtyard. drawn in
@@ -3038,6 +3084,10 @@ function main(elements) {
   if (haas) haasHowell(haas)
   const standard = buildings.find((b) => b.name === 'Standard Building')
   if (standard) standardBuilding(standard)
+  const rcb = buildings.find((b) => b.name === 'J. Mack Robinson College of Business')
+  if (rcb) robinsonCollege(rcb)
+  const commerce = buildings.find((b) => b.name === 'Commerce Building')
+  if (commerce) commerceBuilding(commerce)
   for (const b of buildings) if (PARKING_DECKS[b.name]) parkingDeck(b)
   const p191 = buildings.find((b) => b.name === PEACHTREE_191.name)
   if (p191) peachtree191(p191)
