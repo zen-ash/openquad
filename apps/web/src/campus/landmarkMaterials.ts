@@ -10,6 +10,7 @@ import { collegeOfLawMaterials } from './collegeOfLawMaterials'
 import { rialtoMaterials } from './rialtoMaterials'
 import { edgewood58Materials } from './edgewood58Materials'
 import { parkPlace55Materials } from './parkPlace55Materials'
+import { haasHowellMaterials } from './haasHowellMaterials'
 import { hurtBuildingMaterials } from './hurtBuildingMaterials'
 import { langdaleHallMaterials } from './langdaleHallMaterials'
 import { libraryNorthMaterials } from './libraryNorthMaterials'
@@ -29,6 +30,7 @@ import { peachtree191Materials } from './peachtree191Materials'
 import { petitScienceMaterials } from './petitScienceMaterials'
 import { practiceFacilityMaterials } from './practiceFacilityMaterials'
 import { recCenterMaterials } from './recCenterMaterials'
+import { standardMaterials } from './standardBuildingMaterials'
 import { researchScienceMaterials } from './researchScienceMaterials'
 import { researchTowerMaterials } from './researchTowerMaterials'
 import { scienceAnnexMaterials } from './scienceAnnexMaterials'
@@ -85,6 +87,8 @@ export const landmarkMaterials: Record<string, Record<string, THREE.Material>> =
   'Rialto Center for the Arts': rialtoMaterials,
   '25 Park Place': parkPlace25Materials,
   'Helen M. Aderhold Learning Center': aderholdMaterials,
+  'Haas-Howell Building': haasHowellMaterials,
+  'Standard Building': standardMaterials,
 }
 
 // see-through glass and the parts in noShadow don't cast shadows, everything else does

@@ -80,6 +80,20 @@ const VIEWS = [
   // peachtree st at woodruff park: the aderhold learning center's glass bay on the corner, the
   // arcade along luckie st and the shops on the plaza side
   { name: 'aderhold', from: [-276, 2, -227], at: [-330, 10, -244], player: [-274, -224] },
+  // across forsyth st from the poplar st corner: the arches, the brick shaft, the cornice
+  {
+    name: 'haas-howell',
+    from: [-403.9, 1.6, -230.6],
+    at: [-400.3, 12, -252.2],
+    player: [-404.2, -227.7],
+  },
+  // luckie st at fairlie st: the luckie st front, fairlie st's long side and the cornice
+  {
+    name: 'standard-building',
+    from: [-394, 1.6, -365.5],
+    at: [-398.1, 20, -333.2],
+    player: [-393.7, -368.3],
+  },
   {
     name: 'courtland-north',
     from: [-125.2, 3, 217.6],

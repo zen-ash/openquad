@@ -10,6 +10,7 @@ import { edgewood58Geometry, type Edgewood58Data } from './edgewood58'
 import { parkPlace55Geometry, type ParkPlace55Data } from './parkPlace55'
 import { collegeOfLawGeometry, type CollegeOfLawData } from './collegeOfLaw'
 import { rialtoGeometry, type RialtoData } from './rialto'
+import { haasHowellGeometry, type HaasHowellData } from './haasHowell'
 import { hurtBuildingGeometry, type HurtData } from './hurtBuilding'
 import { langdaleHallGeometry, type LangdaleData } from './langdaleHall'
 import { libraryNorthGeometry, type LibraryNorthData } from './libraryNorth'
@@ -27,6 +28,7 @@ import { researchScienceGeometry, type RscData } from './researchScience'
 import { researchTowerGeometry, type TowerData } from './researchTower'
 import { scienceAnnexGeometry, type AnnexData } from './scienceAnnex'
 import { southernBellGeometry, type SouthernBellData } from './southernBell'
+import { standardGeometry, type StandardData } from './standardBuilding'
 import { sportsArenaGeometry, type ArenaData } from './sportsArena'
 import { studentCenterEastGeometry, type StudentCenterData } from './studentCenterEast'
 import { studentCenterWestGeometry, type StudentCenterWestData } from './studentCenterWest'
@@ -120,7 +122,9 @@ type Data = LibraryNorthData &
   CollegeOfLawData &
   ParkPlace25Data &
   AderholdData &
-  RialtoData
+  RialtoData &
+  HaasHowellData &
+  StandardData
 const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Library North': libraryNorthGeometry,
   'Dahlberg Hall': dahlbergGeometry,
@@ -163,6 +167,8 @@ const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Rialto Center for the Arts': rialtoGeometry,
   '25 Park Place': parkPlace25Geometry,
   'Helen M. Aderhold Learning Center': aderholdGeometry,
+  'Haas-Howell Building': haasHowellGeometry,
+  'Standard Building': standardGeometry,
 }
 
 // the scene and the interiors both need it, only build it once

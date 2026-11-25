@@ -28,19 +28,6 @@ const LOOKS: Record<string, Look> = {
     frame: '#5d6266',
     window: [3, 3.4, 1, 0.5],
   },
-  // red brick high rises with white trimmed windows
-  'Haas-Howell Building': {
-    wall: 'brick',
-    color: '#9c4b39',
-    frame: '#ebe8e0',
-    window: [2.1, 3.5, 0.52, 0.56],
-  },
-  'Standard Building': {
-    wall: 'brick',
-    color: '#8d4838',
-    frame: '#ebe8e0',
-    window: [2, 3.5, 0.5, 0.56],
-  },
   // the old university center: a white box with hardly any windows
   'Student Center West': {
     wall: 'concrete',

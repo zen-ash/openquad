@@ -109,6 +109,10 @@ const DATUMS: Record<string, number | { from: number }> = {
   '25 Park Place': 318.8,
   // the luckie st sidewalk (lidar), the plaza side falls to 321.0 at poplar st
   'Helen M. Aderhold Learning Center': 322.6,
+  // poplar st at the entrance arch (lidar), forsyth st is up to 0.6m higher
+  'Haas-Howell Building': 322.0,
+  // fairlie st at the doors (lidar), within 0.5m all round
+  'Standard Building': 320.5,
 }
 
 type Building = { name?: string; points: number[][]; door?: number[] }

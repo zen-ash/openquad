@@ -2255,6 +2255,63 @@ function rialto(b) {
   b.landmark = {}
 }
 
+// the haas-howell building (gsu's school of music, 75 poplar st at forsyth st, 1920): eight
+// floors, limestone arches and a dark red brick shaft under a white cornice. drawn in
+// campus/haasHowell.ts. osm's box is on usgs's lidar walls (2018) within 0.3m, kept, with a
+// notch for the entrance arch's vestibule on poplar st: the doors are 1.2m in from the glass
+// line. the rialto is built against its back. the ground is poplar st at the entrance (322.0m)
+const HAAS_HOWELL = {
+  points: [
+    [-387.9, -263.2],
+    [-400.3, -252.6],
+    [-411.47, -265.81],
+    [-410.56, -266.58],
+    [-412.69, -269.1],
+    [-413.6, -268.33],
+    [-418.4, -274],
+    [-406.1, -284.5],
+  ],
+  // the penthouse (lidar 358.1m), the cornice is 31.35
+  height: 36.1,
+  door: [-411.62, -267.84, -0.764, 0.646],
+}
+
+function haasHowell(b) {
+  b.points = HAAS_HOWELL.points
+  b.height = HAAS_HOWELL.height
+  b.door = HAAS_HOWELL.door
+  b.landmark = {}
+}
+
+// the standard building (gsu's school of music, 95 luckie st at fairlie st, 1923): eleven floors,
+// two of cream stone, brick to a white bracketed cornice. drawn in campus/standardBuilding.ts.
+// osm's outline is kept (the lidar has the back wall 1.3m further out, over the theatrical
+// outfit, which is drawn but isn't walkable), with a notch for the entrance on fairlie st
+// (the doors are 1m in). the ground is fairlie st at the doors (320.5m)
+const STANDARD_BUILDING = {
+  points: [
+    [-385.6, -331.6],
+    [-386.3, -331.2],
+    [-407.4, -313.3],
+    [-414.7, -321.8],
+    [-404.69, -330.25],
+    [-404.04, -329.49],
+    [-402.26, -330.99],
+    [-402.9, -331.76],
+    [-392.9, -340.2],
+  ],
+  // the elevator's penthouse (lidar 365.1m), the cornice is 41.7
+  height: 44.6,
+  door: [-403.15, -330.24, -0.645, -0.764],
+}
+
+function standardBuilding(b) {
+  b.points = STANDARD_BUILDING.points
+  b.height = STANDARD_BUILDING.height
+  b.door = STANDARD_BUILDING.door
+  b.landmark = {}
+}
+
 // the university lofts (135 edgewood ave, 2002): gsu's loft apartments, metal shingles round
 // a courtyard, stepping up from 6 floors on edgewood ave and auditorium pl to a 14 floor
 // tower and arm, with a 2 storey wing curving into the courtyard. drawn in
@@ -2977,6 +3034,10 @@ function main(elements) {
   if (ald) aderhold(ald)
   const rialtoCenter = buildings.find((b) => b.name === 'Rialto Center for the Arts')
   if (rialtoCenter) rialto(rialtoCenter)
+  const haas = buildings.find((b) => b.name === 'Haas-Howell Building')
+  if (haas) haasHowell(haas)
+  const standard = buildings.find((b) => b.name === 'Standard Building')
+  if (standard) standardBuilding(standard)
   for (const b of buildings) if (PARKING_DECKS[b.name]) parkingDeck(b)
   const p191 = buildings.find((b) => b.name === PEACHTREE_191.name)
   if (p191) peachtree191(p191)
