@@ -110,6 +110,10 @@ const VIEWS = [
   },
   // across edgewood ave near boulevard: the storefront, the stepped parapet and the sign
   { name: 'sculpture-studio', from: [545, 1.7, -18], at: [530, 3.5, -38], player: [547, -16] },
+  // from hurt park's north edge across edgewood ave: the grid, the colonnade, the plaza's wall
+  { name: '100-edgewood', from: [8, 1.7, -14], at: [-14, 22, -62], player: [10, -12] },
+  // courtland st at edgewood ave: the east end over the lot, the long front
+  { name: '100-edgewood-east', from: [98, 1.7, -36], at: [0, 28, -64], player: [100, -34] },
   {
     name: 'courtland-north',
     from: [-125.2, 3, 217.6],

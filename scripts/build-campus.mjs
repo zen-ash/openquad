@@ -2200,6 +2200,42 @@ function parkPlace55(b) {
   b.landmark = {}
 }
 
+// 100 edgewood ave (gsu offices and classrooms): an 18 storey office tower from the 1960s
+// across edgewood ave from hurt park, a white precast grid with dark glass set deep in it, on
+// a colonnade with the ground floor's glass set back. drawn in campus/edgewood100.ts. osm's
+// box is the tower about right but skewed, redrawn on usgs's lidar roof (2018): 57.45 x 33.75m,
+// turned 0.8 deg from the game's x. the outline is the ground floor's glass, 2.4m in from the
+// tower's faces all round. the ground is the plaza round it (309.65m)
+const EDGEWOOD_100 = {
+  // the tower's faces: south west, south east (edgewood ave), north east, north west
+  corners: [
+    [-45.64, -44.49],
+    [11.81, -43.69],
+    [12.29, -77.44],
+    [-45.16, -78.24],
+  ],
+  recess: 2.4,
+  // the top of the parapet (lidar 377.55m), the penthouse on the roof is 72.15
+  height: 67.9,
+}
+
+function edgewood100(b) {
+  const cm = (x) => Math.round(x * 100) / 100
+  const [sw, se, , nw] = EDGEWOOD_100.corners
+  const w = Math.hypot(se[0] - sw[0], se[1] - sw[1])
+  const d = Math.hypot(nw[0] - sw[0], nw[1] - sw[1])
+  const u = [(se[0] - sw[0]) / w, (se[1] - sw[1]) / w]
+  const n = [(nw[0] - sw[0]) / d, (nw[1] - sw[1]) / d]
+  const at = (a, k) => [sw[0] + u[0] * a + n[0] * k, sw[1] + u[1] * a + n[1] * k].map(cm)
+  const r = EDGEWOOD_100.recess
+  b.points = [at(r, r), at(w - r, r), at(w - r, d - r), at(r, d - r)]
+  b.height = EDGEWOOD_100.height
+  // the main doors, in the middle span of the edgewood ave front up the steps, a little west of
+  // its middle (2016 photo from hurt park)
+  b.door = [...at(w / 2 - 1.9, r), cm(-n[0]), cm(-n[1])]
+  b.landmark = { corners: EDGEWOOD_100.corners }
+}
+
 // the student success center (25-27 auburn ave, the old southern bell exchange, opened by gsu
 // in oct 2025): two buildings, 1907 and 1922. the 1907 one on the equitable pl corner, red
 // brick over a limestone ground floor with fluted columns, stone quoins and a deep bracketed
@@ -3135,6 +3171,8 @@ function main(elements) {
   if (e148) edgewood148(e148)
   const sculpt = buildings.find((b) => b.name === 'Sculpture Studio')
   if (sculpt) sculptureStudio(sculpt, paths)
+  const e100 = buildings.find((b) => b.name === '100 Edgewood')
+  if (e100) edgewood100(e100)
   const p55 = buildings.find((b) => b.name === '55 Park Place')
   if (p55) parkPlace55(p55)
   const ssc = buildings.find((b) => b.name === 'Student Success Center')

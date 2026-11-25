@@ -131,13 +131,6 @@ const LOOKS: Record<string, Look> = {
     frame: '#3a3b38',
     window: [3, 4.2, 1, 0.5],
   },
-  // white concrete grid, dark square windows
-  '100 Edgewood': {
-    wall: 'concrete',
-    color: '#d3d5d2',
-    frame: '#2a3036',
-    window: [2.9, 3.6, 0.8, 0.8],
-  },
   // orange-red brick apartments, white window frames
   'Bethel Towers': {
     wall: 'brick',
