@@ -126,11 +126,12 @@ describe('t deck', () => {
   })
 
   it('has its roof at the lidar height, the helix top 3m over it', () => {
-    const pos = geo.parts.slab!.getAttribute('position')
+    // the roof is in with the floors under it, so only what's over the top floor
+    const pos = geo.parts.floor!.getAttribute('position')
     const heights = new Set<number>()
     for (let i = 0; i < pos.count; i++)
       heights.add(Math.round((pos.getY(i) + floorOf(t) + ORIGIN) * 10) / 10)
-    expect([...heights].sort()).toEqual([338.9, 341.2])
+    expect([...heights].filter((h) => h > 338.8).sort()).toEqual([338.9, 341.2])
   })
 
   it('is drawn inside its own outline, none of it in 58 edgewood', () => {

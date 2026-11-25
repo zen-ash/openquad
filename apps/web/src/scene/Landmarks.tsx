@@ -139,6 +139,33 @@ function FirstWhenNear({
   return <mesh ref={mesh} geometry={geometry} material={material} castShadow receiveShadow />
 }
 
+// small bits (LandmarkGeometry.near) only drawn within 80m of the building. all drawn while
+// the warm-up runs, so their shaders are built
+const DETAIL = 80
+function OnlyNear({
+  geometry,
+  material,
+  floor,
+  casts,
+}: {
+  geometry: THREE.BufferGeometry
+  material: THREE.Material
+  floor: number
+  casts: boolean
+}) {
+  const mesh = useRef<THREE.Mesh>(null)
+  useFrame(({ camera }) => {
+    if (!mesh.current) return
+    if (!geometry.boundingBox) geometry.computeBoundingBox()
+    near.copy(camera.position).setY(camera.position.y - floor)
+    mesh.current.visible =
+      useSettings.getState().warming || geometry.boundingBox!.distanceToPoint(near) < DETAIL
+  })
+  return (
+    <mesh ref={mesh} geometry={geometry} material={material} castShadow={casts} receiveShadow />
+  )
+}
+
 // a building's signs, only while the camera's close enough to make them out: 60m, more for
 // big letters (120 times their height, "GSU" up on urban life's parapet). every one is a few
 // draws a frame (the letters twice, they're see-through) wherever it's in view, behind walls
@@ -205,6 +232,14 @@ export default function Landmarks() {
             {Object.entries(geo.parts).map(([part, g]) =>
               geo.first?.includes(part) ? (
                 <FirstWhenNear key={part} geometry={g} material={mats[part]!} floor={floor} />
+              ) : geo.near?.includes(part) ? (
+                <OnlyNear
+                  key={part}
+                  geometry={g}
+                  material={mats[part]!}
+                  floor={floor}
+                  casts={casts(geo, mats, part)}
+                />
               ) : (
                 <mesh
                   key={part}

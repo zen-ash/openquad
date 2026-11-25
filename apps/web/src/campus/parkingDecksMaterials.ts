@@ -167,7 +167,6 @@ export const spandrelDeckMaterials: Record<SpandrelPart, THREE.Material> = {
     roughness: 0.1,
     metalness: 0.4,
   }),
-  slab: steelDeckMaterials.slab,
   floor: steelDeckMaterials.floor,
   soffit: steelDeckMaterials.soffit,
   // white leds under the floors (gsu's 2018 photo), not the other decks' sodium orange

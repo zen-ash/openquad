@@ -385,7 +385,8 @@ export function edgewood58Geometry(b: Edgewood58Data) {
     inside,
     signs,
     first: ['marble', 'brick'],
-    noShadow: ['glass', 'store'],
+    // the cores cast for the floors over the ground floor
+    noShadow: ['glass', 'store', 'blue', 'white'],
   }
 }
 

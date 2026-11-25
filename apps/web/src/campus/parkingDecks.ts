@@ -41,7 +41,7 @@ export type BandPart =
 // t: cream precast spandrels and columns, a tan brick street floor with shops (blue grey
 // glazed tile on auburn ave), the glass of the stair towers and shops, dark the cable rails
 export type SpandrelPart =
-  'cream' | 'brick' | 'tile' | 'glass' | 'slab' | 'floor' | 'soffit' | 'lamp' | 'dark'
+  'cream' | 'brick' | 'tile' | 'glass' | 'floor' | 'soffit' | 'lamp' | 'dark'
 // a: tan the painted concrete (edge beam, walls, columns), rail the white pipe rails, poles
 // and the lines on the roof, slab the roof, floor the covered floor's asphalt, soffit the
 // roof's underside, lamp its tubes
@@ -3026,7 +3026,7 @@ function spandrelDeck(b: DeckData, d: Spandrel): LandmarkGeometry {
   const [bx, bz] = [Math.min(...box.map((p) => p.x)), Math.min(...box.map((p) => p.z))]
   const floors = outline.filter((p) => p.x >= bx - 0.01 && p.z >= bz - 0.01)
   for (let i = 1; i <= count; i++) {
-    flat(i === count ? 'slab' : 'floor', floors, F(i), true, i > 1 ? [well] : [])
+    flat('floor', floors, F(i), true, i > 1 ? [well] : [])
     if (i > 1) flat('soffit', floors, F(i) - SLAB, false, [well])
     if (i > 1) prism('cream', well, F(i) - 0.3, F(i) + 1.0, false, true)
   }
@@ -3100,7 +3100,7 @@ function spandrelDeck(b: DeckData, d: Spandrel): LandmarkGeometry {
     const [pi, qi] = [inner[i]!, inner[(i + 1) % inner.length]!]
     flat('cream', [p, q, qi, pi], htop, true)
   })
-  flat('slab', inner, deck, true)
+  flat('floor', inner, deck, true)
   flat('soffit', disc, deck - 0.5, false)
   for (let k = 0; k < 6; k++) {
     const a = (k / 6) * Math.PI * 2
@@ -3161,7 +3161,9 @@ function spandrelDeck(b: DeckData, d: Spandrel): LandmarkGeometry {
     parts: done(),
     inside: { solid: [], glass: [] },
     signs,
-    noShadow: ['lamp', 'glass', 'dark'],
+    // the street floor is under the decks over it, the undersides are in their own shade
+    noShadow: ['lamp', 'glass', 'dark', 'soffit', 'tile', 'brick'],
+    near: ['lamp', 'dark'],
     open: true,
   }
 }
@@ -3405,7 +3407,8 @@ function singleDeck(b: DeckData, d: Single): LandmarkGeometry {
     parts: c.done(),
     inside: { solid: [], glass: [] },
     signs,
-    noShadow: ['lamp', 'floor', 'soffit'],
+    noShadow: ['lamp', 'floor', 'soffit', 'rail'],
+    near: ['lamp', 'rail'],
     open: true,
   }
 }

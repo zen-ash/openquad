@@ -69,6 +69,9 @@ export type LandmarkGeometry = {
   // parts that don't cast shadows: glass and frames deep in the walls, nothing behind them
   // shows the difference and each part is three more draws (the cascades)
   noShadow?: string[]
+  // small bits only drawn up close (rails, lamps): from across the street they're a few pixels,
+  // but every part is a few draws a frame wherever it's in view
+  near?: string[]
   // a parking deck: open floors, no rooms inside. it draws its own floors and its sides go
   // down to the ground, so no inside floor, ceiling or plinth
   open?: boolean
