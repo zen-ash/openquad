@@ -2069,6 +2069,42 @@ function edgewood58(b) {
   b.landmark = {}
 }
 
+// 55 park place (gsu's andrew young school of policy studies), across park place from woodruff
+// park: a 19 floor cream precast block with deep set windows, two wings on park place with the
+// entrance between them and the middle's top floors stepping back. drawn in
+// campus/parkPlace55.ts. redrawn on usgs's lidar walls (2018, esri's 2026 image has the same
+// roof): osm's box was 1.2m short of the park place front and its notch the stepped top's.
+// the outline is the ground floor's glass, 0.7m behind the precast on park place (round
+// columns out front) and 1.5m behind the middle. the ground is the terrace along park place
+// (321.7m)
+const PARK_PLACE_55 = {
+  points: [
+    [-137, -218],
+    [-137, -172.6],
+    [-142.4, -172.6],
+    [-142.4, -167.3],
+    [-197.5, -167.3],
+    [-197.5, -188.5],
+    [-194.5, -188.5],
+    [-194.5, -203.5],
+    [-197.5, -203.5],
+    [-197.5, -223.5],
+    [-140.2, -223.5],
+    [-140.2, -218],
+  ],
+  // the penthouse on the back (lidar 406.1m), the main roof is 78.4
+  height: 84.4,
+  // the main doors under the canopy, up the steps from park place
+  door: [-194.5, -196, -1, 0],
+}
+
+function parkPlace55(b) {
+  b.points = PARK_PLACE_55.points
+  b.height = PARK_PLACE_55.height
+  b.door = PARK_PLACE_55.door
+  b.landmark = {}
+}
+
 // the university lofts (135 edgewood ave, 2002): gsu's loft apartments, metal shingles round
 // a courtyard, stepping up from 6 floors on edgewood ave and auditorium pl to a 14 floor
 // tower and arm, with a 2 storey wing curving into the courtyard. drawn in
@@ -2691,6 +2727,8 @@ function main(elements) {
   if (lofts) universityLofts(lofts, loftsDeck)
   const e58 = buildings.find((b) => b.name === '58 Edgewood')
   if (e58) edgewood58(e58)
+  const p55 = buildings.find((b) => b.name === '55 Park Place')
+  if (p55) parkPlace55(p55)
   for (const b of buildings) if (PARKING_DECKS[b.name]) parkingDeck(b)
   const p191 = buildings.find((b) => b.name === PEACHTREE_191.name)
   if (p191) peachtree191(p191)

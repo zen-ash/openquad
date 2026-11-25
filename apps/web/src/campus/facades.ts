@@ -117,13 +117,6 @@ const LOOKS: Record<string, Look> = {
     frame: '#5d6670',
     window: [1.5, 3.7, 1, 0.42],
   },
-  // pale cream precast, deep-set windows
-  '55 Park Place': {
-    wall: 'concrete',
-    color: '#d3d0c6',
-    frame: '#3a3d40',
-    window: [3.2, 3.7, 0.55, 0.55],
-  },
   // taupe walls with small windows (the white end walls aren't drawn)
   'The Landmark': {
     wall: 'brick',

@@ -62,6 +62,7 @@ const VIEWS = [
   { name: 'hurt-building', from: [-86, 2, -38], at: [-150, 30, -8], player: [-84, -36] },
   // across edgewood ave from the corner of equitable pl: the sign box, the marble ground floor
   { name: '58-edgewood', from: [-207, 2.5, -27], at: [-180, 10, -48], player: [-209, -25] },
+  { name: '55-park-place', from: [-258, 1.6, -178], at: [-190, 30, -198], player: [-260, -176] },
   {
     name: 'courtland-north',
     from: [-125.2, 3, 217.6],
