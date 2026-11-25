@@ -166,8 +166,34 @@ function OnlyNear({
   )
 }
 
+// trims made of a few quads (bands, caps, canopies, 20 triangles or less) are each 3 more draws
+// a frame in the shadow cascades: they only cast within 80m, further out their shadows are a
+// few pixels. hurt park had ~70 of these draws from buildings 100-300m away
+const small = (g: THREE.BufferGeometry) =>
+  (g.index ? g.index.count : g.getAttribute('position').count) <= 60
+function CastsNear({
+  geometry,
+  material,
+  floor,
+}: {
+  geometry: THREE.BufferGeometry
+  material: THREE.Material
+  floor: number
+}) {
+  const mesh = useRef<THREE.Mesh>(null)
+  useFrame(({ camera }) => {
+    if (!mesh.current) return
+    if (!geometry.boundingBox) geometry.computeBoundingBox()
+    near.copy(camera.position).setY(camera.position.y - floor)
+    mesh.current.castShadow =
+      useSettings.getState().warming || geometry.boundingBox!.distanceToPoint(near) < DETAIL
+  })
+  return <mesh ref={mesh} geometry={geometry} material={material} castShadow receiveShadow />
+}
+
 // a building's signs, only while the camera's close enough to make them out: 60m, more for
-// big letters (120 times their height, "GSU" up on urban life's parapet). every one is a few
+// big letters (120 times their height, "GSU" up on urban life's parapet). plates and name
+// plates 60 times their height (a 1.5m plate was drawn from 180m, a few pixels). every one is a few
 // draws a frame (the letters twice, they're see-through) wherever it's in view, behind walls
 // too: 123 of them, ~150 draws from one spot. all shown while the warm-up runs
 const SIGNS = 60
@@ -177,7 +203,7 @@ const reachOf = (s: Sign) => {
     : s.text
       ? (s.height ?? 0.75) * (s.scale ?? 1)
       : Math.max(s.width ?? 1, s.height ?? 1)
-  return Math.max(SIGNS, big * 120)
+  return Math.max(SIGNS, big * (s.letters ? 120 : 60))
 }
 function Signs({ signs, floor }: { signs: Sign[]; floor: number }) {
   const groups = useRef<(THREE.Group | null)[]>([])
@@ -240,6 +266,8 @@ export default function Landmarks() {
                   floor={floor}
                   casts={casts(geo, mats, part)}
                 />
+              ) : casts(geo, mats, part) && small(g) ? (
+                <CastsNear key={part} geometry={g} material={mats[part]!} floor={floor} />
               ) : (
                 <mesh
                   key={part}
