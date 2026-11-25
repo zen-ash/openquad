@@ -28,13 +28,6 @@ const LOOKS: Record<string, Look> = {
     frame: '#34383b',
     window: [3.4, 5.4, 0.68, 0.62],
   },
-  // old tan brick warehouse, lots of steel windows
-  '58 Edgewood': {
-    wall: 'brick',
-    color: '#d6c29c',
-    frame: '#3a3d40',
-    window: [2.3, 4.1, 0.64, 0.6],
-  },
   // tan concrete with bands of glass
   'Centennial Hall': {
     wall: 'concrete',

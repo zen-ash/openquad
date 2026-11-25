@@ -135,8 +135,6 @@ const MEASURED_HEIGHTS = {
   'Piedmont North Dining Hall': 18.2,
   // osm says 4 floors, but they're tall ones
   'Helen M. Aderhold Learning Center': 21.9,
-  // floors: 4 tall old warehouse floors
-  '58 Edgewood': 16.5,
 }
 
 // osm's height is wrong for these (mostly floors x 3.92, or nothing at all): usgs lidar
@@ -2039,6 +2037,39 @@ function hurtBuilding(b) {
   b.landmark = { corners, court, rotunda: c.map(cm) }
 }
 
+// 58 edgewood (gsu's collabtech incubator, urs and launchgsu): a 1920s four storey warehouse
+// on edgewood ave at equitable pl, buff brick with big steel windows over a white marble
+// ground floor, gsu's glass sign box on the corner, and a taller block on its east end (black
+// granite ground floor under a cantilever, buff brick over it) against t deck. drawn in
+// campus/edgewood58.ts. osm's box is the whole thing with its front 0.3m out and its east end
+// 1.4m short of t deck (the lidar has the two roofs touching). redrawn on usgs's lidar walls
+// (2018, esri's 2022 image has the same roofs). the front is the ground floor's glass, 0.3m
+// behind the marble and the brick. the ground is the edgewood ave sidewalk at the corner door
+// (314.4m)
+const EDGEWOOD_58 = {
+  // the back of the warehouse, t deck's side, the east block's front under its cantilever, the
+  // front's glass along edgewood ave, the west wall on equitable pl
+  points: [
+    [-199.55, -85],
+    [-139.4, -85],
+    [-139.4, -45.9],
+    [-156, -45.9],
+    [-156, -43.05],
+    [-199.55, -43.05],
+  ],
+  // the top of the east block's stair tower (lidar 342.7m), the warehouse is 15.3
+  height: 28.3,
+  // the corner entrance under the sign box, up the steps
+  door: [-196.3, -43.05, 0, 1],
+}
+
+function edgewood58(b) {
+  b.points = EDGEWOOD_58.points
+  b.height = EDGEWOOD_58.height
+  b.door = EDGEWOOD_58.door
+  b.landmark = {}
+}
+
 // the university lofts (135 edgewood ave, 2002): gsu's loft apartments, metal shingles round
 // a courtyard, stepping up from 6 floors on edgewood ave and auditorium pl to a 14 floor
 // tower and arm, with a 2 storey wing curving into the courtyard. drawn in
@@ -2593,6 +2624,8 @@ function main(elements) {
   const lofts = buildings.find((b) => b.name === 'University Lofts')
   const loftsDeck = buildings.find((b) => b.name === 'University Lofts Parking')
   if (lofts) universityLofts(lofts, loftsDeck)
+  const e58 = buildings.find((b) => b.name === '58 Edgewood')
+  if (e58) edgewood58(e58)
   for (const b of buildings) if (PARKING_DECKS[b.name]) parkingDeck(b)
   const p191 = buildings.find((b) => b.name === PEACHTREE_191.name)
   if (p191) peachtree191(p191)

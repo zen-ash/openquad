@@ -90,6 +90,8 @@ const DATUMS: Record<string, number | { from: number }> = {
   // st behind it is 9.5m higher)
   'Southern Bell Building': 315.8,
   '191 Peachtree Tower': 319.3,
+  // the edgewood ave sidewalk at the corner door (lidar), the street falls 2m to t deck
+  '58 Edgewood': 314.4,
 }
 
 type Building = { name?: string; points: number[][]; door?: number[] }
