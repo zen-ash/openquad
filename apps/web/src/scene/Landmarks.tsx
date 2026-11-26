@@ -1,5 +1,5 @@
 import { useFrame } from '@react-three/fiber'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import campus from '../campus/campus.json'
@@ -292,6 +292,13 @@ function Building({
   const whole = boxOf(parts)
   const group = useRef<THREE.Group>(null)
   const far = useRef(false)
+  // the parts that are in the merged mesh leave their shadows to it (softShadows.ts)
+  useEffect(() => {
+    const merged = new Set(casting)
+    group.current?.traverse((o) => {
+      if (o instanceof THREE.Mesh && merged.has(o.geometry)) o.userData.merged = true
+    })
+  }, [casting])
   useFrame(({ camera }) => {
     if (!group.current) return
     near.copy(camera.position).setY(camera.position.y - floor)

@@ -209,11 +209,12 @@ export function lighterShadowPasses(renderer: WebGPURenderer, cascades: SoftCasc
       keepVersion(shadow)
     }
     const planes = cascades.slices.get(camera)
-    // a hand-built building far away casts from one mesh of all its parts (Landmarks.tsx), up
-    // close from its parts. both while warming, so both get their shaders
-    const { far, shadows } = object.userData
+    // a hand-built building casts from one mesh of all its casting parts (Landmarks.tsx): one
+    // draw a cascade instead of 6-9. its small bits cast on their own up close. both while
+    // warming, so both get their shaders
+    const { far, shadows, merged } = object.userData
     if (!planes && shadows) return
-    if (planes && !useSettings.getState().warming && (shadows ? !far : far)) return
+    if (planes && !shadows && (merged || far) && !useSettings.getState().warming) return
     if (planes && !castsInto(object, planes, cascades.toward)) return
     draw(object, scene, camera, ...rest)
   }
