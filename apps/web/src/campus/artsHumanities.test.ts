@@ -24,12 +24,20 @@ describe('arts & humanities', () => {
     expect(x).toBeLessThan(-95)
   })
 
-  it('has three bands of windows on peachtree center', () => {
+  it('has narrow windows on peachtree center and a wide one by the entrance', () => {
     const pane = parts.bandGlass.getAttribute('aPane')
-    expect(pane.count / 6).toBe(3)
+    expect(pane.count / 6).toBe(1)
+    expect(pane.getX(0)).toBeCloseTo(3.2)
+    // the narrow ones, 0.75m wide and 2.2m tall
+    const glass = parts.glass.getAttribute('aPane')
+    let narrow = 0
+    for (let i = 0; i < glass.count; i += 6)
+      if (Math.abs(glass.getX(i) - 0.75) < 0.01 && Math.abs(glass.getY(i) - 2.2) < 0.01) narrow++
+    expect(narrow).toBeGreaterThan(20)
   })
 
-  it('names the recital hall by the door', () => {
+  it('names the recital hall by the door and on peachtree center', () => {
     expect(signs.map((s) => s.text)).toContain('FLORENCE KOPLEFF\nRECITAL HALL')
+    expect(signs.map((s) => s.text)).toContain('ARTS & HUMANITIES\nRECITAL HALL')
   })
 })

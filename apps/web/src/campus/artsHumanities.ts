@@ -3,9 +3,9 @@ import { DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
 import type { Sign } from './landmarks'
 import { clip, edges, flat, frame, parts as collect, pt, type Opening } from './landmark'
 
-// arts & humanities, from photos (gsu's event photos and one on commons). big white marble
-// boxes with hardly any windows, three long bands of them on peachtree center, a row of
-// little square ones along the top, and the glass entrance to the recital hall with the
+// arts & humanities, from photos (gsu's event photos, one on commons, mapillary on peachtree
+// center). big white marble boxes, narrow windows staggered along peachtree center, a row
+// of little square ones along the top, and the glass entrance to the recital hall with the
 // blue canopy at the gilmer street corner. the side on the greenway is grey panels.
 // "a" is meters along the southwest wall from the peachtree center end, "d" is meters in
 // from it toward the quad. gsu is putting a new front on it in 2027, this is it before that
@@ -24,6 +24,8 @@ export type Part =
 export const TALL = 17
 export const LOW = 14
 const PLINTH = 0.8
+// how far in from the long side the peachtree center wall turns into the entrance end
+const CORNER = 31
 
 export function artsHumanitiesGeometry(b: ArtsData) {
   const { add, prism, block, wall, inside, merged } = collect<Part>()
@@ -68,14 +70,31 @@ export function artsHumanitiesGeometry(b: ArtsData) {
         }
       }
 
-      if (toSE < -0.9 && H === LOW && len > 10) {
-        // peachtree center: three long bands of windows, a bit over halfway up
-        const n = 3
-        const gap = 1.6
-        const w = (len - 2 * 1.4 - (n - 1) * gap) / n
-        for (let k = 0; k < n; k++) {
-          const u = 1.4 + k * (w + gap)
-          openings.push({ hole: [u, u + w, 8.2, 9.8], glass: 'bandGlass' })
+      // banners and signs to hang on this wall once it's drawn, [u along it]
+      const banners: number[] = []
+      let plate = -1
+      if (toSE < -0.9 && len > 3) {
+        // peachtree center (mapillary 2019, gsu's 2025 photos): narrow windows deep in the
+        // marble, every other column half a floor higher, dark openings along the sidewalk.
+        // by the corner with the entrance a wide window between two banners instead
+        const dAt = (u: number) => f.dOf({ x: p.x + dir.x * u, z: p.z + dir.z * u })
+        const corner = (u: number) => dAt(u) > CORNER
+        for (let k = 0, u = 1.6; u < len - 1.4; k++, u += 3) {
+          if (corner(u + 0.4)) continue
+          for (let y = 4.8 + (k % 2) * 1.6; y + 2.2 < H - 1.3; y += 3.2)
+            openings.push({ hole: [u, u + 0.75, y, y + 2.2], glass: 'glass' })
+        }
+        for (let u = 2; u < len - 2; u += 4.5)
+          if (!corner(u + 1.6)) openings.push({ hole: [u, u + 1.6, 0.4, 3], glass: 'glass' })
+        // the wide window, banners either side of it and the plate under it
+        const near = [0, len].sort((m, n) => dAt(n) - dAt(m))[0]!
+        const back = near === 0 ? 1 : -1
+        if (dAt(near) > CORNER + 6) {
+          const w0 = near + back * 3
+          const w1 = near + back * 6.2
+          openings.push({ hole: [Math.min(w0, w1), Math.max(w0, w1), 6.3, 8], glass: 'bandGlass' })
+          banners.push(near + back * 1.5, near + back * 7)
+          plate = near + back * 3.6
         }
       } else if (toQuad > 0.9 && a < 9.5 && d > 38) {
         // the entrance: glass under the canopy with the doors in it
@@ -102,7 +121,7 @@ export function artsHumanitiesGeometry(b: ArtsData) {
         topRow()
       }
 
-      wall(part, p, q, 0, H, out, openings)
+      wall(part, p, q, 0, H, out, openings, toSE < -0.9 ? 0.45 : 0.3)
       const along = (u: number, dd = 0) => ({
         x: p.x + dir.x * u + out.x * dd,
         z: p.z + dir.z * u + out.z * dd,
@@ -120,12 +139,24 @@ export function artsHumanitiesGeometry(b: ArtsData) {
       }
       box(part === 'panels' ? 'metal' : 'marble', 0, len, 0.1, H - 0.25, H)
 
-      // blue banners down the marble next to the entrance, on the side facing gilmer
+      // blue banners on brackets
+      for (const c of banners) {
+        box('metal', c - 0.45, c + 0.45, 0.35, 8.1, 8.16)
+        box('banner', c - 0.4, c + 0.4, 0.33, 4.4, 8.1, 0.3)
+      }
+      if (plate >= 0) {
+        const s = along(plate, 0.04)
+        signs.push({
+          x: s.x,
+          y: 2.9,
+          z: s.z,
+          rot: Math.atan2(out.x, out.z),
+          text: 'ARTS & HUMANITIES\nRECITAL HALL',
+          scale: 0.5,
+        })
+      }
+      // the hall's name by the doors
       if (toQuad > 0.9 && H === LOW && a > 10 && a < 38 && len > 12) {
-        for (const c of [9, 12.5, 16, 19.5]) {
-          box('metal', c - 0.45, c + 0.45, 0.35, 7.1, 7.16)
-          box('banner', c - 0.4, c + 0.4, 0.33, 3.6, 7.1, 0.3)
-        }
         const s = along(3.4, 0.03)
         signs.push({
           x: s.x,

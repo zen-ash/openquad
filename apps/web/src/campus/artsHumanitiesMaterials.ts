@@ -18,7 +18,8 @@ export const artsHumanitiesMaterials: Record<Part, THREE.Material> = {
     roughness: 0.7,
   }),
   glass: glass({ pane: [1.2, 1.3] }),
-  bandGlass: glass({ pane: [1, 1.6] }),
+  // the wide window on peachtree center, dark frames (gsu's 2025 photo)
+  bandGlass: glass({ pane: [1, 1.7], frameColor: '#3b3a37', frame: 0.08 }),
   metal: metal({ color: '#5d6166', roughness: 0.45, metalness: 0.6 }),
   blueGlass: clearGlass({ color: '#2f63c8', opacity: 0.75, roughness: 0.1, metalness: 0.2 }),
   // the banners are cloth
