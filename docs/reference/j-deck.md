@@ -59,11 +59,16 @@ Elevations are USGS lidar (2018).
   the street to the roof, so the way in's bottom starts at the ground and the ramp isn't its own
   thing. The real one has a tan wall between the ramp and the drive.
 - No booth island, gate arms, sign posts or blue accessible paint on the roof.
-- The real roof is a cool light grey; in the game's sun it comes out lighter and warmer.
+- The roof's concrete is darker and cooler since Nov 26 2026 (#7a8288 -> #6c747e), matched with
+  ratios inside each picture: on GSU's 2026 roof photo the sunlit roof is 1.17x the annex's tan
+  fascia (luminance), the game had 1.33 and has 1.19 now; on the satellite the roof is as neutral
+  as the white roofs round it, the game's top view went from R/B 1.09 to 1.03 (the game look 1.13
+  to 1.08, it's warmer everywhere). The photo's roof in shade is much bluer than the game's shade:
+  that's the light, not the concrete.
 
 ## Cost
 
-5 parts (tan, slab, soffit, rail, dark): A Deck's materials, a cooler grey roof concrete (same shader)
+5 parts (tan, slab, soffit, rail, dark): A Deck's materials, a cool grey roof concrete (same shader)
 and T Deck's dark metal. No new shaders. About 3.2k triangles, 1.4k of them the rail (only drawn
 within 80m). Soffit, lines and rail don't cast.
 

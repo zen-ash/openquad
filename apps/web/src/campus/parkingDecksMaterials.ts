@@ -206,7 +206,7 @@ export const singleDeckMaterials: Record<SinglePart, THREE.Material> = {
 // (gsu's 2026 photo), the black rail and poles like t's cable rails
 export const buriedDeckMaterials: Record<BuriedPart, THREE.Material> = {
   tan: singleDeckMaterials.tan,
-  slab: concrete({ color: '#7a8288', roughness: 0.85 }),
+  slab: concrete({ color: '#6c747e', roughness: 0.85 }),
   soffit: singleDeckMaterials.soffit,
   rail: singleDeckMaterials.rail,
   dark: spandrelDeckMaterials.dark,
