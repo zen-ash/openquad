@@ -46,6 +46,7 @@ import { studentCenterWestGeometry, type StudentCenterWestData } from './student
 import { studentSuccessGeometry, type StudentSuccessData } from './studentSuccess'
 import { universityBookstoreGeometry, type UniversityBookstoreData } from './universityBookstore'
 import { universityLoftsGeometry, type LoftsData } from './universityLofts'
+import { universityCommonsGeometry, type CommonsData } from './universityCommons'
 import { urbanLifeGeometry, type UrbanLifeData } from './urbanLife'
 import { sink } from './landmark'
 import { baseOf } from '../game/surface'
@@ -146,7 +147,8 @@ type Data = LibraryNorthData &
   CommerceData &
   SculptureStudioData &
   PiedmontCentralData &
-  Piedmont75Data
+  Piedmont75Data &
+  CommonsData
 
 const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Library North': libraryNorthGeometry,
@@ -204,6 +206,7 @@ const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Piedmont Central': piedmontCentralGeometry,
   '75 Piedmont Avenue': piedmont75Geometry,
   'J Deck': parkingDeckGeometry,
+  'University Commons': universityCommonsGeometry,
 }
 
 // the scene and the interiors both need it, only build it once. by building, not name: the

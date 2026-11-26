@@ -2390,6 +2390,48 @@ function piedmontCentral(b) {
   b.landmark = { upper: PIEDMONT_CENTRAL.upper }
 }
 
+// university commons (141 piedmont ave, gsu housing since 2007): four apartment buildings round
+// courtyards, 15, 9, 12 and 8 floors, the last two on a parking deck that opens onto j w dobbs
+// ave. osm's one outline is right (the lidar roofs fit it, 2018), it's the four of them in a c
+// with the gap to piedmont ave between the two on the west. drawn in campus/universityCommons.ts.
+// the corner on piedmont ave and j w dobbs ave is a glass cylinder over the main doors: osm
+// draws its quarter circle in 1m bits, here it's 3 so the doors have a wall to be in. the ground
+// is the sidewalk at that corner (305.0m)
+const UNIVERSITY_COMMONS = {
+  // the quarter circle's middle and radius (fits osm's points to a few cm)
+  corner: [311.8, -358.2],
+  radius: 5.65,
+  // the top of the 15 floor one (lidar 352.65m)
+  height: 47.65,
+}
+
+function universityCommons(b) {
+  const cm = (x) => Math.round(x * 100) / 100
+  const [cx, cz] = UNIVERSITY_COMMONS.corner
+  const r = UNIVERSITY_COMMONS.radius
+  const near = (p) =>
+    Math.abs(Math.hypot(p[0] - cx, p[1] - cz) - r) < 0.25 && p[0] < cx + 0.01 && p[1] > cz - 0.01
+  const first = b.points.findIndex(near)
+  const last = b.points.findLastIndex(near)
+  const pts = [0, 1, 2, 3].map((k) => {
+    // from due south of the middle round to due west
+    const t = (k * Math.PI) / 6
+    return [cm(cx - Math.sin(t) * r), cm(cz + Math.cos(t) * r)]
+  })
+  b.points = [...b.points.slice(0, first), ...pts, ...b.points.slice(last + 1)]
+  b.height = UNIVERSITY_COMMONS.height
+  // the doors under the cylinder, in its middle facet facing the corner
+  const [p, q] = [pts[1], pts[2]]
+  const len = Math.hypot(q[0] - p[0], q[1] - p[1])
+  b.door = [
+    cm((p[0] + q[0]) / 2),
+    cm((p[1] + q[1]) / 2),
+    cm((q[1] - p[1]) / len),
+    cm((p[0] - q[0]) / len),
+  ]
+  b.landmark = {}
+}
+
 // the student success center (25-27 auburn ave, the old southern bell exchange, opened by gsu
 // in oct 2025): two buildings, 1907 and 1922. the 1907 one on the equitable pl corner, red
 // brick over a limestone ground floor with fluted columns, stone quoins and a deep bracketed
@@ -3450,6 +3492,8 @@ function main(elements) {
   if (rcb) robinsonCollege(rcb)
   const commerce = buildings.find((b) => b.name === 'Commerce Building')
   if (commerce) commerceBuilding(commerce)
+  const commons = buildings.find((b) => b.name === 'University Commons')
+  if (commons) universityCommons(commons)
   for (const b of buildings) if (PARKING_DECKS[b.name]) parkingDeck(b)
   const p191 = buildings.find((b) => b.name === PEACHTREE_191.name)
   if (p191) peachtree191(p191)

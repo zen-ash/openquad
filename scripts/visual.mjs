@@ -135,6 +135,15 @@ const VIEWS = [
     at: [240, 16, -305],
     player: [294, -324],
   },
+  // the piedmont ave / j w dobbs ave corner, gsu's 2019 photo: the glass cylinder, the shops
+  { name: 'university-commons', from: [302, 1.2, -336], at: [335, 18, -362], player: [300, -334] },
+  // j w dobbs ave at jesse hill jr dr: the deck's open floors under the east two
+  {
+    name: 'university-commons-deck',
+    from: [482, 1.7, -352],
+    at: [400, 14, -385],
+    player: [484, -350],
+  },
   {
     name: 'courtland-north',
     from: [-125.2, 3, 217.6],

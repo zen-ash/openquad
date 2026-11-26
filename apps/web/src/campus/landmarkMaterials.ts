@@ -41,6 +41,7 @@ import { petitScienceMaterials } from './petitScienceMaterials'
 import { practiceFacilityMaterials } from './practiceFacilityMaterials'
 import { recCenterMaterials } from './recCenterMaterials'
 import { standardMaterials } from './standardBuildingMaterials'
+import { universityCommonsMaterials } from './universityCommonsMaterials'
 import { researchScienceMaterials } from './researchScienceMaterials'
 import { researchTowerMaterials } from './researchTowerMaterials'
 import { scienceAnnexMaterials } from './scienceAnnexMaterials'
@@ -113,6 +114,7 @@ export const landmarkMaterials: Record<string, Record<string, THREE.Material>> =
   'Piedmont Central': piedmontCentralMaterials,
   '75 Piedmont Avenue': piedmont75Materials,
   'J Deck': buriedDeckMaterials,
+  'University Commons': universityCommonsMaterials,
 }
 
 // see-through glass and the parts in noShadow don't cast shadows, everything else does
