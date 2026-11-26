@@ -45,6 +45,10 @@ type Road = {
   oneway?: boolean
   lanes?: number
   forward?: number
+  // edgewood along hurt park (build-campus EDGEWOOD): a hatched median [m right of the middle,
+  // wide] and the white lines in from the right and left curbs (parking, bike lane)
+  median?: number[]
+  edges?: number[]
 }
 
 // a line with its heights, s = meters along it
@@ -517,8 +521,14 @@ function build(): Network {
         if (flip.road.oneway) continue
         flip.points = [...flip.points].reverse()
         ;[flip.a, flip.b] = [flip.b, flip.a]
-        const { lanes, forward } = flip.road
+        const { lanes, forward, median, edges } = flip.road
         if (lanes && forward) flip.road = { ...flip.road, forward: lanes - forward }
+        if (median && edges)
+          flip.road = {
+            ...flip.road,
+            median: [-median[0]!, median[1]!],
+            edges: [...edges].reverse(),
+          }
       }
       if (e1.b !== n || e2.a !== n) continue
       // a short bit of a different street gets taken in by the longer one
@@ -641,16 +651,24 @@ function build(): Network {
       ;[ca, cb] = [ca * k, cb * k]
     }
     const [fwd, back] = laneCounts(road)
-    const half = road.width / 2 - EDGE
+    const half = road.width / 2
+    const [m = 0, wide = 0] = road.median ?? []
     for (const forward of [true, false]) {
       const count = forward ? fwd : back
       if (count === 0) continue
       let points = trim(e.points, ca, cb)
       if (!forward) points = [...points].reverse()
-      const right = parkedBeside(points, 1, road.width / 2)
-      const left = road.oneway && parkedBeside(points, -1, road.width / 2)
-      const outer = half - (right ? PARKING : 0)
-      const inner = road.oneway ? -(half - (left ? PARKING : 0)) : MIDDLE
+      const right = parkedBeside(points, 1, half)
+      const left = road.oneway && parkedBeside(points, -1, half)
+      // the white lines on this side and the other, or a parking lane if cars are parked there
+      const [near, far] = road.edges
+        ? forward
+          ? road.edges
+          : [...road.edges].reverse()
+        : [EDGE + (right ? PARKING : 0), EDGE + (left ? PARKING : 0)]
+      const outer = half - near!
+      // up to the median's edge (m is to the right going forward)
+      const inner = road.oneway ? -(half - far!) : wide > 0 ? (forward ? m : -m) + wide / 2 : MIDDLE
       const n = Math.min(count, Math.max(1, Math.floor((outer - inner) / NARROW)))
       const w = Math.min(LANE, (outer - inner) / n)
       const mid = (outer + inner) / 2

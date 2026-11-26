@@ -5,6 +5,7 @@ import { lamps } from './carMaterial'
 import { raisedSides } from './decks'
 import { night } from './facade'
 import type { LineData } from './geometry'
+import campus from './campus.json'
 import { pointAt } from '../game/lanes'
 import { RAISED } from '../game/raised'
 import {
@@ -581,6 +582,24 @@ export function overheadGeometry() {
   return { steel: steel.geometry(), wire: wire.geometry() }
 }
 
+// along hurt park the concrete is the whole lane, from the hatched median to the parking lane
+// (edgewood's streets with a parking lane, build-campus EDGEWOOD), elsewhere it's 2.5m
+type Street = { width: number; points: number[][]; median?: number[]; edges?: number[] }
+const parked = (campus.roads as Street[]).filter((r) => r.edges && r.edges[0]! > 2)
+function slabWidth(x: number, z: number) {
+  for (const r of parked) {
+    const [a, b] = [r.points[0]!, r.points[r.points.length - 1]!]
+    const [dx, dz] = [b[0]! - a[0]!, b[1]! - a[1]!]
+    const l = Math.hypot(dx, dz)
+    const t = ((x - a[0]!) * dx + (z - a[1]!) * dz) / l / l
+    const off = Math.abs(-(x - a[0]!) * dz + (z - a[1]!) * dx) / l
+    if (t < 0 || t > 1 || off > r.width / 2) continue
+    const [m = 0, wide = 0] = r.median ?? []
+    return Math.min(4, r.width / 2 - r.edges![0]! - m - wide / 2 - 0.1)
+  }
+  return 2.5
+}
+
 /** the rails in the road: two lines a track (their heads, 7cm), and the concrete they're set
  * in, on the ground like the roads (drawn draped, scene/Streetcar.tsx) */
 export function trackLines() {
@@ -593,7 +612,15 @@ export function trackLines() {
         pts.push(frame(r.line, Math.min(s, r.line.length - 1)).right(d))
       return pts
     }
-    slab.push({ width: 2.5, points: along(0) })
+    // the concrete in runs of the same width
+    const runs: LineData[] = []
+    for (const p of along(0)) {
+      const width = slabWidth(p[0], p[1])
+      const last = runs[runs.length - 1]
+      if (last?.width === width) last.points.push(p)
+      else runs.push({ width, points: last ? [last.points[last.points.length - 1]!, p] : [p] })
+    }
+    slab.push(...runs)
     for (const d of [-GAUGE / 2 - 0.035, GAUGE / 2 + 0.035])
       rails.push({ width: 0.1, points: along(d) })
   }

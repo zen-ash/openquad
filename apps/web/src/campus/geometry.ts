@@ -22,7 +22,15 @@ export type BuildingData = {
   // drawn by hand instead (campus/landmarks.ts)
   landmark?: unknown
 }
-export type LineData = { width: number; points: Pt[]; bridge?: boolean }
+export type LineData = {
+  width: number
+  points: Pt[]
+  bridge?: boolean
+  // a street's paint where it isn't the usual (build-campus EDGEWOOD): a hatched median [m right
+  // of the middle, wide] and the white lines' distance in from the right and left curbs
+  median?: number[]
+  edges?: number[]
+}
 // is drawn at its deck's height (its points have it), not laid on the ground
 export const onDeck = (l: LineData) => l.points[0]?.length === 3
 
@@ -100,26 +108,32 @@ export function planarUv(geo: THREE.BufferGeometry, scale = 0.2) {
 
 // flat strips for roads and paths. a quad per segment plus a little disc at every
 // corner so there are no gaps where two segments meet. aRoad is (distance along the
-// road, 0-1 across it, width) for drawing lane lines. the discs get width 0 = no lines.
+// road, 0-1 across it, width) for drawing lane lines. the discs get width 0 = no lines. aLanes
+// is (median's middle m right of the road's, its half width, white lines in from the right and
+// left curbs), the same for every road but edgewood by hurt park.
 // a bridge's points have its deck's height as a third number (sea level meters), the rest
 // are drawn at y and laid on the ground after (drape.ts)
 export function linesGeometry(lines: LineData[], y: number) {
   const pos: number[] = []
   const road: number[] = []
+  const lanes: number[] = []
 
   type V = [x: number, z: number, along: number, across: number, width: number, h: number]
   // every triangle has to face up. which way round the points go depends on which way
   // the road was drawn on osm, and a face pointing down gets lit like the underside
+  let paint = [0, 0, 0.6, 0.6]
   const tri = (a: V, b: V, c: V) => {
     const up = (b[1] - a[1]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[1] - a[1])
     for (const [x, z, along, across, width, h] of up >= 0 ? [a, b, c] : [a, c, b]) {
       pos.push(x, y + h, z)
       road.push(along, across, width)
+      lanes.push(...paint)
     }
   }
   const deck = (p: Pt) => (p[2] === undefined ? 0 : fromElevation(p[2]))
 
-  for (const { width, points } of lines) {
+  for (const { width, points, median = [0, 0], edges = [0.6, 0.6] } of lines) {
+    paint = [median[0]!, median[1]! / 2, edges[0]!, edges[1]!]
     const half = width / 2
     let along = 0
     for (let i = 0; i < points.length - 1; i++) {
@@ -175,6 +189,7 @@ export function linesGeometry(lines: LineData[], y: number) {
     ),
   )
   geo.setAttribute('aRoad', new THREE.Float32BufferAttribute(road, 3))
+  geo.setAttribute('aLanes', new THREE.Float32BufferAttribute(lanes, 4))
   return planarUv(geo)
 }
 

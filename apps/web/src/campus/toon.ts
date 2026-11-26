@@ -30,7 +30,7 @@ import { MeshToonNodeMaterial, type Node } from 'three/webgpu'
 import { DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
 import { outsideCutout } from './cutout'
 import { hash, night } from './facade'
-import { quadBrick } from './ground'
+import { lanePaint, quadBrick } from './ground'
 
 // the cartoon look (?style=toon): flat bright colors lit in a few hard bands instead of
 // pbr. same buildings and map, just drawn differently
@@ -284,13 +284,8 @@ export const toonPavers = once(() => {
 // light grey roads with white edge lines and yellow dashes, like ground.ts
 export const toonRoad = once(() => {
   const m = ground('#b6bac3', 3)
-  const road = attribute('aRoad', 'vec3')
-  const width = road.z
-  const fromCenter = abs(road.y.sub(0.5)).mul(width)
-  const wide = width.greaterThan(8)
-  const middle = wide.and(fromCenter.lessThan(0.12)).and(fract(road.x.div(6)).lessThan(0.5))
-  const edge = wide.and(abs(fromCenter.sub(width.div(2).sub(0.6))).lessThan(0.1))
-  m.colorNode = select(edge, vec3(0.97), select(middle, vec3(1, 0.8, 0.25), materialColor.rgb))
+  const { yellow, white } = lanePaint((d, w) => select(d.lessThan(w * 1.2), float(1), float(0)))
+  m.colorNode = mix(mix(materialColor.rgb, vec3(1, 0.8, 0.25), yellow), vec3(0.97), white)
   return m
 })
 export const toonLot = once(() => ground('#b6bac3', 3))

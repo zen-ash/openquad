@@ -239,11 +239,12 @@ function crosswalks() {
 }
 const areas = (all: number[][][], lift: number) =>
   planarUv(onGround(areasGeometry(all, 0), lift, enterable))
-// the lots share the road material, whose lane paint reads aRoad. all zeros = no paint (three
+// the lots share the road material, whose lane paint reads aRoad and aLanes. all zeros = no paint (three
 // warned about the missing attribute every time it built the shader)
 function noLanes(geo: BufferGeometry) {
   const count = geo.getAttribute('position').count
   geo.setAttribute('aRoad', new Float32BufferAttribute(new Float32Array(count * 3), 3))
+  geo.setAttribute('aLanes', new Float32BufferAttribute(new Float32Array(count * 4), 4))
   return geo
 }
 

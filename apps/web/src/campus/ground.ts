@@ -97,19 +97,55 @@ export const roadMaterial = textured('asphalt', '#9a9a9a', 0.9, 3)
 // the crosswalks: strips of the same asphalt just over the road, so the texture carries on
 // across them, with the paint on top
 export const crosswalkMaterial = textured('asphalt', '#9a9a9a', 0.9, 3.5)
-// lane lines, from the aRoad attribute linesGeometry adds: dashed yellow down the middle
-// and solid white near the edges. skipped on narrow roads like alleys. a crosswalk has its
-// width negative (Campus.tsx): white bars across it, along the road, like atlanta's
+// where the paint goes on a street (aRoad and aLanes, geometry.ts), 0-1: white lines in from
+// the curbs, yellow down the middle (dashed) or round a hatched median (double lines, bars
+// across it at an angle, like edgewood's along hurt park). skipped on narrow ones like alleys.
+// `line` is how each look draws a line of a half width at a distance from it
+export function lanePaint(line: (d: Node<'float'>, w: number) => Node<'float'>) {
+  const road = attribute('aRoad', 'vec3')
+  const lanes = attribute('aLanes', 'vec4')
+  const width = road.z
+  // meters in from the right hand curb
+  const across = road.y.mul(width)
+  const wide = select(width.greaterThan(8), float(1), float(0))
+  const half = lanes.y
+  const fromMid = abs(across.sub(width.div(2).sub(lanes.x)))
+  const dashed = line(fromMid, 0.1).mul(
+    select(fract(road.x.div(6)).lessThan(0.5), float(1), float(0)),
+  )
+  // the lines either side, and a second pair inside a hatched median
+  const hatch = select(half.greaterThan(0.5), float(1), float(0))
+  const double = max(
+    line(abs(fromMid.sub(half).add(0.07)), 0.06),
+    line(abs(fromMid.sub(half).add(0.3)), 0.06).mul(hatch),
+  )
+  const bar = abs(fract(road.x.add(across.mul(0.67)).div(4.6)).sub(0.5)).mul(4.6)
+  const bars = line(bar, 0.18).mul(select(fromMid.lessThan(half.sub(0.3)), float(1), float(0)))
+  // (mixed, not selected: a select is a branch, and the game look's lines take derivatives)
+  const hatched = select(half.greaterThan(0), float(1), float(0))
+  const yellow = mix(dashed, max(double, bars), hatched).mul(wide)
+  const white = max(
+    line(abs(across.sub(lanes.z)), 0.08),
+    line(abs(across.sub(width.sub(lanes.w))), 0.08),
+  )
+  return { yellow, white: white.mul(wide) }
+}
+
+// a crosswalk has its width negative (Campus.tsx): white bars across it, along the road, like
+// atlanta's
 {
   const road = attribute('aRoad', 'vec3')
-  const width = road.z
-  const fromCenter = abs(road.y.sub(0.5)).mul(width)
-  const wide = width.greaterThan(8)
-  const middle = wide.and(fromCenter.lessThan(0.1)).and(fract(road.x.div(6)).lessThan(0.5))
-  const edge = wide.and(abs(fromCenter.sub(width.div(2).sub(0.6))).lessThan(0.08))
-  const zebra = width.lessThan(0).and(fract(road.x.div(1.2)).lessThan(0.5))
-  const paint = select(edge.or(zebra), vec3(0.82), vec3(0.85, 0.68, 0.18))
-  const color = select(edge.or(middle).or(zebra), paint, materialColor.rgb)
+  const { yellow, white } = lanePaint((d, w) => select(d.lessThan(w), float(1), float(0)))
+  const zebra = select(
+    road.z.lessThan(0).and(fract(road.x.div(1.2)).lessThan(0.5)),
+    float(1),
+    float(0),
+  )
+  const color = mix(
+    mix(materialColor.rgb, vec3(0.85, 0.68, 0.18), yellow),
+    vec3(0.82),
+    max(white, zebra),
+  )
   roadMaterial.colorNode = color
   crosswalkMaterial.colorNode = color
 }

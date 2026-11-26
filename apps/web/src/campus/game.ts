@@ -21,7 +21,7 @@ import {
 import { MeshStandardNodeMaterial, type Node } from 'three/webgpu'
 import campus from './campus.json'
 import { hash } from './facade'
-import { quadBrick } from './ground'
+import { lanePaint, quadBrick } from './ground'
 
 // the game look (?style=game): the buildings stay the real ones, the ground around them
 // goes bright and friendly. still pbr, lit by the same sun and sky as the buildings, just
@@ -139,18 +139,13 @@ export const gamePavers = once(() => {
   return m
 })
 
-// clean light asphalt with crisp white edge lines and yellow dashes down the middle
+// clean light asphalt with crisp white edge lines and yellow dashes down the middle (or round
+// a hatched median, ground.ts lanePaint)
 export const gameRoad = once(() => {
   const m = ground('#7f8288', 0.85, 3)
-  const road = attribute('aRoad', 'vec3')
-  const width = road.z
-  const fromCenter = abs(road.y.sub(0.5)).mul(width)
-  const wide = width.greaterThan(8)
-  const dash = fract(road.x.div(6)).lessThan(0.5)
-  const middle = line(fromCenter, 0.1).mul(select(wide.and(dash), 1, 0))
-  const edge = line(abs(fromCenter.sub(width.div(2).sub(0.6))), 0.08).mul(select(wide, 1, 0))
+  const { yellow, white } = lanePaint(line)
   const asphalt = materialColor.rgb.mul(blotches(p, 5).mul(0.05).add(0.97))
-  m.colorNode = mix(mix(asphalt, vec3(1, 0.78, 0.2), middle), vec3(0.96), edge)
+  m.colorNode = mix(mix(asphalt, vec3(1, 0.78, 0.2), yellow), vec3(0.96), white)
   return m
 })
 export const gameLot = once(() => ground('#7f8288', 0.85, 3))

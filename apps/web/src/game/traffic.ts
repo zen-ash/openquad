@@ -45,6 +45,10 @@ const REACTION = 1
 const LOOK = 100
 // s: a car coming this soon has the right of way
 const YIELD = 4
+// m: a streetcar this far back from where a car would pull in in front of it has it too, and
+// this far back from where a car would cross its track
+const BEHIND = 60
+const TRAM_AHEAD = 25
 // s: stopped at a stop sign this long before going, waiting this long at a junction it
 // stops giving way, stuck this long it gets towed
 const STOP = 1.5
@@ -235,6 +239,8 @@ function* driving() {
     .sort((a, b) => a.step - b.step || a.plan - b.plan)
 
   const trams = tramLanes(net.lanes)
+  // where the junction curves cross the streetcar's track (worked out as they're needed)
+  const crossings = new Map<number, { stretch: number; s: number }[]>()
   const onLane: Car[][] = net.lanes.map(() => [])
   const onCurve: Car[][] = net.connectors.map(() => [])
   const carsOn = (p: Piece) => (isLane(p) ? onLane[p.id]! : onCurve[p.id]!)
@@ -473,6 +479,14 @@ function* driving() {
       for (const [b, f, v] of tram ? spansAt(t)[tram.stretch]! : []) {
         const back = tram!.u0 + (b - tram!.s0) / tram!.k
         const front = tram!.u0 + (f - tram!.s0) / tram!.k
+        // one coming up to where this car would pull in from another street, or going by it:
+        // wait at the line (it doesn't stop for cars)
+        const pullIn = j > c.at && isLane(piece) && !trams[piece.id]
+        if (pullIn && front > tram!.from - BEHIND && back < tram!.from + 2) {
+          const g = length - c.u - c.half - 0.5
+          if (g < gap) [gap, lead] = [Math.max(g, 0), 0]
+          continue
+        }
         if (front < tram!.from || back > tram!.to) continue
         // from this car's front. one level with it already (the streetcar came up behind it)
         // is left alone
@@ -544,6 +558,8 @@ function* driving() {
       return false
     }
     if (c.going === into) return true
+    // a streetcar on the track the curve crosses or coming up to it: it doesn't stop for cars
+    if (!trams[lane.id] && tramAcross(into, t)) return false
     // on yellow stop if there's room to
     if (light === 'yellow' && stoppable) return false
     if (!mayGo(c, j, line, t)) {
@@ -575,6 +591,25 @@ function* driving() {
       c.v * c.v < 2 * BRAKE * Math.max(line, 0.01) ||
       lightAt(offset, road, t + line / slow + MARGIN) === 'red'
     )
+  }
+
+  function tramAcross(x: Connector, t: number) {
+    let found = crossings.get(x.id)
+    if (!found) {
+      found = []
+      const p = [0, 0, 0]
+      for (let u = 0; u <= x.line.length; u++) {
+        pointAt(x.line, u, p)
+        const near = trackNear(p[0]!, p[2]!, 2.2)
+        if (near && !found.some((f) => f.stretch === near.stretch && Math.abs(f.s - near.s) < 6))
+          found.push({ stretch: near.stretch, s: Math.round(near.s) })
+      }
+      crossings.set(x.id, found)
+    }
+    for (const { stretch, s } of found)
+      for (const [back, front] of spansAt(t)[stretch]!)
+        if (back - 3 < s && s < front + TRAM_AHEAD) return true
+    return false
   }
 
   function release(c: Car) {

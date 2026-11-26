@@ -10,8 +10,9 @@ import { heightAt } from './terrain'
 
 // the loop goes round one way: east on edgewood, west on auburn. these are its two stretches
 // in the map, a line down the middle of the track (the right hand lane of the streets, osm's
-// center lines moved over by half the road less 1.7m, measured at hurt park). the rest of the
-// loop (centennial olympic park, jackson st) is off the map
+// center lines moved over by half the road less 1.7m; along hurt park and on auburn ave east
+// of courtland st the middle of the lane, build-campus EDGEWOOD). the rest of the loop (centennial olympic park,
+// jackson st) is off the map
 const EAST: [number, number][] = [
   // luckie st from centennial olympic park, across peachtree st, down park place to edgewood
   [-622.0, -548.6],
@@ -56,9 +57,12 @@ const EAST: [number, number][] = [
   [-243.3, -30.1],
   [-204.5, -30.8],
   [-96.9, -30.4],
-  [-64.6, -30.8],
-  [-0.1, -30.5],
-  [83.6, -29.1],
+  [-64.6, -30.05],
+  [-23.9, -29.65],
+  [-10, -29.0],
+  [-0.1, -28.95],
+  [64, -28.95],
+  [83.6, -29.0],
   [110.6, -29.0],
   [176.5, -28.1],
   [187.1, -27.9],
@@ -80,10 +84,10 @@ const WEST: [number, number][] = [
   [688.1, -149.6],
   [604.9, -150.0],
   [553.0, -151.1],
-  [467.7, -151.4],
-  [313.3, -153.0],
-  [283.8, -153.5],
-  [110.0, -153.8],
+  [467.7, -150.9],
+  [313.3, -152.4],
+  [283.8, -152.9],
+  [110.0, -153.2],
   [71.4, -154.2],
   [-59.7, -154.7],
   [-70.6, -154.6],
@@ -185,11 +189,11 @@ export type Stop = {
 export const STOPS: Stop[] = [
   { name: 'Luckie St at Cone St', on: 'east', at: [-452, -420], leaves: 17 },
   { name: 'Park Place', on: 'east', at: [-262, -96], leaves: 19 },
-  { name: 'Hurt Park', on: 'east', at: [-4, -30.5], leaves: 21 },
+  { name: 'Hurt Park', on: 'east', at: [1.5, -28.95], leaves: 21 },
   // (an island in the middle of edgewood for real, here at the curb by the market's wall)
   { name: 'Sweet Auburn Market', on: 'east', at: [512, -17.4], leaves: 24, deep: 2.2 },
   { name: 'Dobbs Plaza', on: 'west', at: [612, -150], leaves: 30 },
-  { name: 'Auburn Ave at Piedmont Ave', on: 'west', at: [318, -153], leaves: 32 },
+  { name: 'Auburn Ave at Piedmont Ave', on: 'west', at: [318, -152.4], leaves: 32 },
   { name: 'Woodruff Park', on: 'west', at: [-252, -195], leaves: 35 },
   { name: 'Peachtree Center', on: 'west', at: [-202, -428], leaves: 38 },
   { name: 'Carnegie Way at Ted Turner Dr', on: 'west', at: [-382, -575], leaves: 40 },
@@ -521,13 +525,16 @@ export function frame(line: Line, s: number) {
 }
 
 // the overhead wire's poles: one every SPAN meters on the curb side, OUT from the middle of the
-// track (behind the curb), not on a platform (a platform's LONG), in a street or a building
+// track (behind the curb, or the parking lane), not on a platform (a platform's LONG), in a
+// street or a building
 const SPAN = 30
 const OUT = 2.3
 const LONG = 27
 
-function onStreetOrInside(x: number, z: number) {
-  for (const r of campus.roads as { width: number; points: number[][] }[]) {
+type Street = { width: number; points: number[][]; edges?: number[] }
+// the street at x, z if any
+function streetAt(x: number, z: number) {
+  for (const r of campus.roads as Street[]) {
     const pts = r.points
     for (let i = 1; i < pts.length; i++) {
       const [ax, az] = pts[i - 1]!
@@ -535,16 +542,18 @@ function onStreetOrInside(x: number, z: number) {
       const [dx, dz] = [bx! - ax!, bz! - az!]
       const l2 = dx * dx + dz * dz || 1
       const t = Math.max(0, Math.min(1, ((x - ax!) * dx + (z - az!) * dz) / l2))
-      if (Math.hypot(ax! + dx * t - x, az! + dz * t - z) < r.width / 2 + 0.3) return true
+      if (Math.hypot(ax! + dx * t - x, az! + dz * t - z) < r.width / 2 + 0.3) return r
     }
   }
-  return campus.buildings.some((b) =>
+  return null
+}
+const inside = (x: number, z: number) =>
+  campus.buildings.some((b) =>
     pointInPolygon(
       { x, z },
       b.points.map(([px, pz]) => ({ x: px!, z: pz! })),
     ),
   )
-}
 
 let poles: { x: number; z: number; stretch: number; s: number }[] | null = null
 /** where the overhead's poles stand (game/world.ts makes the ones inside the fence solid) */
@@ -558,8 +567,11 @@ export function streetcarPoles() {
       let at = s
       const on = platforms.find((p) => Math.abs(p - at) < LONG / 2 + 1)
       if (on !== undefined) at = on + (at < on ? -1 : 1) * (LONG / 2 + 1)
-      const [x, z] = frame(r.line, at).right(OUT)
-      if (onStreetOrInside(x, z)) continue
+      let [x, z] = frame(r.line, at).right(OUT)
+      // behind a parking lane (edgewood along hurt park) they're on the sidewalk past it
+      const street = streetAt(x, z)
+      if (street?.edges) [x, z] = frame(r.line, at).right(OUT + Math.max(...street.edges))
+      if ((street && !street.edges) || streetAt(x, z) || inside(x, z)) continue
       poles!.push({ x, z, stretch, s: at })
     }
   })

@@ -316,14 +316,16 @@ export const RAISED_PLAZAS: Record<string, Data> = {
     ],
     edges: ['open', 'open', 'open', 'open'],
   },
+  // (in edgewood's parking lane where esri's feb 2026 image has it, x -12..12, the shelter's
+  // roof on the lidar at x 0..5)
   'Streetcar stop Hurt Park': {
     by: 'streetcar',
-    top: [309.2, 308.39, 308.41],
+    top: [309.02, 308.28, 308.32],
     points: [
-      [-17.6, -29],
-      [9.4, -28.7],
-      [9.4, -25.7],
-      [-17.6, -26],
+      [-12, -27.33],
+      [13, -27.33],
+      [13, -24.33],
+      [-12, -24.33],
     ],
     edges: ['open', 'open', 'open', 'open'],
   },
@@ -353,10 +355,10 @@ export const RAISED_PLAZAS: Record<string, Data> = {
     by: 'streetcar',
     top: [299.27, 300.23, 300.28],
     points: [
-      [331.8, -154.4],
-      [304.8, -154.8],
-      [304.9, -157.8],
-      [331.9, -157.4],
+      [331.8, -153.8],
+      [304.8, -154.2],
+      [304.9, -157.2],
+      [331.9, -156.8],
     ],
     edges: ['open', 'open', 'open', 'open'],
   },

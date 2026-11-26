@@ -85,10 +85,32 @@ describe('streetcar', () => {
     for (const pole of streetcarPoles()) expect(inside(pole.x, pole.z)).toBe(false)
   })
 
+  it('keeps to its own lane along hurt park', () => {
+    // between edgewood's hatched median and the parking lane's line (build-campus EDGEWOOD)
+    const road = campus.roads.find((r) => 'median' in r && r.median![1]! > 1)!
+    const [a, b] = [road.points[1]!, road.points[2]!]
+    const l = Math.hypot(b[0]! - a[0]!, b[1]! - a[1]!)
+    const line = streetcarRuns()[0]!.line
+    const p = [0, 0, 0]
+    let checked = 0
+    for (let s = 0; s < line.length; s += 2) {
+      pointAt(line, s, p)
+      const t = ((p[0]! - a[0]!) * (b[0]! - a[0]!) + (p[2]! - a[1]!) * (b[1]! - a[1]!)) / l / l
+      if (t < 0 || t > 1) continue
+      // meters right of the street's middle
+      const across = (-(p[0]! - a[0]!) * (b[1]! - a[1]!) + (p[2]! - a[1]!) * (b[0]! - a[0]!)) / l
+      const [m, wide] = road.median!
+      expect(across - WIDTH / 2).toBeGreaterThan(m! + wide! / 2)
+      expect(across + WIDTH / 2).toBeLessThan(road.width / 2 - road.edges![0]!)
+      checked++
+    }
+    expect(checked).toBeGreaterThan(20)
+  })
+
   it('has the cars on its lanes wait behind it', () => {
-    // seconds a car overlaps a section, over half an hour of both streetcars. a few are left:
-    // the game's edgewood is narrower than the real one, a car in the lane beside the streetcar
-    // can touch its side
+    // seconds a car overlaps a section, over half an hour of both streetcars. a few are left
+    // where its back end swings round a corner, or a car was already going when it came (23
+    // when edgewood was too narrow and cars pulled in level with it or across its track)
     let touching = 0
     for (let t = 0; t < 1800; t++) {
       const cars = drivingAt(MORNING + 3600 + t)
@@ -110,6 +132,6 @@ describe('streetcar', () => {
               touching++
         })
     }
-    expect(touching).toBeLessThan(40)
+    expect(touching).toBeLessThan(10)
   })
 })

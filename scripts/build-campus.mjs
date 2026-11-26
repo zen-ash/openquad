@@ -678,6 +678,94 @@ const ROAD_WIDTH = {
 }
 const PATH_WIDTH = { footway: 2.5, pedestrian: 5, path: 2, steps: 2.5, cycleway: 2 }
 
+// edgewood ave from peachtree center ave along hurt park, by osm way id. measured on the
+// lidar's paint and curbs (2018, intensity) and esri's feb 2026 image: osm's line is up to 2m
+// north of the street's middle and along the park the street is ~3m wider than a secondary.
+// the middle drawn west to east (osm's nodes, moved south), curb to curb, the yellow down the
+// middle [m right of the middle, wide: hatched between double lines if it's wider than a double
+// line], how far in from the right (south) and left curbs the white lines are (the parking and
+// bike lanes), and lanes / how many go east. the eastbound lane next to the curb or the parking
+// is the streetcar's (cars share it)
+const EDGEWOOD = {
+  // the block before peachtree center ave: a left turn lane next to the streetcar's
+  1390660447: {
+    points: [
+      [-151, -33.8],
+      [-107.8, -33.7],
+    ],
+    width: 11.9,
+    median: [-1.3, 0.34],
+    edges: [1.45, 1.2],
+    lanes: 3,
+    forward: 2,
+  },
+  1279413872: {
+    points: [
+      [-107.8, -33.7],
+      [-106.2, -33.6],
+    ],
+    width: 11.9,
+    median: [-1.3, 0.34],
+    edges: [1.45, 1.2],
+    lanes: 3,
+    forward: 2,
+  },
+  133114924: {
+    points: [
+      [-106.2, -33.6],
+      [-96.4, -33.6],
+    ],
+    width: 11.9,
+    median: [-1.3, 0.34],
+    edges: [1.45, 1.2],
+    lanes: 3,
+    forward: 2,
+  },
+  // round the island east of peachtree center ave: just the streetcar's lane
+  905997421: { lanes: 1 },
+  // from there to where the hatch starts: two lanes west (one to turn left)
+  1378043620: {
+    points: [
+      [-65.5, -32.4],
+      [-23.9, -32.0],
+    ],
+    width: 14,
+    median: [-0.2, 0.34],
+    edges: [2.3, 1.1],
+    lanes: 3,
+    forward: 1,
+  },
+  // along hurt park
+  563551380: {
+    points: [
+      [-23.9, -32.0],
+      [-0.1, -31.65],
+      [64, -31.65],
+      [73.3, -31.8],
+    ],
+    width: 13.8,
+    median: [-0.85, 3.3],
+    edges: [2.3, 1.4],
+    lanes: 2,
+    forward: 1,
+  },
+  // and auburn ave from courtland st to jesse hill jr dr (the streetcar's way back west): osm's
+  // line is the middle, but it's ~12.4m with parking both sides, not 9
+  1118731507: { width: 12.4, edges: [2.3, 2.3] },
+  // on to courtland st: the curb comes out to the crosswalk (no parking), the hatch stops at it
+  563551381: {
+    points: [
+      [73.3, -31.8],
+      [83.6, -32.4],
+      [100.6, -32.9],
+    ],
+    width: 11.7,
+    edges: [0.6, 1.4],
+    lanes: 2,
+    forward: 1,
+  },
+}
+
 // osm's outline for library north is from before the 2022 renovation (it still has the old
 // plaza stairs), so it's redone here from photos: the brick box, plus the curved glass lobby
 // on the side facing the greenway. the web app draws it by hand too (campus/libraryNorth.ts)
@@ -3446,6 +3534,8 @@ function main(elements) {
   const plazas = []
   const signals = []
   const trees = []
+  // osm nodes moved by EDGEWOOD
+  const moved = new Map()
 
   const towers = []
 
@@ -3568,6 +3658,15 @@ function main(elements) {
         // two way with more lanes one way than the other: how many go along the points
         if (!road.oneway && Number(tags['lanes:forward']) > 0)
           road.forward = Number(tags['lanes:forward'])
+        const fix = EDGEWOOD[el.id]
+        if (fix) {
+          // the nodes it shares with other streets and crosswalks move with it
+          for (const p of points) {
+            const to = fix.points?.find((q) => q[0] === p[0])
+            if (to && to[1] !== p[1]) moved.set(`${p[0]},${p[1]}`, to)
+          }
+          Object.assign(road, fix)
+        }
         roads.push(road)
       } else if (PATH_WIDTH[tags.highway]) {
         const path = { width: PATH_WIDTH[tags.highway] * SCALE, points }
@@ -3587,6 +3686,9 @@ function main(elements) {
       if (inside(p)) trees.push(p)
     }
   }
+
+  for (const l of [...roads, ...paths, ...crossings])
+    l.points = l.points.map((p) => moved.get(`${p[0]},${p[1]}`) ?? p)
 
   const lib = buildings.find((b) => b.name === 'Library North')
   if (lib) libraryNorth(lib)

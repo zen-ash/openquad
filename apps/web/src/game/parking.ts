@@ -157,11 +157,11 @@ const CURBS: { from: [number, number]; to: [number, number]; full: number }[] = 
   // mlk jr dr and washington st by the capitol end
   { from: [-193, 525], to: [-252, 485], full: 0.8 },
   { from: [-313, 494], to: [-333, 524], full: 0.9 },
-  // courtland st along hurt park, and edgewood ave in front of it (not across the end of the
-  // park's middle path)
+  // courtland st along hurt park, and edgewood ave's parking lane in front of it either side of
+  // the streetcar stop (cars at 20-48 on the 2026 image, the 2019 photos have them west of it)
   { from: [62, 10], to: [20, 60], full: 0.5 },
-  { from: [-25, -27], to: [-5, -27], full: 0.5 },
-  { from: [7, -27], to: [42, -27], full: 0.5 },
+  { from: [-62, -25.8], to: [-15, -25.8], full: 0.5 },
+  { from: [15, -25.8], to: [70, -25.8], full: 0.6 },
   // jesse hill jr dr north of edgewood ave, both sides, and its block south of coca-cola pl
   { from: [467, -100], to: [467, -46], full: 0.6 },
   { from: [479, -100], to: [479, -46], full: 0.35 },
@@ -231,7 +231,7 @@ function curbClear(car: Car, road: Line, signals: { x: number; z: number }[]) {
   const box = corners(car)
   const { length } = CAR_KINDS[car.kind]!
   if (fenceDistance(car.x, car.z) < -230) return false
-  // not where the streetcar goes by (the game's streets are narrower than the real ones)
+  // not where the streetcar goes by (where a street isn't its real width yet, or its platforms)
   if (trackNear(car.x, car.z, 2.8)) return false
   if (signals.some((s) => Math.hypot(s.x - car.x, s.z - car.z) < SIGNAL + 7 + length / 2))
     return false
