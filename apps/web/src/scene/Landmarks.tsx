@@ -343,7 +343,7 @@ export default function Landmarks() {
   return (
     <group ref={freeze}>
       {under && <mesh geometry={under} material={plinth} castShadow receiveShadow />}
-      {campus.buildings.map((b) => {
+      {campus.buildings.map((b, i) => {
         const geo = landmarkGeometry(b)
         const mats = b.name ? materials[b.name] : undefined
         if (!geo || !mats) return null
@@ -352,7 +352,7 @@ export default function Landmarks() {
         const floor = baseOf(b)
         return (
           <Building
-            key={b.name}
+            key={i}
             parts={geo.parts}
             // what casts from far away: not the bits that only cast or show up close
             casting={Object.entries(geo.parts)

@@ -8,6 +8,8 @@ import { courtlandNorthGeometry, type CourtlandNorthData } from './courtlandNort
 import { dahlbergGeometry, type DahlbergData } from './dahlberg'
 import { edgewood58Geometry, type Edgewood58Data } from './edgewood58'
 import { edgewood148Geometry, type Edgewood148Data } from './edgewood148'
+import { greekHousingGeometry, type GreekHousingData } from './greekHousing'
+import { pattonHallGeometry, type PattonHallData } from './pattonHall'
 import { edgewood100Geometry, type Edgewood100Data } from './edgewood100'
 import { parkPlace55Geometry, type ParkPlace55Data } from './parkPlace55'
 import { collegeOfLawGeometry, type CollegeOfLawData } from './collegeOfLaw'
@@ -123,6 +125,8 @@ type Data = LibraryNorthData &
   HurtData &
   Edgewood58Data &
   Edgewood148Data &
+  GreekHousingData &
+  PattonHallData &
   Edgewood100Data &
   ParkPlace55Data &
   StudentSuccessData &
@@ -135,6 +139,7 @@ type Data = LibraryNorthData &
   RobinsonData &
   CommerceData &
   SculptureStudioData
+
 const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Library North': libraryNorthGeometry,
   'Dahlberg Hall': dahlbergGeometry,
@@ -184,16 +189,19 @@ const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Haas-Howell Building': haasHowellGeometry,
   'Standard Building': standardGeometry,
   'Sculpture Studio': sculptureStudioGeometry,
+  'Greek Housing': greekHousingGeometry,
+  'Patton Hall': pattonHallGeometry,
 }
 
-// the scene and the interiors both need it, only build it once
-const cache = new Map<string, LandmarkGeometry>()
+// the scene and the interiors both need it, only build it once. by building, not name: the
+// three greek housing blocks share one
+const cache = new Map<object, LandmarkGeometry>()
 
 export function landmarkGeometry(b: { name?: string; landmark?: unknown }) {
   const build = b.name && b.landmark ? builders[b.name] : undefined
   if (!build) return null
-  let geo = cache.get(b.name!)
-  if (!geo) cache.set(b.name!, (geo = sunk(b as Data, build(b as Data))))
+  let geo = cache.get(b)
+  if (!geo) cache.set(b, (geo = sunk(b as Data, build(b as Data))))
   return geo
 }
 

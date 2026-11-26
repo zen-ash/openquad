@@ -66,6 +66,10 @@ const VIEWS = [
   // across edgewood ave a bit to the east: the arch, the cornice and the east side over the
   // greek housing
   { name: '148-edgewood', from: [205, 1.7, -22], at: [190, 8, -45], player: [207, -20] },
+  // across edgewood ave from the east: the town homes' brick and stucco bays, patton's west end
+  { name: 'greek-housing', from: [248, 1.6, -26], at: [218, 4, -50], player: [250, -24] },
+  // across edgewood ave: the stucco base, the brick with its sunshades, the open corner
+  { name: 'patton-hall', from: [261, 1.6, -22], at: [280, 12, -45], player: [259, -20] },
   {
     name: 'student-success-center',
     from: [-214, 1.7, -173],

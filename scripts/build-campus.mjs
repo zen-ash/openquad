@@ -131,9 +131,7 @@ const GSU_PARTS = new Set([252608874, 301958707, 840362899, 841030081, 801359976
 const MEASURED_HEIGHTS = {
   'Alumni Center': 7.9,
   'Centennial Hall': 13.5,
-  'Greek Housing': 9.6,
   'J Deck': 13.9,
-  'Patton Hall': 16.5,
   'Piedmont North Dining Hall': 18.2,
 }
 
@@ -2164,6 +2162,65 @@ function sculptureStudio(b, paths) {
     for (const pt of p.points) if (pt[0] === from[0] && pt[1] === from[1]) pt.splice(0, 2, ...to)
 }
 
+// gsu's greek housing (2008), three blocks of three storey town homes round a lawn off edgewood
+// ave east of 148 edgewood: red brick and tan stucco bays, drawn in campus/greekHousing.ts.
+// osm's outlines match usgs's lidar (2018) to half a meter, kept. heights from the lidar roofs
+// over each one's floor (the ground at its door): 61 on edgewood 311.4m over the sidewalk's
+// 303.4, 39 on the west 311.3 over the lawn's 302.0, 40 at the back two storeys, 307.1 over
+// 301.9. the parapets of the brick bays stand 0.5m over the roofs. 61's door moves from the
+// lawn to the community room's on edgewood ave (156 edgewood, gsu's map)
+const GREEK_HOUSING = [
+  { at: [213, -74], height: 9.8, floors: 3 },
+  { at: [226, -79], height: 5.7, floors: 2 },
+  { at: [221, -54], height: 8.5, floors: 3, door: [236, -39.63, 0, 1] },
+]
+
+function greekHousing(list) {
+  for (const b of list) {
+    const xs = b.points.map((p) => p[0])
+    const zs = b.points.map((p) => p[1])
+    const mid = [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...zs) + Math.max(...zs)) / 2]
+    const g = GREEK_HOUSING.find((g) => Math.hypot(g.at[0] - mid[0], g.at[1] - mid[1]) < 12)
+    if (!g) continue
+    b.height = g.height
+    if (g.door) b.door = g.door
+    b.landmark = { floors: g.floors }
+  }
+}
+
+// patton hall (2008, a dorm with the dining hall in its base) at edgewood ave and piedmont
+// ave. redrawn on usgs's lidar walls (2018): a U open to the west, the bars on edgewood ave
+// and the north side and a wing up piedmont ave, a one storey block (roof 307.4m) filling the
+// court's east half. osm had the court as building and the north bar 4m short at its west end.
+// the corner at edgewood and piedmont is open two floors up round the entrance (gsu's photos),
+// the outline goes round the glass in there. drawn in campus/pattonHall.ts. the ground is the
+// edgewood ave sidewalk at the door (303.3m)
+const PATTON_HALL = {
+  points: [
+    [252.5, -39.8],
+    [275, -39.8],
+    [275, -43.5],
+    [280.6, -43.5],
+    [280.6, -96.6],
+    [240.8, -96.6],
+    [240.8, -81],
+    [254, -81],
+    [254, -55],
+    [252.5, -55],
+  ],
+  // the stair and lift penthouse on the edgewood bar (lidar 327.8m), the roof is 323.0
+  height: 24.5,
+  // the main doors in the corner, facing edgewood ave
+  door: [278, -43.5, 0, 1],
+}
+
+function pattonHall(b) {
+  b.points = PATTON_HALL.points
+  b.height = PATTON_HALL.height
+  b.door = PATTON_HALL.door
+  b.landmark = {}
+}
+
 // 55 park place (gsu's andrew young school of policy studies), across park place from woodruff
 // park: a 19 floor cream precast block with deep set windows, two wings on park place with the
 // entrance between them and the middle's top floors stepping back. drawn in
@@ -3171,6 +3228,9 @@ function main(elements) {
   if (e148) edgewood148(e148)
   const sculpt = buildings.find((b) => b.name === 'Sculpture Studio')
   if (sculpt) sculptureStudio(sculpt, paths)
+  greekHousing(buildings.filter((b) => b.name === 'Greek Housing'))
+  const patton = buildings.find((b) => b.name === 'Patton Hall')
+  if (patton) pattonHall(patton)
   const e100 = buildings.find((b) => b.name === '100 Edgewood')
   if (e100) edgewood100(e100)
   const p55 = buildings.find((b) => b.name === '55 Park Place')

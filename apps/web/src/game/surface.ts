@@ -98,6 +98,8 @@ const DATUMS: Record<string, number | { from: number }> = {
   '58 Edgewood': 314.4,
   // the edgewood ave sidewalk at the door (lidar), the drive behind it is 1m lower
   '148 Edgewood': 303.9,
+  // the edgewood ave sidewalk at the corner door (lidar), the north side is 3m lower
+  'Patton Hall': 303.3,
   // the plaza round it (lidar), edgewood ave falls from 310.1 to 307.3m along it
   '100 Edgewood': 309.65,
   // the terrace along park place in front of the doors (lidar), auburn ave behind falls 4.6m

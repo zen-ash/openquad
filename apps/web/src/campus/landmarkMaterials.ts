@@ -12,6 +12,8 @@ import { robinsonMaterials } from './robinsonCollegeMaterials'
 import { commerceMaterials } from './commerceBuildingMaterials'
 import { edgewood58Materials } from './edgewood58Materials'
 import { edgewood148Materials } from './edgewood148Materials'
+import { greekHousingMaterials } from './greekHousingMaterials'
+import { pattonHallMaterials } from './pattonHallMaterials'
 import { edgewood100Materials } from './edgewood100Materials'
 import { parkPlace55Materials } from './parkPlace55Materials'
 import { haasHowellMaterials } from './haasHowellMaterials'
@@ -87,6 +89,8 @@ export const landmarkMaterials: Record<string, Record<string, THREE.Material>> =
   'Hurt Building': hurtBuildingMaterials,
   '58 Edgewood': edgewood58Materials,
   '148 Edgewood': edgewood148Materials,
+  'Greek Housing': greekHousingMaterials,
+  'Patton Hall': pattonHallMaterials,
   '100 Edgewood': edgewood100Materials,
   '55 Park Place': parkPlace55Materials,
   'Student Success Center': studentSuccessMaterials,
