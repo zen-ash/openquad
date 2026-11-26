@@ -3,7 +3,8 @@
 What I built the Research Tower from (153 Decatur St, 9 storeys of labs, HOK, opened Sept 22
 2026). It stands between Petit, the Research Science Center and the railroad, with its south
 east side on Jesse Hill Jr Dr. It was first drawn in September 2026 from two photos of the side
-toward the Research Science Center; this round redid the other sides. Everything here is
+toward the Research Science Center; the faces round redid the other sides and the door round
+moved the walk-in door to the real main doors on the courtyard. Everything here is
 reference only: no photos are in the repo, the measurements are my own. Photos I downloaded are
 kept outside the repo.
 
@@ -13,6 +14,8 @@ Newest first.
 
 | source                                                                      | date                    | license                  | facade                                          | used for                                                                                                                                                          |
 | --------------------------------------------------------------------------- | ----------------------- | ------------------------ | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GSU, opening day (`Research-Tower-Grand-Opening_1000px`)                    | 2026-09-22              | GSU, all rights reserved | north east, at the doors                        | the main doors right next to the "RESEARCH TOWER" sign on the light ribbed metal (0.9m apart), the sign's size and height. By eye                                 |
+| GSU campus map, location 1255452 ("Atlanta - Research Tower")               | 2026                    | GSU                      | -                                               | the address (153 Decatur St, "off Decatur Street") and the pin at the courtyard's end by Petit: the way in is from Decatur St                                     |
 | GSU news, `20260409MLB_GSU_Stock_0033`                                      | 2026-04-09              | GSU, all rights reserved | north east, from the courtyard under the bridge | the glass band and slots (the first round), side by side                                                                                                          |
 | GSU, via Urbanize Atlanta (Sept 2026), "under construction next to Petit"   | early 2026 (bare trees) | GSU                      | south east, from across Jesse Hill Jr Dr, high  | the glass v round the east corner, the slots, the storefront, the panels' color. By eye                                                                           |
 | GSU campus map, location 1114553: `IMG_2804`, `IMG_2805`                    | uploaded 2025-10-03     | GSU                      | the south corner from Jesse Hill Jr Dr          | the south west side's grid of windows, the brick base, the solid strip by the corner, no brick on the south east end. Camera by angles (`IMG_2805`), side by side |
@@ -58,6 +61,19 @@ the outline (west, north, east, south). Heights are over the door's floor.
   narrow windows (1 x 2.9m, every 3.6m) on the seven floors over the brick.
 - **Sign**: gsu's sign is at the top of the solid end on Jesse Hill Jr Dr (s 3.5, about 35m up);
   it's a plain blue square in the game (no logo).
+- **Main doors**: on the courtyard side under the canopy's north end, u 12.2-14.6 from the
+  north corner, with the name ("RESEARCH TOWER", a brushed plate, about 2.4 x 0.45m, 2.25m up)
+  on the ribbed metal right next to them. Placed from the courtyard rendering's 1d fit (the
+  sign is at u 9.7-12.7 there) and the opening photo (the door frame starts about 0.9m past
+  the plate).
+- **Side toward Petit**: light ribbed metal from the ground to the top, the dark panels coming
+  round the top for the last 2.5m (the courtyard rendering's right edge, the April 2026 photo).
+  It's the loading dock's drive (GSU's map has "Docks - Petit Science Center" there).
+- **The courtyard**: between the tower, the Research Science Center's back and Petit, under
+  Petit's bridge. You get in from the Decatur St sidewalk between Petit and the Research
+  Science Center (the address is 153 Decatur St). The Jesse Hill Jr Dr end is a tall black
+  picket fence from the tower's east corner to the Research Science Center's charcoal tower
+  (both HOK renderings, no gate in either).
 
 ## What's in the game
 
@@ -66,14 +82,27 @@ the outline (west, north, east, south). Heights are over the door's floor.
   flat glass shapes 5cm in front of the panels (onFace: a polygon on a wall with uvs and aPane
   from its corner, so the glass family draws its mullions) with light trim strips along their
   slanted edges. The slots, windows and storefronts are real holes in the walls.
-- campus.json didn't change.
+- The door (campus.json `door`, set in NEW_BUILDINGS) is on the courtyard side, so the tower's
+  floor is the courtyard's ground at the doors (306.85m) instead of the dock drive's (305.99):
+  the whole building stands 0.86m higher than before. Jesse Hill Jr Dr's sidewalk is 0.35-0.65m
+  above that floor on the 2018 ground.
+- RESEARCH_TOWER_WAY in build-campus.mjs: a hand-placed footway from the Decatur St sidewalk
+  (one of its own points) in between Petit and the Research Science Center, under the bridge, to
+  1.5m in front of the doors. The GPS goes that way now (Hurt Park to the doors 571m, it was
+  754m round the back by the dock).
+- The fence is drawn with the tower (the panels part, bars every 15cm, two rails, posts every
+  2.4m, on the ground) and is a collision wall (towerFence in world.ts).
 
 ## What still differs
 
-- The main doors are on the courtyard side under the long canopy (hok's rendering and the
-  opening photos), but the game's walk-in door is still on the side facing Petit, with glass and
-  the name there; that side is really light ribbed metal top to bottom. Moving the door needs a
-  path into the courtyard for the GPS (no osm footway there), so I left it.
+- The courtyard is the game's plain paving with one footway across it. The rendering has lawns,
+  planters, seat walls and tables, and there's no photo of the finished courtyard yet (Mapillary
+  stops in 2021, the satellite still shows the building site).
+- The doors are a plain doorway with the game's sliding panels; the real ones are dark framed
+  glass doors. The sign has no red bar and the blue square stands in for the logo.
+- The fence's line is from the renderings only (2024). If it got a gate, or the courtyard is open
+  to Jesse Hill Jr Dr for real, the fence (and maybe a second footway) should change.
+- The floor height comes from the 2018 ground at the doors, before the building was there.
 - The panels are the old flat metal panels. The real ones are a dark grey with a brick-like
   texture (the renderings make them charcoal, the photos medium grey).
 - The south west side is from a construction photo; the finished cladding, the window frames
@@ -88,6 +117,15 @@ the outline (west, north, east, south). Heights are over the door's floor.
   newer than the lidar).
 
 ## Cost
+
+Nov 26 (the door): no new parts, meshes or shaders. The fence is in the panels part (+~440
+triangles, about 2.5k now), the door's canopy over the old door is gone. Draws (counts.mjs on
+the dev server, before -> after): the courtyard spots 216 -> 232, 206 -> 212, 183 -> 197 (the
+tower's furniture loads within 20m of its door, and the door is now by those spots; it was by
+the dock before), rt-jesse-hill 344, rsc-street 338 and petit-close 264 the same. Frame time
+measured after the merge.
+
+Before that (the faces round):
 
 8 parts (panels, glass, blueGlass, screen, ribbed, metal, brick, roof): one more than before,
 the brick (the brick family, no new shader). About 2.1k triangles, one more sign (the blue

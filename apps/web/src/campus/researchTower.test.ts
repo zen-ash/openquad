@@ -46,4 +46,31 @@ describe('research tower', () => {
     expect(square).toBeDefined()
     expect(square!.plate).toBe('#1f4b99')
   })
+
+  it('has its main doors on the courtyard, with the name right next to them', () => {
+    const [x, z, nx, nz] = tower.door as number[]
+    // facing the research science center across the courtyard
+    const rsc = campus.buildings.find((b) => b.name === 'Research Science Center')!
+    const cx = rsc.points.reduce((s, p) => s + p[0]!, 0) / rsc.points.length
+    const cz = rsc.points.reduce((s, p) => s + p[1]!, 0) / rsc.points.length
+    expect(nx! * (cx - x!) + nz! * (cz - z!)).toBeGreaterThan(10)
+    const name = signs.find((s) => s.text === 'RESEARCH TOWER')!
+    expect(Math.hypot(name.x - x!, name.z - z!)).toBeLessThan(4)
+  })
+
+  it('has no doors or windows toward petit', () => {
+    // the north and west corners
+    const [w, n] = [tower.points[0]!, tower.points[1]!]
+    const len = Math.hypot(n[0]! - w[0]!, n[1]! - w[1]!)
+    const [dx, dz] = [(n[0]! - w[0]!) / len, (n[1]! - w[1]!) / len]
+    for (const part of ['glass', 'blueGlass'] as const) {
+      const pos = parts[part].getAttribute('position')
+      for (let i = 0; i < pos.count; i++) {
+        const [px, pz] = [pos.getX(i) - w[0]!, pos.getZ(i) - w[1]!]
+        const along = px * dx + pz * dz
+        const off = Math.abs(px * dz - pz * dx)
+        expect(off < 0.5 && along > 0.5 && along < len - 0.5).toBe(false)
+      }
+    }
+  })
 })

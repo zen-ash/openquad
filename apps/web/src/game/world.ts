@@ -12,6 +12,7 @@ import { BED, memorialWall } from '../campus/fountain'
 import { practiceObstacles, type PracticeFacilityData } from '../campus/practiceFacility'
 import { recObstacles, type RecData } from '../campus/recCenter'
 import { rscObstacles, type RscData } from '../campus/researchScience'
+import { towerFence } from '../campus/researchTower'
 import { annexObstacles, type AnnexData } from '../campus/scienceAnnex'
 import { loftsObstacles, type LoftsData } from '../campus/universityLofts'
 import { urbanLifeObstacles, type UrbanLifeData } from '../campus/urbanLife'
@@ -156,6 +157,8 @@ export const world: World = {
     ...deck.walls,
     ...decks,
     ...raisedWalls,
+    // the research tower's courtyard is shut off from jesse hill jr dr
+    towerFence(),
   ],
   circles: [
     ...campus.trees.map(([x, z]) => ({ x: x!, z: z!, radius: TREE_RADIUS })),

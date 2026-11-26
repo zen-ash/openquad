@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import campus from '../campus/campus.json'
 import { pantherQuadObstacles } from '../campus/pantherQuad'
+import { COURTYARD_FENCE } from '../campus/researchTower'
 import { pointInPolygon } from './collision'
 import { LOW, furnish } from './furniture'
 import { glide } from './glide'
@@ -36,6 +37,38 @@ describe('world', () => {
       p = walk(p, dir, 1.6, 1 / 30, 0.4, world)
     }
     expect(Math.hypot(p.x - to.x, p.z - to.z)).toBeLessThan(5)
+  })
+
+  it('lets you walk in from decatur st to the research tower doors', () => {
+    const tower = campus.buildings.find((b) => b.name === 'Research Tower')!
+    const [x, z, nx, nz] = tower.door as number[]
+    // the footway in between petit and the research science center
+    const way = campus.paths.find((l) => {
+      const [ex, ez] = l.points.at(-1)!
+      return Math.hypot(ex! - x! - nx! * 1.5, ez! - z! - nz! * 1.5) < 0.1
+    })!
+    let p = { x: way.points[0]![0]!, z: way.points[0]![1]! }
+    for (const [tx, tz] of [...way.points.slice(1), [x! - nx! * 2, z! - nz! * 2]]) {
+      for (let i = 0; i < 30 * 40 && Math.hypot(p.x - tx!, p.z - tz!) > 0.3; i++) {
+        const len = Math.hypot(tx! - p.x, tz! - p.z)
+        p = walk(p, { x: (tx! - p.x) / len, z: (tz! - p.z) / len }, 1.6, 1 / 30, 0.4, world)
+      }
+    }
+    // through the doors and inside
+    const outline = tower.points.map(([a, b]) => ({ x: a!, z: b! }))
+    expect(pointInPolygon(p, outline)).toBe(true)
+  })
+
+  it('keeps you out of the research tower courtyard from jesse hill jr dr', () => {
+    const [a, b] = COURTYARD_FENCE as [number[], number[]]
+    const mid = { x: (a[0]! + b[0]!) / 2, z: (a[1]! + b[1]!) / 2 }
+    // from the sidewalk side straight at it, toward the courtyard
+    const n = { x: b[1]! - a[1]!, z: a[0]! - b[0]! }
+    const len = Math.hypot(n.x, n.z)
+    const dir = { x: n.x / len, z: n.z / len }
+    let p = { x: mid.x - dir.x * 4, z: mid.z - dir.z * 4 }
+    for (let i = 0; i < 30 * 8; i++) p = walk(p, dir, 1.6, 1 / 30, 0.4, world)
+    expect((p.x - mid.x) * dir.x + (p.z - mid.z) * dir.z).toBeLessThan(0)
   })
 })
 

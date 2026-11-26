@@ -1,8 +1,10 @@
 import * as THREE from 'three'
-import type { Point } from '../game/collision'
+import type { Point, Segment } from '../game/collision'
 import { DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
+import { baseOf } from '../game/surface'
+import { heightAt } from '../game/terrain'
 import type { Sign } from './landmarks'
-import { edges, flat, parts as collect, pt, type Hole, type Opening } from './landmark'
+import { edges, flat, parts as collect, pt, wallQuad, type Hole, type Opening } from './landmark'
 
 // the research tower, opened september 2026 next to petit. from gsu's photos and hok's
 // renderings on gsu's map: dark grey panels, a glass v wrapping the east corner (each arm's
@@ -73,35 +75,12 @@ export function researchTowerGeometry(b: TowerData) {
     }
     let walls = true
 
-    if (hasDoor) {
-      // toward petit: glass along the ground floor with the doors in it, a strip of glass
-      // up the corner and slots
-      const d0 = t - DOOR_WIDTH / 2
-      const d1 = t + DOOR_WIDTH / 2
-      openings.push({ hole: [d0, d1, 0, DOOR_HEIGHT] })
-      openings.push({ hole: [d0, d1, DOOR_HEIGHT + 0.2, GROUND - 0.3], glass: 'glass' })
-      if (d0 - 0.2 > 1.2) openings.push({ hole: [1, d0 - 0.2, 0.1, GROUND - 0.3], glass: 'glass' })
-      openings.push({ hole: [len - 2.6, len - 1, GROUND + 1, TOP - 1], glass: 'blueGlass' })
-      for (const u of [len * 0.3, len * 0.42, len * 0.6, len * 0.72]) slot(u, GROUND + 1, TOP - 1)
-      // ribbed panels beside the doors with the name on them
-      const u0 = Math.max(...openings.filter((o) => o.hole[2] < GROUND).map((o) => o.hole[1])) + 0.1
-      if (len - u0 > 2) {
-        box('ribbed', u0, len - 0.1, 0.06, 0, GROUND)
-        const s = along((u0 + len) / 2, 0.08)
-        signs.push({
-          x: s.x,
-          y: 2.6,
-          z: s.z,
-          rot: Math.atan2(out.x, out.z),
-          text: 'RESEARCH TOWER',
-        })
-      }
-      prism(
-        'metal',
-        [along(t - 3), along(t + 3), along(t + 3, 2.4), along(t - 3, 2.4)],
-        GROUND - 0.2,
-        GROUND + 0.1,
-      )
+    if (out.x < 0 && out.z < 0) {
+      // toward petit, the loading dock's drive: light ribbed metal all the way up, the dark
+      // panels coming round the top from the courtyard side (hok's rendering, gsu's 2026 photo)
+      walls = false
+      wall('ribbed', p, q, 0, TOP - 2.5, out)
+      wall('panels', p, q, TOP - 2.5, TOP, out)
     } else if (out.x > 0 && out.z < 0) {
       // the long side toward the research science center, from the north corner. one arm
       // of the v: its bottom slants up from the east corner, its top steps up near the end.
@@ -126,11 +105,33 @@ export function researchTowerGeometry(b: TowerData) {
       slot(1.8, 9.5, TOP - 1.5, 1.1)
       slot(7.8, 8.5, TOP - 1.5, 1.1)
       // two storeys of glass behind bronze fins at the east end, one storey of glass under
-      // a long canopy by the main doors and light ribbed metal by the corner
+      // a long canopy with the main doors at its north end, and light ribbed metal by the
+      // corner with the name on it right next to the doors (gsu's photo from the opening)
       openings.push({ hole: [31, len - 0.4, 0.1, LOBBY], glass: 'blueGlass' })
       for (let u = 31.3; u < len - 0.5; u += 0.6) box('metal', u, u + 0.08, 0.35, 0.1, 10.2)
-      openings.push({ hole: [11.5, 30.6, 0.1, GROUND - 0.4], glass: 'blueGlass' })
-      box('ribbed', 0.1, 11.2, 0.06, 0, GROUND)
+      let store = 11.5
+      if (hasDoor) {
+        const d0 = t - DOOR_WIDTH / 2
+        const d1 = t + DOOR_WIDTH / 2
+        openings.push({ hole: [d0, d1, 0, DOOR_HEIGHT] })
+        openings.push({ hole: [d0, d1, DOOR_HEIGHT + 0.2, GROUND - 0.4], glass: 'blueGlass' })
+        store = d1 + 0.2
+      }
+      openings.push({ hole: [store, 30.6, 0.1, GROUND - 0.4], glass: 'blueGlass' })
+      const ribs = hasDoor ? t - DOOR_WIDTH / 2 - 0.2 : 11.2
+      box('ribbed', 0.1, ribs, 0.06, 0, GROUND)
+      const s = along(ribs - 1.8, 0.08)
+      signs.push({
+        x: s.x,
+        y: 2.25,
+        z: s.z,
+        rot: Math.atan2(out.x, out.z),
+        text: 'RESEARCH TOWER',
+        // black letters on brushed metal
+        color: '#26282b',
+        plate: '#dfe1e3',
+        scale: 0.6,
+      })
       prism('metal', [along(11.2), along(29.4), along(29.4, 2.4), along(11.2, 2.4)], 4.3, 4.55)
     } else if (out.x > 0 && out.z > 0) {
       // jesse hill jr dr, from the east corner. the other arm of the v: one floor of it
@@ -192,8 +193,6 @@ export function researchTowerGeometry(b: TowerData) {
         doors.map((hole) => ({ hole, glass: 'glass' })),
       )
       wall('panels', p, q, BASE, TOP, out, openings, 0.15)
-    } else {
-      for (const u of [len * 0.3, len * 0.42, len * 0.6, len * 0.72]) slot(u, GROUND + 1, TOP - 1)
     }
 
     if (walls) wall('panels', p, q, 0, TOP, out, openings)
@@ -202,7 +201,61 @@ export function researchTowerGeometry(b: TowerData) {
     box('metal', 0, len, 0.12, TOP - 0.2, TOP)
   }
 
+  // the courtyard's end on jesse hill jr dr is shut with a tall black picket fence from the
+  // east corner over to the research science center's charcoal tower: bars every 15cm
+  // between two rails, posts every 2.4m (hok's renderings from both sides, no gate in them).
+  // it stands on the ground, which is up to half a meter over the tower's floor there
+  {
+    const [p, q] = COURTYARD_FENCE.map(pt) as [Point, Point]
+    const len = Math.hypot(q.x - p.x, q.z - p.z)
+    const dir = { x: (q.x - p.x) / len, z: (q.z - p.z) / len }
+    const n = { x: dir.z, z: -dir.x }
+    const back = { x: -n.x, z: -n.z }
+    const at = (t: number, d = 0) => ({
+      x: p.x + dir.x * t + n.x * d,
+      z: p.z + dir.z * t + n.z * d,
+    })
+    const base = baseOf(b)
+    const ground = (t: number) => heightAt(at(t).x, at(t).z) - base
+    for (let t = 0.1; t < len; t += 0.15) {
+      const g = ground(t)
+      add('panels', wallQuad(at(t - 0.02, 0.01), at(t + 0.02, 0.01), g - 0.1, g + FENCE, n))
+      add('panels', wallQuad(at(t - 0.02, -0.01), at(t + 0.02, -0.01), g - 0.1, g + FENCE, back))
+    }
+    // the rails a bay at a time, at the ground's height in the middle of it
+    const posts = Math.ceil(len / 2.4)
+    for (let k = 0; k < posts; k++) {
+      const [t0, t1] = [(k * len) / posts, ((k + 1) * len) / posts]
+      const g = ground((t0 + t1) / 2)
+      for (const y of [g + 0.2, g + FENCE - 0.15]) {
+        add('panels', wallQuad(at(t0, 0.025), at(t1, 0.025), y - 0.03, y + 0.03, n))
+        add('panels', wallQuad(at(t0, -0.025), at(t1, -0.025), y - 0.03, y + 0.03, back))
+      }
+      if (k === 0) continue
+      const square = [
+        at(t0 - 0.05, -0.05),
+        at(t0 + 0.05, -0.05),
+        at(t0 + 0.05, 0.05),
+        at(t0 - 0.05, 0.05),
+      ]
+      prism('panels', square, ground(t0) - 0.1, ground(t0) + FENCE + 0.05)
+    }
+  }
+
   return { parts: merged(), inside, signs }
+}
+
+// the fence across the courtyard's jesse hill jr dr end, meters from hurt park
+export const COURTYARD_FENCE = [
+  [57.75, 421.95],
+  [74.05, 417.2],
+]
+// its height over the ground
+const FENCE = 2.6
+
+export const towerFence = (): Segment => {
+  const [a, b] = COURTYARD_FENCE as [number[], number[]]
+  return { ax: a[0]!, az: a[1]!, bx: b[0]!, bz: b[1]! }
 }
 
 // a flat shape on a wall, d out from it: poly is [u along the wall, y up]. glass gets its

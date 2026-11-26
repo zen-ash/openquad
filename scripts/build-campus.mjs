@@ -314,7 +314,23 @@ const NEW_BUILDINGS = [
       [57.6, 422],
       [40.7, 443.5],
     ],
+    // the main doors are on the courtyard toward the research science center, 13.4m from the
+    // north corner under the long canopy, right next to the name (hok's rendering of the
+    // entry, gsu's photo from the opening). the side toward petit is the loading dock's drive
+    door: [29.52, 395.92, 0.68, -0.73],
   },
+]
+
+// osm doesn't have the way in to the research tower yet. it's "153 decatur st" and gsu's map
+// has its pin at the courtyard's end by petit: in off the decatur st sidewalk between petit
+// and the research science center, under petit's bridge, across the courtyard to the doors.
+// the courtyard's other end is fenced off from jesse hill jr dr. meters from hurt park, the
+// first point is the sidewalk's own
+const RESEARCH_TOWER_WAY = [
+  [48.3, 351.7],
+  [44.6, 359.1],
+  [35.5, 373],
+  [30.54, 394.83],
 ]
 
 // the panther quad. sparks hall came down at the end of 2025 and this stretch of gilmer
@@ -3686,6 +3702,7 @@ function main(elements) {
   const p191 = buildings.find((b) => b.name === PEACHTREE_191.name)
   if (p191) peachtree191(p191)
   paths.push({ width: PATH_WIDTH.footway * SCALE, points: URBAN_LIFE.unity })
+  paths.push({ width: PATH_WIDTH.footway * SCALE, points: RESEARCH_TOWER_WAY })
   for (const b of NEW_BUILDINGS) buildings.push({ ...b, height: b.height * SCALE, gsu: true })
   const sce = buildings.find((b) => b.name === 'Student Center East')
   const lobby = buildings.find((b) => b.lobby)
