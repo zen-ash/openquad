@@ -133,6 +133,7 @@ const MEASURED_HEIGHTS = {
   'Centennial Hall': 13.5,
   'Greek Housing': 9.6,
   'J Deck': 13.9,
+  'Patton Hall': 16.5,
   'Piedmont North Dining Hall': 18.2,
 }
 
@@ -2103,6 +2104,37 @@ function edgewood58(b) {
   b.landmark = {}
 }
 
+// 75 piedmont ave: the citizens trust bank building (osm still calls it that), gsu's offices
+// (admissions, the registrar, counseling). a 14 storey slab on piedmont ave, tan precast fins
+// and dark glass, gsu's name on the band at the top, on a granite base. its lobby opens onto
+// j deck's roof on the east side. drawn in campus/piedmont75.ts. redrawn on usgs's lidar
+// (2018): the tower 22m x 70m, the low annex on its east side (granite, the lobby) and a low
+// strip on its north end. the entrance canopy on piedmont ave and the drop off canopy over the
+// deck roof stand outside it. the ground is the lobby floor (303.8m, the deck roof)
+const PIEDMONT_75 = {
+  points: [
+    [329.8, -266.4],
+    [329.8, -234],
+    [308, -234],
+    [308, -308.9],
+    [331.8, -308.9],
+    [331.8, -297.8],
+    [343.8, -297.8],
+    [343.8, -266.4],
+  ],
+  // the sign band's top (lidar 355.3m)
+  height: 51.5,
+  // the piedmont ave doors at the top of the ramp, under the canopy
+  door: [308, -272.9, -1, 0],
+}
+
+function piedmont75(b) {
+  b.points = PIEDMONT_75.points
+  b.height = PIEDMONT_75.height
+  b.door = PIEDMONT_75.door
+  b.landmark = {}
+}
+
 // 148 edgewood: georgia railway and power's substation from 1926, gsu's since 1966 (the
 // photography department), empty now. gsu means to tear it down for a fraternity and sorority
 // plaza but it's still there. a four storey red brick box drawn in campus/edgewood148.ts.
@@ -2925,6 +2957,37 @@ const PARKING_DECKS = {
   // one covered floor and parking on the roof, the roof at the north drive's grade. lidar: the
   // roof's edges (osm's box was a meter off and turned the other way), the north west half is
   // 1.5m wider. osm's 4.2m was about right
+  // under its roof: the roof is a flat lot at the piedmont ave sidewalk's grade (303.8m, the
+  // lobby floor of 75 piedmont), the levels under it open onto the low lot on its east side and
+  // the way in off john wesley dobbs ave. osm's outline but the west side on 75 piedmont's
+  // tower and the drop off canopy's notch filled (it's over the roof). osm's 13.9m was the drop
+  // to the low lot
+  'J Deck': {
+    outline: [
+      [343.8, -297.8],
+      [343.5, -301.6],
+      [366, -301.5],
+      [365.6, -241.4],
+      [383.7, -241.3],
+      [383.8, -236],
+      [383.4, -197.1],
+      [327.7, -197.4],
+      [327.9, -234],
+      [329.8, -234],
+      [329.8, -266.4],
+      [343.8, -266.4],
+    ],
+    body: [
+      [327.7, -197.2],
+      [383.8, -197.2],
+      [383.8, -301.6],
+      [327.7, -301.6],
+    ],
+    // the parapet's top over the roof
+    height: 1.05,
+    // on the roof where cars come up off john wesley dobbs ave
+    door: { at: [22, 104.38], out: [0, 1] },
+  },
   'A Deck': {
     outline: [
       [-76.5, -222],
@@ -3352,6 +3415,8 @@ function main(elements) {
   if (lofts) universityLofts(lofts, loftsDeck)
   const e58 = buildings.find((b) => b.name === '58 Edgewood')
   if (e58) edgewood58(e58)
+  const p75 = buildings.find((b) => b.name === '75 Piedmont Avenue')
+  if (p75) piedmont75(p75)
   const e148 = buildings.find((b) => b.name === '148 Edgewood')
   if (e148) edgewood148(e148)
   const sculpt = buildings.find((b) => b.name === 'Sculpture Studio')

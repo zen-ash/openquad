@@ -223,3 +223,54 @@ describe('a deck', () => {
     expect(pointInPolygon({ x: x! - nx! * 0.5, z: z! - nz! * 0.5 }, pts)).toBe(true)
   })
 })
+
+describe('j deck', () => {
+  const j = deck('J Deck')
+  const geo = parkingDeckGeometry(j)
+  const p75 = campus.buildings.find((b) => b.name === '75 Piedmont Avenue')!
+
+  it('keeps j deck at its index, open and under 10k triangles', () => {
+    expect(campus.buildings.findIndex((b) => b.name === 'J Deck')).toBe(199)
+    expect(geo.open).toBe(true)
+    expect(geo.inside.solid).toHaveLength(0)
+    let triangles = 0
+    for (const g of Object.values(geo.parts)) triangles += g.getAttribute('position').count / 3
+    expect(triangles).toBeLessThan(10000)
+  })
+
+  it('has its roof at the lidar height, at 75 piedmont lobby floor', () => {
+    expect(top('J Deck', 'slab')).toBeCloseTo(303.8, 1)
+    expect(floorOf(j)).toBeCloseTo(floorOf(p75))
+  })
+
+  it('runs its west side along 75 piedmont without a parapet there', () => {
+    const d = DECKS['J Deck']!
+    if (d.style !== 'buried') throw new Error('j is buried')
+    const own = new Set(p75.points.map(([x, z]) => `${x},${z}`))
+    for (const i of d.against) {
+      const [p, q] = [j.points[i]!, j.points[(i + 1) % j.points.length]!]
+      // both ends on 75 piedmont's outline, or the end of its south face
+      const on = (pt: number[]) => own.has(`${pt[0]},${pt[1]}`) || pt[1] === -234
+      expect(on(p) && on(q), `edge ${i}`).toBe(true)
+    }
+  })
+
+  it('shows two levels to the low lot on its east side', () => {
+    const f = deckFrame(j)
+    const p = { x: 370, z: -270 }
+    const roof = f.rel(303.8) + f.floor
+    expect(roof - heightAt(p.x, p.z)).toBeGreaterThan(5)
+  })
+
+  it('has a door on j deck outline facing out', () => {
+    const [x, z, nx, nz] = j.door!
+    const pts = j.points.map(([px, pz]) => ({ x: px!, z: pz! }))
+    expect(pointInPolygon({ x: x! + nx! * 0.5, z: z! + nz! * 0.5 }, pts)).toBe(false)
+    expect(pointInPolygon({ x: x! - nx! * 0.5, z: z! - nz! * 0.5 }, pts)).toBe(true)
+  })
+
+  it('has a blue square where the logo is on the j deck sign', () => {
+    expect(geo.signs.some((s) => s.text === 'J')).toBe(true)
+    expect(geo.signs.some((s) => s.text === '' && s.plate === '#3a68c8')).toBe(true)
+  })
+})

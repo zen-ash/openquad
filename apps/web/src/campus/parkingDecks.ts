@@ -46,7 +46,9 @@ export type SpandrelPart =
 // and the lines on the roof, slab the roof, floor the covered floor's asphalt, soffit the
 // roof's underside, lamp its tubes
 export type SinglePart = 'tan' | 'rail' | 'slab' | 'floor' | 'soffit' | 'lamp'
-export type Part = SteelPart | PaintedPart | BandPart | SpandrelPart | SinglePart
+// j: a's tan, slab, soffit and white lines, dark the black rail on the parapet and the poles
+export type BuriedPart = 'tan' | 'slab' | 'soffit' | 'rail' | 'dark'
+export type Part = SteelPart | PaintedPart | BandPart | SpandrelPart | SinglePart | BuriedPart
 
 type Range = [number, number]
 
@@ -182,6 +184,29 @@ type Single = {
   letter: string
 }
 
+// j: under its own roof, a lot at the street's grade. it's drawn from its outline (game coords)
+// and shows only where the ground falls away: the low lot on its east side sees two levels
+// through openings, the way in off john wesley dobbs ave the upper one
+type Buried = {
+  style: 'buried'
+  roof: number
+  // the levels under the roof, top down, and the parapet round the roof
+  floors: number[]
+  parapet: number
+  // the outline's edges (from point i to i + 1) against 75 piedmont: no parapet, no wall
+  against: number[]
+  // where cars drive up onto the roof off the street (x along the north side): no parapet
+  entry: Range
+  // the way into the upper level on the north side: x from and to, how tall
+  way: [number, number, number]
+  // light poles on the roof
+  poles: number[][]
+  // rows of spaces on the roof: the line their backs are on and which side they go (1 left
+  // of the line going from the first point, -1 right), game coords
+  rows: number[][]
+  letter: string
+}
+
 export const TIER = 2.8
 // the floor slab, the beam along its edge under it and the curb over it
 const SLAB = 0.22
@@ -196,7 +221,7 @@ const POST = 2.75
 // light poles on the roof with a box lantern on top
 const POLE = 5.5
 
-export const DECKS: Record<string, Steel | Painted | Band | Spandrel | Single> = {
+export const DECKS: Record<string, Steel | Painted | Band | Spandrel | Single | Buried> = {
   // 3m floors: level 1 on collins st under the viaduct (312.3), 3 on the toll plaza (318.3),
   // 4 on courtland st (321.3), the roof (8) at 333.3 with its parapet at 334.9 (lidar). the
   // ramp bay down the middle climbs 6% to the south east
@@ -615,6 +640,34 @@ export const DECKS: Record<string, Steel | Painted | Band | Spandrel | Single> =
       [30.8, 28.6, -1],
     ],
     letter: 'A',
+  },
+  // the roof at 303.8m all over (lidar), the low lot east of it 295.5. the way in off john
+  // wesley dobbs ave at 300.6 (lidar) with "CLEARANCE 6'6"" over it (gsu's photo), the ramp
+  // next to it up onto the roof. rows of cars from esri's satellite and gsu's 2026 photo
+  'J Deck': {
+    style: 'buried',
+    roof: 303.8,
+    floors: [300.6, 297.4],
+    parapet: 1.05,
+    against: [8, 9, 10, 11],
+    entry: [344.2, 356.5],
+    way: [357.5, 364.5, 2.3],
+    poles: [
+      [355, -288],
+      [355, -255],
+      [345, -222],
+      [368, -222],
+    ],
+    rows: [
+      [365.4, -300.5, 365.4, -244, -1],
+      [348.8, -297, 348.8, -279, 1],
+      [330.3, -262.5, 330.3, -237.5, 1],
+      [331, -197.8, 380, -197.8, 1],
+      [334, -219.5, 377, -219.5, 1],
+      [334, -219.5, 377, -219.5, -1],
+      [367, -240.9, 383, -240.9, -1],
+    ],
+    letter: 'J',
   },
 }
 
@@ -1469,6 +1522,7 @@ export function parkingDeckGeometry(b: DeckData): LandmarkGeometry {
   if (d.style === 'steel') return steelDeck(b, d)
   if (d.style === 'spandrel') return spandrelDeck(b, d)
   if (d.style === 'single') return singleDeck(b, d)
+  if (d.style === 'buried') return buriedDeck(b, d)
   return d.style === 'painted' ? paintedDeck(b, d) : bandDeck(b, d)
 }
 
@@ -3409,6 +3463,172 @@ function singleDeck(b: DeckData, d: Single): LandmarkGeometry {
     signs,
     noShadow: ['lamp', 'floor', 'soffit', 'rail'],
     near: ['lamp', 'rail'],
+    open: true,
+  }
+}
+
+// j's rows of spaces on the roof: the line the backs are on, along it, and into the spaces
+export function buriedRows(d: Buried) {
+  return d.rows.map(([x0, z0, x1, z1, s]) => {
+    const len = Math.hypot(x1! - x0!, z1! - z0!)
+    const u = { x: (x1! - x0!) / len, z: (z1! - z0!) / len }
+    return { from: { x: x0!, z: z0! }, len, u, inward: { x: u.z * s!, z: -u.x * s! } }
+  })
+}
+
+// j: the roof slab and its tan parapet with a black rail, walls down to the ground where it
+// falls away, open where a level is out of the ground. dark in there
+function buriedDeck(b: DeckData, d: Buried): LandmarkGeometry {
+  const f = deckFrame(b)
+  const c = collector()
+  const { plate, bar, box } = shapes(f, c)
+  const signs: Sign[] = []
+  const signAt = signer(f)
+  const R = f.rel(d.roof)
+  const levels = d.floors.map((e) => f.rel(e))
+  const toAW = (p: Point) => {
+    const [a, w] = f.aw(p)
+    return P(a, w)
+  }
+  const outline = b.points.map(([x, z]) => toAW({ x: x!, z: z! }))
+  const inside = (p: AW) => pointInPolygon(p, outline)
+
+  plate('slab', outline, () => R, true)
+  plate('soffit', outline, () => R - SOFFIT, false)
+  plate('soffit', outline, () => levels[0]!, true)
+  plate('soffit', outline, () => levels[0]! - SOFFIT, false)
+  plate('soffit', outline, () => levels[1]!, true)
+
+  outline.forEach((p, i) => {
+    if (d.against.includes(i)) return
+    const q = outline[(i + 1) % outline.length]!
+    const len = Math.hypot(q.x - p.x, q.z - p.z)
+    const dir = P((q.x - p.x) / len, (q.z - p.z) / len)
+    let out = P(dir.z, -dir.x)
+    const mid = lerpP(p, q, 0.5)
+    if (inside(P(mid.x + out.x * 0.3, mid.z + out.z * 0.3))) out = P(-out.x, -out.z)
+    const inward = P(-out.x, -out.z)
+    // +w is north
+    const north = out.z > 0.7
+    const n = Math.max(1, Math.ceil(len / 3))
+    for (let k = 0; k < n; k++) {
+      const [u0, u1] = [(k * len) / n, ((k + 1) * len) / n]
+      const [p0, p1] = [lerpP(p, q, u0 / len), lerpP(p, q, u1 / len)]
+      const m = lerpP(p0, p1, 0.5)
+      const go = (pt: AW) => f.ground(pt.x + out.x * 0.6, pt.z + out.z * 0.6)
+      const x = f.at(m.x, m.z).x
+      const entry = north && x > d.entry[0] && x < d.entry[1]
+      const top = R + (entry ? 0.1 : d.parapet)
+      const low = (pt: AW) => Math.min(go(pt), R) - 0.4
+      // the way in, or each level that's out of the ground: a wall up to the sill, open to
+      // under the slab over it
+      const ground = Math.max(go(p0), go(p1))
+      const holes: Range[] = []
+      // (the game's ground is higher than the real drive down to it, so it starts at the ground)
+      if (north && x > d.way[0] && x < d.way[1])
+        holes.push([Math.max(levels[0]!, ground), levels[0]! + d.way[2]])
+      else
+        levels.forEach((y, j) => {
+          if (y < ground + 0.3) return
+          holes.push([y + 1.05, (j === 0 ? R : levels[j - 1]!) - SOFFIT - 0.3])
+        })
+      let from: Range = [low(p0), low(p1)]
+      for (const [h0, h1] of holes.sort((s, t) => s[0] - t[0])) {
+        bar(
+          'tan',
+          p0,
+          p1,
+          from,
+          [Math.max(h0, from[0]), Math.max(h0, from[1])],
+          inward,
+          0.3,
+          u0,
+          u1,
+        )
+        from = [h1, h1]
+      }
+      bar('tan', p0, p1, from, [top, top], inward, 0.3, u0, u1)
+      // columns a bay in behind the openings
+      if (holes.length && k % 3 === 1)
+        for (const [h0, h1] of holes) {
+          const cp = P(m.x + inward.x * 3, m.z + inward.z * 3)
+          box('tan', [cp.x - 0.3, cp.x + 0.3], [cp.z - 0.3, cp.z + 0.3], h0 - 1.1, h1 + 0.3, false)
+        }
+      if (entry) continue
+      // the black rail on posts over the parapet (gsu's roof photo)
+      const r = (pt: AW) => P(pt.x + inward.x * 0.12, pt.z + inward.z * 0.12)
+      const [y0, y1] = [top + 0.32, top + 0.37]
+      bar('dark', r(p0), r(p1), [y0, y0], [y1, y1], inward, 0.05, u0, u1)
+      const rp = r(p0)
+      box('dark', [rp.x - 0.025, rp.x + 0.025], [rp.z - 0.025, rp.z + 0.025], top, y0, false)
+    }
+  })
+
+  // "CLEARANCE 6'6"" on a blue bar over the way in
+  const [wx0, wx1, tall] = d.way
+  const over = toAW({ x: (wx0 + wx1) / 2, z: -301.55 })
+  const northward = P(0, 1)
+  const clear = levels[0]! + tall + 0.35
+  signs.push(
+    signAt(over.x, over.z, clear, northward, { width: 5.5, height: 0.42, plate: '#2f4f9e' }),
+    signAt(
+      over.x,
+      over.z,
+      clear,
+      northward,
+      { ...white, text: `CLEARANCE 6'6"`, size: 0.26 },
+      0,
+      0.01,
+    ),
+  )
+
+  // the white lines between the spaces on the roof, where parking.ts puts the cars
+  for (const { from, len, u, inward } of buriedRows(d)) {
+    const n = Math.floor(len / STALL)
+    for (let i = 0; i <= n; i++) {
+      const t = (len * i) / n
+      const at = (s: number, into: number) =>
+        toAW({
+          x: from.x + u.x * (t + s) + inward.x * into,
+          z: from.z + u.z * (t + s) + inward.z * into,
+        })
+      plate(
+        'rail',
+        [at(-0.05, 0), at(0.05, 0), at(0.05, 5.3), at(-0.05, 5.3)],
+        () => R + 0.01,
+        true,
+      )
+    }
+  }
+
+  // black light poles on the roof with a box lantern on top
+  for (const [x, z] of d.poles) {
+    const { x: a, z: w } = toAW({ x: x!, z: z! })
+    box('dark', [a - 0.1, a + 0.1], [w - 0.1, w + 0.1], R, R + 9, false)
+    box('dark', [a - 0.3, a + 0.3], [w - 0.2, w + 0.2], R + 8.7, R + 9.05)
+  }
+
+  // the "J DECK" sign by the ramp on john wesley dobbs ave: a blue box on a stone base, a
+  // plain blue square where gsu's logo is
+  const { x: sa, z: sw } = toAW({ x: 339.5, z: -305 })
+  const g = f.ground(sa, sw)
+  box('tan', [sa - 1.4, sa + 1.4], [sw - 0.25, sw + 0.25], g - 0.3, g + 0.65)
+  box('dark', [sa - 1.25, sa + 1.25], [sw - 0.18, sw + 0.18], g + 0.65, g + 2.05)
+  const face = (s: Partial<Sign>, right: number, dy: number, out: number) =>
+    signAt(sa, sw + 0.18, g + 1.35 + dy, northward, s, right, out)
+  signs.push(
+    face({ width: 2.5, height: 1.4, plate: '#21336f' }, 0, 0, 0),
+    face({ ...white, text: d.letter, size: 1.0 }, -0.6, 0, 0.01),
+    face({ width: 0.55, height: 0.55, plate: '#3a68c8' }, 0.5, 0.25, 0.01),
+    face({ ...white, text: 'DECK', size: 0.26 }, 0.5, -0.3, 0.01),
+  )
+
+  return {
+    parts: c.done(),
+    inside: { solid: [], glass: [] },
+    signs,
+    noShadow: ['soffit', 'rail', 'dark'],
+    near: ['dark'],
     open: true,
   }
 }

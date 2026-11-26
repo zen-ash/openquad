@@ -1,6 +1,13 @@
 import * as THREE from 'three'
 import { brick, clearGlass, concrete, glass, lawn, metal, precast } from './materials'
-import type { BandPart, PaintedPart, SinglePart, SpandrelPart, SteelPart } from './parkingDecks'
+import type {
+  BuriedPart,
+  BandPart,
+  PaintedPart,
+  SinglePart,
+  SpandrelPart,
+  SteelPart,
+} from './parkingDecks'
 
 // one set per style, every deck of a style shares it (each part is a draw call in every
 // pass, the materials are shared so it's no more shaders). colors from gsu's 2018 photos
@@ -193,4 +200,14 @@ export const singleDeckMaterials: Record<SinglePart, THREE.Material> = {
   floor: concrete({ color: '#58504a', roughness: 0.9, occlusion: 0.3 }),
   soffit: concrete({ color: '#b5ab99', roughness: 0.9, occlusion: 0.3 }),
   lamp: clearGlass({ color: '#f4f6ff', frameColor: '#f4f6ff', opacity: 0.95, glow: 3 }),
+}
+
+// j: a's tan concrete, undersides and white lines (the same materials), a cooler grey roof
+// (gsu's 2026 photo), the black rail and poles like t's cable rails
+export const buriedDeckMaterials: Record<BuriedPart, THREE.Material> = {
+  tan: singleDeckMaterials.tan,
+  slab: concrete({ color: '#7a8288', roughness: 0.85 }),
+  soffit: singleDeckMaterials.soffit,
+  rail: singleDeckMaterials.rail,
+  dark: spandrelDeckMaterials.dark,
 }

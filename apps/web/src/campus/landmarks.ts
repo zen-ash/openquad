@@ -29,6 +29,7 @@ import { naturalScienceGeometry, type NscData } from './naturalScience'
 import { oneParkGeometry, type OneParkData } from './onePark'
 import { parkingDeckGeometry, type DeckData } from './parkingDecks'
 import { parkPlace25Geometry, type ParkPlace25Data } from './parkPlace25'
+import { piedmont75Geometry, type Piedmont75Data } from './piedmont75'
 import { peachtree191Geometry, type PeachtreeData } from './peachtree191'
 import { petitScienceGeometry, type PetitData } from './petitScience'
 import { practiceFacilityGeometry, type PracticeFacilityData } from './practiceFacility'
@@ -144,7 +145,8 @@ type Data = LibraryNorthData &
   RobinsonData &
   CommerceData &
   SculptureStudioData &
-  PiedmontCentralData
+  PiedmontCentralData &
+  Piedmont75Data
 
 const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Library North': libraryNorthGeometry,
@@ -200,6 +202,8 @@ const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Greek Housing': greekHousingGeometry,
   'Patton Hall': pattonHallGeometry,
   'Piedmont Central': piedmontCentralGeometry,
+  '75 Piedmont Avenue': piedmont75Geometry,
+  'J Deck': parkingDeckGeometry,
 }
 
 // the scene and the interiors both need it, only build it once. by building, not name: the

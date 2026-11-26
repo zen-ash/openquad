@@ -13,6 +13,7 @@ import { rialtoMaterials } from './rialtoMaterials'
 import { robinsonMaterials } from './robinsonCollegeMaterials'
 import { commerceMaterials } from './commerceBuildingMaterials'
 import { edgewood58Materials } from './edgewood58Materials'
+import { piedmont75Materials } from './piedmont75Materials'
 import { edgewood148Materials } from './edgewood148Materials'
 import { greekHousingMaterials } from './greekHousingMaterials'
 import { pattonHallMaterials } from './pattonHallMaterials'
@@ -31,6 +32,7 @@ import {
   paintedDeckMaterials,
   spandrelDeckMaterials,
   singleDeckMaterials,
+  buriedDeckMaterials,
   steelDeckMaterials,
 } from './parkingDecksMaterials'
 import { parkPlace25Materials } from './parkPlace25Materials'
@@ -109,6 +111,8 @@ export const landmarkMaterials: Record<string, Record<string, THREE.Material>> =
   'Standard Building': standardMaterials,
   'Sculpture Studio': sculptureStudioMaterials,
   'Piedmont Central': piedmontCentralMaterials,
+  '75 Piedmont Avenue': piedmont75Materials,
+  'J Deck': buriedDeckMaterials,
 }
 
 // see-through glass and the parts in noShadow don't cast shadows, everything else does

@@ -116,6 +116,10 @@ const VIEWS = [
   { name: 'sculpture-studio', from: [545, 1.7, -18], at: [530, 3.5, -38], player: [547, -16] },
   // from hurt park's north edge across edgewood ave: the grid, the colonnade, the plaza's wall
   { name: '100-edgewood', from: [8, 1.7, -14], at: [-14, 22, -62], player: [10, -12] },
+  // piedmont ave south of it, looking up at the fins and gsu's name on the band
+  { name: '75-piedmont', from: [284, 1.7, -214], at: [320, 30, -268], player: [286, -212] },
+  // on j deck's roof by the tower: the annex, the drop off canopy and the rows of cars
+  { name: 'j-deck', from: [349, 4.2, -233.5], at: [339, 5.5, -266.4], player: [351, -231] },
   // courtland st at edgewood ave: the east end over the lot, the long front
   { name: '100-edgewood-east', from: [98, 1.7, -36], at: [0, 28, -64], player: [100, -34] },
   // across auburn ave at the south east: the drum, the curtain wall, the top floor over it

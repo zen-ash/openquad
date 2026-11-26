@@ -89,6 +89,10 @@ const DATUMS: Record<string, number | { from: number }> = {
   'T Deck': 317.3,
   // peachtree center ave's sidewalk at a deck's way in
   'A Deck': 316.0,
+  // j deck's roof, a lot at the piedmont ave sidewalk's grade (lidar), and 75 piedmont's lobby
+  // floor on it
+  'J Deck': 303.8,
+  '75 Piedmont Avenue': 303.8,
   // skyline towers (lidar): southern bell from peachtree center ave at its entrance (the
   // block drops 5m to its south east corner), 191 peachtree from peachtree center ave (peachtree
   // st behind it is 9.5m higher)

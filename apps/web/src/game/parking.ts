@@ -7,6 +7,7 @@ import {
   deckFrame,
   deckObstacles,
   singleLevels,
+  buriedRows,
   TIER,
   type DeckData,
 } from '../campus/parkingDecks'
@@ -307,6 +308,8 @@ const ROOFS: Record<string, number> = {
   'T Deck': 0.65,
   // about 30 cars on a's roof in feb 2026
   'A Deck': 0.3,
+  // j's roof was over half full in gsu's april 2026 photo and on esri's image
+  'J Deck': 0.6,
 }
 
 function deckCars(rand: () => number) {
@@ -413,6 +416,14 @@ function deckCars(rand: () => number) {
         const first = a! > f.la - 6 ? 8 : 1
         row(P(a!, first), P(a!, f.lw - 1), inward(s!), floor, levelFull(0, 1, roof), own, out)
         row(P(top!, 1), P(top!, f.lw - 7), inward(s!), onRoof, roof, own, out)
+      }
+    } else if (d.style === 'buried') {
+      // only its roof shows. its own random numbers too
+      const own = seeded(199)
+      const y = () => fromElevation(d.roof)
+      for (const { from, len, u, inward: into } of buriedRows(d)) {
+        const to = { x: from.x + u.x * len, z: from.z + u.z * len }
+        row(from, to, into, y, roof, own, out)
       }
     }
   }
