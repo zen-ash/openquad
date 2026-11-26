@@ -11,6 +11,7 @@ import { edgewood148Geometry, type Edgewood148Data } from './edgewood148'
 import { greekHousingGeometry, type GreekHousingData } from './greekHousing'
 import { pattonHallGeometry, type PattonHallData } from './pattonHall'
 import { edgewood100Geometry, type Edgewood100Data } from './edgewood100'
+import { piedmontCentralGeometry, type PiedmontCentralData } from './piedmontCentral'
 import { parkPlace55Geometry, type ParkPlace55Data } from './parkPlace55'
 import { collegeOfLawGeometry, type CollegeOfLawData } from './collegeOfLaw'
 import { centennialHallGeometry, type CentennialHallData } from './centennialHall'
@@ -142,7 +143,8 @@ type Data = LibraryNorthData &
   StandardData &
   RobinsonData &
   CommerceData &
-  SculptureStudioData
+  SculptureStudioData &
+  PiedmontCentralData
 
 const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Library North': libraryNorthGeometry,
@@ -197,6 +199,7 @@ const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   'Sculpture Studio': sculptureStudioGeometry,
   'Greek Housing': greekHousingGeometry,
   'Patton Hall': pattonHallGeometry,
+  'Piedmont Central': piedmontCentralGeometry,
 }
 
 // the scene and the interiors both need it, only build it once. by building, not name: the

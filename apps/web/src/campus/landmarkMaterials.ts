@@ -42,6 +42,7 @@ import { standardMaterials } from './standardBuildingMaterials'
 import { researchScienceMaterials } from './researchScienceMaterials'
 import { researchTowerMaterials } from './researchTowerMaterials'
 import { scienceAnnexMaterials } from './scienceAnnexMaterials'
+import { piedmontCentralMaterials } from './piedmontCentralMaterials'
 import { sculptureStudioMaterials } from './sculptureStudioMaterials'
 import { southernBellMaterials } from './southernBellMaterials'
 import { sportsArenaMaterials } from './sportsArenaMaterials'
@@ -107,6 +108,7 @@ export const landmarkMaterials: Record<string, Record<string, THREE.Material>> =
   'Haas-Howell Building': haasHowellMaterials,
   'Standard Building': standardMaterials,
   'Sculpture Studio': sculptureStudioMaterials,
+  'Piedmont Central': piedmontCentralMaterials,
 }
 
 // see-through glass and the parts in noShadow don't cast shadows, everything else does

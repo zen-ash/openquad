@@ -122,6 +122,15 @@ const VIEWS = [
   { name: 'centennial-hall', from: [200, 1.6, -137], at: [178, 9, -178], player: [202, -135] },
   // from piedmont ave: the brick block's end with its paired windows, the wing and the canopy
   { name: 'alumni-center', from: [291, 1.6, -193], at: [272, 4, -210], player: [292, -191] },
+  // from the w lot like gsu's nov 2026 photo: the court, the brick core, the dining hall
+  { name: 'piedmont-central', from: [221.5, 1.5, -241], at: [225, 18, -296], player: [222, -238] },
+  // piedmont ave at john wesley dobbs ave: the glass corner and the brick along the street
+  {
+    name: 'piedmont-central-corner',
+    from: [292, 1.6, -323],
+    at: [240, 16, -305],
+    player: [294, -324],
+  },
   {
     name: 'courtland-north',
     from: [-125.2, 3, 217.6],

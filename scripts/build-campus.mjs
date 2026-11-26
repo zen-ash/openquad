@@ -2294,6 +2294,70 @@ function edgewood100(b) {
   b.landmark = { corners: EDGEWOOD_100.corners }
 }
 
+// piedmont central (gsu housing + dining hall, 2016): an 11 storey u of rooms round a court
+// open to the south, with the one storey dining hall in the court's east half. drawn in
+// campus/piedmontCentral.ts. osm's outline has the dining hall as tall as the rest and the
+// north side 0.5-1m short, redrawn on usgs's lidar roofs (2018). `upper` is the tower over the
+// ground floor (no dining hall), points is the ground floor. the ground is the court at the
+// main doors (lidar 305.3-305.8m), john wesley dobbs ave falls from 308 to 304 along the back
+const PIEDMONT_CENTRAL = {
+  points: [
+    [180.4, -278.5],
+    [184.6, -278.5],
+    [184.6, -276],
+    [197.4, -276],
+    [197.4, -295.7],
+    [221, -295.7],
+    [221, -294.8],
+    [226.2, -294.8],
+    [226.2, -276],
+    [251.7, -276],
+    [251.7, -278.5],
+    [264.2, -278.5],
+    [264.2, -276],
+    [280.8, -276],
+    [280.8, -297],
+    [280.8, -313],
+    [267.5, -313],
+    [267.5, -311.6],
+    [215, -311.6],
+    [180.4, -311.6],
+  ],
+  // the court's back wall goes on behind the dining hall, the brick core over the doors stands
+  // 0.9m out of it
+  upper: [
+    [180.4, -278.5],
+    [184.6, -278.5],
+    [184.6, -276],
+    [197.4, -276],
+    [197.4, -295.7],
+    [221, -295.7],
+    [221, -294.8],
+    [230, -294.8],
+    [230, -295.7],
+    [264.2, -295.7],
+    [264.2, -276],
+    [280.8, -276],
+    [280.8, -297],
+    [280.8, -313],
+    [267.5, -313],
+    [267.5, -311.6],
+    [215, -311.6],
+    [180.4, -311.6],
+  ],
+  // the north east corner block and the stair towers (lidar 347.3m), the main parapet is 38.7
+  height: 41.9,
+  // the main doors at the back of the court, next to the brick core
+  door: [218.5, -295.7, 0, 1],
+}
+
+function piedmontCentral(b) {
+  b.points = PIEDMONT_CENTRAL.points
+  b.height = PIEDMONT_CENTRAL.height
+  b.door = PIEDMONT_CENTRAL.door
+  b.landmark = { upper: PIEDMONT_CENTRAL.upper }
+}
+
 // the student success center (25-27 auburn ave, the old southern bell exchange, opened by gsu
 // in oct 2025): two buildings, 1907 and 1922. the 1907 one on the equitable pl corner, red
 // brick over a limestone ground floor with fluted columns, stone quoins and a deep bracketed
@@ -3297,6 +3361,8 @@ function main(elements) {
   if (patton) pattonHall(patton)
   const e100 = buildings.find((b) => b.name === '100 Edgewood')
   if (e100) edgewood100(e100)
+  const pc = buildings.find((b) => b.name === 'Piedmont Central')
+  if (pc) piedmontCentral(pc)
   const p55 = buildings.find((b) => b.name === '55 Park Place')
   if (p55) parkPlace55(p55)
   const ssc = buildings.find((b) => b.name === 'Student Success Center')

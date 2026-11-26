@@ -129,6 +129,8 @@ const DATUMS: Record<string, number | { from: number }> = {
   'Commerce Building': 320.6,
   // the edgewood ave sidewalk at the door (lidar), the lot falls 1.7m to the back
   'Sculpture Studio': 298.5,
+  // the court at the main doors (lidar), john wesley dobbs ave behind is 304-308m
+  'Piedmont Central': 305.4,
 }
 
 type Building = { name?: string; points: number[][]; door?: number[] }
