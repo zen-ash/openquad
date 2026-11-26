@@ -153,6 +153,36 @@ const LIDAR_HEIGHTS = {
   270880941: 42, // grady
   42738913: 27, // lanier parking
   354881427: 36, // college of law
+  // generic boxes in and round the fence (nov 2026): the lidar's main roof over the game's floor.
+  // where a building has two roofs it's the bigger one
+  55552695: 19, // piedmont hall
+  55552724: 9, // fulton-dekalb hospital authority
+  102163582: 19, // auburn avenue research library
+  102163587: 4.3, // georgia bookstore, one storey
+  102169009: 23.8, // dwell atl
+  109197362: 19.6, // loudermilk center
+  252608909: 22.8, // ten park place
+  270497369: 21.6,
+  270497391: 8.3,
+  270880833: 3.7, // one storey
+  270880834: 7.6, // georgia railroad freight depot
+  270880850: 0.3, // nothing standing there, a slab in the lot
+  270880861: 3.4,
+  270880875: 5.2, // a low deck, cars on its roof
+  270880876: 19, // armstrong hall
+  270880882: 10, // baptist student center, its one storey part is 4
+  270880907: 26.6, // grady piedmont deck
+  270880916: 7.2, // two storeys by the floyd towers
+  270880922: 2.5, // only this tall on the lidar, something low
+  270880939: 3, // g deck's guard booth
+  345615604: 34.5,
+  345615605: 164, // state of georgia building
+  536778622: 15.6, // woodruff volunteer center deck
+  801359973: 5.5, // one storey between student center east and urban life
+  802210708: 3, // an enclosure behind greek housing
+  802210712: 4.4,
+  802210713: 7.8,
+  887711514: 5.4,
 }
 
 // a few towers are drawn in osm as building:part ways standing on a low outline. only these
