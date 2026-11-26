@@ -9,6 +9,7 @@ import { casts, landmarkMaterials as materials } from '../campus/landmarkMateria
 import { precast } from '../campus/materials'
 import { baseOf, lowestUnder } from '../game/surface'
 import { useSettings } from '../settings'
+import { occlusion } from './fx'
 import Label from './Label'
 
 // white sign with the name in gsu blue. the real ones have the logo where the blue
@@ -269,6 +270,10 @@ function shadowsOf(parts: THREE.BufferGeometry[]) {
 }
 // never drawn (softShadows.ts skips it outside the shadow pass), and nothing to see if it is
 const shadowOnly = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false })
+// the box a far building is tested with (Effects.tsx): drawn last of the solid things, a meter
+// out from the building so its own walls never hide it. nothing to see either
+const cube = new THREE.BoxGeometry()
+const center = new THREE.Vector3()
 
 function Building({
   parts,
@@ -282,16 +287,22 @@ function Building({
   children: React.ReactNode
 }) {
   const [shadows] = useState(() => (casting.length ? shadowsOf(casting) : null))
+  const test = useRef<THREE.Mesh>(null)
   const whole = boxOf(parts)
   const group = useRef<THREE.Group>(null)
   const far = useRef(false)
   useFrame(({ camera }) => {
     if (!group.current) return
     near.copy(camera.position).setY(camera.position.y - floor)
-    const now = !useSettings.getState().warming && whole.distanceToPoint(near) > FAR
+    const warming = useSettings.getState().warming
+    const now = !warming && whole.distanceToPoint(near) > FAR
+    if (test.current) test.current.visible = occlusion.on && (now || warming)
     if (now === far.current) return
     far.current = now
-    group.current.traverse((o) => (o.userData.far = now))
+    group.current.traverse((o) => {
+      o.userData.far = now
+      if (o !== test.current) o.userData.box = test.current
+    })
   })
   return (
     <group ref={group} position-y={floor}>
@@ -299,6 +310,16 @@ function Building({
       {shadows && (
         <mesh geometry={shadows} material={shadowOnly} castShadow userData={{ shadows: true }} />
       )}
+      <mesh
+        ref={test}
+        geometry={cube}
+        material={shadowOnly}
+        position={whole.getCenter(center).toArray()}
+        scale={whole.getSize(center).addScalar(2).toArray()}
+        renderOrder={900}
+        occlusionTest
+        visible={false}
+      />
     </group>
   )
 }

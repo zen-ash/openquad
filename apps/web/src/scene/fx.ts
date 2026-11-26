@@ -17,6 +17,10 @@ export const fx = {
   exposure: uniform(1),
 }
 
+// on while the effects run (Effects.tsx): far buildings hidden behind others are skipped,
+// tested with a box each (Landmarks.tsx). without the effects there's nothing to skip them
+export const occlusion = { on: false }
+
 // the tone mappings the debug panel can switch between (settings.toneMapping). that one
 // rebuilds the effects, so only the one in use is ever run
 export const TONE_MAPPINGS = {

@@ -58,7 +58,7 @@ import { game, useSettings } from '../settings'
 import { sunlight } from './Atmosphere'
 import { adapt, exposure, meter } from './autoExposure'
 import { cloudShadow } from './clouds'
-import { effects, fx, TONE_MAPPINGS } from './fx'
+import { effects, fx, occlusion, TONE_MAPPINGS } from './fx'
 
 // how far (meters) the ambient occlusion looks for things that block the sky
 const AO_RADIUS = 2
@@ -117,7 +117,9 @@ function buildOnce<T>(node: T): T {
 // there for the ambient occlusion, a meter or so round corners, a few pixels from 150m. a
 // third of the draws at hurt park. not with layers: the prepass and the scene pass share
 // three's render list and the prepass is drawn from inside the scene pass, so a shorter list
-// broke the scene pass halfway through
+// broke the scene pass halfway through. and not at all when their box (userData.box, drawn
+// after everything solid) had no pixel on screen last frame: most of them are behind the
+// buildings in front of you
 let prepassTarget: unknown = null
 const skipping = new WeakSet<object>()
 function skipFarInPrepass(renderer: WebGPURenderer) {
@@ -126,7 +128,9 @@ function skipFarInPrepass(renderer: WebGPURenderer) {
   const r = renderer as unknown as { renderObject(object: Object3D, ...rest: unknown[]): void }
   const draw = r.renderObject.bind(renderer)
   r.renderObject = (object, ...rest) => {
-    if (object.userData.far && renderer.getRenderTarget() === prepassTarget) return
+    const { far, box } = object.userData
+    if (far && renderer.getRenderTarget() === prepassTarget) return
+    if (far && box && renderer.isOccluded(box)) return
     draw(object, ...rest)
   }
 }
@@ -329,6 +333,10 @@ export default function Effects() {
   useEffect(() => {
     prepassTarget = prePass.renderTarget
     skipFarInPrepass(gl)
+    occlusion.on = true
+    return () => {
+      occlusion.on = false
+    }
   }, [gl, prePass])
   const sized = useRef<{ pipeline: RenderPipeline; scale: number } | null>(null)
 
