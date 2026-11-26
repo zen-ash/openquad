@@ -143,6 +143,9 @@ const DATUMS: Record<string, number | { from: number }> = {
   // the sidewalk at the piedmont ave / j w dobbs ave corner, under the glass cylinder (lidar).
   // piedmont is level, j w dobbs falls 9m to jesse hill jr dr past the deck
   'University Commons': 305.0,
+  // the quad side's paving at the lobby doors (lidar 314.4). it was the terrain's own height
+  // there, which moved 0.2m when collins st under the viaduct came down (build-terrain.mjs)
+  'Library North': 314.4,
 }
 
 type Building = { name?: string; points: number[][]; door?: number[] }

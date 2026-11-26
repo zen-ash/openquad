@@ -274,6 +274,23 @@ export const RAISED_PLAZAS: Record<string, Data> = {
     ],
     edges: [null, 'open', null, 'open'],
   },
+  // piedmont north's court between building a's arm and building b is sunken 3m (lidar 299.0)
+  // behind a retaining wall along its north side (the satellite's shadow line). this is the
+  // drive's level over it (lidar 301.4-302.2), the court is in the ground (build-terrain.mjs
+  // SUNKEN). out there the ground is drawn on every 16m (terrain.ts COARSE), so this goes on
+  // to a row of those or its far side stood over a slope
+  'Piedmont North court wall': {
+    by: 'Piedmont North A',
+    top: 301.85,
+    points: [
+      [385, -542],
+      [422.5, -542],
+      [422.5, -562],
+      [385, -562],
+    ],
+    // (the far side is a few cm over the ground there)
+    edges: [1, null, 'open', null],
+  },
 }
 
 // the elevation on one at x, z: flat, or the plane through its first three points

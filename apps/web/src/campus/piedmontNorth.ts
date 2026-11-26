@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import type { Point } from '../game/collision'
 import { CEILING } from '../game/interiors'
+import { fromElevation } from '../game/terrain'
+import { raisedSides } from './decks'
 import type { Sign } from './landmarks'
 import {
   edges,
@@ -24,6 +26,7 @@ import {
 // docs/reference/piedmont-north.md
 //
 // all three stand on 302.0m (the ground is within 0.3m of it all round, see surface.ts)
+const BASE = fromElevation(302)
 
 export type PiedmontNorthData = {
   points: number[][]
@@ -492,6 +495,19 @@ export function piedmontNorthAGeometry(b: PiedmontNorthData) {
   // ground floor are empty
   K.core('stucco', inset(bar, 1.4), CEILING, BAR_ROOF - 0.1)
   K.core('stucco', inset(arm, 1.4), CEILING, ARM_ROOF - 0.1)
+
+  // the retaining wall along the sunken court's north side (game/raised.ts), a guard wall on
+  // top of it
+  for (const s of raisedSides('Piedmont North A')) {
+    const [top, ground] = [Math.max(...s.top) - BASE, Math.min(...s.ground) - BASE]
+    // (the drive's far side is only a few cm over the ground)
+    const part = s.parapet ? 'peach' : 'stucco'
+    K.add(part, wallQuad(s.p, s.q, ground - 0.3, top + s.parapet, s.out, s.u[0]))
+    if (!s.parapet) continue
+    const back = (p: Point) => P(p.x - s.out.x * 0.25, p.z - s.out.z * 0.25)
+    K.add('peach', wallQuad(back(s.p), back(s.q), top, top + s.parapet, P(-s.out.x, -s.out.z)))
+    K.add('peach', flat([s.p, s.q, back(s.q), back(s.p)], top + s.parapet))
+  }
 
   insideWalls(K.inside, outline, door, (p, q) => near(p, outline[0]!) && near(q, outline[1]!))
   return {

@@ -113,6 +113,42 @@ const has = (i) => (known[i >> 3] >> (i & 7)) & 1
 const fixes = Buffer.from(ground.cells, 'base64')
 for (let k = 0; k < fixes.length; k += 6)
   off[fixes.readUInt32LE(k)] = fixes.readInt16LE(k + 4) / 100
+
+// how far x, z is from a line (meters), the line's third number there (a deck's height) and
+// how far along the line that is from its nearer end
+function along(points, x, z) {
+  const lens = points.slice(1).map((b, i) => Math.hypot(b[0] - points[i][0], b[1] - points[i][1]))
+  const total = lens.reduce((a, b) => a + b, 0)
+  let best = { dist: Infinity, height: 0, end: 0 }
+  for (let i = 1, start = 0; i < points.length; start += lens[i - 1], i++) {
+    const [a, b] = [points[i - 1], points[i]]
+    const [dx, dz] = [b[0] - a[0], b[1] - a[1]]
+    const t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz)))
+    const dist = Math.hypot(a[0] + dx * t - x, a[1] + dz * t - z)
+    const at = start + lens[i - 1] * t
+    if (dist < best.dist)
+      best = { dist, height: a[2] + (b[2] - a[2]) * t, end: Math.min(at, total - at) }
+  }
+  return best
+}
+
+// collins st runs under courtland st's viaduct, 4-8m down, but the lidar classed the deck over
+// it as ground: near collins st a lidar cell up at a deck is the deck. the street under it is
+// level, the lidar sees it at 310.8-311 at both its ends (the model has a hump at the north end)
+const COLLINS = 310.9
+const collins = campus.roads.find((r) => r.name === 'Collins Street Southeast')
+const decks = [...campus.roads, ...campus.paths].filter((l) => l.bridge)
+for (let r = 0; r < SIZE; r++)
+  for (let c = 0; c < SIZE; c++) {
+    const [x, z, i] = [-HALF + (c + 0.5) * CELL, -HALF + (r + 0.5) * CELL, r * SIZE + c]
+    if (!has(i) || along(collins.points, x, z).dist > 16) continue
+    const deck = decks.some((l) => {
+      // (not the first or last 8m, it comes down to its abutments there)
+      const { dist, height, end } = along(l.points, x, z)
+      return end > 8 && dist < l.width / 2 + CELL && Math.abs(data[i] + off[i] - height) < 1.5
+    })
+    if (deck) off[i] = COLLINS - data[i]
+  }
 for (let pass = 0; pass < 300; pass++)
   for (let r = 1; r < SIZE - 1; r++)
     for (let c = 1; c < SIZE - 1; c++) {
@@ -131,25 +167,61 @@ const BLUR = [-1, 0, 1].flatMap((dr) =>
 // those come out as pits right at the walls, so the ground under every building (and a
 // meter round it) is made again from the ground around it
 const under = new Uint8Array(SIZE * SIZE)
+const STEEP = ['University Commons', 'A Deck']
 for (const b of campus.buildings) {
   if (b.minHeight) continue
+  const steep = STEEP.includes(b.name)
   const xs = b.points.map((p) => p[0])
   const zs = b.points.map((p) => p[1])
-  const [c0, c1] = [Math.min(...xs) - 1, Math.max(...xs) + 1].map((x) => (x + HALF) / CELL)
-  const [r0, r1] = [Math.min(...zs) - 1, Math.max(...zs) + 1].map((z) => (z + HALF) / CELL)
+  const pad = steep ? 3 : 1
+  const [c0, c1] = [Math.min(...xs) - pad, Math.max(...xs) + pad].map((x) => (x + HALF) / CELL)
+  const [r0, r1] = [Math.min(...zs) - pad, Math.max(...zs) + pad].map((z) => (z + HALF) / CELL)
   for (let r = Math.max(0, Math.floor(r0)); r < Math.min(SIZE, Math.ceil(r1)); r++)
     for (let c = Math.max(0, Math.floor(c0)); c < Math.min(SIZE, Math.ceil(c1)); c++) {
       const p = [center(c), center(r)]
-      // a meter out from the walls counts as under it too
+      // a meter out from the walls counts as under it too. round the steep ones below 3m where
+      // the lidar has no ground of its own, the model slopes down from their decks there
+      const m = steep && !has(r * SIZE + c) ? 3 : 1
       const near = [
         [0, 0],
         [1, 0],
         [-1, 0],
         [0, 1],
         [0, -1],
-      ].some(([dx, dz]) => inside([p[0] + dx, p[1] + dz], b.points))
-      if (near) under[r * SIZE + c] = 1
+      ].some(([dx, dz]) => inside([p[0] + dx * m, p[1] + dz * m], b.points))
+      if (near) under[r * SIZE + c] = steep ? 2 : 1
     }
+}
+// under these the ground outside one side is a floor or more higher than outside another
+// (university commons' courtyard is the roof of its parking deck, a deck's roof is level with
+// the drive on its uphill side): the average all round came out meters up at the downhill
+// walls. here each hidden cell takes the ground outside the wall nearest to it, grown inward
+// a cell at a time, and the blur below leaves them and 8m round them alone (it brought the
+// cliff in the middle back out to the walls)
+const sharp = new Uint8Array(SIZE * SIZE)
+for (let r = 2; r < SIZE - 2; r++)
+  for (let c = 2; c < SIZE - 2; c++)
+    if (under[r * SIZE + c] === 2)
+      for (let dr = -2; dr <= 2; dr++)
+        for (let dc = -2; dc <= 2; dc++) sharp[(r + dr) * SIZE + c + dc] = 1
+let grow = true
+while (grow) {
+  grow = false
+  const copy = data.slice()
+  for (let r = 1; r < SIZE - 1; r++)
+    for (let c = 1; c < SIZE - 1; c++) {
+      const i = r * SIZE + c
+      if (under[i] !== 2) continue
+      // lidar ground under another building's edge counts too (a drive between two of them)
+      const from = [i - 1, i + 1, i - SIZE, i + SIZE].filter(
+        (n) => !under[n] || (under[n] === 1 && has(n)),
+      )
+      if (!from.length) continue
+      data[i] = from.reduce((sum, n) => sum + copy[n], 0) / from.length
+      under[i] = 3
+      grow = true
+    }
+  under.forEach((u, i) => u === 3 && (under[i] = 0))
 }
 // smooth fill: every hidden cell becomes the average of its neighbours, over and over,
 // starting from the model's own values
@@ -160,12 +232,37 @@ for (let pass = 0; pass < 400; pass++)
       if (under[i]) data[i] = (data[i - 1] + data[i + 1] + data[i - SIZE] + data[i + SIZE]) / 4
     }
 
+// piedmont north's court between building a's arm and building b is sunken 3m behind a
+// retaining wall along its north side (lidar 299.0, the drive over the wall 301.9), the grid
+// made a slope of the wall. level right up to it and on under the drive's edge over it
+// (game/raised.ts 'Piedmont North court wall'), and left out of the blur like the steep ones
+const SUNKEN = [
+  {
+    height: 299,
+    points: [
+      [383, -521.5],
+      [424, -521.5],
+      [424, -547],
+      [383, -547],
+    ],
+  },
+]
+for (const { height, points } of SUNKEN)
+  for (let r = 2; r < SIZE - 2; r++)
+    for (let c = 2; c < SIZE - 2; c++) {
+      if (!inside([center(c), center(r)], points)) continue
+      data[r * SIZE + c] = height
+      for (let dr = -2; dr <= 2; dr++)
+        for (let dc = -2; dc <= 2; dc++) sharp[(r + dr) * SIZE + c + dc] = 1
+    }
+
 // a light blur: the lidar's ground has the odd lump (dirt piles on a 2018 building site) and
 // the cells' medians are a bit noisy, the streets' slopes are much longer than this
 for (let pass = 0; pass < 2; pass++) {
   const copy = data.slice()
   for (let r = 1; r < SIZE - 1; r++)
     for (let c = 1; c < SIZE - 1; c++) {
+      if (sharp[r * SIZE + c]) continue
       let sum = 0
       for (const [dr, dc, w] of BLUR) sum += copy[(r + dr) * SIZE + c + dc] * w
       data[r * SIZE + c] = sum / 16

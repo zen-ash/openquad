@@ -113,7 +113,12 @@ in places; the plinths cover it.
 - The doors are placed from the lidar's canopies, not seen in a photo from the street: the 2026
   photos show A's door with a blue awning and B's sliding doors under an overhang on a drive, but
   not which face they're on.
-- The court between A and B is flat at the game's ground, not sunken 3m like the real one.
+- The court between A and B is sunken now (Nov 26): the ground there is set to 299.0 in
+  build-terrain.mjs (SUNKEN) and the drive's level north of it is a raised plaza at 301.85
+  (raised.ts 'Piedmont North court wall') with the retaining wall and a 1m guard wall on it, drawn
+  with A in peach. The wall's line is from the satellite (its shadow edge, z -542), no photo shows
+  the court, so its finish, steps and rail are guesses. Out here the ground is the 16m grid: the
+  court's floor rises ~0.7m in its last few meters to A's bar.
 
 ## Cost
 

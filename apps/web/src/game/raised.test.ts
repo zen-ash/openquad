@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import campus from '../campus/campus.json'
 import { parkingDeckGeometry, type DeckData } from '../campus/parkingDecks'
+import { piedmontNorthAGeometry, type PiedmontNorthData } from '../campus/piedmontNorth'
 import { drape, terrainGeometry } from '../campus/drape'
 import { areasGeometry } from '../campus/geometry'
 import { arenaFrame, BRIDGE, BRIDGES, type ArenaData } from '../campus/sportsArena'
@@ -140,12 +141,14 @@ describe('raised plazas', () => {
   it('has walls all the way down wherever the ground outside is lower', () => {
     // drawn by the building each plaza belongs to, from its base
     const drawn = new Map(
-      ['G Deck', 'Urban Life Building'].map((name) => {
+      ['G Deck', 'Urban Life Building', 'Piedmont North A'].map((name) => {
         const b = building(name)
         const geo =
           name === 'G Deck'
             ? parkingDeckGeometry(b as DeckData)
-            : urbanLifeGeometry(b as UrbanLifeData)
+            : name === 'Piedmont North A'
+              ? piedmontNorthAGeometry(b as PiedmontNorthData)
+              : urbanLifeGeometry(b as UrbanLifeData)
         const pos = Object.values(geo.parts).map((g) => g.getAttribute('position'))
         return [name, { pos, base: baseOf(b) }] as const
       }),

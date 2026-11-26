@@ -348,9 +348,10 @@ the deck); the 2026 image has the same roof and outline. Commons not checked.
 - Only 2018 photos, one fitted. The south side, the north side and the north end of the west
   side have no photo; the north retaining wall and where the west side turns solid are guesses
   from the ground heights.
-- The game's terrain along the north drive is ~1.3m under the real drive (the bare earth is
-  blurred there), so the roof's way in at the north west stands ~1m over the drive instead of
-  level with it.
+- Fixed Nov 26 (build-terrain.mjs STEEP): the north drive is within 0.3m of the lidar now, the
+  roof's way in at the north west meets it. The drive is in the 1m margin of the generic building
+  north of it (campus.json 134, a 14m box with lidar ground inside its ends), which was most of the
+  trouble.
 - The roof's curb is a guess (0.25m): the lidar has nothing over the roof at the edges and the
   photo from the street shows nothing over the beam, but the roof photo has a low wall along
   the south side.

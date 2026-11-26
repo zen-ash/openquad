@@ -47,6 +47,8 @@ const VIEWS = [
   { name: 'langdale-hall', from: [-222, 3, 133], at: [-172, 16, 108], player: [-225, 135] },
   { name: 'classroom-south', from: [-221, 3, 116], at: [-196, 8, 150], player: [-223, 113] },
   { name: 'library-south', from: [-96, 3, 213], at: [-146, 17, 197], player: [-93, 214] },
+  // collins st under courtland st's viaduct from decatur st, level ~6m under the deck
+  { name: 'collins-st', from: [-116, 1.7, 214], at: [-78, 1, 172], player: [-118, 216] },
   { name: 'urban-life', from: [-20, 2, 327], at: [20, 22, 255], player: [-22, 330] },
   { name: 'college-of-education', from: [-336, 3, 33], at: [-344, 10, 64], player: [-334, 31] },
   // on decatur st, the corner by the rec center is its fenced patio now
@@ -136,6 +138,13 @@ const VIEWS = [
     at: [430, 12, -560],
     player: [306, -612],
   },
+  // the sunken court between a and b from the drive over its retaining wall
+  {
+    name: 'piedmont-north-court',
+    from: [404, 1.7, -558],
+    at: [404, 0.5, -525],
+    player: [404, -560],
+  },
   // courtland st at edgewood ave: the east end over the lot, the long front
   { name: '100-edgewood-east', from: [98, 1.7, -36], at: [0, 28, -64], player: [100, -34] },
   // across auburn ave at the south east: the drum, the curtain wall, the top floor over it
@@ -190,6 +199,8 @@ const VIEWS = [
   { name: 's-deck', from: [163.53, 1.5, 331.14], at: [230.71, 14, 258.55], player: [160.8, 334.1] },
   // a deck from the auburn ave corner of peachtree center ave: the edge beam, sign and gate
   { name: 'a-deck', from: [-63, 1.6, -150], at: [-92, 4, -192], player: [-61, -148] },
+  // a deck's north drive: the roof's way in at grade at the far end
+  { name: 'a-deck-north-drive', from: [-72, 1.7, -227], at: [-112, 2, -224], player: [-72, -228] },
   // the skyline north of campus: southern bell's microwave shaft from the edgewood ave end of
   // courtland st (lemay's 2019 photo), and 191 peachtree's crowns behind it from edgewood ave
   { name: 'southern-bell', from: [81.83, 1.5, -12.06], at: [-25, 55, -180], player: [84.1, -8.8] },

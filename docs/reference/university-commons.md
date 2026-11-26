@@ -88,10 +88,10 @@ J W Dobbs Ave corner (305.0m).
   floor one; here it's one beige with a white top on every face.
 - The north east building's last 5m at the east end is lower in the lidar (340.9 vs 346.8): drawn
   at the full height.
-- The game's ground in front of the deck on J W Dobbs is ~2.5m higher than the street (the
-  terrain fills the deck's footprint from round it and blurs it out), so the deck's street floor and
-  its way in are buried. The courtyards' ground is a gentle mound instead of the flat lawn and plaza
-  on the deck. Not this building's code (terrain.json).
+- Fixed Nov 26 (build-terrain.mjs STEEP): the ground under the building comes from outside its
+  nearest wall now, so on J W Dobbs and Jesse Hill Jr Dr it's the street's (within 0.1m of the
+  lidar) instead of ~2.5m up. The courtyards are still the bare earth model's (~0.5m under the
+  deck top in places).
 - The courtyards' trees, planters, the lawn's walkway, the blue swooshes on the plaza (left out, it
   reads as gsu's flame) and the turnstile gate in the gap aren't drawn.
 - The ground floor under the cylinder is brick with a glass door; the real one is a deep dark
