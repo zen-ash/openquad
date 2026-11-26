@@ -3,6 +3,7 @@ import { useRef, useState } from 'react'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import campus from '../campus/campus.json'
+import { drawCityMap } from '../campus/cityMap'
 import { wallQuad } from '../campus/landmark'
 import { landmarkGeometry, type Sign } from '../campus/landmarks'
 import { casts, landmarkMaterials as materials } from '../campus/landmarkMaterials'
@@ -340,6 +341,8 @@ function freeze(root: THREE.Object3D | null) {
 // the regular buildings mesh
 export default function Landmarks() {
   const under = allPlinths()
+  // the map the glass reflections are traced through, from the same buildings
+  drawCityMap()
   return (
     <group ref={freeze}>
       {under && <mesh geometry={under} material={plinth} castShadow receiveShadow />}

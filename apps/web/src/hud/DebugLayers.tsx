@@ -16,6 +16,7 @@ const EFFECTS: [keyof typeof fx, string][] = [
   ['vignette', 'Vignette'],
   ['saturation', 'Camera saturation'],
   ['exposure', 'Auto exposure'],
+  ['reflections', 'City in glass'],
 ]
 
 // dev (or ?debug): where the fence is, and each of the effects on and off to see what it does

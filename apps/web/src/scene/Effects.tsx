@@ -54,6 +54,7 @@ import {
   type NodeBuilder,
   type WebGPURenderer,
 } from 'three/webgpu'
+import { reflections } from '../campus/reflections'
 import { game, useSettings } from '../settings'
 import { sunlight } from './Atmosphere'
 import { adapt, exposure, meter } from './autoExposure'
@@ -336,6 +337,7 @@ export default function Effects() {
     occlusion.on = true
     return () => {
       occlusion.on = false
+      reflections.value = 0
     }
   }, [gl, prePass])
   const sized = useRef<{ pipeline: RenderPipeline; scale: number } | null>(null)
@@ -351,6 +353,8 @@ export default function Effects() {
     state.scene.matrixAutoUpdate = false
     state.scene.updateMatrixWorld()
     const { quality, native } = useSettings.getState()
+    // the city in the glass only on high, low keeps just the sky in it
+    reflections.value = quality === 'high' ? fx.reflections.value : 0
     if (quality !== 'high') {
       gl.render(state.scene, state.camera)
       return

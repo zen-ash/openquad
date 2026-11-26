@@ -26,6 +26,7 @@ import {
   vec4,
 } from 'three/tsl'
 import { Mesh, NodeMaterial, PlaneGeometry, type Node, type WebGPURenderer } from 'three/webgpu'
+import { cityLight } from '../campus/reflections'
 import { eciToEcef, moonDirection } from '../game/celestial'
 import { useSettings } from '../settings'
 import { cloudySky, updateClouds } from './clouds'
@@ -160,6 +161,22 @@ sunlight.shadow.shadowNode = cascades
 // the light from the sky comes from the environment map, only the sun is direct
 sunlight.indirect.value = false
 
+// the light on the walls the glass reflects (campus/reflections.ts): what the sun and the
+// sky put on a wall facing normal, worked out where the camera is (they're all close by).
+// the moon's light is the same light's, made as bright as the light node makes it
+const body = uniform(new Vector3(0, 1, 0))
+const bodyLight = uniform(new Color(1, 1, 1))
+cityLight.at = (normal) => {
+  const light = getSplitIlluminance(
+    atmosphere.cameraPositionUnit.add(atmosphere.altitudeCorrectionUnit),
+    atmosphere.matrixWorldToECEF.mul(vec4(normal, 0)).xyz,
+    body,
+  )
+  return vec3(light.get('direct') as unknown as Node<'vec3'>)
+    .add(light.get('indirect') as unknown as Node<'vec3'>)
+    .mul(bodyLight)
+}
+
 const toWorld = new Vector3()
 
 export default function Atmosphere({
@@ -185,6 +202,10 @@ export default function Atmosphere({
     sunlight.body = day > 0 ? 'sun' : 'moon'
     if (day > 0) sunlight.color.setScalar(1)
     else sunlight.color.copy(MOONLIGHT).multiplyScalar(MOON)
+    body.value.copy(
+      day > 0 ? atmosphere.sunDirectionECEF.value : atmosphere.moonDirectionECEF.value,
+    )
+    bodyLight.value.copy(sunlight.color).multiplyScalar(day > 0 ? 1 : 2.5e-6)
     glow.value = 1 - day
   }, [x, y, z, when, day])
 

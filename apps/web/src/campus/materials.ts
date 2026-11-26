@@ -36,6 +36,7 @@ import {
 import { MeshStandardNodeMaterial, type Node, type WebGPURenderer } from 'three/webgpu'
 import { outsideCutout } from './cutout'
 import { DAY_INSIDE, night } from './facade'
+import { cityReflection } from './reflections'
 import { room } from './rooms'
 import {
   texture,
@@ -96,6 +97,7 @@ type Nodes = Partial<
     | 'aoNode'
     | 'emissiveNode'
     | 'opacityNode'
+    | 'envNode'
   >
 >
 
@@ -600,6 +602,7 @@ const glassNodes = once(() => {
       .mul(through)
       .mul(float(1).sub(bar))
       .mul(float(1).sub(panel)),
+    envNode: cityReflection,
   } satisfies Nodes
 })
 
@@ -653,6 +656,7 @@ const clearNodes = once(() => {
     roughnessNode: mix(f('roughness'), 0.45, frame),
     metalnessNode: mix(f('metalness'), 0.3, frame),
     emissiveNode: vec3(1, 0.86, 0.62).mul(night).mul(f('glow')).mul(float(1).sub(frame)),
+    envNode: cityReflection,
   } satisfies Nodes
 })
 

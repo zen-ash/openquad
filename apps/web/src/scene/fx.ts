@@ -15,6 +15,8 @@ export const fx = {
   vignette: uniform(1),
   saturation: uniform(1),
   exposure: uniform(1),
+  // the city in the glass (campus/reflections.ts)
+  reflections: uniform(1),
 }
 
 // on while the effects run (Effects.tsx): far buildings hidden behind others are skipped,

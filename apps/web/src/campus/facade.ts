@@ -28,6 +28,7 @@ import {
 import { MeshStandardNodeMaterial, type Node } from 'three/webgpu'
 import { DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
 import { outsideCutout } from './cutout'
+import { cityReflection } from './reflections'
 import { room } from './rooms'
 import { texture as load, unpackNormal } from './textures'
 
@@ -215,6 +216,8 @@ export function facadeMaterial() {
   )
   material.roughnessNode = select(isGlass, 0.06, 0.9)
   material.metalnessNode = select(isGlass, 0.85, select(style.lessThan(0.5), 0.6, 0))
+  // the buildings across the street in the windows (only where it's shiny, reflections.ts)
+  material.envNode = cityReflection
 
   // bumps from the brick/concrete normal maps, in the wall's own directions moved into
   // view space since that's what the normal is in there

@@ -305,6 +305,29 @@ quarter stop more, which is what matched the photos. Everywhere else it evens th
 a wall that looks too dark at 9am or indoors may be fine. The debug panel (`?debug`) can turn
 each effect off, to see if a color comes from the material or from the effects.
 
+## Reflections
+
+The glass family, clear glass and the windows of the generic buildings reflect the city, not
+only the sky (`campus/reflections.ts`). There's no cube map and nothing is drawn twice:
+`cityMap.ts` draws the campus from above once, when the hand-built buildings are made
+(Landmarks.tsx), into one 1024x1024 half float texture (1.29m squares). Each square has the
+top of what's there (the roofs of the hand-built buildings, the outline and height of the
+rest, trees as 10m columns, else the ground), how far it is to the nearest thing standing
+(and to the nearest thing over 28m) and what it is. The last row has a color and a kind for
+each of those. A glass pixel follows its reflection through that map, as far as the
+clearance allows each step (28 steps, 400m at most), and lights what it runs into with the
+atmosphere's sun and sky light, a grid of windows, and the sky again where that's glass too.
+
+- Only the reflection gets it. `CityReflection` is the materials' `envNode` and checks which
+  part of the environment lighting three is building: the soft light from the sky
+  (irradiance) stays the plain sky.
+- One texture: the facade shader was at 15 of the 16 textures WebGPU allows in one shader.
+- One texture, not uniforms: a list of colors as a uniform array was uploaded again for every
+  glass mesh drawn (130-170KB a frame).
+- High only. Effects.tsx sets `reflections` every frame, the debug panel's "City in glass"
+  turns it off.
+- Roughness under 0.3 only, so the facade shader's walls skip it.
+
 ## Checking a change
 
 ```sh
