@@ -129,8 +129,8 @@ function skipFarInPrepass(renderer: WebGPURenderer) {
   const r = renderer as unknown as { renderObject(object: Object3D, ...rest: unknown[]): void }
   const draw = r.renderObject.bind(renderer)
   r.renderObject = (object, ...rest) => {
-    const { far, box } = object.userData
-    if (far && renderer.getRenderTarget() === prepassTarget) return
+    const { far, box, prepass } = object.userData
+    if ((far || prepass === false) && renderer.getRenderTarget() === prepassTarget) return
     if (far && box && renderer.isOccluded(box)) return
     draw(object, ...rest)
   }

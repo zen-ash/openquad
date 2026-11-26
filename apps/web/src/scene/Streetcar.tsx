@@ -51,6 +51,7 @@ const steel = mergeGeometries([stops.steel, overhead.steel, overhead.wire])
 const platformMaterial = concrete({ color: '#b9b6ae', dirt: 0.3 })
 const steelMaterial = metal({ color: '#2b2e33', roughness: 0.5, joint: 0 })
 const glassMaterial = clearGlass({ color: '#c9d3d8', opacity: 0.25 })
+const NO_PREPASS = { prepass: false }
 
 export default function Streetcar() {
   useFrame(() => {
@@ -74,11 +75,25 @@ export default function Streetcar() {
   })
   return (
     <>
-      <mesh geometry={slab} material={trackMaterial} receiveShadow />
-      <mesh geometry={rails} material={railMaterial} receiveShadow />
-      <mesh geometry={stops.platform} material={platformMaterial} castShadow receiveShadow />
-      <mesh geometry={steel} material={steelMaterial} castShadow receiveShadow />
-      <mesh geometry={stops.glass} material={glassMaterial} />
+      {/* these run the whole route, so they're in view (and drawn) from almost everywhere:
+          they stay out of the prepass (only the ao reads it, Effects.tsx) and the platforms,
+          0.36m high, don't cast */}
+      <mesh geometry={slab} material={trackMaterial} receiveShadow userData={NO_PREPASS} />
+      <mesh geometry={rails} material={railMaterial} receiveShadow userData={NO_PREPASS} />
+      <mesh
+        geometry={stops.platform}
+        material={platformMaterial}
+        receiveShadow
+        userData={NO_PREPASS}
+      />
+      <mesh
+        geometry={steel}
+        material={steelMaterial}
+        castShadow
+        receiveShadow
+        userData={NO_PREPASS}
+      />
+      <mesh geometry={stops.glass} material={glassMaterial} userData={NO_PREPASS} />
       {cars.flat().map((m) => (
         <primitive key={m.uuid} object={m} />
       ))}
