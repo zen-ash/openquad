@@ -35,6 +35,18 @@ describe('greek housing', () => {
     expect(blocks.map((b) => b.landmark?.floors)).toEqual([3, 2, 3])
   })
 
+  it('puts the chapters from the lawn photo on the edgewood block, on plates with no logo', () => {
+    const signs = blocks.flatMap((b) => greekHousingGeometry(b).signs)
+    const zta = signs.find((s) => s.text === 'ΖΤΑ')!
+    // the east wing's lawn side
+    expect(zta.x).toBeCloseTo(227.2, 0)
+    expect(zta.z).toBeGreaterThan(-65)
+    expect(zta.z).toBeLessThan(-61.4)
+    expect(greekHousingGeometry(blocks[0]!).signs.some((s) => s.text === 'ΖΤΑ')).toBe(false)
+    // letters only, the plate is its own sign
+    for (const s of signs) expect(s.text === '' || s.letters).toBe(true)
+  })
+
   it('moves the edgewood block door to the community room on edgewood ave', () => {
     expect(blocks[2]!.door).toEqual([236, -39.63, 0, 1])
   })

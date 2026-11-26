@@ -40,6 +40,22 @@ const SILL = 0.85
 const REVEAL = 0.12
 // the lawn in the middle, the canopies are on the sides facing it
 const LAWN = P(222, -62)
+// town homes measured on gsu's 2019 lawn photo (a camera fitted to it) where the rule gets them
+// wrong: the east wing's lawn side is a brick end by the corner, zeta tau alpha's stucco one and
+// another stucco one, pi kappa phi is the brick one sticking out on the edgewood block's lawn
+// side. an edge from..to is cut where each bay ends, with its look and the chapter's letters
+const MEASURED: { from: Point; to: Point; bays: [number, 'brick' | 'stucco', string?][] }[] = [
+  {
+    from: P(227.1, -57.8),
+    to: P(227.3, -68),
+    bays: [
+      [3.6, 'brick'],
+      [7.2, 'stucco', 'ΖΤΑ'],
+      [10.2, 'stucco'],
+    ],
+  },
+  { from: P(219.2, -48.9), to: P(222.7, -48.8), bays: [[3.5, 'brick', 'ΠΚΦ']] },
+]
 
 export function greekHousingGeometry(b: GreekHousingData) {
   const { add, prism, wall, core, inside, merged } = collect<Part>()
@@ -68,17 +84,29 @@ export function greekHousingGeometry(b: GreekHousingData) {
     if (y0 > 0.01) add(part, flat(c, y0, false))
   }
 
+  // a cream plate with the letters on it, no logo square (the plate signs have one)
+  const letters = (e: Edge, u: number, y: number, text: string) => {
+    const rot = Math.atan2(e.out.x, e.out.z)
+    signs.push({ ...at(e, u, 0.05), y, rot, text: '', width: 1.5, height: 0.5, plate: '#e6dfcf' })
+    signs.push({ ...at(e, u, 0.07), y, rot, text, letters: true, size: 0.34, color: '#2a2622' })
+  }
+
   let n = 0
-  const canopies: { e: Edge; u: number }[] = []
+  const canopies: { e: Edge; u: number; text?: string }[] = []
   for (const e of edges(outline)) {
     if (e.len < 0.05) continue
     // jogs between bays are brick, long edges are bays taking turns
     const count = e.len < 2.2 ? 1 : Math.max(1, Math.round(e.len / BAY))
-    const w = e.len / count
-    for (let i = 0; i < count; i++) {
-      const u0 = i * w
-      const u1 = u0 + w
-      const brick = e.len < 2.2 || n++ % 2 === 1
+    const measured = MEASURED.find((m) => near(m.from, e.p) && near(m.to, at(e, e.len)))?.bays
+    const bays = measured ?? Array.from({ length: count }, (_, i) => [(e.len * (i + 1)) / count])
+    // the rest of the block keeps taking turns like before
+    if (measured && e.len >= 2.2) n += count
+    for (let i = 0; i < bays.length; i++) {
+      const u0 = i === 0 ? 0 : bays[i - 1]![0]
+      const u1 = bays[i]![0]
+      const w = u1 - u0
+      const look = bays[i]![1]
+      const brick = look ? look === 'brick' : e.len < 2.2 || n++ % 2 === 1
       const high = brick ? top : cornice
       const openings: Opening<Part>[] = []
       const onEdge =
@@ -118,27 +146,17 @@ export function greekHousingGeometry(b: GreekHousingData) {
         brick ? 'brick' : 'stucco',
         wallQuad(at(e, u1, -0.25), at(e, u0, -0.25), roof, high, neg(e.out)),
       )
-      if (!brick && w > 4 && facesLawn(e)) canopies.push({ e, u: (u0 + u1) / 2 })
+      const text = bays[i]![2]
+      if (text || (!brick && w > 4 && facesLawn(e))) canopies.push({ e, u: (u0 + u1) / 2, text })
     }
   }
   // the roof, white membrane in the satellite pictures
   add('trim', flat(inset(outline, 0.2), roof))
 
-  // blue standing seam canopies over the doors on the lawn side, on two posts
-  // and the chapters' letters over two of them (gsu's 2019 lawn photo: zeta tau alpha on the
-  // west block, pi kappa phi on edgewood's)
-  const letters = outline[0]!.x < 210 ? ['ΖΤΑ'] : floors === 3 ? ['ΠΚΦ'] : []
-  canopies.slice(0, letters.length).forEach(({ e, u }, i) =>
-    signs.push({
-      ...at(e, u, 0.06),
-      y: cornice - 0.9,
-      rot: Math.atan2(e.out.x, e.out.z),
-      text: letters[i]!,
-      plate: '#ece6d8',
-      color: '#2a2622',
-      scale: 0.9,
-    }),
-  )
+  // blue standing seam canopies over the doors on the lawn side, on two posts, and the chapters'
+  // letters up top on the measured ones (gsu's 2019 lawn photo)
+  for (const { e, u, text } of canopies) if (text) letters(e, u, cornice - 0.9, text)
+  canopies.sort((a, c) => Number(!!c.text) - Number(!!a.text))
   for (const { e, u } of canopies.slice(0, 3)) {
     const y = Math.min(3, story) - 0.05
     hip(add, e, u - 1.6, u + 1.6, 0, 1.8, y, 0.6)
@@ -151,17 +169,7 @@ export function greekHousingGeometry(b: GreekHousingData) {
   const end = edges(outline)
     .filter((e) => e.out.x > 0.9 && e.len > 3)
     .sort((a, c) => c.p.z - a.p.z)[0]
-  if (end && outline[0]!.x > 230) {
-    signs.push({
-      ...at(end, end.len / 2, 0.06),
-      y: top - 1.2,
-      rot: Math.atan2(end.out.x, end.out.z),
-      text: 'ΑΞΔ',
-      plate: '#d9d1bf',
-      color: '#2a2622',
-      scale: 0.9,
-    })
-  }
+  if (end && outline[0]!.x > 230) letters(end, end.len / 2, top - 1.2, 'ΑΞΔ')
 
   // a hidden block for the shadows: the glass doesn't cast and the town homes are empty over
   // the ground floor (landmark.ts core)
@@ -182,6 +190,7 @@ type Edge = ReturnType<typeof edges>[number]
 const at = (e: Edge, u: number, d = 0) =>
   P(e.p.x + e.dir.x * u + e.out.x * d, e.p.z + e.dir.z * u + e.out.z * d)
 const aOf = (e: Edge, p: Point) => (p.x - e.p.x) * e.dir.x + (p.z - e.p.z) * e.dir.z
+const near = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.z - b.z) < 0.3
 const neg = (p: Point) => P(-p.x, -p.z)
 const facesLawn = (e: Edge) => {
   const m = at(e, e.len / 2)

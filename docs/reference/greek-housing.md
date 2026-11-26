@@ -16,7 +16,7 @@ Newest first.
 | source                                                         | date              | license              | facade                      | used for                                                              |
 | -------------------------------------------------------------- | ----------------- | -------------------- | --------------------------- | --------------------------------------------------------------------- |
 | GSU campus map (Concept3D, map 1108, 287169 / 295241 / 293786) | 2026-08 (uniqid)  | GSU, reference       | the gate by the drive       | the guard booth and the two storey block behind it                    |
-| GSU campus map photo (2019-12-04, "Housing stock 015")         | 2019-12-04        | GSU, reference       | the lawn                    | the bays, the canopies, the letters, colors, the side by side         |
+| GSU campus map photo (2019-12-04, "Housing stock 015")         | 2019-12-04        | GSU, reference       | the lawn                    | the bays, the canopies, the letters, colors, the fitted side by side  |
 | Mapillary nhhecker / deirdreedsign along Edgewood Ave          | 2019-04, 2019-12  | CC BY-SA 4.0         | edgewood ave side           | the edgewood block's bays, the side by side                           |
 | Mapillary SydneyIStroud along Edgewood Ave                     | 2022-09-08, 09-13 | CC BY-SA 4.0         | edgewood ave side, east end | the "156" end (brick, diamond vents), glass block on the ground floor |
 | GSU campus map photo (2018-03-29, "Spring Admissions 0104")    | 2018-03-29        | GSU, reference       | the east end on the drive   | alpha xi delta's plate on the brick bay, the stucco and brick split   |
@@ -24,8 +24,8 @@ Newest first.
 | Esri World Imagery (sat.py default release)                    | -                 | Esri, reference only | roofs                       | white membrane roofs                                                  |
 | OpenStreetMap ways of buildings 39, 40, 61                     | -                 | ODbL                 | -                           | the outlines (kept)                                                   |
 
-- **Rating**: the lawn photo is an ultra wide lens and only matched by eye. The Edgewood Ave
-  Mapillary photo is the Mapillary pose moved into the bike lane by eye. No camera fits.
+- **Rating**: the lawn photo is an ultra wide lens, its camera fitted (Nov 26 2026, see below).
+  The Edgewood Ave Mapillary photo is the Mapillary pose moved into the bike lane by eye.
 
 ## Measurements
 
@@ -53,15 +53,28 @@ the three share a name, see "What's in the game").
   windows (1.6 x 1.4m) on every floor in white reveals, a cream cornice on the stucco bays and a
   cap on the brick ones, the parapets' backs, a white roof.
 - Blue hipped canopies on two posts over up to three stucco bays facing the lawn (only drawn
-  within 80m). Letter plates: alpha xi delta on 61's end facing the drive, zeta tau alpha and
-  pi kappa phi over a canopy on 39 and 61.
+  within 80m). Letters on plain cream plates (no logo square): alpha xi delta on 61's end facing
+  the drive, zeta tau alpha and pi kappa phi over their canopies on 61's lawn side.
+- MEASURED in greekHousing.ts: where the rule got the lawn photo wrong, an edge's bays are listed
+  by hand. I fitted a camera to GSU's 2019 lawn photo (two vanishing points and two cornice lines:
+  at (219.8, -62.7) 1.5m over the lawn, heading 131, pitched up 24.7, rolled 4.3, a 76 deg lens) and
+  put the photo's corners back on the walls: the east wing's lawn side is a 3.6m brick end by the
+  corner, zeta tau alpha's 3.6m stucco town home and another stucco one; pi kappa phi is the brick
+  one sticking out of the Edgewood block. The 2016 photo from Patton Hall has zeta tau alpha's
+  letters on the wing too.
+- The lawn side by side from Nov 25 had its camera at the wing's north end with an 80 deg lens
+  tilted up: the wing's corner and its leaning edge made the flat roof line read as a gable. The
+  roofs are flat (the lidar and the photos agree), only the camera was wrong.
 
 ## What still differs
 
 - The bay pattern is a rule (edges cut into 6.5m bays taking turns), not the real sequence of
   town homes: the real stucco bays are wider, some brick bays have a basket weave panel between
   the windows, and the stucco has diagonal scoring.
-- Which chapter is in which bay is a guess, only three of the nine are drawn.
+- Which chapter is in which bay is a guess outside the lawn photo, only three of the nine are drawn.
+- In the photo the wing's brick end is narrower and a stucco face set back behind it shows; the
+  game's brick end runs the full 3.6m to the corner. The photo's time isn't known: the wing's west
+  face is lit grazing, so about 13:00.
 - The Edgewood Ave front has glass block windows, vents and diamond vents in the stucco gables
   for real; here it has the same 2x2 windows as the rest. The "156" numbers aren't drawn.
 - The guard booth and gates by the drive (2026 photo), the fences, the patio furniture and the
