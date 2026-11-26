@@ -61,8 +61,11 @@ Reference only: nothing from the images is in the repo, the positions are my own
   the junction's two roads half a round apart. The lamps now read the real clock every frame
   (they used to add up frame times, which stopped while the tab was hidden).
 - **Same for everyone**: the cars come in on a timetable that repeats every 600s. The traffic is
-  driven once, period after period, until a period ends exactly like the one before (two
-  periods today) or like one two or three periods back. That last stretch is kept as each car's
+  driven once, period after period, with the streetcars (docs/streetcar.md: the cars on their
+  lanes wait behind them), until a period ends exactly like the one a whole half hour (three
+  periods) back, since the streetcars come round every 15 minutes (four periods today). That
+  last half hour (lined up with the clock, so the streetcars the cars waited for are where they
+  are on the clock) is kept as each car's
   distance along its route at every second; `drivingAt` looks it up by the clock. Only sums,
   products, sqrt and comparisons go into the driving, so another browser gets the same numbers.
   The first call drives a few ms a frame till it's done (no cars for about the first half
@@ -97,4 +100,4 @@ about 17m at (-88, 185)-(-104, 204) (an old terrain.json bug), cars on it nosedi
 - The lofts deck's roof spaces are square, not angled. Deck levels under the roof: fill is a
   guess. Grady Piedmont Deck (east of Piedmont Ave) is a 14m box in the game, the satellite has
   a parking surface with about 40 cars there.
-- No turn lanes, buses, trucks or the streetcar on Edgewood Ave. Nobody parks or leaves a space.
+- No turn lanes, buses or trucks. Nobody parks or leaves a space.

@@ -205,6 +205,15 @@ const VIEWS = [
   // courtland st (lemay's 2019 photo), and 191 peachtree's crowns behind it from edgewood ave
   { name: 'southern-bell', from: [81.83, 1.5, -12.06], at: [-25, 55, -180], player: [84.1, -8.8] },
   { name: 'peachtree-191', from: [-60, 1.6, -35], at: [-125, 150, -530], player: [-58, -33] },
+  // the streetcar's hurt park stop on edgewood ave, and its woodruff park one on auburn ave
+  // (with ?still neither car is in the map: rails, platforms, shelters, poles and wire)
+  { name: 'streetcar-hurt-park', from: [20, 2.5, -20], at: [-5, 1.5, -31], player: [20, -18] },
+  {
+    name: 'streetcar-woodruff',
+    from: [-235, 2, -205],
+    at: [-255, 1.5, -195],
+    player: [-235, -210],
+  },
   {
     name: 'library-north-inside',
     from: [-93.8, 1.7, 142.9],

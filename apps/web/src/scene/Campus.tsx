@@ -64,6 +64,7 @@ import PantherQuad from './PantherQuad'
 import { SkyDome, SkyEnvironment, Stars } from './Sky'
 import Signals from './Signals'
 import StreetFurniture from './StreetFurniture'
+import Streetcar from './Streetcar'
 import Toonify from './Toonify'
 import ToonSky, { HORIZON } from './ToonSky'
 import ToonTrees from './ToonTrees'
@@ -408,6 +409,7 @@ export default function Campus() {
       <StreetFurniture />
       {!toon && <Signals />}
       <Cars />
+      <Streetcar />
       {game ? <GameTrees /> : toon ? <ToonTrees /> : <Trees />}
       {game && (
         <>

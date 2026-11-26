@@ -113,3 +113,8 @@ export const crosswalkMaterial = textured('asphalt', '#9a9a9a', 0.9, 3.5)
   roadMaterial.colorNode = color
   crosswalkMaterial.colorNode = color
 }
+
+// the streetcar's track (scene/Streetcar.tsx): the concrete it's set in, just over the road
+// and under the crosswalks' paint, and the rails' steel heads over both
+export const trackMaterial = textured('asphalt', '#e4e3df', 0.85, 3.2)
+export const railMaterial = textured('asphalt', '#a7a9ad', 0.5, 3.7)

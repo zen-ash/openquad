@@ -291,6 +291,108 @@ export const RAISED_PLAZAS: Record<string, Data> = {
     // (the far side is a few cm over the ground there)
     edges: [1, null, 'open', null],
   },
+  // the streetcar's platforms (game/streetcar.ts STOPS): 27m along the track, 3m wide (sweet
+  // auburn market's 2.2), 0.36m over the sidewalk (the s70's low floor), the ground's slope
+  // along their length
+  'Streetcar stop Luckie St at Cone St': {
+    by: 'streetcar',
+    top: [319.63, 319.72, 319.77],
+    points: [
+      [-462.4, -428.3],
+      [-444.6, -407.9],
+      [-446.9, -405.9],
+      [-464.7, -426.4],
+    ],
+    edges: ['open', 'open', 'open', 'open'],
+  },
+  'Streetcar stop Park Place': {
+    by: 'streetcar',
+    top: [318.8, 318.87, 319.22],
+    points: [
+      [-259.5, -110.1],
+      [-270.6, -85.4],
+      [-273.3, -86.7],
+      [-262.2, -111.3],
+    ],
+    edges: ['open', 'open', 'open', 'open'],
+  },
+  'Streetcar stop Hurt Park': {
+    by: 'streetcar',
+    top: [309.2, 308.39, 308.41],
+    points: [
+      [-17.6, -29],
+      [9.4, -28.7],
+      [9.4, -25.7],
+      [-17.6, -26],
+    ],
+    edges: ['open', 'open', 'open', 'open'],
+  },
+  'Streetcar stop Sweet Auburn Market': {
+    by: 'streetcar',
+    top: [299.23, 298.75, 298.7],
+    points: [
+      [498.3, -15.5],
+      [525.2, -14.9],
+      [525.2, -12.7],
+      [498.2, -13.3],
+    ],
+    edges: ['open', 'open', 'open', 'open'],
+  },
+  'Streetcar stop Dobbs Plaza': {
+    by: 'streetcar',
+    top: [295.34, 295.11, 295.12],
+    points: [
+      [625.3, -151.5],
+      [598.4, -151.8],
+      [598.4, -154.8],
+      [625.3, -154.5],
+    ],
+    edges: ['open', 'open', 'open', 'open'],
+  },
+  'Streetcar stop Auburn Ave at Piedmont Ave': {
+    by: 'streetcar',
+    top: [299.27, 300.23, 300.28],
+    points: [
+      [331.8, -154.4],
+      [304.8, -154.8],
+      [304.9, -157.8],
+      [331.9, -157.4],
+    ],
+    edges: ['open', 'open', 'open', 'open'],
+  },
+  'Streetcar stop Woodruff Park': {
+    by: 'streetcar',
+    top: [320.86, 321.67, 321.72],
+    points: [
+      [-241.2, -186.7],
+      [-260.8, -205.3],
+      [-258.7, -207.4],
+      [-239.2, -189],
+    ],
+    edges: ['open', 'open', 'open', 'open'],
+  },
+  'Streetcar stop Peachtree Center': {
+    by: 'streetcar',
+    top: [327.78, 328.49, 328.52],
+    points: [
+      [-200.5, -414.9],
+      [-200.6, -441.9],
+      [-197.6, -441.9],
+      [-197.5, -414.8],
+    ],
+    edges: ['open', 'open', 'open', 'open'],
+  },
+  'Streetcar stop Carnegie Way at Ted Turner Dr': {
+    by: 'streetcar',
+    top: [318.58, 318.27, 318.48],
+    points: [
+      [-373.2, -565.4],
+      [-390.3, -586.2],
+      [-387.9, -588.1],
+      [-370.9, -567.3],
+    ],
+    edges: ['open', 'open', 'open', 'open'],
+  },
 }
 
 // the elevation on one at x, z: flat, or the plane through its first three points

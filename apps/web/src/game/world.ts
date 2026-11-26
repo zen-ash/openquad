@@ -1,4 +1,4 @@
-import { FENCE } from '@quad/shared'
+import { FENCE, insideFence } from '@quad/shared'
 import campus from '../campus/campus.json'
 import { coeObstacles, type CollegeOfEducationData } from '../campus/collegeOfEducation'
 import { parkingObstacles, type ParkingData } from '../campus/loftsParking'
@@ -15,7 +15,14 @@ import { rscObstacles, type RscData } from '../campus/researchScience'
 import { annexObstacles, type AnnexData } from '../campus/scienceAnnex'
 import { loftsObstacles, type LoftsData } from '../campus/universityLofts'
 import { urbanLifeObstacles, type UrbanLifeData } from '../campus/urbanLife'
-import { pointInPolygon, polygon, type Point, type Segment, type World } from './collision'
+import {
+  pointInPolygon,
+  polygon,
+  type Box,
+  type Point,
+  type Segment,
+  type World,
+} from './collision'
 import { footprint, furnish, isOver, LOW, type Item } from './furniture'
 import { enterable, interiors } from './interiors'
 import { corners, parkedCars } from './parking'
@@ -24,6 +31,7 @@ import { signalPoles } from './signals'
 import { RAISED } from './raised'
 import { decksAt, floorOf } from './surface'
 import { fromElevation, heightAt } from './terrain'
+import { streetcarBoxes, streetcarPoles } from './streetcar'
 import { drivingBoxes } from './traffic'
 
 const TREE_RADIUS = 0.8
@@ -116,6 +124,8 @@ const parked = parkedCars().filter((c) => {
   return Math.abs(c.y - (deck ? floorOf(deck) : heightAt(c.x, c.z))) < 1.2
 })
 
+// what moves you aside this frame, one array
+const passing: Box[] = []
 export const world: World = {
   // buildings you can walk into are just their walls (with a doorway), the rest are solid.
   // except the ones up off the ground, you walk under those (the library link)
@@ -172,11 +182,19 @@ export const world: World = {
     ...urbanLife.tables,
     // the traffic lights' poles
     ...signalPoles().map((p) => ({ x: p.x, z: p.z, radius: 0.2 })),
+    // the streetcar's wire poles on the sidewalks you walk
+    ...streetcarPoles()
+      .filter((p) => insideFence(p.x, p.z))
+      .map((p) => ({ x: p.x, z: p.z, radius: 0.15 })),
   ],
   halfSize: campus.halfSize,
   // the cars driving by nudge you aside (they can't wait for anyone, everyone sees the same
-  // traffic)
-  moving: () => drivingBoxes(false),
+  // traffic), and so does the streetcar
+  moving: () => {
+    passing.length = 0
+    passing.push(...drivingBoxes(false), ...streetcarBoxes())
+    return passing
+  },
 }
 
 // the sides of bridges with a drop beside them: walls, but only for someone up on the deck.

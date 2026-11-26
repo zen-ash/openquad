@@ -20,6 +20,7 @@ import {
   type ParkingData,
 } from '../campus/loftsParking'
 import { signalJunctions, signalPoles } from './signals'
+import { trackNear } from './streetcar'
 import { streetLights } from './streetFurniture'
 import { surfaceAt } from './surface'
 import { fromElevation, heightAt } from './terrain'
@@ -230,6 +231,8 @@ function curbClear(car: Car, road: Line, signals: { x: number; z: number }[]) {
   const box = corners(car)
   const { length } = CAR_KINDS[car.kind]!
   if (fenceDistance(car.x, car.z) < -230) return false
+  // not where the streetcar goes by (the game's streets are narrower than the real ones)
+  if (trackNear(car.x, car.z, 2.8)) return false
   if (signals.some((s) => Math.hypot(s.x - car.x, s.z - car.z) < SIGNAL + 7 + length / 2))
     return false
   const reach = length / 2 + CROSSWALK

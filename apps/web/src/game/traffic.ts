@@ -12,6 +12,7 @@ import {
 } from './lanes'
 import { pickKind, seeded } from './parking'
 import { lightAt } from './signals'
+import { spansAt, trackNear } from './streetcar'
 import { heightAt } from './terrain'
 
 // the traffic round campus: cars come in where the streets leave the area (lanes.ts AREA) and
@@ -30,7 +31,7 @@ export const STEP = 1
 const STEPS = PERIOD / STEP
 // at most this many periods driven to get there, and how many milliseconds a frame it's
 // driven for till then
-const ROUNDS = 8
+const ROUNDS = 12
 const SLICE = 4
 
 // m/s2: speeding up, braking, braking hard. m: how far back they stop. s: how far ahead they
@@ -233,6 +234,7 @@ function* driving() {
     .filter((e) => plans[e.plan]!.route)
     .sort((a, b) => a.step - b.step || a.plan - b.plan)
 
+  const trams = tramLanes(net.lanes)
   const onLane: Car[][] = net.lanes.map(() => [])
   const onCurve: Car[][] = net.connectors.map(() => [])
   const carsOn = (p: Piece) => (isLane(p) ? onLane[p.id]! : onCurve[p.id]!)
@@ -391,10 +393,13 @@ function* driving() {
         .sort()
         .join()
       // (it can settle into doing the same every two or three periods too: then that's kept)
-      const back = ends.lastIndexOf(now)
+      // the streetcars come round every 15 minutes, so only whole half hours (three periods)
+      // repeat with them
+      let back = -1
+      for (let i = round - 3; i >= 0; i -= 3) if (ends[i] === now) back = Math.max(back, i)
       if (back >= 0 || round === ROUNDS - 1) {
         stats.rounds = round + 1
-        cycle = back >= 0 ? round - back : 1
+        cycle = back >= 0 ? round - back : 3
         // and where they are as the next one starts
         for (const c of cars) {
           c.track.push(c.starts[c.at]! + c.u)
@@ -402,6 +407,7 @@ function* driving() {
         }
         // the ones on the streets in the kept periods, their start at step 0
         const start = (round + 1 - cycle) * STEPS
+        began = start * STEP
         return trips
           .filter((t) => t.first + t.along.length > start)
           .map((t) => ({ ...t, first: t.first - start }))
@@ -457,6 +463,23 @@ function* driving() {
           if (a.u > c.u && g < gap) [gap, lead] = [g, a.v]
         }
       }
+    }
+    // a streetcar ahead in the lane or the next ones (it keeps its own timetable, the cars
+    // wait behind it)
+    let before = -c.u
+    for (let j = c.at; j < c.route.length && j <= c.at + 2 && before < LOOK; j++) {
+      const on = c.route[j]!
+      const tram = isLane(on) ? trams[on.id] : undefined
+      for (const [b, f, v] of tram ? spansAt(t)[tram.stretch]! : []) {
+        const back = tram!.u0 + (b - tram!.s0) / tram!.k
+        const front = tram!.u0 + (f - tram!.s0) / tram!.k
+        if (front < tram!.from || back > tram!.to) continue
+        // from this car's front. one level with it already (the streetcar came up behind it)
+        // is left alone
+        const g = before + back - c.half
+        if (before + front > 0 && g > -2 * c.half && g < gap) [gap, lead] = [Math.max(g, 0), v]
+      }
+      before += on.line.length
     }
     // the stop lines coming up, this lane's and the next ones' (a short lane can go by in a
     // step): slow for the corners, stop for red lights and junctions that aren't clear. the
@@ -614,6 +637,42 @@ function* driving() {
   }
 }
 
+type TramLane = { stretch: number; u0: number; s0: number; k: number; from: number; to: number }
+// the lanes the streetcar runs along (game/streetcar.ts): which bit of them, and where that is
+// on its track
+function tramLanes(lanes: Lane[]) {
+  const out: (TramLane | undefined)[] = []
+  const p = [0, 0, 0]
+  for (const lane of lanes) {
+    type At = { u: number; s: number; stretch: number }
+    let first: At | null = null
+    let last: At | null = null
+    for (let u = 1; u < lane.line.length - 1; u += 3) {
+      pointAt(lane.line, u, p)
+      const near = trackNear(p[0]!, p[2]!, 1.8)
+      if (!near || (first && near.stretch !== first.stretch)) {
+        if (first) break
+        continue
+      }
+      first ??= { u, s: near.s, stretch: near.stretch }
+      last = { u, s: near.s, stretch: near.stretch }
+    }
+    if (!first || !last || last.u - first.u < 6) continue
+    const k = (last.s - first.s) / (last.u - first.u)
+    // the same way as the streetcar
+    if (k < 0.7 || k > 1.3) continue
+    out[lane.id] = {
+      stretch: first.stretch,
+      u0: first.u,
+      s0: first.s,
+      k,
+      from: first.u - 3,
+      to: last.u + 3,
+    }
+  }
+  return out
+}
+
 // into a piece's list, which goes front to back (two can come onto a piece in the same step)
 function enter(list: Car[], c: Car) {
   let i = list.length
@@ -624,6 +683,9 @@ function enter(list: Car[], c: Car) {
 let trips: Trip[] | null = null
 // how many periods the traffic takes to come round to the same again
 let cycle = 1
+// when the kept periods start in the driving's own time (it's the clock's time there too): the
+// clock is looked up from there, so the streetcars the cars waited for are where they are
+let began = 0
 let run: ReturnType<typeof driving> | null = null
 let spent = 0
 
@@ -716,7 +778,7 @@ export function drivingAt(seconds: number): Driving[] {
   }
   const all = trips!
   const span = PERIOD * cycle
-  const now = (((seconds % span) + span) % span) / STEP
+  const now = ((((seconds - began) % span) + span) % span) / STEP
   let n = 0
   for (const trip of all) {
     const s = sAt(trip, now)

@@ -16,6 +16,7 @@ import { alongGround, baseOf, decksAt, floorOf, surfaceAt } from './surface'
 import { fromElevation, heightAt, isNear, terrainAt } from './terrain'
 import { world } from './world'
 import { pantherQuadGeometry } from '../campus/pantherQuad'
+import { stopsGeometry } from '../campus/streetcar'
 
 const plaza = (name: string) => RAISED.find((r) => r.name === name)!
 const building = (name: string) => campus.buildings.find((b) => b.name === name)!
@@ -153,6 +154,8 @@ describe('raised plazas', () => {
         return [name, { pos, base: baseOf(b) }] as const
       }),
     )
+    // and the streetcar's platforms
+    drawn.set('streetcar', { pos: [stopsGeometry().platform.getAttribute('position')], base: 0 })
     // the panther quad's plaza is drawn in place, not from a building
     drawn.set('Panther Quad', {
       pos: Object.values(pantherQuadGeometry()).map((g) => g.getAttribute('position')),
