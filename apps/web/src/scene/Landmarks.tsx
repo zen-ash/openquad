@@ -1,5 +1,5 @@
 import { useFrame } from '@react-three/fiber'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import campus from '../campus/campus.json'
@@ -227,9 +227,11 @@ function Signs({ signs, floor }: { signs: Sign[]; floor: number }) {
   ))
 }
 
-// a building further than 150m off is left out of the prepass (userData.far, Effects.tsx).
-// one check a building, not one a part. all near while the warm-up runs, so the prepass
-// shaders get built
+// a building further than 150m off is left out of the prepass (userData.far, Effects.tsx),
+// and its shadow comes from one mesh of all its casting parts (shadowsOf) instead of one draw
+// a part: the shadow pass draws them all with the same material anyway. 6-9 draws a building
+// in each of the 3 cascades. one check a building, not one a part. all near while the
+// warm-up runs, so the shaders get built
 const FAR = 150
 const box = new THREE.Box3()
 const boxes = new WeakMap<object, THREE.Box3>()
@@ -245,15 +247,41 @@ function boxOf(parts: Record<string, THREE.BufferGeometry>) {
   }
   return b
 }
+// only the positions, one index: all the shadow pass reads
+function shadowsOf(parts: THREE.BufferGeometry[]) {
+  let count = 0
+  for (const g of parts) count += g.getAttribute('position').count
+  const position = new Float32Array(count * 3)
+  const index: number[] = []
+  let at = 0
+  for (const g of parts) {
+    const p = g.getAttribute('position')
+    for (let i = 0; i < p.count; i++) position.set([p.getX(i), p.getY(i), p.getZ(i)], (at + i) * 3)
+    if (g.index) for (let i = 0; i < g.index.count; i++) index.push(at + g.index.getX(i))
+    else for (let i = 0; i < p.count; i++) index.push(at + i)
+    at += p.count
+  }
+  const merged = new THREE.BufferGeometry()
+  merged.setAttribute('position', new THREE.BufferAttribute(position, 3))
+  merged.setIndex(index)
+  merged.computeBoundingSphere()
+  return merged
+}
+// never drawn (softShadows.ts skips it outside the shadow pass), and nothing to see if it is
+const shadowOnly = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false })
+
 function Building({
   parts,
+  casting,
   floor,
   children,
 }: {
   parts: Record<string, THREE.BufferGeometry>
+  casting: THREE.BufferGeometry[]
   floor: number
   children: React.ReactNode
 }) {
+  const [shadows] = useState(() => (casting.length ? shadowsOf(casting) : null))
   const whole = boxOf(parts)
   const group = useRef<THREE.Group>(null)
   const far = useRef(false)
@@ -268,6 +296,9 @@ function Building({
   return (
     <group ref={group} position-y={floor}>
       {children}
+      {shadows && (
+        <mesh geometry={shadows} material={shadowOnly} castShadow userData={{ shadows: true }} />
+      )}
     </group>
   )
 }
@@ -299,7 +330,17 @@ export default function Landmarks() {
         // there and gets a plinth down to the ground wherever the ground is lower
         const floor = baseOf(b)
         return (
-          <Building key={b.name} parts={geo.parts} floor={floor}>
+          <Building
+            key={b.name}
+            parts={geo.parts}
+            // what casts from far away: not the bits that only cast or show up close
+            casting={Object.entries(geo.parts)
+              .filter(
+                ([part, g]) => casts(geo, mats, part) && !geo.near?.includes(part) && !small(g),
+              )
+              .map(([, g]) => g)}
+            floor={floor}
+          >
             {Object.entries(geo.parts).map(([part, g]) =>
               geo.first?.includes(part) ? (
                 <FirstWhenNear key={part} geometry={g} material={mats[part]!} floor={floor} />

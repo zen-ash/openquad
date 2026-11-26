@@ -32,6 +32,7 @@ import {
 } from 'three/tsl'
 import type { Node, NodeBuilder, NodeFrame, Texture, WebGPURenderer } from 'three/webgpu'
 import { lowestGround } from '../game/terrain'
+import { useSettings } from '../settings'
 
 // the sun is half a degree across, so a shadow's edge gets softer the further the ground is
 // from what's casting it: about 9mm per meter. a bench leg's shadow is sharp, the end of
@@ -208,6 +209,11 @@ export function lighterShadowPasses(renderer: WebGPURenderer, cascades: SoftCasc
       keepVersion(shadow)
     }
     const planes = cascades.slices.get(camera)
+    // a hand-built building far away casts from one mesh of all its parts (Landmarks.tsx), up
+    // close from its parts. both while warming, so both get their shaders
+    const { far, shadows } = object.userData
+    if (!planes && shadows) return
+    if (planes && !useSettings.getState().warming && (shadows ? !far : far)) return
     if (planes && !castsInto(object, planes, cascades.toward)) return
     draw(object, scene, camera, ...rest)
   }
