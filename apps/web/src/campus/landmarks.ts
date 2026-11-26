@@ -30,6 +30,12 @@ import { oneParkGeometry, type OneParkData } from './onePark'
 import { parkingDeckGeometry, type DeckData } from './parkingDecks'
 import { parkPlace25Geometry, type ParkPlace25Data } from './parkPlace25'
 import { piedmont75Geometry, type Piedmont75Data } from './piedmont75'
+import {
+  piedmontNorthAGeometry,
+  piedmontNorthBGeometry,
+  piedmontNorthDiningGeometry,
+  type PiedmontNorthData,
+} from './piedmontNorth'
 import { peachtree191Geometry, type PeachtreeData } from './peachtree191'
 import { petitScienceGeometry, type PetitData } from './petitScience'
 import { practiceFacilityGeometry, type PracticeFacilityData } from './practiceFacility'
@@ -139,6 +145,7 @@ type Data = LibraryNorthData &
   CentennialHallData &
   AlumniCenterData &
   ParkPlace25Data &
+  PiedmontNorthData &
   AderholdData &
   RialtoData &
   HaasHowellData &
@@ -207,6 +214,9 @@ const builders: Record<string, (b: Data) => LandmarkGeometry> = {
   '75 Piedmont Avenue': piedmont75Geometry,
   'J Deck': parkingDeckGeometry,
   'University Commons': universityCommonsGeometry,
+  'Piedmont North A': piedmontNorthAGeometry,
+  'Piedmont North B': piedmontNorthBGeometry,
+  'Piedmont North Dining Hall': piedmontNorthDiningGeometry,
 }
 
 // the scene and the interiors both need it, only build it once. by building, not name: the

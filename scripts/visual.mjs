@@ -120,6 +120,18 @@ const VIEWS = [
   { name: '75-piedmont', from: [284, 1.7, -214], at: [320, 30, -268], player: [286, -212] },
   // on j deck's roof by the tower: the annex, the drop off canopy and the rows of cars
   { name: 'j-deck', from: [349, 4.2, -233.5], at: [339, 5.5, -266.4], player: [351, -231] },
+  // piedmont north from the lawn on piedmont ave: the pavilion, the gable on a's arm, the dining
+  // hall's glass corner (gsu's 2019 photo)
+  { name: 'piedmont-north', from: [324, 1.7, -565.5], at: [372, 12, -548], player: [322, -567] },
+  // a's bar and b over the parking from piedmont ave at ellis st
+  { name: 'piedmont-north-a', from: [298, 1.7, -470], at: [380, 8, -515], player: [298, -472] },
+  // b's east face and north end from the andrew young bridge over the connector
+  {
+    name: 'piedmont-north-b',
+    from: [502.5, 1.3, -625.5],
+    at: [430, 12, -560],
+    player: [306, -612],
+  },
   // courtland st at edgewood ave: the east end over the lot, the long front
   { name: '100-edgewood-east', from: [98, 1.7, -36], at: [0, 28, -64], player: [100, -34] },
   // across auburn ave at the south east: the drum, the curtain wall, the top floor over it

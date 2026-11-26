@@ -124,6 +124,11 @@ const DATUMS: Record<string, number | { from: number }> = {
   '25 Park Place': 318.8,
   // the luckie st sidewalk (lidar), the plaza side falls to 321.0 at poplar st
   'Helen M. Aderhold Learning Center': 322.6,
+  // the ground round all three is within 0.3m of 302.0 (lidar), the court between a and b is
+  // sunken to 299 and the drive east of b is 303.6
+  'Piedmont North A': 302,
+  'Piedmont North B': 302,
+  'Piedmont North Dining Hall': 302,
   // poplar st at the entrance arch (lidar), forsyth st is up to 0.6m higher
   'Haas-Howell Building': 322.0,
   // fairlie st at the doors (lidar), within 0.5m all round

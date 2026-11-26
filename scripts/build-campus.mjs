@@ -134,7 +134,6 @@ const MEASURED_HEIGHTS = {
   'Greek Housing': 9.6,
   'J Deck': 13.9,
   'Patton Hall': 16.5,
-  'Piedmont North Dining Hall': 18.2,
 }
 
 // osm's height is wrong for these (mostly floors x 3.92, or nothing at all): usgs lidar
@@ -2254,6 +2253,84 @@ function pattonHall(b) {
   b.landmark = {}
 }
 
+// piedmont north (175 piedmont ave): gsu's freshman halls, b (2010, the taller east block) and a
+// (2011, an l of a 5 floor bar and a 6 floor arm) in tan stucco, and the dining hall in red
+// panels and cream siding between a and piedmont ave, with the gabled entrance pavilion. drawn
+// in campus/piedmontNorth.ts. all three redrawn on usgs's lidar walls (2018): osm's b was ~10m
+// east of its real place and a's arm 3m. the ground is ~302.0m all round (the court between a
+// and b is sunken to 299, the drive east of b is 303.6)
+const PIEDMONT_NORTH = {
+  a: {
+    // the bar along the south, the arm north from it. b's south wing stands against the bar
+    points: [
+      [349.5, -502.5],
+      [410.5, -502.5],
+      [410.5, -521.5],
+      [385.5, -521.5],
+      [385.5, -568.8],
+      [367, -568.8],
+      [367, -521.5],
+      [349.5, -521.5],
+    ],
+    // the gable over the arm's west face (lidar 323.2m), the arm's roof is 17.3, the bar's 14.8
+    height: 21.2,
+    // under the canopy along the bar's south front (lidar 304.7m)
+    door: [392, -502.5, 0, 1],
+  },
+  b: {
+    // the south side is one long diagonal, a notch at the northeast corner
+    points: [
+      [410.5, -502.2],
+      [444.8, -515.2],
+      [445, -572.5],
+      [441.5, -572.5],
+      [441.5, -575.5],
+      [422, -575.5],
+      [422, -520.5],
+      [410.5, -520.5],
+    ],
+    // the penthouse with gsu's sign (lidar 330.8m), the roof's parapet is 24.2
+    height: 28.8,
+    // the sliding doors under the canopy on the diagonal (lidar 304.3m)
+    door: [430, -509.59, 0.3544, 0.9351],
+  },
+  dining: {
+    // the hall, the pavilion's back (its porch stands out in front to 350.5) and the low link
+    // to a's arm
+    points: [
+      [340, -517.5],
+      [349.5, -517.5],
+      [349.5, -521.5],
+      [367, -521.5],
+      [367, -560.5],
+      [360.5, -560.5],
+      [360.5, -564],
+      [354, -564],
+      [354, -551.5],
+      [340, -551.5],
+    ],
+    // the pavilion's ridge (lidar 311.0m), the hall's roof slopes 3.9 -> 6.6 up to the north
+    height: 9,
+    // the doors at the back of the pavilion's porch (to building a and the dining hall)
+    door: [354, -558, -1, 0],
+  },
+}
+
+function piedmontNorth(buildings) {
+  for (const [name, key] of [
+    ['Piedmont North A', 'a'],
+    ['Piedmont North B', 'b'],
+    ['Piedmont North Dining Hall', 'dining'],
+  ]) {
+    const b = buildings.find((x) => x.name === name)
+    if (!b) continue
+    b.points = PIEDMONT_NORTH[key].points
+    b.height = PIEDMONT_NORTH[key].height
+    b.door = PIEDMONT_NORTH[key].door
+    b.landmark = {}
+  }
+}
+
 // 55 park place (gsu's andrew young school of policy studies), across park place from woodruff
 // park: a 19 floor cream precast block with deep set windows, two wings on park place with the
 // entrance between them and the middle's top floors stepping back. drawn in
@@ -3494,6 +3571,7 @@ function main(elements) {
   if (commerce) commerceBuilding(commerce)
   const commons = buildings.find((b) => b.name === 'University Commons')
   if (commons) universityCommons(commons)
+  piedmontNorth(buildings)
   for (const b of buildings) if (PARKING_DECKS[b.name]) parkingDeck(b)
   const p191 = buildings.find((b) => b.name === PEACHTREE_191.name)
   if (p191) peachtree191(p191)
