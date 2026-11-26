@@ -2,6 +2,7 @@ import { useFrame } from '@react-three/fiber'
 import { useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+import campus from '../campus/campus.json'
 import { night } from '../campus/facade'
 import { benches, bins, parkLamps, streetLights, type Spot } from '../game/streetFurniture'
 import { surfaceAt } from '../game/surface'
@@ -24,9 +25,9 @@ const lightGrey = new THREE.MeshStandardMaterial({
 const looks = game
   ? { bench: wood, bin: brightBlue, lamp: navy, pole: lightGrey }
   : { bench: black, bin: blue, lamp: black, pole: grey }
-// lamp glass, lit at night (see useFrame)
+// lamp glass, lit at night (see useFrame). the panther quad's poles use it too
 const LAMP = new THREE.Color('#ffcf8a')
-const lampGlass = new THREE.MeshStandardMaterial({
+export const lampGlass = new THREE.MeshStandardMaterial({
   color: '#f2efe6',
   emissive: '#000000',
   roughness: 0.2,
@@ -97,6 +98,9 @@ function poolMaterial() {
   })
 }
 const pools = { park: poolMaterial(), street: poolMaterial() }
+// the panther quad draws its own poles (PantherQuad.tsx), their light on the ground is here
+const quadLights = (campus.quad.lights as [number, number][]).map(([x, z]) => ({ x, z, rot: 0 }))
+const parkPools = [...parkLamps, ...quadLights]
 
 function Instances({
   geometry,
@@ -186,7 +190,7 @@ export default function StreetFurniture() {
       <Instances
         geometry={poolGeos.park}
         material={pools.park}
-        spots={parkLamps}
+        spots={parkPools}
         shadow={false}
         lie
       />

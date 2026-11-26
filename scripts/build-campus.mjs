@@ -395,6 +395,56 @@ function pantherQuad(lines, crossings) {
   const bronzie = [...at([88, 34]), Math.atan2(v[1], -v[0])]
   beds.push(rect(86, 90, 31, 37).map(at))
 
+  // the porch: grey stone pavers in front of the lobby and along the foot of the library stair,
+  // two rows of long black benches on it (the stair photo from the opening)
+  const porch = [rect(84, 96.2, 15.5, 31), rect(96.2, 101.5, 15.3, 23.4)].map((r) => r.map(at))
+  const along = Math.atan2(-v[1], v[0])
+  const benches = [88.5, 93].flatMap((a) => [19.5, 23.7, 27.9].map((b) => [...at([a, b]), along]))
+  // tall grey poles with a flat round head, round the lawn, along the promenade and the plaza
+  const lights = [
+    ...[30, 44, 58, 72].map((a) => at([a, 52.5])),
+    ...[36, 56].map((a) => at([a, 63])),
+    ...[32, 50, 68].map((a) => at([a, 18.4])),
+    ...[12, 28, 44, 60, 76, 92].map((b) => at([-8.2, b])),
+    at([1, 27]),
+    at([21, 29]),
+    at([22, 6]),
+    at([79, 44]),
+    at([82, 15.5]),
+    at([84, 33]),
+  ]
+  // blue adirondack chairs and closed blue umbrellas at the lawn's library end and by the
+  // seat steps, blue bins. [x, z, the way it faces]
+  const toLawn = Math.atan2(-u[0], -u[1])
+  const chairs = [
+    [76, 27],
+    [76.4, 29.6],
+    [76.2, 32.4],
+    [76.6, 36],
+    [75.8, 38.6],
+    [75.4, 41.4],
+    [75.2, 23.8],
+  ].map((p) => [...at(p), toLawn])
+  const umbrellas = [
+    [77.6, 25.4],
+    [78, 31],
+    [77.8, 40.2],
+    [94.8, 32.6],
+    [84.5, 36],
+  ].map(at)
+  const bins = [
+    [95.2, 30.3],
+    [84.6, 18],
+    [77.5, 22.5],
+    [24, 30],
+  ].map(at)
+  // concrete seat walls along the promenade side of the lawn
+  const seats = [
+    [31, 37, 55.6],
+    [45, 51, 55.6],
+    [59, 65, 55.6],
+  ].map(([a0, a1, b]) => [at([a0, b]), at([a1, b])])
+
   const trees = [
     // gilmer's two rows, staying off the crosswalks the gps walks people across
     ...[-3, -13.5].flatMap((a) =>
@@ -429,6 +479,13 @@ function pantherQuad(lines, crossings) {
       column: [...at([10, 17]), round(Math.atan2(-u[1], u[0]))],
       flags: [at([3, 4]), at([6, 4]), at([9, 4])],
       bronzie: bronzie.map((n) => Math.round(n * 100) / 100),
+      porch,
+      benches: benches.map(([x, z, r]) => [x, z, Math.round(r * 100) / 100]),
+      lights,
+      chairs: chairs.map(([x, z, r]) => [x, z, Math.round(r * 100) / 100]),
+      umbrellas,
+      bins,
+      seats,
     },
   }
 }

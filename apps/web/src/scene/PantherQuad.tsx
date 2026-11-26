@@ -1,15 +1,20 @@
+import { useFrame } from '@react-three/fiber'
 import { useMemo } from 'react'
 import * as THREE from 'three'
 import campus from '../campus/campus.json'
-import { concrete, marble, metal, plain } from '../campus/materials'
+import { concrete, marble, metal, paving, plain } from '../campus/materials'
 import { pantherQuadGeometry, type Part } from '../campus/pantherQuad'
+import { night } from '../campus/facade'
 import { heightAt } from '../game/terrain'
+import { useSettings } from '../settings'
+import { lampGlass } from './StreetFurniture'
 
 const { quad } = campus
 const POLE = 11
 
 // colors from gsu's opening photos (nov 2026): near white concrete steps, the column's white
-// georgia marble with grey streaks, brushed steel, a dark bronze panther, fresh mulch
+// georgia marble with grey streaks, brushed steel, a dark bronze panther, fresh mulch, the
+// porch's grey stone, gsu blue chairs and umbrellas, olive grasses
 const materials: Record<Part, THREE.Material> = {
   concrete: concrete({ color: '#aaa9a5', roughness: 0.85 }),
   marble: marble({ color: '#e2e2de', slab: [1.6, 1.25], veins: 1.2, joint: [0.005, 0.3] }),
@@ -17,10 +22,17 @@ const materials: Record<Part, THREE.Material> = {
   blue: plain({ color: '#1f4aa0', roughness: 0.5 }),
   bronze: metal({ color: '#3b3a35', roughness: 0.4, metalness: 0.6 }),
   soil: plain({ color: '#433323', roughness: 1 }),
-  shrub: plain({ color: '#4a5e34', roughness: 0.9 }),
+  shrub: plain({ color: '#3f5530', roughness: 0.9 }),
+  grass: plain({ color: '#6c6f45', roughness: 0.9 }),
+  paving: paving({ color: '#6e6d69', roughness: 0.8 }),
+  lamp: lampGlass,
+  glow: new THREE.MeshStandardMaterial({ color: '#2b3a66', emissive: '#000000', roughness: 0.4 }),
 }
+// the column's blue lines, faded in like the lamps (a new shader if the number went to 0)
+const BLUE = new THREE.Color('#2f6bff')
+const glow = materials.glow as THREE.MeshStandardMaterial
 // small things that don't need to be in the shadow passes
-const CASTS: Part[] = ['concrete', 'marble', 'bronze']
+const CASTS: Part[] = ['concrete', 'marble', 'bronze', 'blue']
 
 // the three flags side by side on one canvas: georgia's, the us flag and a plain blue one for
 // gsu's (its flag has the logo on it)
@@ -89,7 +101,12 @@ function flagsGeometry() {
 // the sparks column, the steps and terraces, planting, flags and bronzie on the panther quad
 // (the ground, the lawn and the trees come with the rest of the map)
 export default function PantherQuad() {
+  const quality = useSettings((s) => s.quality)
   const geos = useMemo(() => pantherQuadGeometry(), [])
+  useFrame(() => {
+    glow.emissiveIntensity = quality === 'high' ? 30 : 1.5
+    glow.emissive.copy(BLUE).multiplyScalar(night.value)
+  })
   const flags = useMemo(
     () => ({
       geometry: flagsGeometry(),

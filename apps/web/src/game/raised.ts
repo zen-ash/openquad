@@ -187,18 +187,80 @@ export const RAISED_PLAZAS: Record<string, Data> = {
     edges: [null, 'open', 'open', 'open'],
     stairs: true,
   },
-  // the long stair with steel rails beside library north, from the quad up to the courtland
-  // sidewalk (the stair photo from the opening, nov 2026), and a landing at the top
-  'Panther Quad library stair': {
+  // the long stair beside library north, from the porch up to the courtland sidewalk: three
+  // flights with two landings between them and a deck at the top (the stair photo from the
+  // opening, nov 2026). all of it is drawn as one stair (pantherQuad.ts), the landings too.
+  // a guard on the open side and a planter along library north's wall, you can't step off
+  'Panther Quad library deck': {
     by: 'Panther Quad',
-    top: [316.65, 316.65, 314.1],
+    top: 316.65,
     points: [
-      [-68.7, 150],
+      [-68.7, 150.0],
       [-71.4, 153.1],
-      [-83.5, 142.7],
-      [-80.9, 139.6],
+      [-73.68, 151.15],
+      [-70.98, 148.05],
     ],
-    edges: [null, 'open', 'open', 'open'],
+    edges: [null, 0.35, null, 1.07],
+    stairs: true,
+  },
+  'Panther Quad library flight 1': {
+    by: 'Panther Quad',
+    top: [316.65, 316.65, 315.97],
+    points: [
+      [-70.98, 148.05],
+      [-73.68, 151.15],
+      [-74.69, 150.3],
+      [-71.99, 147.2],
+    ],
+    edges: [null, 0.35, null, 1.07],
+    stairs: true,
+  },
+  'Panther Quad library landing 1': {
+    by: 'Panther Quad',
+    top: 315.97,
+    points: [
+      [-71.99, 147.2],
+      [-74.69, 150.3],
+      [-75.91, 149.26],
+      [-73.21, 146.16],
+    ],
+    edges: [null, 0.35, null, 1.07],
+    stairs: true,
+  },
+  'Panther Quad library flight 2': {
+    by: 'Panther Quad',
+    top: [315.97, 315.97, 315.12],
+    points: [
+      [-73.21, 146.16],
+      [-75.91, 149.26],
+      [-77.16, 148.19],
+      [-74.46, 145.09],
+    ],
+    edges: [null, 0.35, null, 1.07],
+    stairs: true,
+  },
+  'Panther Quad library landing 2': {
+    by: 'Panther Quad',
+    top: 315.12,
+    points: [
+      [-74.46, 145.09],
+      [-77.16, 148.19],
+      [-79.14, 146.5],
+      [-76.44, 143.4],
+    ],
+    edges: [null, 0.35, null, 1.07],
+    stairs: true,
+  },
+  'Panther Quad library flight 3': {
+    by: 'Panther Quad',
+    top: [315.12, 315.12, 314.06],
+    points: [
+      [-76.44, 143.4],
+      [-79.14, 146.5],
+      [-80.65, 145.22],
+      [-77.95, 142.12],
+    ],
+    edges: [null, 0.35, 'open', 1.07],
     stairs: true,
   },
   'Panther Quad library landing': {

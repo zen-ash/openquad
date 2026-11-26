@@ -26,9 +26,9 @@ describe('panther quad', () => {
     }
   })
 
-  it('keeps to a few thousand triangles', () => {
+  it('keeps to about sixteen thousand triangles', () => {
     const tris = Object.values(geos).reduce((s, g) => s + g.getAttribute('position').count / 3, 0)
-    expect(tris).toBeLessThan(9000)
+    expect(tris).toBeLessThan(17000)
   })
 
   it('stands the column on the raised plaza', () => {

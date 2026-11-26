@@ -11,7 +11,18 @@ import { flat, frame, parts as collect, wallQuad } from './landmark'
 // the raised plaza, the steps and terraces, the planting along courtland and bronzie.
 // docs/reference/panther-quad.md
 
-export type Part = 'concrete' | 'marble' | 'metal' | 'blue' | 'bronze' | 'soil' | 'shrub'
+export type Part =
+  | 'concrete'
+  | 'marble'
+  | 'metal'
+  | 'blue'
+  | 'bronze'
+  | 'soil'
+  | 'shrub'
+  | 'grass'
+  | 'paving'
+  | 'lamp'
+  | 'glow'
 
 const { quad } = campus
 const pt = ([x, z]: number[]) => ({ x: x!, z: z! })
@@ -118,6 +129,21 @@ export function pantherQuadGeometry() {
     const l = Math.hypot(mid.x - cx, mid.z - cz)
     const out = { x: (mid.x - cx) / l, z: (mid.z - cz) / l }
     add(i % 2 ? 'marble' : 'metal', wallQuad(p, q, y0 + COLUMN.base, y0 + COLUMN.top, out))
+    // blue light lines down both sides of each steel corner and round the top, lit at night
+    // (the dusk photo)
+    const lift = { x: out.x * 0.01, z: out.z * 0.01 }
+    const off = (e: Point) => ({ x: e.x + lift.x, z: e.z + lift.z })
+    const band = (a: Point, b: Point, y: number, h: number) =>
+      add('glow', wallQuad(off(a), off(b), y, y + h, out))
+    band(p, q, y0 + COLUMN.top - 0.12, 0.06)
+    if (i % 2) return
+    for (const t of [0.02, 0.86])
+      band(
+        lerp(p, q, t),
+        lerp(p, q, t + 0.12),
+        y0 + COLUMN.base + 0.05,
+        COLUMN.top - COLUMN.base - 0.2,
+      )
   })
   // a plain blue square on two faces where gsu's flame is
   for (const [a, d] of [
@@ -131,8 +157,10 @@ export function pantherQuadGeometry() {
         : [f.at(a, -s), f.at(a, s), f.along]
     add('blue', wallQuad(p, q, y0 + 3.2 - s, y0 + 3.2 + s, out))
   }
-  // the cornice, stepped out and back in
+  // the cornice, stepped out and back in. its underside too, from below you saw sky through
+  // the overhang and it looked like it floated
   prism('marble', square(1.0), y0 + COLUMN.top, y0 + COLUMN.top + 0.22)
+  add('marble', flat(square(1.0), y0 + COLUMN.top, false))
   prism('marble', square(0.92), y0 + COLUMN.top + 0.22, y0 + COLUMN.top + 0.36)
 
   // flagpoles
@@ -147,6 +175,9 @@ export function pantherQuadGeometry() {
   terraces(add)
   beds(add)
   bronzie(add)
+  porch(add)
+  seats(add)
+  lights(add)
   return merged()
 }
 
@@ -186,14 +217,16 @@ function plazaSides(add: Add) {
 
 const UP = { x: 0, y: 1, z: 0 }
 
-// the steps down from the plaza to the lawn, with rails at the sides and in the middle
+// the steps down from the plaza to the lawn, with rails at the sides and in the middle. the
+// library stair is in pieces (flights, landings, a deck), each one drawn here
 function stairs(add: Add) {
   for (const r of RAISED.filter((x) => x.stairs && x.by === 'Panther Quad')) {
     const [p0, p1, p2, p3] = r.outline as [Point, Point, Point, Point]
     const yOn = (p: Point) => fromElevation(r.elevation(p.x, p.z))
     const hTop = yOn(p0)
     const hBottom = yOn(p3)
-    const n = Math.max(2, Math.round((hTop - hBottom) / RISE))
+    const level = hTop - hBottom < 0.05
+    const n = level ? 1 : Math.max(2, Math.round((hTop - hBottom) / RISE))
     const rise = (hTop - hBottom) / n
     const across = (t: number) => [lerp(p0, p3, t), lerp(p1, p2, t)] as const
     const dl = Math.hypot(p3.x - p0.x, p3.z - p0.z)
@@ -203,7 +236,14 @@ function stairs(add: Add) {
       const [a0, b0] = across(i / n)
       const [a1, b1] = across((i + 1) / n)
       add('concrete', face(v3(a0, yt), v3(b0, yt), v3(b1, yt), v3(a1, yt), UP))
-      add('concrete', wallQuad(a0, b0, yt, yt + rise, toward))
+      if (!level) add('concrete', wallQuad(a0, b0, yt, yt + rise, toward))
+      // the library stair's treads have dark perforated steel nosings
+      if (level || i === n - 1 || !r.name.includes('library')) continue
+      const [c0, c1] = across((i + 1) / n - 0.06 / dl)
+      add(
+        'bronze',
+        face(v3(c0, yt + 0.004), v3(c1, yt + 0.004), v3(b1, yt + 0.004), v3(a1, yt + 0.004), UP),
+      )
     }
     // the cheeks at the ends, down to the ground
     for (const [a, b] of [
@@ -218,16 +258,74 @@ function stairs(add: Add) {
       const out = { x: a.x - other.x, z: a.z - other.z }
       add('concrete', face(v3(a, side - 0.3), v3(b, side - 0.3), v3(b, hBottom), v3(a, hTop), out))
     }
-    for (const t of [0.04, 0.5, 0.96]) {
-      const a = lerp(p0, p1, t)
-      const b = lerp(p3, p2, t)
-      const top = v3(a, hTop + 0.9)
-      const bottom = v3(b, hBottom + 0.9)
-      add('metal', bar(top, bottom, 0.025))
-      add('metal', bar(v3(a, hTop), top, 0.025))
-      add('metal', bar(v3(b, hBottom), bottom, 0.025))
+    const library = r.name.includes('library')
+    // handrails up the flights: both sides and the middle
+    if (!level)
+      for (const t of library ? [0.5, 0.96] : [0.04, 0.5, 0.96]) {
+        const a = lerp(p0, p1, t)
+        const b = lerp(p3, p2, t)
+        const top = v3(a, hTop + 0.9)
+        const bottom = v3(b, hBottom + 0.9)
+        add('metal', bar(top, bottom, 0.025))
+        add('metal', bar(v3(a, hTop), top, 0.025))
+        add('metal', bar(v3(b, hBottom), bottom, 0.025))
+      }
+    // the library stair's open side has a guard: steel posts with thin cables between them,
+    // and along library north's wall there's a planter full of shrubs
+    if (library) {
+      guard(add, p0, p3, hTop, hBottom)
+      wallPlanter(add, p1, p2, { x: p1.x - p0.x, z: p1.z - p0.z }, hTop, hBottom)
     }
   }
+}
+
+// a strip of planting between the stair and the wall, its rim a bit over the treads
+function wallPlanter(add: Add, a: Point, b: Point, toWall: Point, ya: number, yb: number) {
+  const l = Math.hypot(toWall.x, toWall.z)
+  const e = { x: (toWall.x / l) * 0.85, z: (toWall.z / l) * 0.85 }
+  const [a1, b1] = [
+    { x: a.x + e.x, z: a.z + e.z },
+    { x: b.x + e.x, z: b.z + e.z },
+  ]
+  const into = { x: -e.x, z: -e.z }
+  add('concrete', face(v3(a, ya), v3(b, yb), v3(b, yb + 0.45), v3(a, ya + 0.45), into))
+  const rim = { x: (toWall.x / l) * 0.12, z: (toWall.z / l) * 0.12 }
+  const [a2, b2] = [
+    { x: a.x + rim.x, z: a.z + rim.z },
+    { x: b.x + rim.x, z: b.z + rim.z },
+  ]
+  add(
+    'concrete',
+    face(v3(a, ya + 0.45), v3(b, yb + 0.45), v3(b2, yb + 0.45), v3(a2, ya + 0.45), UP),
+  )
+  // its end at the bottom of the stair, down to the porch
+  if (yb < ya) {
+    const g = heightAt(b.x, b.z) - 0.1
+    const out = { x: b.x - a.x, z: b.z - a.z }
+    add('concrete', face(v3(b, g), v3(b1, g), v3(b1, yb + 0.45), v3(b, yb + 0.45), out))
+  }
+  add('soil', face(v3(a, ya + 0.38), v3(b, yb + 0.38), v3(b1, yb + 0.38), v3(a1, ya + 0.38), UP))
+  const len = Math.hypot(b.x - a.x, b.z - a.z)
+  for (let s = 0.25; s < len; s += 0.5) {
+    const t = s / len
+    const r = rand(a.x * 3 + s)
+    const p = lerp(lerp(a, b, t), lerp(a1, b1, t), 0.35 + r * 0.3)
+    const y = ya + (yb - ya) * t + 0.38
+    if (r > 0.7) tuft(add, v3(p, y), r)
+    else shrub(add, new THREE.Vector3(p.x, y + 0.12, p.z), [0.3, 0.38, 0.3], r)
+  }
+}
+
+function guard(add: Add, a: Point, b: Point, ya: number, yb: number) {
+  const len = Math.hypot(b.x - a.x, b.z - a.z)
+  const k = Math.max(1, Math.round(len / 1.4))
+  for (let i = 0; i <= k; i++) {
+    const p = lerp(a, b, i / k)
+    const y = ya + ((yb - ya) * i) / k
+    add('metal', bar(v3(p, y), v3(p, y + 1.07), 0.03, 4))
+  }
+  add('metal', bar(v3(a, ya + 1.07), v3(b, yb + 1.07), 0.03))
+  for (const h of [0.25, 0.5, 0.75]) add('metal', bar(v3(a, ya + h), v3(b, yb + h), 0.006, 3))
 }
 
 // seat steps up the bank, each tread level across and following the ground along it
@@ -365,19 +463,56 @@ function bed(add: Add, c: Point[], b: number, level: number | null) {
       add('metal', bar(a, b, 0.025))
       add('metal', bar(v3(p, level), a, 0.025))
     })
-  // shrubs, the same every time
-  for (let i = 0.5; i < lenA / 1.5; i++)
-    for (let j = 0.5; j < lenB / 1.5; j++) {
+  // plants, the same every time: low round shrubs about a meter apart (they went in this fall,
+  // there's still a lot of mulch between them) and clumps of grass
+  const gap = level === null ? 1.05 : 0.9
+  for (let i = 0.5; i < lenA / gap; i++)
+    for (let j = 0.5; j < lenB / gap; j++) {
       const r = rand(b * 1000 + i * 37 + j)
-      if (r < 0.25) continue
+      if (r < 0.22) continue
       const p = at(
-        (i * 1.5 + (r - 0.5) * 0.8) / lenA,
-        (j * 1.5 + (rand(r * 99) - 0.5) * 0.8) / lenB,
+        (i * gap + (r - 0.5) * 0.5) / lenA,
+        (j * gap + (rand(r * 99) - 0.5) * 0.5) / lenB,
       )
       if (Math.hypot(p.x - quad.bronzie[0]!, p.z - quad.bronzie[1]!) < 1.5) continue
-      const s = 0.18 + r * 0.2
-      shrub(add, new THREE.Vector3(p.x, y(p) + s * 0.2, p.z), [s, s * 0.7, s], r)
+      if (r > 0.72) {
+        tuft(add, v3(p, y(p)), r)
+        continue
+      }
+      // mostly small ones, a few bigger
+      const s = r > 0.62 ? 0.45 + (r - 0.62) * 3 : 0.16 + r * 0.24
+      shrub(add, new THREE.Vector3(p.x, y(p) + s * 0.25, p.z), [s, s * 0.75, s], r)
     }
+}
+
+// a clump of grass: thin blades leaning out, each a triangle seen from both sides
+function tuft(add: Add, at: THREE.Vector3, r: number) {
+  const h = 0.35 + r * 0.25
+  for (let k = 0; k < 3; k++) {
+    const t = r * 9 + (k * Math.PI * 2) / 3
+    const [dx, dz] = [Math.cos(t), Math.sin(t)]
+    const tip = new THREE.Vector3(at.x + dx * h * 0.35, at.y + h, at.z + dz * h * 0.35)
+    const a = new THREE.Vector3(at.x - dz * 0.07, at.y, at.z + dx * 0.07)
+    const b = new THREE.Vector3(at.x + dz * 0.07, at.y, at.z - dx * 0.07)
+    const n = new THREE.Vector3().subVectors(b, a).cross(new THREE.Vector3().subVectors(tip, a))
+    add('grass', tri(a, b, tip, n))
+    add('grass', tri(b, a, tip, n.negate()))
+  }
+}
+
+function tri(a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3, n: THREE.Vector3) {
+  const geo = new THREE.BufferGeometry()
+  geo.setAttribute(
+    'position',
+    new THREE.Float32BufferAttribute([...a.toArray(), ...b.toArray(), ...c.toArray()], 3),
+  )
+  const m = n.clone().normalize()
+  geo.setAttribute(
+    'normal',
+    new THREE.Float32BufferAttribute([...m.toArray(), ...m.toArray(), ...m.toArray()], 3),
+  )
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 0.5, 1], 2))
+  return geo
 }
 
 // the top of a planter's wall, 0.2m in toward the middle
@@ -404,19 +539,20 @@ function shrub(add: Add, at: THREE.Vector3, size: number[], r: number) {
   add('shrub', g)
 }
 
-// a young tree: a thin trunk and a few small lumps of leaves (the map's trees are all full
-// grown, the new ones on the quad are 3-4m whips)
+// a young tree: a thin trunk and a few bare branches (the map's trees are all full grown, the
+// new ones on the quad are 3-4m whips, bare in the november photos)
 function sapling(add: Add, p: Point) {
   const g = heightAt(p.x, p.z)
   const r = rand(p.x * 7 + p.z)
   const h = 3.2 + r * 0.8
   add('bronze', bar(v3(p, g), v3(p, g + h), 0.05, 5))
-  for (const [dx, dy, dz, k] of [
-    [0, h, 0, 0.75],
-    [0.35, h - 0.6, 0.2, 0.6],
-    [-0.3, h - 0.9, -0.25, 0.55],
-  ])
-    shrub(add, new THREE.Vector3(p.x + dx!, g + dy!, p.z + dz!), [k!, k! * 1.3, k!], r)
+  for (let k = 0; k < 5; k++) {
+    const t = r * 11 + k * 2.4
+    const y = g + 1.7 + k * 0.32
+    const reach = 0.9 - k * 0.1
+    const end = new THREE.Vector3(p.x + Math.cos(t) * reach, y + 0.8, p.z + Math.sin(t) * reach)
+    add('bronze', bar(new THREE.Vector3(p.x, y, p.z), end, 0.02, 4))
+  }
 }
 
 const rand = (n: number) => {
@@ -500,6 +636,128 @@ function bronzie(add: Add) {
     v(-1.7, top + 0.8, 0),
   ])
   place(new THREE.TubeGeometry(tail, 10, 0.035, 5, false).toNonIndexed())
+}
+
+// the porch at the foot of the library stair: grey stone pavers a touch over the brick, in
+// two pieces round the corner of the lobby. its benches, and the chairs, umbrellas and bins
+function porch(add: Add) {
+  for (const c of quad.porch) sheet(add, 'paving', c.map(pt), 0.03)
+
+  // long backless benches, black steel
+  for (const [x, z, yaw] of quad.benches as [number, number, number][]) {
+    const g = heightAt(x, z) + 0.03
+    const parts = [
+      box(3, 0.07, 0.5, 0, 0.42, 0),
+      ...[-1.15, 1.15].map((bx) => box(0.08, 0.39, 0.44, bx, 0.195, 0)),
+    ]
+    for (const geo of parts) add('bronze', placed(geo, x, g, z, yaw))
+  }
+  // adirondack chairs: a sloped seat, a tall leaning back and wide flat arms
+  for (const [x, z, yaw] of quad.chairs as [number, number, number][]) {
+    const g = heightAt(x, z)
+    const parts = [
+      box(0.62, 0.05, 0.6, 0, 0.34, 0.05, -0.12),
+      box(0.6, 0.85, 0.04, 0, 0.72, -0.28, -0.35),
+      ...[-0.37, 0.37].flatMap((ax) => [
+        box(0.1, 0.03, 0.72, ax, 0.6, 0.08),
+        box(0.06, 0.6, 0.06, ax, 0.3, 0.36),
+        box(0.06, 0.4, 0.06, ax, 0.2, -0.2),
+      ]),
+    ]
+    for (const geo of parts) add('blue', placed(geo, x, g, z, yaw))
+  }
+  // market umbrellas, closed: a pole on a black base and the canopy folded down round it
+  for (const [x, z] of quad.umbrellas as [number, number][]) {
+    const g = heightAt(x, z)
+    add('bronze', placed(new THREE.CylinderGeometry(0.28, 0.3, 0.08, 10), x, g + 0.04, z, 0))
+    add('metal', bar(v3({ x, z }, g), v3({ x, z }, g + 2.7), 0.022, 5))
+    // the folded canopy: narrow at the rib tips, widest a bit under the top
+    const canopy = new THREE.ConeGeometry(0.16, 1.1, 8, 1, true).rotateX(Math.PI)
+    add('blue', placed(canopy, x, g + 1.7, z, 0))
+    add('blue', placed(new THREE.ConeGeometry(0.16, 0.3, 8, 1, true), x, g + 2.4, z, 0))
+  }
+  for (const [x, z] of quad.bins as [number, number][]) {
+    const g = heightAt(x, z)
+    add('blue', placed(new THREE.CylinderGeometry(0.29, 0.27, 0.95, 12), x, g + 0.475, z, 0))
+  }
+}
+
+// seat walls along the promenade side of the lawn, a concrete block with a thin cap
+function seats(add: Add) {
+  for (const [a, b] of quad.seats as [number, number][][]) {
+    const [p, q] = [pt(a!), pt(b!)]
+    const f = frame(p, q)
+    const c = [f.at(0, -0.28), f.at(f.len, -0.28), f.at(f.len, 0.28), f.at(0, 0.28)]
+    const g = Math.max(...c.map((e) => heightAt(e.x, e.z)))
+    boxOf(add, c, lowestUnder(c.map((e) => [e.x, e.z])) - 0.1, g + 0.4)
+    const top = [
+      f.at(-0.03, -0.31),
+      f.at(f.len + 0.03, -0.31),
+      f.at(f.len + 0.03, 0.31),
+      f.at(-0.03, 0.31),
+    ]
+    boxOf(add, top, g + 0.4, g + 0.46)
+  }
+}
+
+// the light poles: slim grey poles with a flat round head, lit from under it at night
+function lights(add: Add) {
+  for (const [x, z] of quad.lights as [number, number][]) {
+    const g = heightAt(x, z)
+    const p = { x, z }
+    add('metal', bar(v3(p, g), v3(p, g + 0.6), 0.11, 6))
+    add('metal', bar(v3(p, g), v3(p, g + 5.4), 0.065, 6))
+    add('metal', placed(new THREE.CylinderGeometry(0.08, 0.33, 0.2, 10), x, g + 5.53, z, 0))
+    add('lamp', placed(new THREE.CircleGeometry(0.3, 10).rotateX(Math.PI / 2), x, g + 5.43, z, 0))
+  }
+}
+
+// a sheet on the ground, a few cm over it, in ~1.5m squares that follow it
+function sheet(add: Add, part: Part, c: Point[], lift: number) {
+  const [a0, b0, b1, a1] = c as [Point, Point, Point, Point]
+  const [m, n] = [
+    Math.max(1, Math.ceil(Math.hypot(b0.x - a0.x, b0.z - a0.z) / 1.5)),
+    Math.max(1, Math.ceil(Math.hypot(a1.x - a0.x, a1.z - a0.z) / 1.5)),
+  ]
+  const at = (s: number, t: number) => lerp(lerp(a0, b0, s), lerp(a1, b1, s), t)
+  const y = (p: Point) => heightAt(p.x, p.z) + lift
+  for (let i = 0; i < m; i++)
+    for (let j = 0; j < n; j++) {
+      const ps = [
+        at(i / m, j / n),
+        at((i + 1) / m, j / n),
+        at((i + 1) / m, (j + 1) / n),
+        at(i / m, (j + 1) / n),
+      ]
+      const [q0, q1, q2, q3] = ps.map((p) => v3(p, y(p))) as THREE.Vector3[]
+      add(part, face(q0!, q1!, q2!, q3!, UP))
+    }
+  // its edge, down into the brick
+  c.forEach((p, i) => {
+    const q = c[(i + 1) % c.length]!
+    const mid = lerp(a0, b1, 0.5)
+    const e = lerp(p, q, 0.5)
+    add(
+      part,
+      face(v3(p, y(p) - lift - 0.02), v3(q, y(q) - lift - 0.02), v3(q, y(q)), v3(p, y(p)), {
+        x: e.x - mid.x,
+        z: e.z - mid.z,
+      }),
+    )
+  })
+}
+
+const box = (w: number, h: number, d: number, x: number, y: number, z: number, tilt = 0) =>
+  new THREE.BoxGeometry(w, h, d).rotateX(tilt).translate(x, y, z)
+
+// a shape made round 0, 0 moved to x, y, z and turned by yaw
+function placed(geo: THREE.BufferGeometry, x: number, y: number, z: number, yaw: number) {
+  const m = new THREE.Matrix4().compose(
+    new THREE.Vector3(x, y, z),
+    new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw),
+    new THREE.Vector3(1, 1, 1),
+  )
+  return lump(geo, m)
 }
 
 function boxOf(add: Add, c: Point[], y0: number, y1: number) {
