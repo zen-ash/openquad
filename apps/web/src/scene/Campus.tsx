@@ -2,6 +2,7 @@ import { useFrame } from '@react-three/fiber'
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Color,
+  Float32BufferAttribute,
   type BufferAttribute,
   type BufferGeometry,
   type DirectionalLight,
@@ -237,6 +238,13 @@ function crosswalks() {
 }
 const areas = (all: number[][][], lift: number) =>
   planarUv(onGround(areasGeometry(all, 0), lift, enterable))
+// the lots share the road material, whose lane paint reads aRoad. all zeros = no paint (three
+// warned about the missing attribute every time it built the shader)
+function noLanes(geo: BufferGeometry) {
+  const count = geo.getAttribute('position').count
+  geo.setAttribute('aRoad', new Float32BufferAttribute(new Float32Array(count * 3), 3))
+  return geo
+}
 
 // the concrete under the bridges' decks (campus/decks.ts), once for the whole visit
 const deckConcrete = precast({
@@ -271,7 +279,7 @@ function Ground() {
     () => ({
       // goes well past the edge of the map so you don't see where it ends
       ground: planarUv(ground()),
-      lots: areas(campus.lots, 0.0012),
+      lots: noLanes(areas(campus.lots, 0.0012)),
       parks: areas([...campus.parks, ...campus.lawns], 0.002),
       plazas: areas(campus.plazas, 0.003),
       // under the lawns, which sit on top of it
