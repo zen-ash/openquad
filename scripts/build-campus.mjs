@@ -131,6 +131,7 @@ const GSU_PARTS = new Set([252608874, 301958707, 840362899, 841030081, 801359976
 const MEASURED_HEIGHTS = {
   'Alumni Center': 7.9,
   'Centennial Hall': 13.5,
+  'Greek Housing': 9.6,
   'J Deck': 13.9,
   'Piedmont North Dining Hall': 18.2,
 }
@@ -2354,6 +2355,69 @@ function collegeOfLaw(b) {
   b.landmark = {}
 }
 
+// centennial hall (100 auburn ave): atlanta life insurance's offices (~1980), gsu's since 2013.
+// pink tan stone, ribbon windows, a glass atrium under the top floor on auburn ave with the
+// auditorium's drum in front. drawn in campus/centennialHall.ts. osm's outline is the lidar's
+// roof (2018): redrawn as the ground floor, the atrium's glass 3.5m in behind its pier and the
+// north side's glass 2m in behind its columns. the ground is the plaza at the doors (307.5m),
+// auburn ave's sidewalk is 2.5m lower
+const CENTENNIAL_HALL = {
+  points: [
+    [137.2, -204.9],
+    [202.5, -204.9],
+    [202.5, -177.3],
+    [192.6, -177.3],
+    [192.7, -164.1],
+    [176.3, -164.0],
+    [173.0, -164.9],
+    [170.7, -167.2],
+    [169.8, -170.5],
+    [169.8, -177.3],
+    [155.5, -177.3],
+    [155.5, -180.8],
+    [141.5, -180.8],
+    [141.5, -177.3],
+    [137.2, -177.3],
+  ],
+  // the parapet (lidar 327.5m)
+  height: 20,
+  // the revolving door in the atrium's glass
+  door: [146, -180.8, 0, 1],
+}
+
+function centennialHall(b) {
+  b.points = CENTENNIAL_HALL.points
+  b.height = CENTENNIAL_HALL.height
+  b.door = CENTENNIAL_HALL.door
+  b.landmark = {}
+}
+
+// the alumni center (60 piedmont ave): a 1940s three storey red brick block with its narrow
+// end on piedmont ave and a one storey wing beside it with the door. drawn in
+// campus/alumniCenter.ts. osm's outline matches the lidar (2018), only squared up. the
+// ground is the piedmont ave sidewalk (302.0m)
+const ALUMNI_CENTER = {
+  points: [
+    [251.6, -215.8],
+    [280.0, -215.8],
+    [280.0, -194.5],
+    [256.0, -194.5],
+    [256.0, -207.6],
+    [251.6, -207.6],
+  ],
+  // the parapet (lidar 314.45m)
+  height: 12.45,
+  // the doors on piedmont ave under the blue canopy
+  door: [280.0, -205.6, 1, 0],
+}
+
+function alumniCenter(b) {
+  b.points = ALUMNI_CENTER.points
+  b.height = ALUMNI_CENTER.height
+  b.door = ALUMNI_CENTER.door
+  b.landmark = {}
+}
+
 // the helen m. aderhold learning center (60 luckie st, 2002): buff brick classrooms on the whole
 // block between luckie, forsyth and poplar st, an arcade along luckie st, a roof terrace with a
 // pergola and a dark fifth floor set back behind it. drawn in campus/aderhold.ts. osm's outline
@@ -3239,6 +3303,10 @@ function main(elements) {
   if (ssc) studentSuccess(ssc)
   const law = buildings.find((b) => b.name === 'College of Law')
   if (law) collegeOfLaw(law)
+  const centennial = buildings.find((b) => b.name === 'Centennial Hall')
+  if (centennial) centennialHall(centennial)
+  const alumni = buildings.find((b) => b.name === 'Alumni Center')
+  if (alumni) alumniCenter(alumni)
   const ald = buildings.find((b) => b.name === 'Helen M. Aderhold Learning Center')
   if (ald) aderhold(ald)
   const rialtoCenter = buildings.find((b) => b.name === 'Rialto Center for the Arts')

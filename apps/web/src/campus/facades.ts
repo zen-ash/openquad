@@ -21,13 +21,6 @@ type Look = {
 // gsu buildings and the towers you see from campus, as they look in photos (commons, gsu's
 // own). the rest get made-up ones
 const LOOKS: Record<string, Look> = {
-  // tan concrete with bands of glass
-  'Centennial Hall': {
-    wall: 'concrete',
-    color: '#dccfb6',
-    frame: '#5d6266',
-    window: [3, 3.4, 1, 0.5],
-  },
   // the old university center: a white box with hardly any windows
   'Student Center West': {
     wall: 'concrete',

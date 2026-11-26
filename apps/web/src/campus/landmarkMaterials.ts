@@ -7,6 +7,8 @@ import { courtlandBuildingMaterials } from './courtlandBuildingMaterials'
 import { courtlandNorthMaterials } from './courtlandNorthMaterials'
 import { dahlbergMaterials } from './dahlbergMaterials'
 import { collegeOfLawMaterials } from './collegeOfLawMaterials'
+import { centennialHallMaterials } from './centennialHallMaterials'
+import { alumniCenterMaterials } from './alumniCenterMaterials'
 import { rialtoMaterials } from './rialtoMaterials'
 import { robinsonMaterials } from './robinsonCollegeMaterials'
 import { commerceMaterials } from './commerceBuildingMaterials'
@@ -95,6 +97,8 @@ export const landmarkMaterials: Record<string, Record<string, THREE.Material>> =
   '55 Park Place': parkPlace55Materials,
   'Student Success Center': studentSuccessMaterials,
   'College of Law': collegeOfLawMaterials,
+  'Centennial Hall': centennialHallMaterials,
+  'Alumni Center': alumniCenterMaterials,
   'Rialto Center for the Arts': rialtoMaterials,
   'J. Mack Robinson College of Business': robinsonMaterials,
   'Commerce Building': commerceMaterials,

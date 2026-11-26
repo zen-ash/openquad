@@ -42,7 +42,7 @@ describe('buildingsGeometry', () => {
     expect(bethel.style).toBe(BRICK)
     expect(bethel.color).toBe('#a8765c')
     // strips of windows all along each floor
-    expect(facadeOf({ name: 'Centennial Hall', height: 13.5 }, 0).window[2]).toBe(1)
+    expect(facadeOf({ name: 'Five Points Plaza', height: 30 }, 0).window[2]).toBe(1)
   })
 
   it('stores the facade info the shader needs on every vertex', () => {

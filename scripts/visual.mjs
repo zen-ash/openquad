@@ -118,6 +118,10 @@ const VIEWS = [
   { name: '100-edgewood', from: [8, 1.7, -14], at: [-14, 22, -62], player: [10, -12] },
   // courtland st at edgewood ave: the east end over the lot, the long front
   { name: '100-edgewood-east', from: [98, 1.7, -36], at: [0, 28, -64], player: [100, -34] },
+  // across auburn ave at the south east: the drum, the curtain wall, the top floor over it
+  { name: 'centennial-hall', from: [200, 1.6, -137], at: [178, 9, -178], player: [202, -135] },
+  // from piedmont ave: the brick block's end with its paired windows, the wing and the canopy
+  { name: 'alumni-center', from: [291, 1.6, -193], at: [272, 4, -210], player: [292, -191] },
   {
     name: 'courtland-north',
     from: [-125.2, 3, 217.6],
