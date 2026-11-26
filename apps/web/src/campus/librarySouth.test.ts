@@ -22,8 +22,9 @@ import {
 } from './librarySouth'
 
 const ls = campus.buildings.find((b) => b.name === 'Library South') as LibrarySouthData
+// the corner by classroom south, drawn with it like the link
 const corner = campus.buildings.find(
-  (b) => (b.landmark as { with?: string } | undefined)?.with === 'Library South',
+  (b) => (b.landmark as { with?: string } | undefined)?.with === 'Library South' && !b.minHeight,
 )!
 const geo = librarySouthGeometry(ls)
 const { parts, signs, inside } = geo
@@ -152,7 +153,7 @@ describe('library south', () => {
     const cs = campus.buildings.find((b) => b.name === 'Classroom South')!
     const link = campus.buildings.find(
       (b) =>
-        b.minHeight && b.part && Math.hypot(b.points[0]![0]! + 125.7, b.points[0]![1]! - 177.4) < 1,
+        b.minHeight && b.part && Math.hypot(b.points[0]![0]! + 129.2, b.points[0]![1]! - 174.2) < 1,
     )!
     const poly = (b: { points: number[][] }) => b.points.map(([x, z]) => ({ x: x!, z: z! }))
     const pos = parts.pavers.getAttribute('position')
@@ -168,8 +169,8 @@ describe('library south', () => {
       expect(pointInPolygon(c, poly(link))).toBe(false)
     }
     expect(deck).toBeGreaterThan(3)
-    // the link lands on it, a floor up like the plaza
-    expect(link.minHeight).toBeLessThan(DECK[1])
+    // the link goes over it, a floor or so higher than the plaza
+    expect(link.minHeight).toBeGreaterThan(DECK[1])
   })
 
   it('draws the corner by classroom south with it, not in the regular buildings mesh', () => {

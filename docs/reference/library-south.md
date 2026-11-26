@@ -87,9 +87,13 @@ photos don't back up.
   the next floor (red in 2007), "LIBRARY SOUTH" in letters on the glass (2026). At street
   level, glass doors under the link and doors under the plaza, each with a white name
   plate (2018). The game's door is the one under the plaza entrance.
-- **The plaza**: a deck at 5.2m from classroom south's end to the link, out to the street,
-  on round columns along it and a leaning one by the link, light square pavers (2026), the
-  loading dock under it. On it, in the corner by classroom south, a low glass box with
+- **The plaza**: a deck at 5.2m from classroom south's end to the link, out to the back of
+  the sidewalk (lidar: the deck is 7.8m off Decatur St's middle, it was drawn out to the
+  curb before), light square pavers (2026), the loading dock under it. Along the street
+  under its edge beam a wall of the cream brick with the tan stripes, set 0.3m back, with
+  the "LIBRARY SOUTH" plate on it (Mapillary 2019 from Decatur St, GSU 2018 from under the
+  link). The round columns in the 2018 photo are further on, past classroom south's corner
+  where the game's deck ends. On it, in the corner by classroom south, a low glass box with
   cream brick piers, a dark red tile base (drawn dark grey) and a dark fascia with a lip,
   8.85m to the top (measured on the fitted 2026 photo).
 - **Roof**: flat and white, a big screened yard for the fans at the Decatur St end and a
@@ -111,17 +115,82 @@ photos don't back up.
 
 ## Where it meets the link and classroom south
 
-- **The library link** (osm way 301958707, a generic raised box): osm's outline landed on
-  the glass side and 5.6m round the corner onto the Decatur St side, over the street
-  floor's windows. The 2018 and 2021 photos have no bridge there, so build-campus.mjs drops
-  that point of the link's outline and it meets the building at the corner. Nothing else
-  of the link changed: it's still 3.5-7m up, though the photos show a glass bridge about
-  three floors tall.
+- **The library link** (osm way 301958707): drawn with it since Nov 2026, see "The library
+  link" below. It meets the glass side from the corner to 13m along it, and the Decatur St
+  front for its first 7m from the corner (above 8.2m; the street floor under it is open).
+  The grey pilaster on Decatur St moved from the corner to under the link's Courtland St
+  side and goes up to the link's soffit.
 - **Classroom South**: nothing in its code changed. Its end doors ("95 DECATUR ST.") are
   now under the plaza deck, which runs along its end wall 4.2-6m up, in front of its
   marble. The deck stops at its front corner.
 
+## The library link
+
+A glass building over Decatur St, wall to wall between Library North and Library South
+(campus/libraryLink.ts, drawn as part of Library South; osm way 301958707, building 182, is
+`landmark: {with: 'Library South'}`).
+
+| source                                                        | date             | license                      | used for                                                                                                                     |
+| ------------------------------------------------------------- | ---------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| USGS 3DEP lidar (GA_Statewide_B2_2018), tools/lidar           | 2018             | public domain                | outline (both ends square to the street), the two roofs (328.56m and 337.5m), the street under it (311.2-312.0m)             |
+| Mapillary 1444284512596146                                    | 2019-12-12 14:25 | CC BY-SA 4.0 (deirdreedsign) | its classroom south end from under it: the soffit, the grey band, the glass. Soffit height, on the camera's pose (see below) |
+| Mapillary 1628698954187678, 2859420550938399                  | 2019-12-12 14:24 | CC BY-SA 4.0 (deirdreedsign) | the same end from further down Decatur St. Side by side                                                                      |
+| Mapillary 378281730191036 (lvl5 dashcam)                      | 2018-07-18 09:46 | CC BY-SA 4.0 (lvl5)          | the Courtland St side: floors and bands (its width as the scale), the trusses behind the bottom two floors, the pilaster     |
+| Commons: File:UTC Library DSCF4439/DSCF4440                   | 2007-08-03       | CC BY 2.0, UTC Library       | the low part in front of the tall one, seen from the plaza                                                                   |
+| GSU campus map, location 287186: `20180919MLB_Fall_Stock_038` | 2018-09-19       | GSU, all rights reserved     | the soffit from under it (checking), the plaza's wall and the walkway further on                                             |
+
+- **Plan** (lidar): 16.9m along Decatur St, its ends square to the street, from Library
+  North's wall to Library South: the glass side from the corner and 7m of the Decatur St
+  front. osm's outline was right on the classroom south end but stopped short on the
+  Courtland St end (diagonal); the lidar roof goes square to the street there. Two parts: a
+  low one along the classroom south end, 5.9m deep, roof at 328.56m, and the main one, roof
+  at 337.5m (Library North's parapet is 338.6m).
+- **Underside**: 318.65m, 6.6-7.4m over the street (Decatur St dips toward Courtland St).
+  Measured on the 2019 photo from under it, with Mapillary's pose (pitch 8.9 deg, focal
+  0.769) and the camera's height from the Courtland St bridge in the same photo (its
+  parapet at the lidar's 320.2m put the camera at 313.6m, a car's height over the street).
+  The soffit's near and far edges came out 318.9m and 318.2m: flat within the error.
+- **Floors**: a grey band (soffit to 320.25m), then glass and grey bands up the Courtland St
+  side: glass to 323.15m, band, glass to 328.3m (the trusses that carry it are behind
+  these two floors), a thick band to 329.9m (level with the low roof), glass, a thin band,
+  glass, the coping. From the 2018 dashcam, scaled by the side's width (21.5m): the thick
+  band came out level with the lidar's low roof. The low part's end is two tall windows.
+- **Glass**: clear, a lit library behind it, thin silver bars about every 1.1m and mullions
+  about 3m apart (2019 photos). One glass family material (`link`); it casts shadows. The
+  soffit is drawn with the light grey pavers: the grey metal picked up the sunny street
+  under it and went beige.
+- **The walkway over Decatur St** (osm way 1467322945), 31-35m toward classroom south from
+  the link, from Library North's plaza to Library South's: a beige concrete box, 9.5m wide
+  along the street (lidar), the deck at 318.0m, parapets to 319.3m, the fascia down to
+  316.85m (Mapillary 1628698954187678, on its pose, with the parapet at the lidar's height
+  as the check). "GEORGIA STATE UNIVERSITY" on a light plate on the side toward classroom
+  south, a blue square where the logo is. Drawn with the link (`stone`), a wall at each end
+  down to the ground. decks.json had the ground under it (312.7m) for this way, now 318.0m,
+  so the path is a deck you could walk (decks.ts draws its slab inside the box). Not done:
+  its curved soffit and the abutments' real shape, the path along the plaza in front of
+  classroom south (osm 972333280, still at the ground's height) and the plaza deck there.
+- **Library South's datum (not changed)**: it's drawn from the ground at its door under the
+  plaza (310.45m, filled in under the deck, lidar can't see there), but its heights were
+  measured over Decatur St (about 312m): the lidar has its coping at 357.0m (drawn 355.75m)
+  and the plaza at 317.2-317.5m (drawn 315.65m). A `{ from: 311.7 }` datum would fix both,
+  but would lift the doors under the plaza 1.25m over the ground there. The link and the
+  walkway are placed by their own elevations, so they're right either way; the plaza's
+  wall is short for it (2.2m of it over the sidewalk, 3.5m in the photo).
+- **Not done**: the white trusses behind the glass on both long sides (the glass material
+  is opaque, they'd have to stand in front of it), the parapets (the copings are flat
+  faces), the inside (rooms behind the glass from the glass shader only). Library South's
+  brick and slots under the link on Decatur St and its glass wall stay where they are,
+  inside the link.
+- **Doubtful**: the 2018 dashcam's camera couldn't be placed: Mapillary puts it past the
+  Courtland St bridge, but the photo shows no bridge in front of the link. Only its
+  proportions are used. The 2019 soffit height leans on Mapillary's pitch for that photo.
+
 ## Cost
+
+The link (Nov 2026): one more part (`link`, glass family, no new shader), its bands and the
+pilaster in `metal`, its roofs and soffit in `pavers`, the walkway in `stone`, the plaza's wall
+in `cream`/`brick`. About 200 triangles, one more sign (plate + square + letters). Frame cost: measured
+after the merge.
 
 9 parts (brick, cream brick, stone, slot glass, the glass wall, grey metal, dark metal,
 see-through glass, pavers), 3.7k triangles with the plaza deck and the corner, no new

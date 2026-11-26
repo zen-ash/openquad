@@ -977,6 +977,19 @@ const LIBRARY_SOUTH = {
   door: 11,
   // the corner: the plaza is 5.2m up, and the glass box on it is 8.85m up at the top
   cornerHeight: 8.85,
+  // the link is a glass building over decatur street, wall to wall between the two
+  // libraries (lidar: 16.9m along the street, square to it). osm's outline is short at the
+  // courtland st end. its corners on library north's wall, and where its courtland st side
+  // meets library south's front; the other end is library south's own nodes
+  linkCorners: [
+    { lat: 33.7526141, lon: -84.3867956 },
+    { lat: 33.7525147, lon: -84.3866598 },
+    { lat: 33.7523699, lon: -84.3868115 },
+  ],
+  // over the street under it (lidar 311.2-312.0m): the soffit (318.65m, two 2019 photos
+  // from decatur st) and the main roof (337.5m, lidar)
+  linkBottom: 6.7,
+  linkHeight: 25.5,
 }
 
 function librarySouth(b, corner, link) {
@@ -992,17 +1005,27 @@ function librarySouth(b, corner, link) {
   corner.height = LIBRARY_SOUTH.cornerHeight
   corner.landmark = { with: 'Library South' }
 
-  // osm's link lands on the glass side and 5m round the corner onto decatur street, where
-  // the 2018 and 2021 photos have the street floor's windows and no bridge: it meets the
-  // building at the corner
-  const len = Math.hypot(to[0] - from[0], to[1] - from[1])
-  const along = [(to[0] - from[0]) / len, (to[1] - from[1]) / len]
-  const onFront = (p) => {
-    const [dx, dz] = [p[0] - from[0], p[1] - from[1]]
-    const a = dx * along[0] + dz * along[1]
-    return Math.abs(dx * along[1] - dz * along[0]) < 0.3 && a > 0.5 && a < len + 0.1
+  // the link: its own corners, then the nodes it shares with library south along the glass
+  // side (osm's one on the front aside). drawn with library south (campus/libraryLink.ts)
+  if (link) {
+    const len = Math.hypot(to[0] - from[0], to[1] - from[1])
+    const along = [(to[0] - from[0]) / len, (to[1] - from[1]) / len]
+    const onFront = (p) => {
+      const [dx, dz] = [p[0] - from[0], p[1] - from[1]]
+      const a = dx * along[0] + dz * along[1]
+      return Math.abs(dx * along[1] - dz * along[0]) < 0.3 && a > 0.5 && a < len + 0.1
+    }
+    const same = (p) => b.points.find((q) => q[0] === p[0] && q[1] === p[1])
+    const side = link.points.filter((p) => !onFront(p) && same(p)).map(same)
+    // from the corner on decatur st along the glass side
+    if (side[0] !== from) side.reverse()
+    const [ln0, ln1, front] = LIBRARY_SOUTH.linkCorners.map(toLocal)
+    link.points = [ln0, ln1, front, ...side]
+    link.minHeight = LIBRARY_SOUTH.linkBottom
+    link.height = LIBRARY_SOUTH.linkHeight
+    link.landmark = { with: 'Library South' }
+    b.landmark.link = link.points
   }
-  if (link) link.points = link.points.filter((p) => !onFront(p))
 
   // walk along the plaza side from the classroom south end to the door. the outline can go
   // round either way, go the way that heads toward the front

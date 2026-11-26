@@ -219,6 +219,17 @@ const VIEWS = [
     time: '23:00',
     style: 'game',
   },
+  // the library link over decatur st from classroom south (mapillary 2019): its glass end, the
+  // soffit, library south's plaza deck on the right
+  { name: 'library-link', from: [-155, 1.6, 167.5], at: [-137, 6.2, 191], player: [-157, 165] },
+  // the link's courtland st side from decatur st by the courtland st bridge, library south's
+  // front and the grey pilaster on the left
+  {
+    name: 'library-link-se',
+    from: [-112, 1.6, 205.8],
+    at: [-133.8, 9.4, 186.7],
+    player: [-109, 208],
+  },
 ]
 
 const MODES = {

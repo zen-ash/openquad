@@ -167,6 +167,14 @@ function sunThrough(b: (typeof landmarks)[number]) {
       add(wallQuad(p, q, floor, floor + CEILING, { x: -out.x, z: -out.z }), 'inside', true, false)
   }
   const standing = group.filter((x) => !x.minHeight).map((x) => x.points)
+  // a raised part (library south's link over decatur st) only from its soffit up
+  const raised = group
+    .filter((x) => x.minHeight)
+    .map((x) => ({
+      points: x.points,
+      y0: floorOf(x) - base + x.minHeight!,
+      y1: floorOf(x) - base + x.height,
+    }))
   // the other hand-built buildings, at their heights here: sun that goes on into one of
   // those is up to that one to stop (the lofts and their deck, the arena and the practice
   // facility, petit's bridge into the research science center)
@@ -283,7 +291,10 @@ function sunThrough(b: (typeof landmarks)[number]) {
       // ledges), or the ground. on the building's own floor nobody sees it
       const out = (h: { t: number }) => {
         const p = q.clone().addScaledVector(sun, h.t)
-        return !standing.some((s) => inside(s, p.x, p.z) || edgeDistance(s, p.x, p.z) < 0.5)
+        return (
+          !standing.some((s) => inside(s, p.x, p.z) || edgeDistance(s, p.x, p.z) < 0.5) &&
+          !raised.some((r) => p.y > r.y0 && p.y < r.y1 + 1 && inside(r.points, p.x, p.z))
+        )
       }
       let lands = hits
         .filter((h) => h.t <= 0 && !h.tri.clear && h.tri.normal.dot(sun) > 0 && out(h))

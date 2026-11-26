@@ -58,6 +58,18 @@ export const librarySouthMaterials: Record<Part, THREE.Material> = {
     roughness: 0.3,
     metalness: 0.2,
   }),
-  // the plaza's light concrete pavers, and the roofs
+  // the link over decatur street: clear glass, a lit library behind it, thin silver bars
+  // every meter or so and mullions about 3m apart (mapillary 2019)
+  link: glass({
+    color: '#7a8e95',
+    pane: [3, 1.1],
+    mullion: 0.025,
+    frame: 0.03,
+    frameColor: '#c6c9ca',
+    lit: 0.7,
+    roughness: 0.05,
+    metalness: 0.4,
+  }),
+  // the plaza's light concrete pavers, the roofs and the link's soffit
   pavers: paving({ color: '#c4c3bf', size: 1.2, saturation: 0 }),
 }

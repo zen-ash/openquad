@@ -1,6 +1,7 @@
-import * as THREE from 'three'
 import type { Point } from '../game/collision'
 import { CEILING, DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
+import { baseOf } from '../game/surface'
+import { fromElevation } from '../game/terrain'
 import { classroomWalls } from './classroomSouth'
 import type { Sign } from './landmarks'
 import {
@@ -17,6 +18,7 @@ import {
   wallQuad,
   type Hole,
 } from './landmark'
+import { libraryLink, SOFFIT as UNDER_LINK } from './libraryLink'
 
 // library south (1988), nine tall floors of buff brick where decatur street meets courtland
 // street. a band of stone at every floor, narrow slot windows the height of a floor
@@ -35,12 +37,12 @@ export type LibrarySouthData = {
   points: number[][]
   height: number
   door?: number[]
-  landmark?: { front: number[][]; corner: number[][] }
+  landmark?: { front: number[][]; corner: number[][]; link?: number[][] }
 }
 
 // few parts, each is a draw call in every pass
 export type Part =
-  'brick' | 'cream' | 'stone' | 'glass' | 'curtain' | 'metal' | 'dark' | 'clear' | 'pavers'
+  'brick' | 'cream' | 'stone' | 'glass' | 'curtain' | 'metal' | 'dark' | 'clear' | 'pavers' | 'link'
 
 // a floor is 5m: the bands on courtland street are 5m apart, nine floors under the coping
 // (the 2019 photo from courtland street, fitted on the building's corners)
@@ -201,6 +203,7 @@ export function librarySouthGeometry(b: LibrarySouthData) {
   const door = b.door ? { x: b.door[0]!, z: b.door[1]! } : null
   const signs: Sign[] = []
   const walls = classroomWalls(outline)
+  const link = b.landmark!.link?.map(pt)
 
   const sideOf = (w: Wall): Side => {
     const x = w.o.x * f.out.x + w.o.z * f.out.z
@@ -524,11 +527,16 @@ export function librarySouthGeometry(b: LibrarySouthData) {
       plazaSide(w, t, glassy, skip)
     }
     facade(w, s, t, glassy, skip)
-    // a low planter along decatur street, and a grey pilaster at the corner where the
-    // link comes in (2021 dashcam)
+    // a low planter along decatur street, and a grey pilaster under the link's courtland
+    // st side (2018 and 2021 dashcams), up to its soffit
     if (s === 'ne') {
       lump('stone', w, 1.2, w.len - 1.5, 0, 0.35, RECESS + 1.2, RECESS)
-      lump('metal', w, w.len - 0.9, w.len + RECESS * t[1], 0, FASCIA[0], RECESS + 0.15, RECESS)
+      // u runs from the courtland st end, the link is over the corner end
+      const at = link
+        ? (link[2]!.x - w.p.x) * w.dir.x + (link[2]!.z - w.p.z) * w.dir.z
+        : w.len - 0.9
+      const top = link ? fromElevation(UNDER_LINK) - baseOf(b) : FASCIA[0]
+      lump('metal', w, at, Math.min(at + 0.9, w.len + RECESS * t[1]), 0, top, RECESS + 0.15, RECESS)
     }
   }
 
@@ -555,12 +563,12 @@ export function librarySouthGeometry(b: LibrarySouthData) {
       core('brick', inset(clip(outline, side), 1), CEILING, SOFFIT + 0.4)
   }
 
-  // the plaza deck: from classroom south's end to the link, out to the curb, on round
-  // columns along it (gsu 2018) and a leaning one by the link (mapillary 2019). its floor
-  // goes back into the entrance
+  // the plaza deck: from classroom south's end to the link, out to the back of the sidewalk
+  // (lidar: 317-318m from 7.8m off decatur street's middle). its floor goes back into the
+  // entrance
   const at = (a: number, d: number) => f.at(a, d)
   const back = RECESS - ENTRY_DEPTH
-  const edge = 6.8
+  const edge = 4.3
   const deck = [
     at(-26.85, -8.4),
     at(-24.25, -8.4),
@@ -587,17 +595,33 @@ export function librarySouthGeometry(b: LibrarySouthData) {
     const inner = wallOf(w.at(w.len - end, -0.3), w.at(0, -0.3), flip(w.o))
     face('stone', inner, 0, inner.len, DECK[1], DECK[1] + 0.8)
   }
-  for (const a of [-23.5, -16.5]) add('stone', column(at(a, edge - 0.6), 0.38, 0, DECK[0]))
-  // wider at the top, leaning toward courtland street
-  add(
-    'stone',
-    loft(
-      [at(-11.9, edge - 0.1), at(-11.1, edge - 0.1), at(-11.1, edge - 0.9), at(-11.9, edge - 0.9)],
-      0,
-      [at(-11.9, edge - 0.1), at(-9.9, edge - 0.1), at(-9.9, edge - 0.9), at(-11.9, edge - 0.9)],
-      DECK[0],
-    ),
+  // under its street edge a wall of the cream brick with the tan stripes, set back under the
+  // beam (mapillary 2019, gsu 2018: the plate is on it), the end by the link turned back in.
+  // the plaza's columns are further on toward the walkway over decatur st, past classroom
+  // south's corner
+  const under = wallOf(at(-9.25, edge - 0.3), at(-25.95, edge - 0.3), f.out)
+  const end = wallOf(at(-9.25, edge - 0.9), at(-9.25, edge - 0.3), f.along)
+  for (const w of [under, end])
+    for (let y = 0; y < DECK[0] - 0.51; y += STRIPES[0]) {
+      const s = Math.min(y + STRIPES[0] - STRIPES[1], DECK[0] - 0.5)
+      face('cream', w, 0, w.len, y, s)
+      face('brick', w, 0, w.len, s, Math.min(y + STRIPES[0], DECK[0] - 0.5))
+    }
+  // its back, seen from under the plaza
+  face(
+    'cream',
+    wallOf(under.at(under.len, -0.6), under.at(0, -0.6), flip(f.out)),
+    0,
+    under.len,
+    0,
+    DECK[0] - 0.5,
   )
+  sign(under, 3.6, 0.02, 3.1, {
+    text: 'LIBRARY SOUTH',
+    plate: '#eeeeec',
+    color: '#33363b',
+    scale: 0.75,
+  })
 
   // the corner by classroom south (osm's "corner"): brick with the loading dock under the
   // plaza, a low glass box on the plaza with brick piers and a dark fascia with a lip, a
@@ -655,6 +679,10 @@ export function librarySouthGeometry(b: LibrarySouthData) {
   add('pavers', flat(corner, CORNER_TOP - 0.05))
   // and its block for the shadows, behind the dim room behind the box's glass
   core('cream', inset(corner, 1.6), 0, CORNER_TOP - 0.1)
+
+  // the library link over decatur street, from library north's wall to this one's, and the
+  // walkway further toward classroom south
+  if (b.landmark!.link) signs.push(...libraryLink(add, b.landmark!.link, baseOf(b)))
 
   // the inside of the street floor walls: glass where the doors and the wide windows are
   const glassAt: { side: Side; hole: Hole }[] = [
@@ -725,36 +753,4 @@ function column(c: Point, r: number, y0: number, y1: number) {
   const { prism, merged } = collect<'c'>()
   prism('c', circle(c, r, 12), y0, y1, false)
   return merged().c
-}
-
-/** the sides of a solid from a ring at y0 to another (same number of corners) at y1 */
-function loft(lo: Point[], y0: number, hi: Point[], y1: number) {
-  const mx = lo.reduce((s, p) => s + p.x, 0) / lo.length
-  const mz = lo.reduce((s, p) => s + p.z, 0) / lo.length
-  const pos: number[] = []
-  const uv: number[] = []
-  lo.forEach((p, i) => {
-    const q = lo[(i + 1) % lo.length]!
-    const [p1, q1] = [hi[i]!, hi[(i + 1) % hi.length]!]
-    const len = Math.hypot(q.x - p.x, q.z - p.z)
-    let quad = [
-      [p.x, y0, p.z, 0, y0],
-      [q.x, y0, q.z, len, y0],
-      [q1.x, y1, q1.z, len, y1],
-      [p1.x, y1, p1.z, 0, y1],
-    ]
-    // wound so it faces away from the middle
-    const n = { x: -(q.z - p.z), z: q.x - p.x }
-    if (n.x * ((p.x + q.x) / 2 - mx) + n.z * ((p.z + q.z) / 2 - mz) < 0) quad = quad.reverse()
-    for (const k of [0, 1, 2, 0, 2, 3]) {
-      const [x, y, z, u, v] = quad[k]!
-      pos.push(x!, y!, z!)
-      uv.push(u!, v!)
-    }
-  })
-  const geo = new THREE.BufferGeometry()
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
-  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2))
-  geo.computeVertexNormals()
-  return geo
 }
