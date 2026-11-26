@@ -59,11 +59,6 @@ export default function WarmUp() {
 }
 
 function Warming() {
-  const { active } = useProgress()
-  const busy = useRef(true)
-  useEffect(() => {
-    busy.current = active
-  }, [active])
   const step = useRef<Step>('loading')
   const frames = useRef(0)
   const started = useRef(0)
@@ -169,8 +164,10 @@ function Warming() {
       }
       // everything downloaded (models, textures, the labels' font) for a moment, and the
       // effects drawing (they're loaded separately)
+      // read from the store, not the hook: a model starting to load sets it while it renders,
+      // and a component subscribed to it made react warn about updating during render
       const loaded =
-        !busy.current &&
+        !useProgress.getState().active &&
         document.fonts.status === 'loaded' &&
         (!(atmosphere || toon) || effects.drawn)
       if (!loaded && clock.elapsedTime - started.current < MAX_WAIT) frames.current = 0
