@@ -75,11 +75,13 @@ export default function Streetcar() {
   })
   return (
     <>
-      {/* these run the whole route, so they're in view (and drawn) from almost everywhere:
-          they stay out of the prepass (only the ao reads it, Effects.tsx) and the platforms,
-          0.36m high, don't cast */}
-      <mesh geometry={slab} material={trackMaterial} receiveShadow userData={NO_PREPASS} />
-      <mesh geometry={rails} material={railMaterial} receiveShadow userData={NO_PREPASS} />
+      {/* the steel, platforms and glass run the whole route, so they're in view (and drawn)
+          from almost everywhere: they stay out of the prepass (only the ao reads it,
+          Effects.tsx) and the platforms, 0.36m high, don't cast. not the slab and rails: the
+          scene pass starts from the prepass's depth, pulled a hair toward you, and a ground
+          layer mm over the road lost to it from far away (flickered) */}
+      <mesh geometry={slab} material={trackMaterial} receiveShadow />
+      <mesh geometry={rails} material={railMaterial} receiveShadow />
       <mesh
         geometry={stops.platform}
         material={platformMaterial}
