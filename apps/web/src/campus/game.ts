@@ -14,6 +14,7 @@ import {
   mod,
   positionWorld,
   select,
+  sin,
   smoothstep,
   vec2,
   vec3,
@@ -153,3 +154,9 @@ export const gameLot = once(() => ground('#7f8288', 0.85, 3))
 // the trees, bushes and flowers (scene/GameTrees.tsx): smooth, clean colors, a bit of sheen
 export const foliage = (color: THREE.ColorRepresentation, roughness = 0.75) =>
   new MeshStandardNodeMaterial({ color, roughness, metalness: 0 })
+
+/**
+ * Sway for the trees: the top of each tree rocks a little, each one on its own beat
+ */
+export const sway = (at: Node<'vec3'>, phase: Float, wind: Float) =>
+  vec3(sin(wind.mul(1.3).add(phase)), 0, sin(wind.add(phase.mul(1.7)))).mul(at.y.mul(0.012))

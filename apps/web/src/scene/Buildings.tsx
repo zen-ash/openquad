@@ -5,15 +5,13 @@ import * as THREE from 'three'
 import campus from '../campus/campus.json'
 import { buildingsGeometry, centroid } from '../campus/geometry'
 import { facadeMaterial } from '../campus/facade'
-import { toonFacade } from '../campus/toon'
 import { localPlayer } from '../game/localPlayer'
 import { baseOf } from '../game/surface'
-import { toon } from '../settings'
 import Label from './Label'
 
 const LABEL_DISTANCE = 120
 
-const material = toon ? toonFacade() : facadeMaterial()
+const material = facadeMaterial()
 
 const labels = campus.buildings
   .filter((b) => b.gsu && b.name)

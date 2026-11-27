@@ -72,7 +72,7 @@ describe('world', () => {
   })
 })
 
-describe('hopping over furniture (cartoon look)', () => {
+describe('hopping over furniture (beans)', () => {
   const room = interiors.find((r) => furnish(r).some((i) => i.kind === 'table'))!
   const table = furnish(room).find((i) => i.kind === 'table')!
 

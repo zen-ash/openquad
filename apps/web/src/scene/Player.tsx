@@ -7,7 +7,7 @@ import { cutout } from '../campus/cutout'
 import type { Controls } from '../game/controls'
 import { avatarById } from '../game/avatars'
 import { clampDistance, clampPitch, clearView, orbit } from '../game/camera'
-import { BIKE_SPEED, DASH_SPEED, glide, GLIDE_SPEED, turnToward } from '../game/glide'
+import { BIKE_SPEED, DASH_SPEED, glide, GLIDE_SPEED } from '../game/glide'
 import campus from '../campus/campus.json'
 import { interiorAt } from '../game/interiors'
 import { blocksView, cameraReach, outlineOf } from '../game/occlusion'
@@ -26,7 +26,7 @@ import { floorOf, surfaceAt } from '../game/surface'
 import { heightAt } from '../game/terrain'
 import { hoppingWorldFor, tallFurniture, worldFor } from '../game/world'
 import { send } from '../net/connection'
-import { toon, useSettings, walker } from '../settings'
+import { useSettings, walker } from '../settings'
 import { stopEmote, useEmotes } from '../net/emotes'
 import Bean from './Bean'
 import Character, { type Anim } from './Character'
@@ -44,18 +44,6 @@ const RUN_FOV = 56
 const INDOOR_DISTANCE = 4
 const INDOOR_PITCH = 0.2
 const CAMERA_TURN_SPEED = 2 // radians/sec
-// the cartoon look's camera: high up looking down at 52 degrees with a long lens, north
-// always up the screen. only scrolling moves it (in and out). it looks at a spot a bit
-// above the ground under you
-const TOON_PITCH = (52 * Math.PI) / 180
-const TOON_DISTANCE = 32
-const TOON_FOV = 34
-// a little wider while running or on the bike
-const TOON_RUN_FOV = 3
-const TOON_LOOK = 0.8
-const toonDistance = (d: number) => Math.min(72, Math.max(15, d))
-// on a tall narrow screen (a phone) the sides are cramped, so it goes back a bit
-const narrow = (aspect: number) => Math.min(1.5, Math.max(1, 1.2 / aspect))
 // how close a wall behind you can pull the camera in
 const CLOSEST = 2.2
 const PLAYER_RADIUS = 0.4
@@ -78,8 +66,8 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
   const body = useRef<THREE.Group>(null)
   // carried over from before a reconnect, so the camera doesn't jump
   const cameraYaw = useRef(localPlayer.cameraYaw)
-  const pitch = useRef(toon ? TOON_PITCH : START_PITCH)
-  const distance = useRef(toon ? TOON_DISTANCE : START_DISTANCE)
+  const pitch = useRef(START_PITCH)
+  const distance = useRef(START_DISTANCE)
   const pull = useRef(0)
   const indoor = useRef(0) // 0 outside, 1 inside, eases in between
   const insideTimer = useRef(0)
@@ -125,27 +113,16 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
       snapCamera.current = true
     }
 
-    // the cartoon look is north up outside: the camera never turns there, and swings back
-    // to north when you come out of a building
-    const northUp = toon && localPlayer.inside < 0
-    if (northUp) {
-      cameraYaw.current = turnToward(cameraYaw.current, 0, dt)
-    } else {
-      // bigger yaw swings the camera around so the view turns left
-      if (keys.turnLeft) cameraYaw.current += CAMERA_TURN_SPEED * dt
-      if (keys.turnRight) cameraYaw.current -= CAMERA_TURN_SPEED * dt
-      cameraYaw.current += input.turn
-    }
-    if (toon) {
-      distance.current = toonDistance(distance.current + input.zoom * 2.5)
-    } else {
-      pitch.current = clampPitch(pitch.current + input.tilt)
-      distance.current = clampDistance(distance.current + input.zoom)
-    }
+    // bigger yaw swings the camera around so the view turns left
+    if (keys.turnLeft) cameraYaw.current += CAMERA_TURN_SPEED * dt
+    if (keys.turnRight) cameraYaw.current -= CAMERA_TURN_SPEED * dt
+    cameraYaw.current += input.turn
+    pitch.current = clampPitch(pitch.current + input.tilt)
+    distance.current = clampDistance(distance.current + input.zoom)
     input.turn = input.tilt = input.zoom = 0
 
-    // what the keys are relative to: the camera, or north
-    const yaw = northUp ? 0 : cameraYaw.current
+    // the keys are relative to the camera
+    const yaw = cameraYaw.current
     let dir = moveDirection(keys, yaw)
     let running = keys.run
     if (!dir) {
@@ -228,11 +205,7 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
     // ease back while jogging, back in when you stop
     pull.current += ((running && dir ? 1 : 0) - pull.current) * (1 - Math.exp(-2 * dt))
     const cam = camera as THREE.PerspectiveCamera
-    const fov =
-      localPlayer.shot?.fov ??
-      (toon
-        ? TOON_FOV + TOON_RUN_FOV * pull.current
-        : WALK_FOV + (RUN_FOV - WALK_FOV) * pull.current)
+    const fov = localPlayer.shot?.fov ?? WALK_FOV + (RUN_FOV - WALK_FOV) * pull.current
     if (Math.abs(cam.fov - fov) > 0.01) {
       cam.fov = fov
       cam.updateProjectionMatrix()
@@ -240,16 +213,12 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
 
     // what the camera looks at glides after you a little, and the camera glides after
     // that. two layers of smoothing is what makes it feel like someone's filming
-    // (the cartoon one only has the camera's layer, it keeps looking the same way)
     const outdoors = 1 - indoor.current
-    const height = toon ? TOON_LOOK * outdoors + LOOK_HEIGHT * indoor.current : LOOK_HEIGHT
-    lookGoal.set(player.position.x, player.position.y + height, player.position.z)
-    if (snapCamera.current || toon) look.copy(lookGoal)
+    lookGoal.set(player.position.x, player.position.y + LOOK_HEIGHT, player.position.z)
+    if (snapCamera.current) look.copy(lookGoal)
     else look.lerp(lookGoal, 1 - Math.exp(-10 * dt))
 
-    const dist = toon
-      ? distance.current * narrow(cam.aspect)
-      : distance.current + RUN_PULL * pull.current
+    const dist = distance.current + RUN_PULL * pull.current
     const want = orbit(
       look,
       cameraYaw.current,
@@ -275,16 +244,9 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
     // and never under the ground, on a slope it would be when looking up it
     want.y = Math.max(want.y, surfaceAt(want.x, want.z, look.y) + 0.4)
     if (snapCamera.current) camera.position.set(want.x, want.y, want.z)
-    else camera.position.lerp(want, 1 - Math.exp(-(toon ? 6 : 7) * dt))
+    else camera.position.lerp(want, 1 - Math.exp(-7 * dt))
     snapCamera.current = false
-    if (toon) {
-      // outside it points the same way whatever it's doing, it just slides after you.
-      // inside it looks at you like the realistic one
-      lookGoal.set(want.x, want.y, want.z).sub(camera.position).multiplyScalar(-outdoors)
-      camera.lookAt(lookGoal.add(look))
-    } else {
-      camera.lookAt(look)
-    }
+    camera.lookAt(look)
     if (localPlayer.shot) {
       camera.position.fromArray(localPlayer.shot.from)
       camera.lookAt(new THREE.Vector3().fromArray(localPlayer.shot.at))

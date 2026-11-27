@@ -250,7 +250,7 @@ function furnishedRoom(inside: number) {
     f = {
       world: { ...world, walls: [...world.walls, ...items.flatMap(footprint)] },
       tall: items.filter((i) => i.kind === 'shelf').flatMap(footprint),
-      // the cartoon bean hops over the low things
+      // a bean hops over the low things
       hopping: {
         ...world,
         walls: [...world.walls, ...items.filter((i) => !LOW[i.kind]).flatMap(footprint)],
@@ -269,7 +269,7 @@ export const worldFor = (inside: number, high = false) =>
 // shelves are taller than the camera is indoors, it has to stay in front of them
 export const tallFurniture = (inside: number) => furnishedRoom(inside)?.tall ?? []
 
-// the cartoon look's collisions: tables and chairs get hopped over (game/bean.ts)
+// the beans' collisions: tables and chairs get hopped over (game/bean.ts)
 export const hoppingWorldFor = (inside: number, high = false) =>
   furnishedRoom(inside)?.hopping ?? (high ? deckWorld : world)
 

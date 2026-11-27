@@ -392,7 +392,7 @@ export const moved = (v: V3) =>
 export const carMaterial = new MeshPhysicalNodeMaterial()
 carMaterial.name = 'car'
 // the wheels turn round their hub (aPart's y and z) as the car rolls, then it's placed. all
-// in positionNode, the toon look's copy of the material gets it too
+// in positionNode
 carMaterial.positionNode = Fn(() => {
   const turn = state.y.mul(part.w)
   const c = cos(turn).toVar()

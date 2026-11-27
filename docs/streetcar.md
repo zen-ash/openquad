@@ -78,7 +78,7 @@ blue where they are.
 One material for the whole car (`streetcarMaterial`), the colors and how shiny each bit is from
 vertex attributes, so a section is one draw. Head lamps on the leading end, tail lamps on the
 other, the sign always lit, the windows warm at night. Each section is its own mesh (culled on
-its own, they're far apart most of the time). In the toon look Toonify keeps the color node.
+its own, they're far apart most of the time).
 
 ## Stops, wire, rails
 

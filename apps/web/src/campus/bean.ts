@@ -5,8 +5,6 @@ import {
   float,
   length,
   mix,
-  normalize,
-  normalView,
   select,
   smoothstep,
   uniform,
@@ -15,11 +13,9 @@ import {
   vertexColor,
 } from 'three/tsl'
 import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu'
-import { toonMaterial } from './toon'
 
 // everyone's a jellybean with no legs, big eyes, rosy cheeks and a little sprout on top.
-// one mesh and one material for all of them (toon in the cartoon look, soft vinyl in the
-// real one), the colors come from each mesh's userData (body, accent), so a new person
+// one mesh and one material for all of them (soft vinyl), the colors come from each mesh's userData (body, accent), so a new person
 // never means a new shader
 
 export const BEAN_HEIGHT = 1.5
@@ -138,16 +134,6 @@ const beanColor = () => {
   return mix(mix(body, accent, on(0.5)), vertexColor().rgb, face)
 }
 
-export function beanMaterial() {
-  const m = toonMaterial()
-  m.colorNode = beanColor()
-  // a shiny spot like on a gummy candy, always up and to the left of the view. not on
-  // the face
-  const gloss = smoothstep(0.955, 0.975, normalView.dot(normalize(vec3(-0.35, 0.55, 0.75))))
-  m.emissiveNode = vec3(gloss.mul(float(0.35).sub(face.mul(0.35))))
-  return m
-}
-
 /**
  * The bean in the real world: a soft vinyl toy. Satin body, glossier eyes. The sky and
  * the sun light it like everything else and it casts real shadows
@@ -161,8 +147,8 @@ export function beanVinyl() {
   return m
 }
 
-// a soft dark spot on the ground under it. shrinks when it hops. the cartoon one is a
-// bluish grey, the real one only darkens (grey lit up dark asphalt)
+// a soft dark spot on the ground under it. shrinks when it hops. it only darkens (a grey one
+// lit up dark asphalt)
 export function beanShadow(color: [number, number, number], opacity: number) {
   const m = new MeshBasicNodeMaterial()
   m.transparent = true

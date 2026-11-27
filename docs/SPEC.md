@@ -412,7 +412,8 @@ malformed.
     dash and a bike), a cartoon look as a second style
 14. **Game look** - the default style: the real buildings in a bright, stylized world, with
     stars to collect, a short tour of campus, markers at the doors and dust puffs under
-    the bean. The realistic and cartoon looks are still in the picker
+    the bean. The realistic look is still in the picker. The cartoon look was removed
+    later (Nov 2026): nobody used it and every feature had to work in it too
 
 ## Testing
 

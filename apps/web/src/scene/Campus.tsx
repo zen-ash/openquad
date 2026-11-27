@@ -33,20 +33,11 @@ import {
   gamePlaza,
   gameRoad,
 } from '../campus/game'
-import {
-  toonGrass,
-  toonLot,
-  toonPath,
-  toonPavers,
-  toonPaving,
-  toonPlaza,
-  toonRoad,
-} from '../campus/toon'
 import { localPlayer } from '../game/localPlayer'
 import { pointInPolygon } from '../game/collision'
 import { RAISED } from '../game/raised'
 import { daylight, sunDirection, sunPosition, timeFor } from '../game/sun'
-import { game, today, toon, useSettings } from '../settings'
+import { game, today, useSettings } from '../settings'
 import Buildings from './Buildings'
 import Cars from './Cars'
 import Collectibles from './Collectibles'
@@ -65,9 +56,6 @@ import { SkyDome, SkyEnvironment, Stars } from './Sky'
 import Signals from './Signals'
 import StreetFurniture from './StreetFurniture'
 import Streetcar from './Streetcar'
-import Toonify from './Toonify'
-import ToonSky, { HORIZON } from './ToonSky'
-import ToonTrees from './ToonTrees'
 import Trees from './Trees'
 
 // only loaded on high quality (App loads it first thing when it starts on high)
@@ -84,10 +72,6 @@ const CEILING_LIGHT = new Color('#fff0dc')
 const FLOOR_LIGHT = new Color('#8a7460')
 const INDOOR_LIGHT = 1.2
 const INDOOR_ENVIRONMENT = 0.12
-// the cartoon sun is a plain warm white at any time of day, and the light from the ground
-// is a pale green instead of brown, so the shade stays colorful
-const TOON_SUN = new Color('#fff4df')
-const TOON_GROUND_LIGHT = new Color('#a7b98f')
 
 // the real sun over atlanta (or a picked time of day). checked every 30 seconds, it
 // doesn't move fast enough to need more
@@ -116,7 +100,6 @@ function Sun({ dir, day }: { dir: [number, number, number]; day: number }) {
   const light = useRef<DirectionalLight>(null)
   const color = useMemo(() => {
     const low = 1 - Math.min(1, dir[1] * 4) // warmer when the sun is near the horizon
-    if (toon) return day > 0 ? TOON_SUN : MOONLIGHT
     return day > 0 ? SUNLIGHT.clone().lerp(SUNSET_LIGHT, low) : MOONLIGHT
   }, [dir, day])
 
@@ -132,15 +115,14 @@ function Sun({ dir, day }: { dir: [number, number, number]; day: number }) {
     <directionalLight
       ref={light}
       color={color}
-      intensity={day > 0 ? (toon ? 2.3 : 3.5) * day : 0.35}
+      intensity={day > 0 ? 3.5 * day : 0.35}
       castShadow
       shadow-mapSize={[2048, 2048]}
-      // the cartoon camera is further out, and its shadows are softer
-      shadow-radius={toon ? 3 : 1}
-      shadow-camera-left={toon ? -80 : -60}
-      shadow-camera-right={toon ? 80 : 60}
-      shadow-camera-top={toon ? 80 : 60}
-      shadow-camera-bottom={toon ? -80 : -60}
+      shadow-radius={1}
+      shadow-camera-left={-60}
+      shadow-camera-right={60}
+      shadow-camera-top={60}
+      shadow-camera-bottom={-60}
       shadow-camera-far={400}
       // without these you get fine stripes all over the walls and grass (shadow acne)
       shadow-bias={-0.001}
@@ -165,7 +147,7 @@ function SkyLight({ intensity, environment }: { intensity: number; environment: 
     scene.environmentIntensity = environment + (INDOOR_ENVIRONMENT - environment) * k
     l.intensity = intensity + (INDOOR_LIGHT - intensity) * k
     l.color.copy(SKY_LIGHT).lerp(CEILING_LIGHT, k)
-    l.groundColor.copy(toon ? TOON_GROUND_LIGHT : GROUND_LIGHT).lerp(FLOOR_LIGHT, k)
+    l.groundColor.copy(GROUND_LIGHT).lerp(FLOOR_LIGHT, k)
   })
 
   // not in args: fiber makes a new light when args change, and a new light (new id) means
@@ -307,18 +289,6 @@ function Ground() {
         <mesh geometry={geos.paths} material={gamePath()} receiveShadow />
       </>
     )
-  if (toon)
-    return (
-      <>
-        <mesh geometry={geos.ground} material={toonPaving()} receiveShadow />
-        <mesh geometry={geos.lots} material={toonLot()} receiveShadow />
-        <mesh geometry={geos.pavers} material={toonPavers()} receiveShadow />
-        <mesh geometry={geos.parks} material={toonGrass()} receiveShadow />
-        <mesh geometry={geos.roads} material={toonRoad()} receiveShadow />
-        <mesh geometry={geos.plazas} material={toonPlaza()} receiveShadow />
-        <mesh geometry={geos.paths} material={toonPath()} receiveShadow />
-      </>
-    )
   return (
     <>
       <mesh geometry={geos.ground} material={pavingMaterial} receiveShadow />
@@ -365,13 +335,7 @@ export default function Campus() {
 
   return (
     <>
-      {toon ? (
-        <>
-          <ToonSky daylight={sky.day} />
-          <fog attach="fog" args={[HORIZON, 260, 1300]} />
-          <Sun dir={sky.light} day={sky.day} />
-        </>
-      ) : high ? (
+      {high ? (
         <Suspense fallback={null}>
           {/* the game look keeps the real sky's light and haze, and draws its own sky */}
           <Atmosphere sun={sky.dir} when={sky.when} day={sky.day} sky={!game} />
@@ -395,7 +359,7 @@ export default function Campus() {
       <SkyLight
         // with the atmosphere, the sky's light is its environment map. at night the city's
         // own glow stands in, as dim as the old night light
-        intensity={toon ? 0.3 + 1.5 * sky.day : high ? 0.12 * (1 - sky.day) : 0.12 + 0.16 * sky.day}
+        intensity={high ? 0.12 * (1 - sky.day) : 0.12 + 0.16 * sky.day}
         environment={high ? 1 : environment}
       />
       <Ground />
@@ -408,10 +372,10 @@ export default function Campus() {
       <PantherQuad />
       <Fountain />
       <StreetFurniture />
-      {!toon && <Signals />}
+      <Signals />
       <Cars />
       <Streetcar />
-      {game ? <GameTrees /> : toon ? <ToonTrees /> : <Trees />}
+      {game ? <GameTrees /> : <Trees />}
       {game && (
         <>
           <Collectibles />
@@ -420,7 +384,6 @@ export default function Campus() {
       )}
       <FenceHaze />
       {fenceLine && <FenceLine />}
-      {toon && <Toonify />}
     </>
   )
 }

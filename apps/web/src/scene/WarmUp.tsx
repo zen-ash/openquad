@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useRef } from 'react'
 import type { Object3D } from 'three'
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js'
 import { AVATARS, type Avatar as AvatarInfo } from '../game/avatars'
-import { hideCity, toon, useSettings, walker } from '../settings'
+import { hideCity, useSettings, walker } from '../settings'
 import Bean from './Bean'
 import { modelUrl } from './Character'
 import { effects } from './fx'
@@ -89,8 +89,8 @@ function Warming() {
   // the step to go on to, once the gpu has made the last one's pipelines
   const after = useRef<{ to: Step; done: boolean } | null>(null)
   const plain = useRef<{ pipelines: Pipelines; update: Pipelines['updateForRender'] } | null>(null)
-  // whether there's a high quality to build as well as low: the atmosphere, or the cartoon
-  // look starting on high (it has shadows there). decided on the first frame
+  // whether there's a high quality (the atmosphere) to build as well as low. decided on the
+  // first frame
   const both = useRef<boolean | null>(null)
   // back to the normal way if this goes away halfway
   useEffect(
@@ -104,7 +104,7 @@ function Warming() {
     started.current ||= clock.elapsedTime
     countNew()
     const atmosphere = useSettings.getState().atmosphere
-    both.current ??= atmosphere || (toon && useSettings.getState().quality === 'high')
+    both.current ??= atmosphere
     const pipelines = (gl as unknown as { _pipelines: Pipelines })._pipelines
     const next = (to: Step | 'done') => {
       frames.current = 0
@@ -169,7 +169,7 @@ function Warming() {
       const loaded =
         !useProgress.getState().active &&
         document.fonts.status === 'loaded' &&
-        (!(atmosphere || toon) || effects.drawn)
+        (!atmosphere || effects.drawn)
       if (!loaded && clock.elapsedTime - started.current < MAX_WAIT) frames.current = 0
       else if (frames.current > 5) next(both.current ? 'high' : 'low')
     } else if (frames.current > FRAMES) {

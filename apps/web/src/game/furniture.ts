@@ -27,7 +27,7 @@ const FOOTPRINT: Record<Kind, [number, number, number]> = {
   plant: [0.5, 0.5, 0],
 }
 
-// how tall the low things are (m, after SCALE): the cartoon bean hops over these instead
+// how tall the low things are (m, after SCALE): a bean hops over these instead
 // of bumping into them. shelves and plants are in the way for everyone
 export const LOW: Partial<Record<Kind, number>> = {
   table: 1,

@@ -1,19 +1,18 @@
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import { beanDust, beanGeometry, beanMaterial, beanShadow, beanVinyl } from '../campus/bean'
+import { beanDust, beanGeometry, beanShadow, beanVinyl } from '../campus/bean'
 import { HOVER, newBean, stepBean, type Bean as BeanState } from '../game/bean'
 import { beanOf } from '../game/avatars'
 import { interiorAt } from '../game/interiors'
 import { groundAt } from '../game/world'
-import { game, toon } from '../settings'
+import { game } from '../settings'
 
-// shared by every bean: one shader for the body (toon or vinyl, by the world's look), one
-// for the shadow
+// shared by every bean: one shader for the body, one for the shadow
 const geometry = beanGeometry()
-const material = toon ? beanMaterial() : beanVinyl()
+const material = beanVinyl()
 const shadowGeometry = new THREE.CircleGeometry(0.62, 20).rotateX(-Math.PI / 2)
-const shadowMaterial = toon ? beanShadow([0.12, 0.14, 0.22], 0.38) : beanShadow([0, 0, 0], 0.3)
+const shadowMaterial = beanShadow([0, 0, 0], 0.3)
 const dustGeometry = new THREE.CircleGeometry(1.1, 24).rotateX(-Math.PI / 2)
 const dustMaterial = beanDust()
 const DUST_TIME = 0.45 // s
@@ -116,7 +115,7 @@ export default function Bean({ avatar, emote, onEmoteDone, still, shadows = true
           geometry={geometry}
           material={material}
           userData={colors}
-          castShadow={!toon && shadows}
+          castShadow={shadows}
           receiveShadow
         />
       </group>

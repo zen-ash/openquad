@@ -62,7 +62,7 @@ color + metalness) and `aState` (lights, how far the wheels have turned, heading
 rims) say the rest.
 
 - Everything on the paint is drawn per pixel from the car's own position and normal (the
-  `position` and `normal` attributes, so it works in every pass and in the toon look): the
+  `position` and `normal` attributes, so it works in every pass): the
   head lights (chrome inside, black at the bottom, the running light strip along the top,
   sweeping back along the fender), the grille in its chrome or gloss black frame (black mesh,
   or the pickup's chrome bars), the lower intake, the fog lights in their pockets, a black
@@ -143,9 +143,7 @@ to another level of detail.
 The join warm-up draws them: while warming each mesh draws at least one car (under the ground
 if there's none in view).
 
-Not drawn with `?nocity`. Works in the game look, realistic, toon and the WebGL2 fallback.
-Toonify swaps the material but copies `positionNode`, so the placing, the normals and the
-wheel turn are all in there.
+Not drawn with `?nocity`. Works in the game look, realistic and the WebGL2 fallback.
 
 ## Sources
 

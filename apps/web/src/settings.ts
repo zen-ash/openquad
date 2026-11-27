@@ -43,16 +43,14 @@ export const still = params.has('still')
 export const keepQuality = params.has('keepquality')
 
 // the look: 'game' (the default) is the real buildings in a bright, friendly world with
-// stars to collect (campus/game.ts), 'real' the photo-real campus, 'toon' the cartoon one
-// (campus/toon.ts). ?style=game|realistic|toon, or remembered from the last pick. it's
-// picked once per visit, switching reloads the page: every material, the effects and the
-// camera are different
-export type Style = 'game' | 'real' | 'toon'
+// stars to collect (campus/game.ts), 'real' the photo-real campus. ?style=game|realistic, or
+// remembered from the last pick (an old 'toon' pick gets the game look). it's picked once per
+// visit, switching reloads the page: every material and the effects are different
+export type Style = 'game' | 'real'
 const STYLES: Record<string, Style> = {
   game: 'game',
   realistic: 'real',
   real: 'real',
-  toon: 'toon',
 }
 function startingStyle(): Style {
   let saved = null
@@ -65,7 +63,6 @@ function startingStyle(): Style {
   return STYLES[params.get('style') ?? saved ?? ''] ?? 'game'
 }
 export const style = startingStyle()
-export const toon = style === 'toon'
 export const game = style === 'game'
 
 export function switchStyle(next: Style) {
@@ -117,7 +114,7 @@ export const useSettings = create<{
   time: string
   photo: boolean
   fenceLine: boolean
-  // on the bike (the cartoon look, B)
+  // on the bike (a bean's, B)
   bike: boolean
 }>(() => ({
   quality: startingQuality(),

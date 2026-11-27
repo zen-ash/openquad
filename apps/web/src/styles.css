@@ -90,7 +90,7 @@ button {
   font-weight: 500;
 }
 
-/* on the bike, cartoon look (B) */
+/* on the bike (B) */
 .hud .bike {
   padding: 1px 7px;
   border-radius: 999px;
@@ -524,7 +524,7 @@ button {
   object-fit: cover;
 }
 
-/* a bean for the cartoon look: the body, two eyes and a leaf on top in its accent color */
+/* a bean on the avatar picker: the body, two eyes and a leaf on top in its accent color */
 .avatars .bean {
   position: relative;
   display: block;

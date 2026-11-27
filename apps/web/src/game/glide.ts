@@ -1,7 +1,7 @@
 import { resolveCollisions, type Point, type World } from './collision'
 import { headingFor } from './movement'
 
-// the cartoon look's beans don't walk, they zip around like in an arcade game: full speed
+// the beans don't walk, they zip around like in an arcade game: full speed
 // the moment a key goes down, stopped the moment it comes up. the wobble in game/bean.ts
 // is what makes starting and stopping look soft
 export const GLIDE_SPEED = 7

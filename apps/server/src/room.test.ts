@@ -51,7 +51,7 @@ describe('Room', () => {
     expect(a.inbox).toEqual([{ type: 'state', players: [['b', 1, 2, 0.5]] }])
   })
 
-  it('keeps up with the cartoon bike (24 m/s, 1.2m a tick)', () => {
+  it('keeps up with the bike (24 m/s, 1.2m a tick)', () => {
     const room = new Room()
     const a = fakeClient()
     room.join('a', 'Alice', 'male_09', a.send)

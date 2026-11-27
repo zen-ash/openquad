@@ -9,7 +9,7 @@ import { localPlayer } from '../game/localPlayer'
 import { animForSpeed } from '../game/movement'
 import { stopEmote, useEmotes } from '../net/emotes'
 import { snapshots, useGame, type Person } from '../net/store'
-import { toon, walker } from '../settings'
+import { walker } from '../settings'
 import { useVoice } from '../voice/store'
 import Bean from './Bean'
 import Character, { type Anim } from './Character'
@@ -103,15 +103,14 @@ function RemotePlayer({ id, person }: { id: string; person: Person }) {
         />
       )}
       <ChatBubble id={id} />
-      {/* bigger in the cartoon look, its camera is 30m away */}
-      <Billboard position-y={toon ? 2.4 : 2.2}>
+      <Billboard position-y={2.2}>
         <Label
-          fontSize={toon ? 0.8 : 0.35}
+          fontSize={0.35}
           color={speaking ? '#7dff6a' : 'white'}
           // faded when they're too far away to hear you
           fillOpacity={inRange ? 1 : 0.45}
           outlineOpacity={inRange ? 1 : 0.45}
-          outlineWidth={toon ? 0.07 : 0.03}
+          outlineWidth={0.03}
           outlineColor="black"
         >
           {person.name}

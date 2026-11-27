@@ -1,6 +1,6 @@
 import { angleBetween, GLIDE_SPEED, DASH_SPEED } from './glide'
 
-// how a cartoon bean (scene/Bean.tsx) wobbles. it only looks at where its player is and
+// how a bean (scene/Bean.tsx) wobbles. it only looks at where its player is and
 // which way they face, so it works the same for you and for everyone else (whose
 // positions come in over the network)
 
