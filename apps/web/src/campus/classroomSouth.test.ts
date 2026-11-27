@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { pointInPolygon } from '../game/collision'
+import { baseOf } from '../game/surface'
+import { heightAt } from '../game/terrain'
 import campus from './campus.json'
 import {
   BAY,
@@ -149,6 +151,12 @@ describe('classroom south', () => {
     const all = buildingsGeometry(campus.buildings)
     const rest = buildingsGeometry(campus.buildings.filter((b) => !b.landmark))
     expect(all.getAttribute('position').count).toBe(rest.getAttribute('position').count)
+  })
+
+  it('puts the doors at library south on the ground under its plaza', () => {
+    const sign = signs.find((s) => s.text.includes('DECATUR ST.'))!
+    // the plates are about 2.45m up next to the doors
+    expect(baseOf(cs) + sign.y - heightAt(sign.x, sign.z)).toBeCloseTo(2.45, 0)
   })
 
   it('stays under 60k triangles', () => {

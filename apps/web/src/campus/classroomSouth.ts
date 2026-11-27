@@ -1,5 +1,7 @@
 import type { Point } from '../game/collision'
 import { CEILING, DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
+import { baseOf } from '../game/surface'
+import { heightAt } from '../game/terrain'
 import type { Sign } from './landmarks'
 import {
   clip,
@@ -385,26 +387,30 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
     else {
       // u runs from the back toward decatur street here
       const [d0, d1] = [w.len - END_DOOR[1], w.len - END_DOOR[0]]
-      const top = 3.3
+      // they're under library south's plaza, on the dock's apron, which is lower than where
+      // the building is drawn from
+      const mid = w.at((d0 + d1) / 2, RECESS + 1)
+      const y = Math.min(0, heightAt(mid.x, mid.z) - baseOf(b))
+      const top = y + 3.3
       bond(w, lo, d0, 0, top, RECESS)
       bond(w, d1, hi, 0, top, RECESS)
       bond(w, lo, hi, top, H, RECESS)
       // set in under the marble: marble boards, the door and its transom, stucco (about two
       // thirds as bright as the marble in the 2026 photo, like the tan)
       const back = 0.05
-      reveal('marble', w, d0, d1, 0, top, RECESS, back)
+      reveal('marble', w, d0, d1, y, top, RECESS, back)
       // narrow upright boards of marble: its slabs, squeezed
-      const boards = wallQuad(w.at(d0, back), w.at(d0 + 1.5, back), 0, top, w.o, 0)
+      const boards = wallQuad(w.at(d0, back), w.at(d0 + 1.5, back), y, top, w.o, 0)
       const uv = boards.getAttribute('uv')
       for (let i = 0; i < uv.count; i++)
-        uv.setXY(i, (uv.getX(i) * SLAB[0]) / 0.38, (uv.getY(i) * SLAB[1]) / top)
+        uv.setXY(i, (uv.getX(i) * SLAB[0]) / 0.38, ((uv.getY(i) - y) * SLAB[1]) / 3.3)
       add('marble', boards)
-      curtain(w, d0 + 1.5, d0 + 3.3, 0, 3, back + 0.02)
-      lump('frame', w, d0 + 1.5, d0 + 3.3, 2.3, 2.38, back + 0.04, back)
-      lump('frame', w, d0 + 1.5, d0 + 3.3, 3, top, back + 0.04, back)
+      curtain(w, d0 + 1.5, d0 + 3.3, y, y + 3, back + 0.02)
+      lump('frame', w, d0 + 1.5, d0 + 3.3, y + 2.3, y + 2.38, back + 0.04, back)
+      lump('frame', w, d0 + 1.5, d0 + 3.3, y + 3, top, back + 0.04, back)
       // a door and a sidelight
-      lump('frame', w, d0 + 2.4, d0 + 2.46, 0, 3, back + 0.04, back)
-      face('tan', w, d0 + 3.3, d1, 0, top, back)
+      lump('frame', w, d0 + 2.4, d0 + 2.46, y, y + 3, back + 0.04, back)
+      face('tan', w, d0 + 3.3, d1, y, top, back)
       for (const [text, at, scale] of [
         ['CLASSROOM SOUTH', d0 + 0.75, 0.42],
         ['95\nDECATUR ST.', d0 + 4.05, 0.36],
@@ -412,7 +418,7 @@ export function classroomSouthGeometry(b: ClassroomSouthData) {
         const s = w.at(at, back + 0.03)
         signs.push({
           x: s.x,
-          y: 2.45,
+          y: y + 2.45,
           z: s.z,
           rot: Math.atan2(w.o.x, w.o.z),
           text,

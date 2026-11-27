@@ -72,7 +72,10 @@ GSU links (the files behind https://map.concept3d.com/?id=1108#!m/295215):
   from the shade (2019), light frames, set 0.2m into the marble.
 - **Ends**: blank marble, big slabs in a running bond. At Library South, doors set in under
   the marble: narrow upright marble boards with the name, a glass door and sidelight under a
-  transom, a warm grey stucco with "95 DECATUR ST." (2026).
+  transom, a warm grey stucco with "95 DECATUR ST." (2026). They're under Library South's
+  plaza, on the dock's apron, which is lower than the building's own floor: since Nov 2026
+  they're drawn on the ground in front of them (about 1.4m under where the rest is drawn
+  from), not hanging over it.
 - **The doors toward Library South**: a cream box round them with wide piers, the name on
   the band over the doors, four glass doors under a transom well back (2021).
 - **The lobby (2020)**: glass the whole way (dark bronze frames): a lower glass stair next to
