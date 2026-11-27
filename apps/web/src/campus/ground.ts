@@ -124,10 +124,15 @@ export function lanePaint(line: (d: Node<'float'>, w: number) => Node<'float'>) 
   // (mixed, not selected: a select is a branch, and the game look's lines take derivatives)
   const hatched = select(half.greaterThan(0), float(1), float(0))
   const yellow = mix(dashed, max(double, bars), hatched).mul(wide)
-  const white = max(
-    line(abs(across.sub(lanes.z)), 0.08),
-    line(abs(across.sub(width.sub(lanes.w))), 0.08),
-  )
+  // a white line in from each curb, two (half a meter apart) where its number is negative
+  const curbLine = (inset: Node<'float'>, from: Node<'float'>) =>
+    max(
+      line(abs(from.sub(abs(inset))), 0.08),
+      line(abs(from.sub(abs(inset)).sub(0.5)), 0.08).mul(
+        select(inset.lessThan(0), float(1), float(0)),
+      ),
+    )
+  const white = max(curbLine(lanes.z, across), curbLine(lanes.w, width.sub(across)))
   return { yellow, white: white.mul(wide) }
 }
 

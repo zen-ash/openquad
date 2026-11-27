@@ -24,7 +24,7 @@ export const STARS: Point[] = [
   { x: -166, z: 286 }, // courtland st
   { x: 36, z: 341 }, // petit science center
   { x: 44, z: 455 }, // research tower
-  { x: -199, z: -27 }, // edgewood ave
+  { x: -191, z: -27 }, // edgewood ave (clear of the streetcar pole)
 ]
 
 // how close the bean has to come (m). it's 1.1m wide and the star floats at its middle

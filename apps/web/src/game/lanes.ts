@@ -666,9 +666,13 @@ function build(): Network {
           ? road.edges
           : [...road.edges].reverse()
         : [EDGE + (right ? PARKING : 0), EDGE + (left ? PARKING : 0)]
-      const outer = half - near!
+      const outer = half - Math.abs(near!)
       // up to the median's edge (m is to the right going forward)
-      const inner = road.oneway ? -(half - far!) : wide > 0 ? (forward ? m : -m) + wide / 2 : MIDDLE
+      const inner = road.oneway
+        ? -(half - Math.abs(far!))
+        : wide > 0
+          ? (forward ? m : -m) + wide / 2
+          : MIDDLE
       const n = Math.min(count, Math.max(1, Math.floor((outer - inner) / NARROW)))
       const w = Math.min(LANE, (outer - inner) / n)
       const mid = (outer + inner) / 2

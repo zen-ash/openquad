@@ -10,8 +10,8 @@ import { heightAt } from './terrain'
 
 // the loop goes round one way: east on edgewood, west on auburn. these are its two stretches
 // in the map, a line down the middle of the track (the right hand lane of the streets, osm's
-// center lines moved over by half the road less 1.7m; along hurt park and on auburn ave east
-// of courtland st the middle of the lane, build-campus EDGEWOOD). the rest of the loop (centennial olympic park,
+// center lines moved over by half the road less 1.7m; on edgewood and auburn the middle of the
+// lane, build-campus EDGEWOOD). the rest of the loop (centennial olympic park,
 // jackson st) is off the map
 const EAST: [number, number][] = [
   // luckie st from centennial olympic park, across peachtree st, down park place to edgewood
@@ -53,8 +53,8 @@ const EAST: [number, number][] = [
   // east on edgewood past hurt park to the sweet auburn market
   [-288.7, -30.6],
   [-281.8, -30.6],
-  [-269.3, -30.2],
-  [-243.3, -30.1],
+  [-269.3, -30.8],
+  [-243.3, -30.7],
   [-204.5, -30.8],
   [-96.9, -30.4],
   [-64.6, -30.05],
@@ -88,11 +88,11 @@ const WEST: [number, number][] = [
   [313.3, -152.4],
   [283.8, -152.9],
   [110.0, -153.2],
-  [71.4, -154.2],
-  [-59.7, -154.7],
-  [-70.6, -154.6],
-  [-188.5, -156.8],
-  [-201.7, -159.1],
+  [71.4, -154.3],
+  [-59.7, -155.6],
+  [-70.6, -155.5],
+  [-188.5, -155.6],
+  [-201.7, -158.6],
   [-215.2, -163.8],
   [-226.7, -171.1],
   [-229.7, -173.8],
@@ -570,7 +570,8 @@ export function streetcarPoles() {
       let [x, z] = frame(r.line, at).right(OUT)
       // behind a parking lane (edgewood along hurt park) they're on the sidewalk past it
       const street = streetAt(x, z)
-      if (street?.edges) [x, z] = frame(r.line, at).right(OUT + Math.max(...street.edges))
+      if (street?.edges)
+        [x, z] = frame(r.line, at).right(OUT + Math.max(...street.edges.map(Math.abs)))
       if ((street && !street.edges) || streetAt(x, z) || inside(x, z)) continue
       poles!.push({ x, z, stretch, s: at })
     }

@@ -27,7 +27,8 @@ export type LineData = {
   points: Pt[]
   bridge?: boolean
   // a street's paint where it isn't the usual (build-campus EDGEWOOD): a hatched median [m right
-  // of the middle, wide] and the white lines' distance in from the right and left curbs
+  // of the middle, wide, and how far along it goes if it stops] and the white lines' distance in
+  // from the right and left curbs (negative: a double line)
   median?: number[]
   edges?: number[]
 }
@@ -133,10 +134,12 @@ export function linesGeometry(lines: LineData[], y: number) {
   const deck = (p: Pt) => (p[2] === undefined ? 0 : fromElevation(p[2]))
 
   for (const { width, points, median = [0, 0], edges = [0.6, 0.6] } of lines) {
-    paint = [median[0]!, median[1]! / 2, edges[0]!, edges[1]!]
     const half = width / 2
     let along = 0
     for (let i = 0; i < points.length - 1; i++) {
+      // past where the median stops, just the yellow line down the middle
+      const hatch = along < (median[2] ?? Infinity) ? median[1]! / 2 : 0
+      paint = [median[0]!, hatch, edges[0]!, edges[1]!]
       const [ax, az] = points[i] as [number, number]
       const [bx, bz] = points[i + 1] as [number, number]
       const [ha, hb] = [deck(points[i]!), deck(points[i + 1]!)]

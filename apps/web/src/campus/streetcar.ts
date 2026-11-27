@@ -582,20 +582,42 @@ export function overheadGeometry() {
   return { steel: steel.geometry(), wire: wire.geometry() }
 }
 
-// along hurt park the concrete is the whole lane, from the hatched median to the parking lane
-// (edgewood's streets with a parking lane, build-campus EDGEWOOD), elsewhere it's 2.5m
-type Street = { width: number; points: number[][]; median?: number[]; edges?: number[] }
-const parked = (campus.roads as Street[]).filter((r) => r.edges && r.edges[0]! > 2)
+// the concrete is the streetcar's whole lane where the street has its real lanes (build-campus
+// EDGEWOOD) and it's the only lane that way, up to the lane's lines; elsewhere it's 2.5m
+type Street = {
+  width: number
+  points: number[][]
+  median?: number[]
+  edges?: number[]
+  lanes?: number
+  forward?: number
+}
+const laned = (campus.roads as Street[]).filter((r) => r.edges)
 function slabWidth(x: number, z: number) {
-  for (const r of parked) {
-    const [a, b] = [r.points[0]!, r.points[r.points.length - 1]!]
-    const [dx, dz] = [b[0]! - a[0]!, b[1]! - a[1]!]
-    const l = Math.hypot(dx, dz)
-    const t = ((x - a[0]!) * dx + (z - a[1]!) * dz) / l / l
-    const off = Math.abs(-(x - a[0]!) * dz + (z - a[1]!) * dx) / l
-    if (t < 0 || t > 1 || off > r.width / 2) continue
+  for (const r of laned) {
+    // the nearest bit of its middle line, and how far right of it the track is
+    let best: { d: number; across: number } | null = null
+    for (let i = 1; i < r.points.length; i++) {
+      const [a, b] = [r.points[i - 1]!, r.points[i]!]
+      const [dx, dz] = [b[0]! - a[0]!, b[1]! - a[1]!]
+      const l = Math.hypot(dx, dz) || 1
+      const t = ((x - a[0]!) * dx + (z - a[1]!) * dz) / l / l
+      if (t < 0 || t > 1) continue
+      const across = (-(x - a[0]!) * dz + (z - a[1]!) * dx) / l
+      if (!best || Math.abs(across) < best.d) best = { d: Math.abs(across), across }
+    }
+    if (!best || best.d > r.width / 2) continue
+    const right = best.across > 0
+    const count = right ? (r.forward ?? 1) : (r.lanes ?? 2) - (r.forward ?? 1)
+    if (count !== 1) return 2.5
     const [m = 0, wide = 0] = r.median ?? []
-    return Math.min(4, r.width / 2 - r.edges![0]! - m - wide / 2 - 0.1)
+    const inner = wide > 0 ? (right ? m : -m) + wide / 2 : 0.4
+    // (inside a double line's inner line)
+    const edge = r.edges![right ? 0 : 1]!
+    const outer = r.width / 2 - Math.abs(edge) - (edge < 0 ? 0.6 : 0)
+    const half = Math.min(best.d - inner, outer - best.d)
+    // (in quarter meters, so it comes in runs)
+    return Math.max(2.5, Math.min(4, Math.round((2 * half - 0.1) * 4) / 4))
   }
   return 2.5
 }

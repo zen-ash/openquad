@@ -43,7 +43,11 @@ are). Along Hurt Park, north to south: a 1.4 m bike lane, the westbound lane, a 
 median between double yellow lines (bars every 4.6 m), the streetcar's lane (concrete curb to
 median, 3.9 m) and a 2.3 m parking lane. West of it to Peachtree Center Ave there's a second
 westbound lane (to turn left) and only a double yellow line, and the block before Peachtree
-Center Ave has a left turn lane next to the streetcar's. On Auburn the streetcar's lane is the
+Center Ave has a left turn lane next to the streetcar's; from there to Park Place it's 12.4 m
+with bike lanes both sides, two lanes west and a double yellow line by the streetcar's lane. The
+hatch runs on to the crosswalk at Courtland St (a median's third number: how far along it goes),
+and a negative white line number is a double line (between the streetcar's and the parking
+lane, like the photos). On Auburn the streetcar's lane is the
 westbound one, between parking lanes on both sides. The road shader paints it all from a second
 attribute (`aLanes`: the median and the white lines, ground.ts `lanePaint`), the same in all
 three looks; the lanes (game/lanes.ts) come from the same numbers. The eastbound lane is the
@@ -106,17 +110,20 @@ cars do (`World.moving`).
 
 ## Still off
 
-- Only Edgewood from the block before Peachtree Center Ave to Courtland St and Auburn from
-  Courtland St to Jesse Hill Jr Dr have their real widths. Edgewood west of there is ~1 m
-  narrower than real (11 vs ~12 m), Auburn west of Courtland St ~3 m (9 vs ~12.5), and east
-  of Jesse Hill Jr Dr it wasn't measured. The hatch on Edgewood stops at x 73, the real one at the
-  crosswalk (x 80). The Hurt Park platform is from the satellite; the lidar has the shelter's
-  roof ~0.6 m nearer the track than the game's.
+- Edgewood from Park Place to Courtland St and Auburn from Peachtree St to Jesse Hill Jr Dr
+  have their measured widths. Auburn west of Courtland St is the roughest: one width a way, so
+  near Peachtree Center Ave it's ~1.5 m too wide, and the 3-4 m striped zone north of the
+  streetcar's lane (hatched or angled parking, the satellite can't tell) is plain asphalt. Auburn
+  east of Jesse Hill Jr Dr is osm's 9 m: the lidar's curbs say ~10.5 m, the satellite ~8 m
+  (and it's ~2.5 m off the buildings there), so it's left. The bend at Park Place and the
+  diagonal by Woodruff Park weren't measured. The Hurt Park platform is from the satellite; the
+  lidar has the shelter's roof ~0.6 m nearer the track than the game's.
 - The traffic drives with the streetcars all day, also when they aren't running (before 8:15 and
   after 23:15 a car can wait a few seconds behind a streetcar that isn't there).
 - The streetcar doesn't wait for cars: where its back end swings round the Park Place corner or a
   car was already going when it came, they can touch. Over half an hour that's ~4 car-seconds
-  (23 before the streets were widened and cars gave way, `streetcar.test.ts` keeps it under 10).
+  (23 before the streets were widened and cars gave way; cars queued at a red light ahead of it
+  add more on some days, `streetcar.test.ts` keeps it under 20).
 - In the game look the concrete lane is a little darker than the light asphalt (it's the
   realistic look's track material, real concrete is lighter than the asphalt).
 - The traffic takes about twice as long to drive at load (four periods instead of two before it

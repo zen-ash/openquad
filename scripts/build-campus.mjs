@@ -678,13 +678,13 @@ const ROAD_WIDTH = {
 }
 const PATH_WIDTH = { footway: 2.5, pedestrian: 5, path: 2, steps: 2.5, cycleway: 2 }
 
-// edgewood ave from peachtree center ave along hurt park, by osm way id. measured on the
+// edgewood ave and auburn ave where the streetcar runs, by osm way id. measured on the
 // lidar's paint and curbs (2018, intensity) and esri's feb 2026 image: osm's line is up to 2m
 // north of the street's middle and along the park the street is ~3m wider than a secondary.
 // the middle drawn west to east (osm's nodes, moved south), curb to curb, the yellow down the
 // middle [m right of the middle, wide: hatched between double lines if it's wider than a double
 // line], how far in from the right (south) and left curbs the white lines are (the parking and
-// bike lanes), and lanes / how many go east. the eastbound lane next to the curb or the parking
+// bike lanes, negative = a double line), and lanes / how many go east. the eastbound lane next to the curb or the parking
 // is the streetcar's (cars share it)
 const EDGEWOOD = {
   // the block before peachtree center ave: a left turn lane next to the streetcar's
@@ -731,7 +731,7 @@ const EDGEWOOD = {
     ],
     width: 14,
     median: [-0.2, 0.34],
-    edges: [2.3, 1.1],
+    edges: [-2.3, 1.1],
     lanes: 3,
     forward: 1,
   },
@@ -745,22 +745,99 @@ const EDGEWOOD = {
     ],
     width: 13.8,
     median: [-0.85, 3.3],
-    edges: [2.3, 1.4],
+    edges: [-2.3, 1.4],
     lanes: 2,
     forward: 1,
   },
   // and auburn ave from courtland st to jesse hill jr dr (the streetcar's way back west): osm's
   // line is the middle, but it's ~12.4m with parking both sides, not 9
   1118731507: { width: 12.4, edges: [2.3, 2.3] },
-  // on to courtland st: the curb comes out to the crosswalk (no parking), the hatch stops at it
+  // on to courtland st: the curb comes out to the crosswalk (no parking), the hatch goes on to
+  // the crosswalk at x 80 (median's third number: meters along)
   563551381: {
     points: [
       [73.3, -31.8],
+      [80, -32.15],
       [83.6, -32.4],
       [100.6, -32.9],
     ],
     width: 11.7,
+    median: [0, 3.3, 6.7],
     edges: [0.6, 1.4],
+    lanes: 2,
+    forward: 1,
+  },
+  // edgewood from park place to the block before peachtree center ave: 12.4m, bike lanes both
+  // sides, two lanes west (the inner one to turn left), the streetcar's concrete lane east of a
+  // double yellow line
+  799578840: {
+    points: [
+      [-288.9, -34.0],
+      [-288.7, -34.0],
+      [-281.7, -34.0],
+      [-269.2, -34.0],
+      [-243.3, -33.9],
+    ],
+    width: 12.4,
+    median: [1.23, 0.34],
+    edges: [1.2, 1.6],
+    lanes: 3,
+    forward: 1,
+  },
+  1381919616: {
+    points: [
+      [-243.3, -33.9],
+      [-233.1, -34.0],
+      [-204.5, -34.0],
+    ],
+    width: 12.4,
+    median: [1.23, 0.34],
+    edges: [1.2, 1.6],
+    lanes: 3,
+    forward: 1,
+  },
+  872063499: {
+    points: [
+      [-204.5, -34.0],
+      [-200, -34.0],
+      [-151, -33.8],
+    ],
+    width: 12.4,
+    median: [1.23, 0.34],
+    edges: [1.2, 1.6],
+    lanes: 3,
+    forward: 1,
+  },
+  // auburn west of courtland st: ~2m north of osm's line by woodruff park. the streetcar's lane
+  // (westbound) has 3-4m of striped curb zone north of it, parking on the south side east of
+  // peachtree center ave
+  563551378: {
+    points: [
+      [-228.4, -170.55],
+      [-223.8, -167.55],
+      [-216.4, -162.95],
+      [-202.4, -158.05],
+      [-188.8, -155.65],
+      [-76, -154.5],
+      [-70.6, -154.4],
+      [-66.8, -154.4],
+    ],
+    width: 12,
+    median: [2.1, 0.34],
+    edges: [0.6, 4.3],
+    lanes: 2,
+    forward: 1,
+  },
+  630644327: {
+    points: [
+      [-66.8, -154.4],
+      [-59.7, -154.3],
+      [0, -152.9],
+      [71.4, -152.6],
+    ],
+    width: 13.5,
+    median: [0.2, 0.34],
+    edges: [2.3, 3.2],
     lanes: 2,
     forward: 1,
   },
