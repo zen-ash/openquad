@@ -386,6 +386,8 @@ function pantherQuad(lines, crossings) {
   ]
   // the lawn, a long rounded rectangle down the middle of where sparks hall stood
   const lawn = []
+  // and a small one at the foot of the library stair, beside its lowest flight
+  const small = rect(86.5, 96.5, 9.8, 14.6).map(at)
   const corners = [
     [66, 39, 0],
     [33, 39, Math.PI / 2],
@@ -409,27 +411,23 @@ function pantherQuad(lines, crossings) {
     },
   ]
   // mulch beds that follow the ground: the bank along courtland, a strip along the lawn's
-  // far side, one along the greenway by library north, one at the foot of the planters
-  const beds = [
-    rect(22, 76, 1.2, 11.6),
-    rect(27, 72, 48.2, 51),
-    rect(80, 96, 52, 57.5),
-    rect(76, 88, 21.5, 26),
-  ].map((r) => r.map(at))
-  // and raised ones with a level top, stepping down the slope at the library end
+  // far side, one along the greenway by library north
+  const beds = [rect(22, 76, 1.2, 11.6), rect(27, 72, 48.2, 51), rect(80, 96, 52, 57.5)].map((r) =>
+    r.map(at),
+  )
+  // and raised ones with a level top, stepping down the slope at the library end beside the
+  // wide steps (raised.ts)
   const planters = [
     rect(73, 82, 1, 6.5),
-    rect(73, 82, 7.5, 13),
-    rect(73, 81, 14, 20),
+    rect(73, 82, 7.5, 12.2),
+    rect(73, 81, 13, 17.2),
     rect(84, 96, 1, 8),
-    rect(84, 96, 9, 15),
   ].map((r) => r.map(at))
   // young trees, thin ones (drawn by pantherQuad.ts, not the full grown map trees)
   const saplings = [
     ...[30, 40, 50, 60, 70].map((a) => at([a, 6.5])),
     ...[31, 39, 47, 55, 63, 71].map((a) => at([a, 49.6])),
     ...[84, 92].map((a) => at([a, 54.8])),
-    ...[79, 85].map((a) => at([a, 23.7])),
     ...[
       [77.5, 4],
       [77.5, 16.5],
@@ -457,13 +455,13 @@ function pantherQuad(lines, crossings) {
     at([22, 6]),
     at([79, 44]),
     at([82, 15.5]),
-    at([84, 33]),
+    at([81, 36.8]),
   ]
   // blue adirondack chairs and closed blue umbrellas at the lawn's library end and by the
   // seat steps, blue bins. [x, z, the way it faces]
   const toLawn = Math.atan2(-u[0], -u[1])
   const chairs = [
-    [76, 27],
+    [75.6, 20.6],
     [76.4, 29.6],
     [76.2, 32.4],
     [76.6, 36],
@@ -472,7 +470,7 @@ function pantherQuad(lines, crossings) {
     [75.2, 23.8],
   ].map((p) => [...at(p), toLawn])
   const umbrellas = [
-    [77.6, 25.4],
+    [75.6, 27],
     [78, 31],
     [77.8, 40.2],
     [94.8, 32.6],
@@ -481,7 +479,7 @@ function pantherQuad(lines, crossings) {
   const bins = [
     [95.2, 30.3],
     [84.6, 18],
-    [77.5, 22.5],
+    [75.8, 18.2],
     [24, 30],
   ].map(at)
   // concrete seat walls along the promenade side of the lawn
@@ -490,6 +488,11 @@ function pantherQuad(lines, crossings) {
     [45, 51, 55.6],
     [59, 65, 55.6],
   ].map(([a0, a1, b]) => [at([a0, b]), at([a1, b])])
+  // a wooden seat platform across the promenade from them (the stair photo)
+  const deck = [at([44, 58]), at([50, 58]), at([50, 60]), at([44, 60])]
+  // a round stone medallion in the brick by the porch, and a bike rack at the stair's foot
+  const medallion = [...at([82.2, 31]), 2]
+  const racks = [16.4, 17.3, 18.2, 19.1].map((b) => at([96.6, b]))
 
   const trees = [
     // gilmer's two rows, staying off the crosswalks the gps walks people across
@@ -505,11 +508,12 @@ function pantherQuad(lines, crossings) {
 
   return {
     closed,
-    parks: [lawn],
+    parks: [lawn, small],
     // no old trees on the lawn, the plaza or the steps
     clear: [
       lawn,
       rect(-1, 23, -1, 35).map(at),
+      rect(77, 97, 9, 38).map(at),
       ...terraces.map((t) => t.points),
       ...beds,
       ...planters,
@@ -532,6 +536,9 @@ function pantherQuad(lines, crossings) {
       umbrellas,
       bins,
       seats,
+      deck,
+      medallion,
+      racks,
     },
   }
 }

@@ -24,7 +24,9 @@ https://map.concept3d.com/?id=1108#!m/1291555
 - **Newest photos**: Nov 13-21 2026 (the first day of classes on it and the opening). Nothing
   on Commons or Mapillary yet, and the newest satellite tiles still have Sparks Hall. Looked
   again on Nov 26: Urbanize Atlanta's story (Nov 18) leads with a crop of the same high photo,
-  GSU's map still has only the 2025 renderings, Mapillary's newest there is from 2019.
+  GSU's map still has only the 2025 renderings, Mapillary's newest there is from 2019. And again
+  late on Nov 26 (fourth round): GSU news has nothing newer than the Nov 16 story, the map's
+  photos are the same three, Mapillary's newest is still 2019.
 - **Rating**: one camera lined up on the skyline (the high photo from library north), the rest
   by eye. No camera fit with known 3d points, so the layout is good to a few meters at best.
 
@@ -93,7 +95,8 @@ old Gilmer corner (-3, 78) toward library north, v in toward Arts & Humanities.
   all full grown), bronzie (a plain shape, not the sculpture) on its block. scene/PantherQuad.tsx gives them library materials, the flags are one mesh.
 - ground.ts quadBrick(): the herringbone and bands, the same pattern in all three looks.
 - Library North's paver patch out front is gone (the quad's brick covers it).
-- Collision: bronzie's block, the raised planters, the column, the poles (game/world.ts).
+- Collision: bronzie's block, the raised planters, the seat platform, the column, the poles
+  (game/world.ts).
 - Third round (Nov 26): the library stair is six raised.ts pieces (deck, three flights, two
   landings, all `stairs` so the ground isn't draped over them) drawn by pantherQuad.ts with
   the cable guard and two handrails. The porch (two pieces of grey pavers round the lobby's
@@ -107,9 +110,40 @@ old Gilmer corner (-3, 78) toward library north, v in toward Arts & Humanities.
   library north's wall, and its sides are walls for walking (the guard 1.07m, the planter
   0.35m) so you can't step off it. The column's cornice got its underside: from below you
   saw sky through the overhang and it looked like it floated.
+- Fourth round (Nov 26, night): the library end is a level brick plaza now, raised.ts
+  'Panther Quad library plaza' at 314.3 (library north's floor is 314.4) from the lobby out to
+  the wide steps, with the porch, bronzie, the small lawn and the foot of the long stair on it
+  (the long stair's last flight now ends at 314.3, not 314.06). The ground there was the 2018
+  bare earth filled in over Sparks Hall, which sloped about 0.4m across the porch. 'Panther
+  Quad wide steps' go from it down to the brick at the lawn's end (313.35): six risers, 10m
+  wide, rails at both sides and in the middle, sides are walls for walking. The raised planters
+  beside them moved over a bit and the bed and two saplings that were under them are gone.
+  Also new: the small lawn at the foot of the long stair (a second park in campus.json, where
+  a planter was), a stone medallion in the brick by the porch (light stone with a darker ring,
+  4m across), a bike rack of four hoops by the stair's foot, and a wooden seat platform on a
+  concrete base across the promenade from the seat walls. Shrubs are 15 triangle mounds with a
+  wobbly outline (they were 8 triangle octahedra that read as green diamonds).
 
 ## What still differs
 
+- Fourth round: in the high photo (rd-students) the wide steps' risers face the library end
+  and the cheek wall and the planter walls beside them face it too (the same wall shows from
+  the porch in rd-greenway): the real plaza with the chairs at the lawn's end looks about 1m
+  HIGHER than the brick in front of the library, not lower. I built them going down because
+  the game's ground falls 1.5m from the library to the lawn and library north's floor is
+  314.4: going up would need the whole quad's ground raised (lawn, seat steps, the column
+  plaza's steps). The 2018 bare earth over the Sparks Hall site is the likely culprit, but
+  there's no newer survey to check it against. Side by side: final steps.jpg.
+- Fourth round camera fits: I put the quad's u, v grid on both photos through the third
+  round's cameras and fitted a level camera to the high photo's skyline (Southern Bell's
+  lattice and rim, five corners of the Hurt Building): about 20px off wherever I put it, and
+  its height and position aren't pinned down (the left tower in that photo is Langdale Hall
+  with a walkway at its foot, not library north). Nothing near the camera I could trust, so
+  the long stair stays in the slot between Courtland St and the lobby, the only place it fits
+  along library north's wall.
+- The blue mesh round the small lawn isn't drawn (same as the big lawn). The medallion reads
+  faintly in library north's shade in the afternoon. The wooden platform's place along the
+  promenade is from one telephoto crop, by eye.
 - Third round: the stair photo can't be lined up with the game's layout. From the photo's
   camera (by library north's lobby, up a floor) the stair and the lawn are about 45 degrees
   apart and the stair's top is just in front of student center west; in the game they're 95
@@ -118,12 +152,7 @@ old Gilmer corner (-3, 78) toward library north, v in toward Arts & Humanities.
   off there. I kept the stair where it was and only fixed what it looks like. The side by
   sides of the stair and the porch are the same things from roughly the same side, not a
   fitted camera.
-- In the high photo the library end is a level brick plaza with a wide stair (three rails)
-  down to a lower plaza at the lawn's end, where the chairs and umbrellas are, and the raised
-  planters step down beside it. Not built: in the game it's the terrain's slope.
-- Also not built: the small fenced lawn at the stair's foot, the dark round medallion in the
-  brick by the porch, bike racks, a wooden seat platform at the far end of the promenade,
-  food truck spots (none in any photo, only in the 2025 renderings).
+- Not built: food truck spots (none in any photo, only in the 2025 renderings).
 - In the stair photo the flags stand to the left of the column (north of it from there); in
   the game they're on its other side. One photo, not changed.
 
@@ -146,10 +175,17 @@ old Gilmer corner (-3, 78) toward library north, v in toward Arts & Humanities.
   the glass) is from one telephoto photo by eye.
 - The Ground Crew Grove's place (in front of Arts & Humanities by the plaza) and its plaque are
   from the rendering, no photo of it yet. The grey pavers under its trees aren't drawn.
-- Shrubs are 8 triangle lumps (they read a bit like green diamonds close up). The young trees
+- The young trees
   are bare now; the ones along the promenade in the photos still have yellow leaves.
 
 ## Cost
+
+Fourth round (Nov 26, night): frame time measured after the merge. Draws on the dev server
+(counts.mjs, before = the same server with my changes stashed), prepass/scene/shadow: quad
+99/176/108 -> 100/177/108, library-north 117/151/125 -> 117/151/125, hurt-park 77/156/130 ->
+77/158/130. Warm-up on the dev server 851 builds / 775 pipelines -> 860 / 784: the new wood
+part (the library's wood family, already used by library north, no new shader; it doesn't
+cast). 12 meshes plus the flags. About 18.8k triangles (shrubs 4.8k -> 7.8k).
 
 Third round (Nov 26): frame time measured after the merge. Draws on the dev server
 (counts.mjs, before = the same server with my changes stashed): quad 84/167/180 ->

@@ -2,7 +2,7 @@ import { useFrame } from '@react-three/fiber'
 import { useMemo } from 'react'
 import * as THREE from 'three'
 import campus from '../campus/campus.json'
-import { concrete, marble, metal, paving, plain } from '../campus/materials'
+import { concrete, marble, metal, paving, plain, wood } from '../campus/materials'
 import { pantherQuadGeometry, type Part } from '../campus/pantherQuad'
 import { night } from '../campus/facade'
 import { heightAt } from '../game/terrain'
@@ -14,7 +14,7 @@ const POLE = 11
 
 // colors from gsu's opening photos (nov 2026): near white concrete steps, the column's white
 // georgia marble with grey streaks, brushed steel, a dark bronze panther, fresh mulch, the
-// porch's grey stone, gsu blue chairs and umbrellas, olive grasses
+// porch's grey stone, gsu blue chairs and umbrellas, olive grasses, the seat platform's wood
 const materials: Record<Part, THREE.Material> = {
   concrete: concrete({ color: '#aaa9a5', roughness: 0.85 }),
   marble: marble({ color: '#e2e2de', slab: [1.6, 1.25], veins: 1.2, joint: [0.005, 0.3] }),
@@ -22,11 +22,13 @@ const materials: Record<Part, THREE.Material> = {
   blue: plain({ color: '#1f4aa0', roughness: 0.5 }),
   bronze: metal({ color: '#3b3a35', roughness: 0.4, metalness: 0.6 }),
   soil: plain({ color: '#433323', roughness: 1 }),
-  shrub: plain({ color: '#3f5530', roughness: 0.9 }),
+  shrub: plain({ color: '#36492b', roughness: 0.9 }),
   grass: plain({ color: '#6c6f45', roughness: 0.9 }),
   paving: paving({ color: '#6e6d69', roughness: 0.8 }),
   lamp: lampGlass,
   glow: new THREE.MeshStandardMaterial({ color: '#2b3a66', emissive: '#000000', roughness: 0.4 }),
+  // the seat platform's boards, weathered brown
+  wood: wood({ color: '#6b5947', size: 2, saturation: 0.6, roughness: 0.8 }),
 }
 // the column's blue lines, faded in like the lamps (a new shader if the number went to 0)
 const BLUE = new THREE.Color('#2f6bff')

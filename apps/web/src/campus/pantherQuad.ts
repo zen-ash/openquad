@@ -23,6 +23,7 @@ export type Part =
   | 'paving'
   | 'lamp'
   | 'glow'
+  | 'wood'
 
 const { quad } = campus
 const pt = ([x, z]: number[]) => ({ x: x!, z: z! })
@@ -178,6 +179,7 @@ export function pantherQuadGeometry() {
   porch(add)
   seats(add)
   lights(add)
+  extras(add)
   return merged()
 }
 
@@ -189,7 +191,9 @@ function plazaSides(add: Add) {
     const foot = s.ground.map((g) => g - 0.3)
     const [a, b] = [v3(s.p, s.top[0]), v3(s.q, s.top[1])]
     add('concrete', face(v3(s.p, foot[0]!), v3(s.q, foot[1]!), b, a, s.out))
-    // a coping along the top
+    // a coping along the top, not where it's only a few cm over the ground (the library
+    // plaza's edges, it read as a white line drawn on the brick)
+    if (Math.max(s.top[0] - s.ground[0], s.top[1] - s.ground[1]) < 0.25) continue
     const o = { x: s.p.x + s.out.x * 0.05, z: s.p.z + s.out.z * 0.05 }
     const q = { x: s.q.x + s.out.x * 0.05, z: s.q.z + s.out.z * 0.05 }
     add(
@@ -250,10 +254,14 @@ function stairs(add: Add) {
       [p0, p3],
       [p1, p2],
     ] as const) {
-      const side = lowestUnder([
-        [a.x, a.z],
-        [b.x, b.z],
-      ])
+      // (the wide steps' last tread goes into the ground at one end)
+      const side = Math.min(
+        lowestUnder([
+          [a.x, a.z],
+          [b.x, b.z],
+        ]),
+        hBottom,
+      )
       const other = a === p0 ? p1 : p0
       const out = { x: a.x - other.x, z: a.z - other.z }
       add('concrete', face(v3(a, side - 0.3), v3(b, side - 0.3), v3(b, hBottom), v3(a, hTop), out))
@@ -481,7 +489,7 @@ function bed(add: Add, c: Point[], b: number, level: number | null) {
       }
       // mostly small ones, a few bigger
       const s = r > 0.62 ? 0.45 + (r - 0.62) * 3 : 0.16 + r * 0.24
-      shrub(add, new THREE.Vector3(p.x, y(p) + s * 0.25, p.z), [s, s * 0.75, s], r)
+      shrub(add, new THREE.Vector3(p.x, y(p) + s * 0.25, p.z), [s, s * 0.9, s], r)
     }
 }
 
@@ -521,19 +529,43 @@ function lerpUp(p: Point, mid: Point, yy: number) {
   return v3({ x: p.x + ((mid.x - p.x) / l) * 0.2, z: p.z + ((mid.z - p.z) / l) * 0.2 }, yy)
 }
 
-// a low lump, 8 triangles with round normals so it reads as soft, not a cut stone
-const LUMP = new THREE.OctahedronGeometry(1, 0)
+// a low mound sitting on the mulch: five sides, a ring a bit in and up, a top. 15 triangles
+// with round normals (the old 8 triangle octahedra read like green diamonds close up)
+const LUMP = (() => {
+  const ring = (r: number, y: number, turn: number) =>
+    Array.from({ length: 5 }, (_, k) => {
+      const t = ((k + turn) / 5) * Math.PI * 2
+      return new THREE.Vector3(Math.cos(t) * r, y, Math.sin(t) * r)
+    })
+  const [low, mid] = [ring(1, -0.35, 0), ring(0.82, 0.35, 0.5)]
+  const top = new THREE.Vector3(0, 0.78, 0)
+  const tris: THREE.Vector3[] = []
+  for (let k = 0; k < 5; k++) {
+    const [a, b, c, d] = [low[k]!, low[(k + 1) % 5]!, mid[k]!, mid[(k + 1) % 5]!]
+    tris.push(a, c, b, b, c, d, c, top, d)
+  }
+  const geo = new THREE.BufferGeometry().setFromPoints(tris)
+  geo.computeVertexNormals()
+  return geo
+})()
 function shrub(add: Add, at: THREE.Vector3, size: number[], r: number) {
   const m4 = new THREE.Matrix4().compose(
-    at,
-    new THREE.Quaternion().setFromEuler(new THREE.Euler(r * 0.6, r * 6, r * 0.4)),
+    new THREE.Vector3(at.x, at.y - size[1]! * 0.25, at.z),
+    new THREE.Quaternion().setFromEuler(new THREE.Euler(r * 0.15, r * 6, r * 0.1)),
     new THREE.Vector3(...size),
   )
   const g = lump(LUMP, m4)
   const pos = g.getAttribute('position')
   const nor = g.getAttribute('normal')
+  const c = new THREE.Vector3(at.x, at.y - size[1]! * 0.6, at.z)
   for (let k = 0; k < pos.count; k++) {
-    const n = new THREE.Vector3().fromBufferAttribute(pos, k).sub(at).normalize()
+    // pushed in and out round the sides so they aren't all the same pentagon (by angle, so the
+    // copies of a corner in each triangle move together)
+    const [dx, dz] = [pos.getX(k) - at.x, pos.getZ(k) - at.z]
+    const s = 1 + 0.16 * Math.sin(Math.atan2(dz, dx) * 2 + r * 40)
+    pos.setX(k, at.x + dx * s)
+    pos.setZ(k, at.z + dz * s)
+    const n = new THREE.Vector3().fromBufferAttribute(pos, k).sub(c).normalize()
     nor.setXYZ(k, n.x, n.y, n.z)
   }
   add('shrub', g)
@@ -700,6 +732,56 @@ function seats(add: Add) {
   }
 }
 
+// the wooden seat platform on the promenade, the medallion in the brick by the porch and the
+// bike rack at the foot of the library stair
+function extras(add: Add) {
+  const d = (quad.deck as number[][]).map(pt)
+  const g = Math.max(...d.map((p) => heightAt(p.x, p.z)))
+  const mid = lerp(d[0]!, d[2]!, 0.5)
+  // a concrete base set in a bit under the boards
+  const base = d.map((p) => lerp(p, mid, 0.1 / Math.hypot(p.x - mid.x, p.z - mid.z)))
+  boxOf(add, base, lowestUnder(d.map((p) => [p.x, p.z])) - 0.1, g + 0.38)
+  d.forEach((p, i) => {
+    const q = d[(i + 1) % 4]!
+    const e = lerp(p, q, 0.5)
+    add('wood', wallQuad(p, q, g + 0.38, g + 0.45, { x: e.x - mid.x, z: e.z - mid.z }))
+  })
+  add('wood', flat(d, g + 0.45))
+
+  // light stone with a darker grey ring in it, a few mm over the brick
+  const [mx, mz, r] = quad.medallion as [number, number, number]
+  const y = heightAt(mx, mz)
+  for (const [part, rr, lift] of [
+    ['concrete', r, 0.004],
+    ['paving', r * 0.75, 0.007],
+    ['concrete', r * 0.55, 0.01],
+  ] as const)
+    add(part, placed(disc(rr), mx, y + lift, mz, 0))
+
+  // inverted u hoops, side on to the stair
+  for (const [x, z] of quad.racks as [number, number][]) {
+    const yy = heightAt(x, z) + 0.03
+    const [a, b] = [alongCourtland(x, z, -0.35), alongCourtland(x, z, 0.35)]
+    add('metal', bar(v3(a, yy), v3(a, yy + 0.8), 0.025, 5))
+    add('metal', bar(v3(b, yy), v3(b, yy + 0.8), 0.025, 5))
+    add('metal', bar(v3(a, yy + 0.8), v3(b, yy + 0.8), 0.025, 5))
+  }
+}
+
+// a flat round piece facing up, uvs in meters like the rest
+function disc(r: number) {
+  const geo = new THREE.CircleGeometry(r, 20).rotateX(-Math.PI / 2)
+  const uv = geo.getAttribute('uv')
+  for (let k = 0; k < uv.count; k++) uv.setXY(k, uv.getX(k) * 2 * r, uv.getY(k) * 2 * r)
+  return geo
+}
+
+// a point d meters from x, z along courtland (the quad's u in build-campus)
+const alongCourtland = (x: number, z: number, d: number) => ({
+  x: x - 0.651 * d,
+  z: z + 0.759 * d,
+})
+
 // the light poles: slim grey poles with a flat round head, lit from under it at night
 function lights(add: Add) {
   for (const [x, z] of quad.lights as [number, number][]) {
@@ -773,7 +855,8 @@ function boxOf(add: Add, c: Point[], y0: number, y1: number) {
   add('concrete', flat(c, y1))
 }
 
-// what you bump into: bronzie's block, the column (you can stand on its steps) and the poles
+// what you bump into: bronzie's block, the planters, the seat platform, the column (you can
+// stand on its steps) and the poles
 export function pantherQuadObstacles() {
   const [x, z, yaw] = quad.bronzie as [number, number, number]
   const f = frame({ x, z }, { x: x + Math.cos(yaw), z: z - Math.sin(yaw) })
@@ -783,6 +866,7 @@ export function pantherQuadObstacles() {
     blocks: [
       block.map((p) => [p.x, p.z] as [number, number]),
       ...(quad.planters as [number, number][][]),
+      quad.deck as [number, number][],
     ],
     circles: [
       { x: cx, z: cz, radius: 1.2 },

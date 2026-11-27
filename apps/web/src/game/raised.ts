@@ -253,7 +253,7 @@ export const RAISED_PLAZAS: Record<string, Data> = {
   },
   'Panther Quad library flight 3': {
     by: 'Panther Quad',
-    top: [315.12, 315.12, 314.06],
+    top: [315.12, 315.12, 314.3],
     points: [
       [-76.44, 143.4],
       [-79.14, 146.5],
@@ -273,6 +273,52 @@ export const RAISED_PLAZAS: Record<string, Data> = {
       [-68.7, 150],
     ],
     edges: [null, 'open', null, 'open'],
+  },
+  // the level brick plaza at the library end: the porch, the small lawn at the stair's foot and
+  // bronzie, up to library north's lobby (its floor is 314.4). the ground there is the 2018
+  // bare earth filled in over sparks hall and slopes, the photos have it level
+  'Panther Quad library plaza': {
+    by: 'Panther Quad',
+    top: 314.3,
+    points: [
+      [-66.62, 128.82],
+      [-69.87, 132.62],
+      [-65.17, 136.66],
+      [-73.21, 146.16],
+      [-74.46, 145.09],
+      [-76.44, 143.4],
+      [-77.95, 142.12],
+      [-80.65, 145.22],
+      [-81.2, 145.83],
+      [-87.6, 140.3],
+      [-83.7, 135.8],
+      [-88.2, 131.8],
+      [-89.9, 129.7],
+      [-91.6, 127.5],
+      [-93.3, 125.3],
+      [-83.69, 114.18],
+      [-76.33, 120.49],
+      [-68.74, 127],
+    ],
+    edges: [
+      ...['open', 'open', 'open', null, null, null, null, null, null],
+      ...[null, null, null, null, null, 'open', 'open', null, 'open'],
+    ] as Edge[],
+  },
+  // and the wide steps from it down to the brick at the lawn's end, rails at both sides and in
+  // the middle (the high photo from the opening). in that photo the risers face the library
+  // end, so the real lawn end may be the higher one: the ground here goes down to the lawn
+  'Panther Quad wide steps': {
+    by: 'Panther Quad',
+    top: [314.3, 314.3, 313.35],
+    points: [
+      [-68.74, 127],
+      [-76.33, 120.49],
+      [-74.51, 118.37],
+      [-66.92, 124.88],
+    ],
+    edges: [null, 0, 'open', 0],
+    stairs: true,
   },
   // piedmont north's court between building a's arm and building b is sunken 3m (lidar 299.0)
   // behind a retaining wall along its north side (the satellite's shadow line). this is the
