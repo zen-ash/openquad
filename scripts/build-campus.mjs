@@ -1250,8 +1250,8 @@ const LIBRARY_SOUTH = {
   height: 45.3,
   // the doors under the plaza, meters along that side from the classroom south end
   door: 11,
-  // the corner: the plaza is 5.2m up, and the glass box on it is 8.85m up at the top
-  cornerHeight: 8.85,
+  // the corner: the plaza is 6m up, and the glass box on it is 9.65m up at the top
+  cornerHeight: 9.65,
   // the link is a glass building over decatur street, wall to wall between the two
   // libraries (lidar: 16.9m along the street, square to it). osm's outline is short at the
   // courtland st end. its corners on library north's wall, and where its courtland st side

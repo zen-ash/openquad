@@ -1,6 +1,6 @@
 import type { Point } from '../game/collision'
 import { CEILING, DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
-import { baseOf } from '../game/surface'
+import { baseOf, liftOf } from '../game/surface'
 import { fromElevation } from '../game/terrain'
 import { classroomWalls } from './classroomSouth'
 import type { Sign } from './landmarks'
@@ -64,8 +64,15 @@ const SLOT_DEPTH = 0.12
 // the street floor is a lighter brick with stripes of the tan one, [every, how tall]
 // (2021 dashcam)
 const STRIPES: [number, number] = [0.8, 0.2]
-// the plaza: the underside of its deck and its floor
-export const DECK: [number, number] = [4.2, 5.2]
+// the plaza: the underside of its deck and its floor. lidar has the floor at 317.75-317.9 by
+// the glass side and 317.4-317.5 at the street edge, 6m over the datum (surface.ts)
+export const DECK: [number, number] = [4.6, 6]
+// under its street edge: the brick wall goes up to the deck (about 5m over the sidewalk on
+// a camera fitted to the 2019 photo from decatur st), stands back under the beam, and has its
+// stripes a meter apart
+const WALL_TOP = DECK[0]
+const WALL_BACK = 1.2
+const WALL_STRIPES: [number, number] = [1, 0.2]
 
 export type Side = 'ne' | 'se' | 's' | 'sw' | 'nw' | 'n'
 
@@ -156,17 +163,20 @@ const STREET_DOORS: [number, number] = [4.5, 8.5]
 export const PLAZA_DOORS: [number, number] = [16.2, 20.6]
 // the plaza entrance (gsu 2026): a tall storefront set back under a soffit, a deep grey
 // fascia over it in two tiers, round columns, and the dark glass from the top of the fascia.
-// heights from a camera fitted on the 2026 photo: the plaza came out 5.3m up
-const SOFFIT = 9.8
+// heights over the plaza from a camera fitted on the 2026 photo
+const SOFFIT = DECK[1] + 4.6
 const TRANSOM = 0.95
-const FASCIA: [number, number, number] = [9.8, 11.4, 12.3]
+const FASCIA: [number, number, number] = [SOFFIT, DECK[1] + 6.2, DECK[1] + 7.1]
+// the columns go up to a beam
+const BEAM = DECK[1] + 10
 const ENTRY_DEPTH = 2.6
 // the corner by classroom south stands against the west end of the plaza side: the dock
 // under the plaza, a glass box on it with brick piers and a dark fascia with a lip along
-// its top (gsu 2026, measured on a camera fitted on the box)
+// its top (gsu 2026, measured on a camera fitted on the box: 3.65m over the plaza, lidar has
+// its roof at 321.2-321.4)
 const CORNER = 5.1
-export const CORNER_TOP = 8.85
-const BOX_FASCIA = 7.7
+export const CORNER_TOP = DECK[1] + 3.65
+const BOX_FASCIA = DECK[1] + 2.5
 
 // solidPieces() wants only holes that reach into y0-y1: one wholly above it comes back as
 // wall up to the hole
@@ -196,7 +206,13 @@ export function librarySouthGeometry(b: LibrarySouthData) {
   const { add, block, core, inside, merged } = collect<Part>()
   const H = b.height
   const top = H - COPING
-  const roof = H - 1
+  // lidar: the roof is half a meter under the coping
+  const roof = H - 0.5
+  // the doors under the plaza are on the ground there, which is lower than where the building
+  // is drawn from (the dock in front of them)
+  const lift = liftOf(b)
+  // the link's underside, the glass side is glass from there up inside it
+  const underLink = fromElevation(UNDER_LINK) - baseOf(b)
   const outline = b.points.map(pt)
   const [north, east] = b.landmark!.front.map(pt) as [Point, Point]
   const f = frame(north, east)
@@ -429,7 +445,7 @@ export function librarySouthGeometry(b: LibrarySouthData) {
     const [g0, g1] = [-RECESS * t[0], GLASS_WALL]
     const plane = RECESS - 0.05
     glassy.push([g0 - 0.5, g1, FASCIA[0], H])
-    glassy.push([g0 - 0.5, ENTRY[0], 8.2, FASCIA[0]])
+    glassy.push([g0 - 0.5, ENTRY[0], underLink, FASCIA[0]])
     // each floor tall panes and a row of short ones along the top (commons 2025), one piece
     // of glass each, so the mullions line up floor to floor
     for (let k = 2; k < FLOORS; k++) {
@@ -447,7 +463,7 @@ export function librarySouthGeometry(b: LibrarySouthData) {
     const [e0, e1] = ENTRY
     lump('metal', w, g0, e1, FASCIA[0], FASCIA[1], RECESS + 0.9, plane)
     lump('metal', w, g0, e1, FASCIA[1], FASCIA[2], RECESS + 0.35, plane)
-    glass('curtain', w, g0, e0, 8.2, FASCIA[0], plane)
+    glass('curtain', w, g0, e0, underLink, FASCIA[0], plane)
 
     // the plaza entrance, set back under the soffit: a tall storefront, round columns
     glassy.push([e0, e1, DECK[1], FASCIA[0]])
@@ -475,8 +491,8 @@ export function librarySouthGeometry(b: LibrarySouthData) {
     // the columns go on up through the fascia to a beam over the next floor (red in 2007,
     // grey now; gsu's 2026 photo sees them over the fascia, not the beam)
     for (const u of [e0 + 1.3, e0 + 7.2])
-      add('metal', column(w.at(u, RECESS + 0.35), 0.33, DECK[1], 15.2))
-    lump('metal', w, e0, e0 + 8, 14.6, 15.2, RECESS + 0.7, plane)
+      add('metal', column(w.at(u, RECESS + 0.35), 0.33, DECK[1], BEAM))
+    lump('metal', w, e0, e0 + 8, BEAM - 0.6, BEAM, RECESS + 0.7, plane)
     sign(w, e0 + 3.2, back + 0.09, DECK[1] + 3.3, {
       text: 'LIBRARY SOUTH',
       letters: true,
@@ -499,16 +515,18 @@ export function librarySouthGeometry(b: LibrarySouthData) {
       color: '#33363b',
       scale: 0.55,
     })
-    // under the plaza: sliding doors (the game's) in a dark frame, the sign next to them
+    // under the plaza: sliding doors (the game's) in a dark frame, the sign next to them. on
+    // the ground at the door, `lift` from where the rest is drawn
     const [p0, p1] = PLAZA_DOORS
-    glassy.push([p0, p1, 0, 3.3])
-    reveal('dark', w, p0, p1, 0, 3.3, RECESS, 0.02)
-    face('clear', w, p0, p1, 0, 3.3, 0.02)
-    lump('dark', w, p0, p1, DOOR_HEIGHT, DOOR_HEIGHT + 0.12, 0.08, 0.02)
+    const y = lift
+    glassy.push([p0, p1, y, y + 3.3])
+    reveal('dark', w, p0, p1, y, y + 3.3, RECESS, 0.02)
+    face('clear', w, p0, p1, y, y + 3.3, 0.02)
+    lump('dark', w, p0, p1, y + DOOR_HEIGHT, y + DOOR_HEIGHT + 0.12, 0.08, 0.02)
     const c = door ? (door.x - w.p.x) * w.dir.x + (door.z - w.p.z) * w.dir.z : (p0 + p1) / 2
     for (const u of [p0 + 0.05, c - DOOR_WIDTH / 2, c + DOOR_WIDTH / 2, p1 - 0.05])
-      lump('dark', w, u - 0.05, u + 0.05, 0, DOOR_HEIGHT, 0.08, 0.02)
-    sign(w, p1 + 1.8, RECESS + 0.02, 2.7, {
+      lump('dark', w, u - 0.05, u + 0.05, y, y + DOOR_HEIGHT, 0.08, 0.02)
+    sign(w, p1 + 1.8, RECESS + 0.02, y + 2.7, {
       text: 'LIBRARY SOUTH',
       plate: '#eeeeec',
       color: '#33363b',
@@ -535,7 +553,7 @@ export function librarySouthGeometry(b: LibrarySouthData) {
       const at = link
         ? (link[2]!.x - w.p.x) * w.dir.x + (link[2]!.z - w.p.z) * w.dir.z
         : w.len - 0.9
-      const top = link ? fromElevation(UNDER_LINK) - baseOf(b) : FASCIA[0]
+      const top = link ? underLink : FASCIA[0]
       lump('metal', w, at, Math.min(at + 0.9, w.len + RECESS * t[1]), 0, top, RECESS + 0.15, RECESS)
     }
   }
@@ -560,7 +578,7 @@ export function librarySouthGeometry(b: LibrarySouthData) {
       (x: Point) => uOf(x) - e1 - 0.3,
       (x: Point) => RECESS - ENTRY_DEPTH - 4.3 - dOf(x),
     ])
-      core('brick', inset(clip(outline, side), 1), CEILING, SOFFIT + 0.4)
+      core('brick', inset(clip(outline, side), 1), lift + CEILING, SOFFIT + 0.4)
   }
 
   // the plaza deck: from classroom south's end to the link, out to the back of the sidewalk
@@ -591,7 +609,7 @@ export function librarySouthGeometry(b: LibrarySouthData) {
     [wallOf(at(-9.25, edge), at(-25.95, edge), f.out), 0.3],
     [wallOf(at(-25.95, edge), at(-25.95, -1.5), flip(f.along)), 0],
   ] as const) {
-    lump('stone', w, 0, w.len - end, DECK[0] - 0.5, DECK[1] + 0.8, 0, -0.3)
+    lump('stone', w, 0, w.len - end, WALL_TOP, DECK[1] + 0.8, 0, -0.3)
     const inner = wallOf(w.at(w.len - end, -0.3), w.at(0, -0.3), flip(w.o))
     face('stone', inner, 0, inner.len, DECK[1], DECK[1] + 0.8)
   }
@@ -599,24 +617,33 @@ export function librarySouthGeometry(b: LibrarySouthData) {
   // beam (mapillary 2019, gsu 2018: the plate is on it), the end by the link turned back in.
   // the plaza's columns are further on toward the walkway over decatur st, past classroom
   // south's corner
-  const under = wallOf(at(-9.25, edge - 0.3), at(-25.95, edge - 0.3), f.out)
-  const end = wallOf(at(-9.25, edge - 0.9), at(-9.25, edge - 0.3), f.along)
+  const under = wallOf(at(-9.25, edge - WALL_BACK), at(-25.95, edge - WALL_BACK), f.out)
+  const end = wallOf(at(-9.25, edge - WALL_BACK - 0.6), at(-9.25, edge - WALL_BACK), f.along)
+  const [pitch, tan] = WALL_STRIPES
   for (const w of [under, end])
-    for (let y = 0; y < DECK[0] - 0.51; y += STRIPES[0]) {
-      const s = Math.min(y + STRIPES[0] - STRIPES[1], DECK[0] - 0.5)
+    for (let y = 0; y < WALL_TOP - 0.01; y += pitch) {
+      const s = Math.min(y + pitch - tan, WALL_TOP)
       face('cream', w, 0, w.len, y, s)
-      face('brick', w, 0, w.len, s, Math.min(y + STRIPES[0], DECK[0] - 0.5))
+      face('brick', w, 0, w.len, s, Math.min(y + pitch, WALL_TOP))
     }
-  // its back, seen from under the plaza
+  // the beam's underside out to its face, and the wall's back, seen from under the plaza
+  add(
+    'stone',
+    flat(
+      [under.at(0), under.at(under.len), at(-25.95, edge - 0.3), at(-9.25, edge - 0.3)],
+      WALL_TOP,
+      false,
+    ),
+  )
   face(
     'cream',
     wallOf(under.at(under.len, -0.6), under.at(0, -0.6), flip(f.out)),
     0,
     under.len,
     0,
-    DECK[0] - 0.5,
+    DECK[0],
   )
-  sign(under, 3.6, 0.02, 3.1, {
+  sign(under, 1.8, 0.02, 2.6, {
     text: 'LIBRARY SOUTH',
     plate: '#eeeeec',
     color: '#33363b',
@@ -656,8 +683,9 @@ export function librarySouthGeometry(b: LibrarySouthData) {
     } else {
       stripes(0, DECK[0])
       face('stone', w, 0, w.len, DECK[0], DECK[1])
-      // a roll-up door on the dock, a glass door on the short side
-      if (w.len > 2.5) lump('dark', w, w.len / 2 - 1.4, w.len / 2 + 1.4, 0.9, 3.6, 0.03)
+      // a roll-up door on the dock, its sill level with the floors inside (the apron in front
+      // is lower, gsu 2024), a glass door on the short side
+      if (w.len > 2.5) lump('dark', w, w.len / 2 - 1.4, w.len / 2 + 1.4, 0.05, 2.9, 0.03)
       else face('clear', w, 0.3, w.len - 0.3, 0, 2.4, 0.02)
       // on the plaza: brick piers, dark tile under the glass, and the glass
       const pier = Math.min(0.7, w.len / 4)
@@ -684,14 +712,21 @@ export function librarySouthGeometry(b: LibrarySouthData) {
   // walkway further toward classroom south
   if (b.landmark!.link) signs.push(...libraryLink(add, b.landmark!.link, baseOf(b)))
 
-  // the inside of the street floor walls: glass where the doors and the wide windows are
+  // the inside of the street floor walls: glass where the doors and the wide windows are.
+  // the inside is drawn from the floor at the door, so they come down by `lift`
   const glassAt: { side: Side; hole: Hole }[] = [
-    { side: 'n', hole: [...STREET_DOORS, 0, 3.2] },
-    { side: 'n', hole: [...PLAZA_DOORS, 0, 3.3] },
-    ...(WINDOWS.ne ?? [])
-      .filter((h) => h[2] < CEILING)
-      .map(([u0, u1, y0, y1]) => ({ side: 'ne' as Side, hole: [u0, u1, y0, y1] as Hole })),
+    { side: 'n' as Side, hole: [...STREET_DOORS, 0, 3.2] as Hole },
+    { side: 'n' as Side, hole: [...PLAZA_DOORS, lift, lift + 3.3] as Hole },
+    ...(WINDOWS.ne ?? []).map(([u0, u1, y0, y1]) => ({
+      side: 'ne' as Side,
+      hole: [u0, u1, y0, y1] as Hole,
+    })),
   ]
+    .map(({ side, hole: [u0, u1, y0, y1] }) => ({
+      side,
+      hole: [u0, u1, Math.max(y0 - lift, 0), Math.min(y1 - lift, CEILING)] as Hole,
+    }))
+    .filter(({ hole }) => hole[3] - hole[2] > 0.1)
   for (const e of edges(outline)) {
     if (e.len < 0.05) continue
     const into = flip(e.out)
@@ -719,7 +754,7 @@ export function librarySouthGeometry(b: LibrarySouthData) {
           .map((u) => ((u - ua) / (ub - ua)) * e.len)
           .sort((m, n) => m - n) as [number, number]
         if (g1 > 0 && g0 < e.len)
-          glassy.push([Math.max(g0, 0), Math.min(g1, e.len), hole[2], Math.min(hole[3], CEILING)])
+          glassy.push([Math.max(g0, 0), Math.min(g1, e.len), hole[2], hole[3]])
       }
     }
     for (const [u0, u1, v0, v1] of pieces(e.len, 0, CEILING, [...holes, ...glassy]))

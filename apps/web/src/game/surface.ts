@@ -146,6 +146,9 @@ const DATUMS: Record<string, number | { from: number }> = {
   // the quad side's paving at the lobby doors (lidar 314.4). it was the terrain's own height
   // there, which moved 0.2m when collins st under the viaduct came down (build-terrain.mjs)
   'Library North': 314.4,
+  // decatur st's sidewalk along the front (lidar 311.5-312.0): its heights are over that, the
+  // coping is 357.0. the doors under the plaza are on the dock's apron in front, 1.25m lower
+  'Library South': { from: 311.7 },
 }
 
 type Building = { name?: string; points: number[][]; door?: number[] }

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { pointInPolygon } from '../game/collision'
+import { baseOf, floorOf } from '../game/surface'
+import { heightAt, ORIGIN } from '../game/terrain'
 import campus from './campus.json'
 import { classroomWalls } from './classroomSouth'
 import { buildingsGeometry } from './geometry'
@@ -171,6 +173,26 @@ describe('library south', () => {
     expect(deck).toBeGreaterThan(3)
     // the link goes over it, a floor or so higher than the plaza
     expect(link.minHeight).toBeGreaterThan(DECK[1])
+  })
+
+  it('stands on decatur street with the coping and the plaza at the lidar heights', () => {
+    const base = baseOf(ls) + ORIGIN
+    expect(base + ls.height).toBeCloseTo(357, 1)
+    expect(base + DECK[1]).toBeGreaterThan(317.4)
+    expect(base + DECK[1]).toBeLessThan(317.9)
+    // the glass box on the plaza (lidar 321.2-321.4)
+    expect(base + CORNER_TOP).toBeCloseTo(321.35, 1)
+  })
+
+  it('has the doors under the plaza on the ground in front of them', () => {
+    const [x, z] = ls.door as [number, number]
+    expect(floorOf(ls)).toBeCloseTo(heightAt(x, z), 5)
+    // the bottom of the glass right at the door
+    const pos = parts.clear.getAttribute('position')
+    let low = Infinity
+    for (let i = 0; i < pos.count; i++)
+      if (Math.hypot(pos.getX(i) - x, pos.getZ(i) - z) < 2.5) low = Math.min(low, pos.getY(i))
+    expect(baseOf(ls) + low).toBeCloseTo(heightAt(x, z), 2)
   })
 
   it('draws the corner by classroom south with it, not in the regular buildings mesh', () => {

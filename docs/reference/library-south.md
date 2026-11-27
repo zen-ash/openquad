@@ -10,6 +10,7 @@ Newest first. "Facade" is which side of the building it shows.
 
 | source                                                                                                                        | date                | license                      | facade                                                            | used for                                                                                                                                 |
 | ----------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| USGS 3DEP lidar (GA_Statewide_B2_2018), tools/lidar                                                                           | 2018                | public domain                | roof, the plaza, the street                                       | the datum (the street, 311.5-312.0m), the coping (357.0m), the roof, the plaza and its parapet, the walk by classroom south              |
 | Esri World Imagery Wayback, release 26334                                                                                     | 2026-08-05          | Esri, reference only         | roof, and the side toward g deck at an angle                      | footprint (osm's outline matches), the boxes on the roof, where the slots are on the side toward g deck (rectified from the angle)       |
 | GSU campus map (Concept3D, map 1108, location 287186 "Atlanta - Library South"): `IMG_3427`                                   | uploaded 2026-03-24 | GSU, all rights reserved     | the plaza entrance and the glass box on the plaza                 | camera fitted on the box: plaza 5.3m up, soffit, fascia tiers, columns, box height and fascia, colors (ratios). Side by side             |
 | same location: `IMG_3422`-`IMG_3431`, `CLASSAOOM_SOUTH`                                                                       | uploaded 2026-03-24 | GSU, all rights reserved     | inside, and the plaza                                             | checking only                                                                                                                            |
@@ -56,6 +57,11 @@ photos don't back up.
   45.3m (the 2019 photo from Courtland St fitted on the building's corners, with the
   camera on the bridge 5m over Decatur St: the bands line up with 5m lines). osm says 9
   floors, and campus.json had 31.5m (9 x 3.5): the photos win, 45.3m.
+- **Where it's drawn from** (Nov 2026): 311.7m, the Decatur St sidewalk along the front
+  (lidar 311.5-312.0m), a `{ from: 311.7 }` in surface.ts DATUMS. The lidar has the coping
+  at 357.0m, 45.3m over that, and the flat roof at 356.4-356.6m, half a meter under it. Up
+  to then it was drawn from the ground at its door under the plaza (310.45m), the whole
+  building 1.25m low.
 - **The street**: Courtland St is a bridge over Decatur St along the building's east side;
   the Courtland St photos stand on it, about 5m up. The plaza on the other side is at about
   the same height (the 2026 photo's camera came out 5.3m over the street). The game's
@@ -87,15 +93,36 @@ photos don't back up.
   the next floor (red in 2007), "LIBRARY SOUTH" in letters on the glass (2026). At street
   level, glass doors under the link and doors under the plaza, each with a white name
   plate (2018). The game's door is the one under the plaza entrance.
-- **The plaza**: a deck at 5.2m from classroom south's end to the link, out to the back of
-  the sidewalk (lidar: the deck is 7.8m off Decatur St's middle, it was drawn out to the
-  curb before), light square pavers (2026), the loading dock under it. Along the street
-  under its edge beam a wall of the cream brick with the tan stripes, set 0.3m back, with
-  the "LIBRARY SOUTH" plate on it (Mapillary 2019 from Decatur St, GSU 2018 from under the
-  link). The round columns in the 2018 photo are further on, past classroom south's corner
-  where the game's deck ends. On it, in the corner by classroom south, a low glass box with
+- **The plaza**: a deck from classroom south's end to the link, out to the back of the
+  sidewalk (lidar: the deck is 7.8m off Decatur St's middle, it was drawn out to the curb
+  before), light square pavers (2026), the loading dock under it. Its floor is 6m over the
+  datum, 317.7m (lidar: 317.75-317.9m by the glass side, 317.4-317.5m at the street edge,
+  the parapet 318.45m), the underside 1.4m under that. Along the street under its edge beam
+  a wall of the cream brick with tan stripes about a meter apart, set 1.2m back under the
+  beam, with the "LIBRARY SOUTH" plate on it near the link end (Mapillary 2019 from Decatur
+  St, GSU 2018 from under the link). The brick goes up to the deck: on a camera fitted to
+  the 2019 photo (Mapillary's pose was 1.5m out in the street and pitched 2 degrees low;
+  the link's soffit, the Courtland St bridge and the street's vanishing point fix it) it's
+  4-5m tall, not 3.5. The round columns in the 2018 photo are further on, past classroom
+  south's corner. On the plaza, in the corner by classroom south, a low glass box with
   cream brick piers, a dark red tile base (drawn dark grey) and a dark fascia with a lip,
-  8.85m to the top (measured on the fitted 2026 photo).
+  3.65m over the plaza (measured on the fitted 2026 photo, which the lidar's 321.2-321.4m
+  roof agrees with). The entrance's soffit, fascia and columns are measured from the plaza
+  on the same photo and moved up with it.
+- **The walk in front of classroom south** (osm 972333280): a deck along classroom south's
+  front at 318.2-318.3m (lidar, parapets 319.0-319.2m) from the walkway over Decatur St, on
+  round columns (gsu 2018), turning onto the plaza by its corner. decks.json had the street
+  under it (312.2-312.4m), so it was a slab on the dock's apron in front of classroom
+  south's end doors. Now 318.3-318.2m, then 317.5m on the plaza, inside its slab just under
+  the pavers (you walk 0.2m into them there): you can walk from the walkway along it onto
+  the plaza. Where it ramps down at the plaza's corner it pokes up to 0.1m over the pavers,
+  about where the lidar has the step between the two.
+- **Under the plaza**: the game's door, the dock and classroom south's end doors are on the
+  dock's apron, which is lower than the street (the game's ground there is 309.5-311m;
+  lidar can't see under the deck). The 2024 photo of the dock has the apron about 1.2m
+  under the dock doors and a ramp with rails up to glass doors. The doors under the plaza
+  are drawn on the ground at the door (310.45m, `liftOf`, 1.25m under the datum), so the
+  inside's floor is there too, and the dock's roll-up doors have their sills at the datum.
 - **Roof**: flat and white, a big screened yard for the fans at the Decatur St end and a
   louvred box toward classroom south (satellite).
 - **Signage**: white plates with the name and a blue square where GSU's logo is (the logo
@@ -112,6 +139,11 @@ photos don't back up.
   outline by eye from the satellite and osm's walkways. The street floor under it (the
   doors, the dock) from the 2018 and 2024 photos, not measured.
 - The glass wall's lower floors behind the link, and the dim room behind the plaza doors.
+- How high the floor under the plaza really is at the doors: the game's ground is 1.25m
+  under the street there. The 2024 photo's ramp suggests the building's floor is at the
+  street's height and the doors are reached up a ramp from the apron; not drawn.
+- The edge beam's underside is flat; in the 2019 photo it slopes up from the brick to the
+  beam's face, which reads bigger close up.
 
 ## Where it meets the link and classroom south
 
@@ -167,15 +199,10 @@ A glass building over Decatur St, wall to wall between Library North and Library
   south, a blue square where the logo is. Drawn with the link (`stone`), a wall at each end
   down to the ground. decks.json had the ground under it (312.7m) for this way, now 318.0m,
   so the path is a deck you could walk (decks.ts draws its slab inside the box). Not done:
-  its curved soffit and the abutments' real shape, the path along the plaza in front of
-  classroom south (osm 972333280, still at the ground's height) and the plaza deck there.
-- **Library South's datum (not changed)**: it's drawn from the ground at its door under the
-  plaza (310.45m, filled in under the deck, lidar can't see there), but its heights were
-  measured over Decatur St (about 312m): the lidar has its coping at 357.0m (drawn 355.75m)
-  and the plaza at 317.2-317.5m (drawn 315.65m). A `{ from: 311.7 }` datum would fix both,
-  but would lift the doors under the plaza 1.25m over the ground there. The link and the
-  walkway are placed by their own elevations, so they're right either way; the plaza's
-  wall is short for it (2.2m of it over the sidewalk, 3.5m in the photo).
+  its curved soffit and the abutments' real shape. The walk along the plaza in front of
+  classroom south (osm 972333280) is at its deck's height since Nov 2026.
+- **Library South's datum**: fixed (Nov 2026), see "Where it's drawn from". The link and
+  the walkway are placed by their own elevations, they didn't move.
 - **Not done**: the white trusses behind the glass on both long sides (the glass material
   is opaque, they'd have to stand in front of it), the parapets (the copings are flat
   faces), the inside (rooms behind the glass from the glass shader only). Library South's
@@ -186,6 +213,10 @@ A glass building over Decatur St, wall to wall between Library North and Library
   proportions are used. The 2019 soffit height leans on Mapillary's pitch for that photo.
 
 ## Cost
+
+The datum (Nov 2026): no new parts, meshes or materials, a few more triangles (the beam's
+underside, the dock door). The walk in front of classroom south is part of the one decks
+mesh. Frame cost: measured after the merge.
 
 The link (Nov 2026): one more part (`link`, glass family, no new shader), its bands and the
 pilaster in `metal`, its roofs and soffit in `pavers`, the walkway in `stone`, the plaza's wall
