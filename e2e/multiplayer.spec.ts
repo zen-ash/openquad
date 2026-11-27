@@ -74,5 +74,9 @@ test('emotes show up for other people', async ({ join }) => {
   await expect.poll(() => bob.evaluate((id) => window.quad!.positionOf(id), aliceId)).toBeTruthy()
 
   await alice.keyboard.press('2')
-  await expect.poll(() => bob.evaluate((id) => window.quad!.emoteOf(id), aliceId)).toBe('Clap')
+  // a clap only lasts about a second: the default backoff (0.1, 0.25, 0.5, 1s...) could step
+  // right over it when it got to bob a little late
+  await expect
+    .poll(() => bob.evaluate((id) => window.quad!.emoteOf(id), aliceId), { intervals: [50] })
+    .toBe('Clap')
 })

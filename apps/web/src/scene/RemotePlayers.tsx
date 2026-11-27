@@ -22,6 +22,8 @@ import { floorOf, surfaceAt } from '../game/surface'
 function RemotePlayer({ id, person }: { id: string; person: Person }) {
   const body = useRef<Group>(null)
   const speed = useRef(0)
+  // false until they're first put somewhere (and again after going out of view)
+  const placed = useRef(false)
   const currentAnim = useRef<Anim>('Idle')
   const [anim, setAnim] = useState<Anim>('Idle')
   const speaking = useVoice((s) => s.speaking[id] ?? false)
@@ -37,14 +39,20 @@ function RemotePlayer({ id, person }: { id: string; person: Person }) {
     if (!group) return
     // out of view (too far away), don't leave them standing where we last saw them
     group.visible = !!buffer
-    if (!buffer) return
+    if (!buffer) {
+      placed.current = false
+      return
+    }
 
     const s = sample(buffer, performance.now() - INTERP_DELAY)
     if (!s) return
 
     // smooth the speed out a bit, otherwise the animation flickers between walk/idle
+    // (not the jump to where they first show up: that read as running, and a wave or clap that
+    // came in during the half second it took to settle got cancelled as "walking off")
     const dt = Math.max(delta, 0.001)
-    const moved = Math.hypot(s.x - group.position.x, s.z - group.position.z)
+    const moved = placed.current ? Math.hypot(s.x - group.position.x, s.z - group.position.z) : 0
+    placed.current = true
     speed.current += (moved / dt - speed.current) * Math.min(1, dt * 10)
 
     // the server only knows x and z: on the ground, a deck, or inside a building's floor,
