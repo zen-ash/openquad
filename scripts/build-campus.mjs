@@ -405,8 +405,8 @@ function pantherQuad(lines, crossings) {
   // goes up. the long stair by library north is in raised.ts
   const terraces = [
     {
-      steps: 6,
-      rise: 0.3,
+      steps: 4,
+      rise: 0.25,
       points: [at([24, 17.5]), at([74, 17.5]), at([74, 12.1]), at([24, 12.1])],
     },
   ]
@@ -447,7 +447,7 @@ function pantherQuad(lines, crossings) {
   // tall grey poles with a flat round head, round the lawn, along the promenade and the plaza
   const lights = [
     ...[30, 44, 58, 72].map((a) => at([a, 52.5])),
-    ...[36, 56].map((a) => at([a, 63])),
+    ...[36, 56].map((a) => at([a, 60.3])),
     ...[32, 50, 68].map((a) => at([a, 18.4])),
     ...[12, 28, 44, 60, 76, 92].map((b) => at([-8.2, b])),
     at([1, 27]),
@@ -472,7 +472,7 @@ function pantherQuad(lines, crossings) {
   const umbrellas = [
     [75.6, 27],
     [78, 31],
-    [77.8, 40.2],
+    [75.8, 40.2],
     [94.8, 32.6],
     [84.5, 36],
   ].map(at)

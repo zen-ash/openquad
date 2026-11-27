@@ -123,17 +123,36 @@ old Gilmer corner (-3, 78) toward library north, v in toward Arts & Humanities.
   4m across), a bike rack of four hoops by the stair's foot, and a wooden seat platform on a
   concrete base across the promenade from the seat walls. Shrubs are 15 triangle mounds with a
   wobbly outline (they were 8 triangle octahedra that read as green diamonds).
+- Fifth round (Nov 27): the wide steps go UP now, like the photos: seven risers from the
+  library plaza (314.3) to 'Panther Quad chair plaza' at 315.5, the brick with the chairs and
+  umbrellas at the lawn's end, walled on every side but the steps and the lawn (the walls
+  beside the steps face the library end like in the high photo). 'Panther Quad lawn' is the
+  lawn and the brick round it as one slope (6%) from the chair plaza down to the foot of the
+  column plaza's steps (312.25, so those steps are unchanged): the lawn's library end is level
+  with the chairs like in the photo. It has a wall along the seat steps and along the
+  promenade (1-2m where the 2018 ground dips most, the photos show a low edge with the blue
+  mesh on it) and is open at the column end. The seat steps start from the raised lawn now
+  and are four steps (were six), so they don't stand over the courtland bank.
+- Sixth round (Nov 27): the promenade alongside the lawn is on the same slope now (the lawn
+  plaza reaches out to it, as far as arts & humanities' corner and the greenway path), so
+  the lawn and the promenade are nearly level like in the stair photo, with the mulch strip
+  and its saplings as the low edge between them. The seat walls, the wooden platform and the
+  light poles stand on it (the two poles on the far side moved in 2.7m). Its far side steps
+  down 0.6-1.1m to the 2018 ground toward arts & humanities (open, you can walk off it).
+  'Panther Quad ramp' goes up beside the wide steps on the promenade side, from 314.45 to the
+  chair plaza (8.7%), its wall rising out of the library plaza, like in the high photo; the
+  chair plaza now reaches out to the promenade too.
 
 ## What still differs
 
-- Fourth round: in the high photo (rd-students) the wide steps' risers face the library end
-  and the cheek wall and the planter walls beside them face it too (the same wall shows from
-  the porch in rd-greenway): the real plaza with the chairs at the lawn's end looks about 1m
-  HIGHER than the brick in front of the library, not lower. I built them going down because
-  the game's ground falls 1.5m from the library to the lawn and library north's floor is
-  314.4: going up would need the whole quad's ground raised (lawn, seat steps, the column
-  plaza's steps). The 2018 bare earth over the Sparks Hall site is the likely culprit, but
-  there's no newer survey to check it against. Side by side: final steps.jpg.
+- Fifth and sixth rounds: the chair plaza's 1.2m is from the high photo's risers counted
+  (about seven); nothing measured it. The lawn's slope between it and the column end is my
+  guess (no photo shows the lawn from the side). Right of the steps the photo has a wall
+  with a mulch bed at its foot, here the old raised planter stands there. The ramp has no
+  rails. The promenade's far side is a plain wall down to the old ground: in the stair photo
+  there are seat steps going up behind the platform toward arts & humanities, the game's
+  ground there is lower, so I left it simple. Behind the seat steps the courtland bank is
+  still the 2018 ground, so their back wall shows from courtland at the library end.
 - Fourth round camera fits: I put the quad's u, v grid on both photos through the third
   round's cameras and fitted a level camera to the high photo's skyline (Southern Bell's
   lattice and rim, five corners of the Hurt Building): about 20px off wherever I put it, and
@@ -179,6 +198,14 @@ old Gilmer corner (-3, 78) toward library north, v in toward Arts & Humanities.
   are bare now; the ones along the promenade in the photos still have yellow leaves.
 
 ## Cost
+
+Sixth round (Nov 27): no new meshes or materials either (one more raised.ts plaza, its walls
+are in the concrete part). Frame time measured after the merge.
+
+Fifth round (Nov 27): no new meshes or materials, only raised.ts plazas and their walls in the
+concrete part. Draws on the dev server: quad 100/177/108 (same), library-north 118/153/125,
+hurt-park 78/160/130 (+1/+2 against round 4, measured on the new base with Edgewood round 2,
+nothing of mine changed there). Frame time measured after the merge.
 
 Fourth round (Nov 26, night): frame time measured after the merge. Draws on the dev server
 (counts.mjs, before = the same server with my changes stashed), prepass/scene/shadow: quad

@@ -54,4 +54,26 @@ describe('panther quad', () => {
       expect(level.length, name).toBeGreaterThanOrEqual(2)
     }
   })
+
+  it('climbs the wide steps to the chair plaza and the lawn at its height', () => {
+    const at = (name: string) => RAISED.find((r) => r.name === name)!
+    const steps = at('Panther Quad wide steps')
+    const chairs = at('Panther Quad chair plaza')
+    const lawn = at('Panther Quad lawn')
+    const [top, , bottom] = [0, 1, 2].map((i) => steps.outline[i]!)
+    // a meter or so up from the library end, like the high photo's seven risers
+    expect(steps.elevation(top!.x, top!.z) - steps.elevation(bottom!.x, bottom!.z)).toBeCloseTo(
+      1.2,
+      1,
+    )
+    expect(chairs.elevation(top!.x, top!.z)).toBeCloseTo(steps.elevation(top!.x, top!.z), 2)
+    // the lawn meets the chair plaza, and the column plaza's steps at its other end
+    for (const p of lawn.outline.filter((p) =>
+      chairs.outline.some((q) => Math.hypot(p.x - q.x, p.z - q.z) < 0.01),
+    ))
+      expect(lawn.elevation(p.x, p.z)).toBeCloseTo(315.5, 2)
+    const column = at('Panther Quad steps')
+    const foot = column.outline[2]!
+    expect(lawn.elevation(foot.x, foot.z)).toBeCloseTo(column.elevation(foot.x, foot.z), 1)
+  })
 })

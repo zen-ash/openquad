@@ -296,29 +296,77 @@ export const RAISED_PLAZAS: Record<string, Data> = {
       [-89.9, 129.7],
       [-91.6, 127.5],
       [-93.3, 125.3],
-      [-83.69, 114.18],
+      [-81.87, 112.05],
+      [-74.51, 118.37],
       [-76.33, 120.49],
       [-68.74, 127],
     ],
     edges: [
       ...['open', 'open', 'open', null, null, null, null, null, null],
-      ...[null, null, null, null, null, 'open', 'open', null, 'open'],
+      ...[null, null, null, null, null, 'open', null, null, null, 'open'],
     ] as Edge[],
   },
-  // and the wide steps from it down to the brick at the lawn's end, rails at both sides and in
-  // the middle (the high photo from the opening). in that photo the risers face the library
-  // end, so the real lawn end may be the higher one: the ground here goes down to the lawn
+  // and the wide steps from it up to the chair plaza at the lawn's end, seven risers, rails at
+  // both sides and in the middle (the high photo from the opening: the risers and the walls
+  // beside them face the library end)
   'Panther Quad wide steps': {
     by: 'Panther Quad',
-    top: [314.3, 314.3, 313.35],
+    top: [315.5, 315.5, 314.3],
     points: [
-      [-68.74, 127],
-      [-76.33, 120.49],
-      [-74.51, 118.37],
       [-66.92, 124.88],
+      [-74.51, 118.37],
+      [-76.33, 120.49],
+      [-68.74, 127],
     ],
     edges: [null, 0, 'open', 0],
     stairs: true,
+  },
+  // the brick at the lawn's end with the chairs and umbrellas, a meter over the library end,
+  // walls round it except toward the lawn and the steps. the 2018 ground here is a dip where
+  // sparks hall stood, the photos have the lawn's end level with this
+  'Panther Quad chair plaza': {
+    by: 'Panther Quad',
+    top: 315.5,
+    points: [
+      [-64.46, 122.77],
+      [-66.54, 125.2],
+      [-66.92, 124.88],
+      [-74.51, 118.37],
+      [-81.87, 112.05],
+      [-84.15, 110.1],
+      [-95.76, 100.14],
+      [-93.68, 97.71],
+    ],
+    edges: [0, 0, null, 0, null, 0, 'open', null],
+  },
+  // the ramp up to it beside the steps on the promenade side (the high photo), its wall rising
+  // out of the library plaza next to it
+  'Panther Quad ramp': {
+    by: 'Panther Quad',
+    top: [315.5, 315.5, 314.45],
+    points: [
+      [-81.87, 112.05],
+      [-84.15, 110.1],
+      [-93.13, 120.57],
+      [-90.86, 122.53],
+    ],
+    edges: [null, 0, 'open', 0],
+  },
+  // the lawn and the promenade alongside it (nearly level with it in the stair photo), one
+  // slope down from the chair plaza to the foot of the column plaza's steps. a wall along the
+  // seat steps, the promenade's far side steps down to the 2018 ground toward arts & humanities
+  'Panther Quad lawn': {
+    by: 'Panther Quad',
+    top: [312.25, 315.5, 315.5],
+    points: [
+      [-30.63, 83.33],
+      [-64.46, 122.77],
+      [-93.68, 97.71],
+      [-89.66, 85.35],
+      [-63.62, 54.99],
+      [-41.6, 73.9],
+    ],
+    edges: [0, null, 'open', 'open', 'open', null],
   },
   // piedmont north's court between building a's arm and building b is sunken 3m (lidar 299.0)
   // behind a retaining wall along its north side (the satellite's shadow line). this is the

@@ -188,7 +188,8 @@ type Add = (part: Part, geo: THREE.BufferGeometry) => void
 // the plaza's walls where the ground round it is lower
 function plazaSides(add: Add) {
   for (const s of raisedSides('Panther Quad')) {
-    const foot = s.ground.map((g) => g - 0.3)
+    // (where the ground outside is higher than the top at one end, the wall stops at the top)
+    const foot = s.ground.map((g, i) => Math.min(g - 0.3, s.top[i]! - 0.01))
     const [a, b] = [v3(s.p, s.top[0]), v3(s.q, s.top[1])]
     add('concrete', face(v3(s.p, foot[0]!), v3(s.q, foot[1]!), b, a, s.out))
     // a coping along the top, not where it's only a few cm over the ground (the library
@@ -343,11 +344,13 @@ function terraces(add: Add) {
     const len = Math.hypot(b0.x - a0.x, b0.z - a0.z)
     const m = Math.ceil(len / 2)
     const line = (t: number, s: number) => lerp(lerp(a0, a1, t), lerp(b0, b1, t), s)
+    const front = { x: a0.x - a1.x, z: a0.z - a1.z }
+    // the lawn in front of them is raised (raised.ts), read it a bit out from the bottom edge
+    const fl = Math.hypot(front.x, front.z)
     let prev = Array.from({ length: m + 1 }, (_, k) => {
       const p = line(0, k / m)
-      return terrainAt(p.x, p.z)
+      return heightAt(p.x + (front.x / fl) * 0.1, p.z + (front.z / fl) * 0.1)
     })
-    const front = { x: a0.x - a1.x, z: a0.z - a1.z }
     const end = { x: b0.x - a0.x, z: b0.z - a0.z }
     for (let i = 0; i < steps; i++) {
       const [t0, t1] = [i / steps, (i + 1) / steps]
