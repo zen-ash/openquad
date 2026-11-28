@@ -23,10 +23,14 @@ export type TimeOfDay = (typeof TIMES)[number]
 
 const params = new URLSearchParams(location.search)
 
+// ?measure: a phone times itself and sends the numbers to the server (net/measure.ts). it
+// happens at noon unless there's a ?time
+export const measuring = params.has('measure')
+
 // live follows the real time in atlanta. the others are handy for showing night in a
 // daytime class. ?time=night works too, and so does an exact time like ?time=17:00
 function startingTime(): string {
-  const t = params.get('time') ?? ''
+  const t = params.get('time') ?? (measuring ? '12:00' : '')
   return TIMES.includes(t as TimeOfDay) || /^\d{1,2}:\d{2}$/.test(t) ? t : 'live'
 }
 
@@ -39,8 +43,8 @@ export const today = () => (pinnedDay ? new Date(`${pinnedDay}T12:00:00-04:00`) 
 export const still = params.has('still')
 
 // ?keepquality: never drop to low by itself. for timing frames (a hot laptop dropped some
-// pages to low halfway through a measurement)
-export const keepQuality = params.has('keepquality')
+// pages to low halfway through a measurement). ?measure switches it itself
+export const keepQuality = params.has('keepquality') || measuring
 
 // the look: 'game' (the default) is the real buildings in a bright, friendly world with
 // stars to collect (campus/game.ts), 'real' the photo-real campus. ?style=game|realistic, or

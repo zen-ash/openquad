@@ -35,6 +35,7 @@ export default defineConfig({
     proxy: {
       '/ws': { target: 'ws://localhost:2567', ws: true },
       '/ice': 'http://localhost:2567',
+      '/measure': 'http://localhost:2567',
     },
   },
 })

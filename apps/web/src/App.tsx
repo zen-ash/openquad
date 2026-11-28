@@ -27,13 +27,16 @@ import Crowd from './scene/Crowd'
 import RemotePlayers from './scene/RemotePlayers'
 import RouteLine from './scene/RouteLine'
 import WarmUp from './scene/WarmUp'
-import { forceWebGL, hideCity, keepQuality, showDebug, useSettings } from './settings'
+import { forceWebGL, hideCity, keepQuality, measuring, showDebug, useSettings } from './settings'
 import TouchControls, { isTouchScreen } from './TouchControls'
 import MicButton from './voice/MicButton'
 import VoiceUpdater from './voice/VoiceUpdater'
 
 // high quality only. low (and the webgl2 fallback) never downloads takram's atmosphere
 const Effects = lazy(() => import('./scene/Effects'))
+// ?measure only (net/measure.ts)
+const MeasureRun = lazy(() => import('./net/measure').then((m) => ({ default: m.MeasureRun })))
+const MeasureCard = lazy(() => import('./hud/MeasureCard'))
 
 // three's webgpu renderer. where there's no webgpu it runs on webgl2 instead, and that
 // gets the low preset: no shadows or effects (the effects are written for webgpu)
@@ -133,6 +136,11 @@ export default function App() {
           </Suspense>
         )}
         <WarmUp />
+        {measuring && (
+          <Suspense fallback={null}>
+            <MeasureRun />
+          </Suspense>
+        )}
       </Canvas>
 
       {inGame && isTouchScreen && !photo && <TouchControls />}
@@ -157,6 +165,12 @@ export default function App() {
         </>
       ) : (
         <JoinScreen />
+      )}
+
+      {measuring && (
+        <Suspense fallback={null}>
+          <MeasureCard />
+        </Suspense>
       )}
 
       {/* the map data license (ODbL) asks for this */}

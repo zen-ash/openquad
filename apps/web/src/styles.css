@@ -1473,6 +1473,66 @@ button {
   animation: title 3s ease forwards;
 }
 
+/* ?measure (hud/MeasureCard.tsx), on top of everything, the join screen too */
+.measure {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  left: 50%;
+  z-index: 50;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: min(420px, calc(100% - 24px));
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgb(18 22 28 / 0.9);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.measure p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.measure progress {
+  width: 100%;
+}
+
+.measure table {
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.measure td,
+.measure th {
+  padding: 3px 4px;
+  text-align: left;
+  font-weight: 500;
+}
+
+.measure tr + tr td {
+  border-top: 1px solid var(--panel-border);
+}
+
+.measure button {
+  align-self: flex-start;
+  padding: 7px 12px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: white;
+  font: inherit;
+  font-weight: 600;
+}
+
+.measure .error {
+  color: #ff9b9e;
+}
+
 /* low quality, see App */
 :root.low * {
   backdrop-filter: none;
