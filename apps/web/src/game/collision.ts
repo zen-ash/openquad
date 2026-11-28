@@ -126,6 +126,71 @@ function outOfBox(p: Point, radius: number, b: Box): Point {
   return { x: b.x + fx * na + fz * ns, z: b.z + fz * na - fx * ns }
 }
 
+// do segments ab and cd cross (touching doesn't count)
+function crosses(a: Point, b: Point, c: Point, d: Point) {
+  const side = (p: Point, q: Point, r: Point) =>
+    (q.x - p.x) * (r.z - p.z) - (q.z - p.z) * (r.x - p.x)
+  return side(c, d, a) * side(c, d, b) < 0 && side(a, b, c) * side(a, b, d) < 0
+}
+
+// lineBlocked is asked a lot (every frame walking by yourself, a few hundred times planning
+// a route), so the walls and buildings are kept by 16m square and a line only looks at
+// the squares it's in
+const CELL = 16
+type Cell = { walls: Segment[]; polys: Polygon[] }
+const grids = new WeakMap<World, Map<number, Cell>>()
+const cellKey = (i: number, j: number) => (i + 5000) * 10000 + (j + 5000)
+
+function gridOf(world: World) {
+  let grid = grids.get(world)
+  if (grid) return grid
+  grid = new Map()
+  const add = (minX: number, maxX: number, minZ: number, maxZ: number, put: (c: Cell) => void) => {
+    for (let i = Math.floor(minX / CELL); i <= Math.floor(maxX / CELL); i++) {
+      for (let j = Math.floor(minZ / CELL); j <= Math.floor(maxZ / CELL); j++) {
+        const k = cellKey(i, j)
+        let c = grid!.get(k)
+        if (!c) grid!.set(k, (c = { walls: [], polys: [] }))
+        put(c)
+      }
+    }
+  }
+  for (const w of world.walls) {
+    const [minX, maxX] = [Math.min(w.ax, w.bx), Math.max(w.ax, w.bx)]
+    add(minX, maxX, Math.min(w.az, w.bz), Math.max(w.az, w.bz), (c) => c.walls.push(w))
+  }
+  for (const p of world.buildings) add(p.minX, p.maxX, p.minZ, p.maxZ, (c) => c.polys.push(p))
+  grids.set(world, grid)
+  return grid
+}
+
+/** does walking straight from a to b run into a building or a wall (not the round things) */
+export function lineBlocked(a: Point, b: Point, world: World) {
+  const [minX, maxX] = [Math.min(a.x, b.x), Math.max(a.x, b.x)]
+  const [minZ, maxZ] = [Math.min(a.z, b.z), Math.max(a.z, b.z)]
+  const grid = gridOf(world)
+  for (let i = Math.floor(minX / CELL); i <= Math.floor(maxX / CELL); i++) {
+    for (let j = Math.floor(minZ / CELL); j <= Math.floor(maxZ / CELL); j++) {
+      const cell = grid.get(cellKey(i, j))
+      if (!cell) continue
+      for (const w of cell.walls) {
+        if (Math.max(w.ax, w.bx) < minX || Math.min(w.ax, w.bx) > maxX) continue
+        if (Math.max(w.az, w.bz) < minZ || Math.min(w.az, w.bz) > maxZ) continue
+        if (crosses(a, b, { x: w.ax, z: w.az }, { x: w.bx, z: w.bz })) return true
+      }
+      for (const poly of cell.polys) {
+        if (poly.maxX < minX || poly.minX > maxX || poly.maxZ < minZ || poly.minZ > maxZ) continue
+        if (pointInPolygon(a, poly.points) || pointInPolygon(b, poly.points)) return true
+        const pts = poly.points
+        for (let k = 0; k < pts.length; k++) {
+          if (crosses(a, b, pts[k]!, pts[(k + 1) % pts.length]!)) return true
+        }
+      }
+    }
+  }
+  return false
+}
+
 export function resolveCollisions(p: Point, radius: number, world: World): Point {
   let out = p
   // twice, since getting pushed out of one building can push you into the one next to it

@@ -1,8 +1,9 @@
 import { fenceDistance, lineInsideFence } from '@quad/shared'
 import { create } from 'zustand'
 import campus from '../campus/campus.json'
-import type { Point } from './collision'
+import { lineBlocked, type Point } from './collision'
 import { buildGraph, mainNetwork, route, routeLength, subgraph, type Graph } from './navgraph'
+import { world } from './world'
 
 // walking speed for the "3 min" estimate, a normal pace rather than our brisk one
 const PACE = 1.3
@@ -36,14 +37,19 @@ export function campusGraph() {
         ...campus.roads.map((r) => ({ ...r, cost: 2.5 })),
       ]),
       (p) => fenceDistance(p.x, p.z) >= FENCE_MARGIN,
-      (a, b) => lineInsideFence(a.x, a.z, b.x, b.z, FENCE_MARGIN),
+      // and not through anything solid. some osm footways cut through a planter or the
+      // arena's steps, and walking there by yourself would get stuck on it
+      (a, b) => lineInsideFence(a.x, a.z, b.x, b.z, FENCE_MARGIN) && !lineBlocked(a, b, world),
     ),
   )
   return graph
 }
 
+// can you walk straight from a to b
+const sees = (a: Point, b: Point) => !lineBlocked(a, b, world)
+
 export function navigateTo(label: string, point: Point, from: Point) {
-  const path = route(campusGraph(), from, point) ?? [from, point]
+  const path = route(campusGraph(), from, point, sees) ?? [from, point]
   useNav.setState({ goal: { label, point }, path, meters: routeLength(path), arrived: null })
 }
 

@@ -146,6 +146,56 @@ export function subgraph(
   return { nodes, edges }
 }
 
+type Sees = (a: Point, b: Point) => boolean
+
+// only nodes this close are tried for getting on the paths, any further and you'd rather
+// take the plain closest one
+const NEAR = 60
+// how far round p to look for a spot in between, and how far apart the spots are
+const VIA = 24
+const VIA_STEP = 2
+
+/**
+ * Where to get on (or off) the paths from p. Usually the closest node you can walk
+ * straight to. If there's none (a door at the back of a pocket between walls) also a spot
+ * in between that sees both p and a node
+ */
+function getOn(g: Graph, p: Point, sees?: Sees): { node: number; via?: Point } {
+  const nearest = nearestNode(g, p)
+  if (!sees) return { node: nearest }
+  const dist = (i: number, q: Point) => Math.hypot(g.nodes[i]!.x - q.x, g.nodes[i]!.z - q.z)
+  const near: number[] = []
+  g.nodes.forEach((_, i) => dist(i, p) < NEAR && near.push(i))
+  near.sort((a, b) => dist(a, p) - dist(b, p))
+  const direct = near.find((i) => sees(g.nodes[i]!, p))
+  if (direct !== undefined) return { node: direct }
+
+  const spots: Point[] = []
+  for (let dx = -VIA; dx <= VIA; dx += VIA_STEP) {
+    for (let dz = -VIA; dz <= VIA; dz += VIA_STEP) {
+      if (Math.hypot(dx, dz) <= VIA) spots.push({ x: p.x + dx, z: p.z + dz })
+    }
+  }
+  const far = (v: Point) => Math.hypot(v.x - p.x, v.z - p.z)
+  spots.sort((a, b) => far(a) - far(b))
+
+  let best: { node: number; via?: Point } = { node: nearest }
+  let bestCost = Infinity
+  for (const via of spots) {
+    // sorted, so nothing further out can do better
+    if (far(via) >= bestCost) break
+    if (!sees(via, p)) continue
+    for (const i of near) {
+      const cost = far(via) + dist(i, via)
+      if (cost < bestCost && sees(g.nodes[i]!, via)) {
+        bestCost = cost
+        best = { node: i, via }
+      }
+    }
+  }
+  return best
+}
+
 export function nearestNode(g: Graph, p: Point) {
   let best = 0
   let bestDist = Infinity
@@ -192,11 +242,22 @@ export function findPath(g: Graph, start: number, goal: number): number[] | null
   return null
 }
 
-/** walking route from anywhere to anywhere, following the paths */
-export function route(g: Graph, start: Point, goal: Point): Point[] | null {
-  const path = findPath(g, nearestNode(g, start), nearestNode(g, goal))
+/**
+ * walking route from anywhere to anywhere, following the paths. sees() says whether you
+ * can walk straight from a to b, for getting on and off the paths
+ */
+export function route(g: Graph, start: Point, goal: Point, sees?: Sees): Point[] | null {
+  const on = getOn(g, start, sees)
+  const off = getOn(g, goal, sees)
+  const path = findPath(g, on.node, off.node)
   if (!path) return null
-  return [start, ...path.map((i) => g.nodes[i]!), goal]
+  return [
+    start,
+    ...(on.via ? [on.via] : []),
+    ...path.map((i) => g.nodes[i]!),
+    ...(off.via ? [off.via] : []),
+    goal,
+  ]
 }
 
 export function routeLength(points: Point[]) {
