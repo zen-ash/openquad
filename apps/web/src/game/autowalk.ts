@@ -1,4 +1,10 @@
-import { closestOnSegment, lineBlocked, type Point, type World } from './collision'
+import {
+  closestOnSegment,
+  lineBlocked,
+  resolveCollisions,
+  type Point,
+  type World,
+} from './collision'
 
 // "take me there": the character follows the gps route by itself. Player asks steer()
 // which way to go every frame nobody's holding a key or the stick
@@ -41,6 +47,9 @@ export function steer(me: Point, path: Point[], world: World): Point | null {
       break
     }
   }
+  // osm's sidewalks run right along the shop fronts, closer to a corner sticking out than
+  // you are wide. aim a body's width off the walls instead, or you'd walk into the corner
+  target = resolveCollisions(target, ROOM, world)
 
   let dir = toward(me, target)
   if (!dir) return null

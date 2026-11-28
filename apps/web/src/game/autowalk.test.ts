@@ -45,6 +45,13 @@ describe('steer', () => {
     expect(dir.z).toBeLessThan(0.3)
   })
 
+  it('keeps a body width off a corner the route runs right past', () => {
+    // a shop front 10cm off the route, sticking out toward it at x = 3
+    const front = { ...open, walls: [{ ax: 3, az: -5, bx: 3, bz: -0.1 }] }
+    const dir = steer({ x: 2, z: -0.2 }, path, front)!
+    expect(dir.z).toBeGreaterThan(0.1)
+  })
+
   it('stops at the end', () => {
     expect(steer({ x: 10, z: 9.8 }, path, open)).toBeNull()
     expect(steer({ x: 0, z: 0 }, [], open)).toBeNull()
