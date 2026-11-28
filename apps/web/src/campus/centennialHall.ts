@@ -1,5 +1,5 @@
 import type { Point } from '../game/collision'
-import { CEILING } from '../game/interiors'
+import { CEILING, DOOR_HEIGHT, DOOR_WIDTH } from '../game/interiors'
 import type { Sign } from './landmarks'
 import {
   flat,
@@ -158,9 +158,20 @@ export function centennialHallGeometry(b: CentennialHallData) {
   const northGlass = sideOf(P(W, N_GLASS), P(E, N_GLASS), MIDDLE)
   panel(northGlass, 0, northGlass.len, FLOORS[1]! - 0.6, FLOORS[1]!, 0.02)
   pane('ribbon', northGlass, 0, northGlass.len, 0, FLOORS[1]! - 0.6)
-  for (let i = 0; i <= 8; i++) {
-    const x = W + 0.4 + (i * (E - W - 0.8)) / 8
+  // the columns, but the doors under the porch have one each side of them, in line with the
+  // porch's own (mapillary 2022)
+  const columns = [...Array(9).keys()]
+    .map((i) => W + 0.4 + (i * (E - W - 0.8)) / 8)
+    .filter((x) => x < PORCH.x[0] - 0.5 || x > PORCH.x[1] + 0.5)
+  for (const x of [...columns, PORCH.x[0] + 0.6, PORCH.x[1] - 0.6])
     box('stone', [x - 0.4, x + 0.4], [N, N + 0.8], [0, FLOORS[1]!], false)
+  // the main doors (the game's), glass in a dark frame
+  if (door && door.z === N_GLASS) {
+    const c = door.x - W
+    const [d0, d1] = [c - DOOR_WIDTH / 2 - 0.6, c + DOOR_WIDTH / 2 + 0.6]
+    panel(northGlass, d0, d1, DOOR_HEIGHT, DOOR_HEIGHT + 0.15, 0.03)
+    for (const u of [d0, c - DOOR_WIDTH / 2, c, c + DOOR_WIDTH / 2, d1])
+      panel(northGlass, u - 0.05, u + 0.05, 0, DOOR_HEIGHT, 0.03)
   }
 
   // the west side: ribbons like the north's, the corner block solid up to the band, the top

@@ -55,7 +55,9 @@ Elevations are USGS lidar (2018), heights in the game are over the plaza at the 
 
 - campus/centennialHall.ts. Outline redrawn in build-campus (CENTENNIAL_HALL): the box's ground
   floor, the atrium's glass and the curtain wall's recess, the north glass 2m in behind its columns,
-  the drum. Height 20, the door moved from the east side to the atrium's revolving door. DATUM
+  the drum. Height 20, the door moved from the east side to the atrium's revolving door, and on
+  Nov 28 2026 to the north doors under the porch (GSU's map calls them the main, step-free
+  entrance facing W Lot; the 2022 porch photo has a column each side of them). DATUM
   307.5. Its facades.ts look and its MEASURED_HEIGHTS entry are gone.
 - Auburn Ave: the corner block, the atrium (teal glass, its sides, a soffit, the free pier, a
   frame over the doors), the tower with one dark slot, the curtain wall behind the drum, the pier at

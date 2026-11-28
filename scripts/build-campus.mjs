@@ -2895,8 +2895,10 @@ const CENTENNIAL_HALL = {
   ],
   // the parapet (lidar 327.5m)
   height: 20,
-  // the revolving door in the atrium's glass
-  door: [146, -180.8, 0, 1],
+  // the doors under the porch on the north side, facing w lot: gsu's map calls them the main
+  // (step-free) entrance, the welcome center's directions come this way (Nov 2026). the
+  // revolving door in the atrium on auburn ave is a door too, not the main one
+  door: [153.5, -204.9, 0, -1],
 }
 
 function centennialHall(b) {

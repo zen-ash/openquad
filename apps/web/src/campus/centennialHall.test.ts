@@ -5,15 +5,13 @@ import { fromElevation } from '../game/terrain'
 import campus from './campus.json'
 import { buildingsGeometry } from './geometry'
 import {
-  ATRIUM_IN,
-  CORNER,
   DRUM_TOP,
   E,
   N,
+  N_GLASS,
   PARAPET,
   ROOF,
   S,
-  TOWER,
   TOWER_TOP,
   W,
   centennialHallGeometry,
@@ -50,12 +48,12 @@ describe('centennial hall', () => {
     expect(307.5 + DRUM_TOP).toBeCloseTo(313.3, 1)
   })
 
-  it('has its door in the atrium glass, between the corner block and the tower', () => {
+  it('has its main door on the north side, under the porch facing w lot', () => {
     const [x, z, nx, nz] = hall.door!
-    expect(z).toBe(ATRIUM_IN)
-    expect(x).toBeGreaterThan(CORNER)
-    expect(x).toBeLessThan(TOWER[0])
-    expect([nx, nz]).toEqual([0, 1])
+    expect(z).toBe(N_GLASS)
+    expect(x).toBeGreaterThan(150)
+    expect(x).toBeLessThan(157)
+    expect([nx, nz]).toEqual([0, -1])
     expect(pointInPolygon({ x: x! + nx! * 0.5, z: z! + nz! * 0.5 }, pts)).toBe(false)
     expect(pointInPolygon({ x: x! - nx! * 0.5, z: z! - nz! * 0.5 }, pts)).toBe(true)
   })
