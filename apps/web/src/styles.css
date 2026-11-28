@@ -180,7 +180,7 @@ button {
 .clock {
   position: fixed;
   top: 16px;
-  right: 308px;
+  left: 296px;
   padding: 9px 12px;
   border: 1px solid var(--panel-border);
   border-radius: 10px;
@@ -1384,14 +1384,6 @@ button {
   }
 }
 
-.view-options {
-  position: fixed;
-  top: 16px;
-  right: 300px;
-  display: flex;
-  gap: 8px;
-}
-
 .view-option {
   padding: 9px 12px;
   border: 1px solid var(--panel-border);
@@ -1410,15 +1402,18 @@ button {
   color: #111;
 }
 
-@media (max-width: 640px), (max-height: 500px) {
-  /* stacked, side by side they ran into the mic button */
-  .view-options {
-    top: auto;
-    right: 16px;
-    bottom: 16px;
-    flex-direction: column;
-    align-items: flex-end;
-  }
+.settings {
+  width: min(260px, calc(100vw - 32px));
+  gap: 10px;
+}
+
+.settings label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .debug-panel {

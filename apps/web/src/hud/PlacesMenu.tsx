@@ -6,16 +6,22 @@ import { showCard, useCard } from './PlaceCard'
 import { togglePanel, usePanel } from './panels'
 import Schedule from './Schedule'
 import { ToursList } from './Tour'
+import ResolutionPicker from '../ResolutionPicker'
+import StylePicker from '../StylePicker'
+import TimePicker from '../TimePicker'
+import { useSettings } from '../settings'
 
 // the first few results get their walking time (each one is a route worked out)
 const TIMED = 5
 
 const here = () => ({ x: localPlayer.x, z: localPlayer.z })
 
-// the buttons at the top right and the panel under them: tours, my day, the places search
+// the buttons at the top right and the panel under them: settings, tours, my day, the places
+// search
 export default function PlacesMenu() {
   const panel = usePanel((s) => s.open)
   const open = panel === 'places'
+  const sharp = useSettings((s) => s.atmosphere && s.quality === 'high')
   const [query, setQuery] = useState('')
   const results = useMemo(() => search(query), [query])
   const walks = useMemo(
@@ -52,6 +58,9 @@ export default function PlacesMenu() {
   return (
     <div className="places">
       <div className="top-buttons">
+        <button className="places-toggle" onClick={() => togglePanel('settings')}>
+          {panel === 'settings' ? 'Close' : 'Settings'}
+        </button>
         <button className="places-toggle" onClick={() => togglePanel('tours')}>
           {panel === 'tours' ? 'Close' : 'Tours'}
         </button>
@@ -71,6 +80,25 @@ export default function PlacesMenu() {
       {panel === 'day' && (
         <div className="places-panel">
           <Schedule />
+        </div>
+      )}
+      {panel === 'settings' && (
+        <div className="places-panel settings">
+          <label>
+            Look
+            <StylePicker />
+          </label>
+          <label>
+            Time of day
+            <TimePicker />
+          </label>
+          {/* only on high quality */}
+          {sharp && (
+            <label>
+              Resolution
+              <ResolutionPicker />
+            </label>
+          )}
         </div>
       )}
       {panel === 'tours' && (

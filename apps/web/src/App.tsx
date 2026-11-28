@@ -16,8 +16,6 @@ import Minimap from './hud/Minimap'
 import NavBar from './hud/NavBar'
 import PlaceCard from './hud/PlaceCard'
 import PlacesMenu from './hud/PlacesMenu'
-import ResolutionPicker from './ResolutionPicker'
-import StylePicker from './StylePicker'
 import { instrument } from './net/perf'
 import { useGame } from './net/store'
 import CameraInput from './scene/CameraInput'
@@ -30,7 +28,6 @@ import RemotePlayers from './scene/RemotePlayers'
 import RouteLine from './scene/RouteLine'
 import WarmUp from './scene/WarmUp'
 import { forceWebGL, hideCity, keepQuality, showDebug, useSettings } from './settings'
-import TimePicker from './TimePicker'
 import TouchControls, { isTouchScreen } from './TouchControls'
 import MicButton from './voice/MicButton'
 import VoiceUpdater from './voice/VoiceUpdater'
@@ -154,11 +151,6 @@ export default function App() {
               <PlacesMenu />
               <PlaceCard />
               <NavBar />
-              <div className="view-options">
-                <StylePicker />
-                <ResolutionPicker />
-                <TimePicker />
-              </div>
               {showDebug && <DebugLayers />}
             </>
           )}
