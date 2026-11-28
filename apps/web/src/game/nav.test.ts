@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { minutes, navigateTo, stopNavigating, updateNav, useNav } from './nav'
+import { minutes, navigateTo, stopNavigating, unspike, updateNav, useNav } from './nav'
 import { places } from './places'
 
 const library = places.find((p) => p.label === 'Library North')!
@@ -34,6 +34,20 @@ describe('nav', () => {
     navigateTo('Library North', library.spot, { x: 0, z: 0 })
     updateNav({ x: library.spot.x + 1, z: library.spot.z })
     expect(useNav.getState()).toMatchObject({ goal: null, arrived: 'Library North' })
+  })
+
+  it('takes out a spot where the route turns right back on itself', () => {
+    // out to a dead end and back, in the open middle of hurt park
+    const path = [
+      { x: -10, z: 5 },
+      { x: 0, z: 5 },
+      { x: -4, z: 5.5 },
+      { x: -4, z: 15 },
+    ]
+    expect(unspike(path)).toEqual([path[0], path[2], path[3]])
+    // a plain corner stays
+    const corner = [path[0]!, path[1]!, { x: 0, z: 15 }]
+    expect(unspike(corner)).toEqual(corner)
   })
 
   it('rounds walking time to whole minutes', () => {

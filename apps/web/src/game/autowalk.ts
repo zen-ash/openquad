@@ -1,4 +1,5 @@
 import {
+  bodyBlocked,
   closestOnSegment,
   lineBlocked,
   resolveCollisions,
@@ -38,15 +39,14 @@ export function steer(me: Point, path: Point[], world: World): Point | null {
     }
   }
 
-  // the furthest spot ahead you can walk to in a straight line. none: back onto the route
-  let target = on
-  for (const ahead of AHEADS) {
-    const spot = along(path, leg, on, ahead)
-    if (!lineBlocked(me, spot, world)) {
-      target = spot
-      break
-    }
-  }
+  // the furthest spot ahead you can walk to in a straight line, all of you and not just your
+  // middle (rounding a planter's corner). where the route runs too close to a wall for that,
+  // just your middle. none: back onto the route
+  const spots = AHEADS.map((ahead) => along(path, leg, on, ahead))
+  let target =
+    spots.find((s) => !bodyBlocked(me, s, world)) ??
+    spots.find((s) => !lineBlocked(me, s, world)) ??
+    on
   // osm's sidewalks run right along the shop fronts, closer to a corner sticking out than
   // you are wide. aim a body's width off the walls instead, or you'd walk into the corner
   target = resolveCollisions(target, ROOM, world)

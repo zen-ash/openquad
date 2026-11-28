@@ -1,7 +1,8 @@
 import { onMap } from '@quad/shared'
 import { create } from 'zustand'
 import campus from '../campus/campus.json'
-import { lineBlocked, type Point } from './collision'
+import { bodyBlocked, lineBlocked, type Point } from './collision'
+import { withDetours } from './detours'
 import { buildGraph, mainNetwork, route, routeLength, subgraph, type Graph } from './navgraph'
 import { world } from './world'
 
@@ -38,15 +39,18 @@ let graph: Graph | null = null
 export function campusGraph() {
   graph ??= mainNetwork(
     subgraph(
-      buildGraph([
-        ...campus.paths,
-        ...campus.crossings,
-        // you can walk on roads, but sidewalks and crosswalks are preferred
-        ...campus.roads.map((r) => ({ ...r, cost: 2.5 })),
-      ]),
+      // some osm footways cut through a planter or the arena's steps: they go round now
+      withDetours(
+        buildGraph([
+          ...campus.paths,
+          ...campus.crossings,
+          // you can walk on roads, but sidewalks and crosswalks are preferred
+          ...campus.roads.map((r) => ({ ...r, cost: 2.5 })),
+        ]),
+        world,
+      ),
       (p) => onMap(p.x, p.z, EDGE_MARGIN),
-      // and not through anything solid. some osm footways cut through a planter or the
-      // arena's steps, and walking there by yourself would get stuck on it
+      // and not through anything solid, walking there by yourself would get stuck on it
       (a, b) => !lineBlocked(a, b, world),
     ),
   )
@@ -56,14 +60,35 @@ export function campusGraph() {
 // can you walk straight from a to b
 const sees = (a: Point, b: Point) => !lineBlocked(a, b, world)
 
+/**
+ * Takes out the spots where a route turns right back on itself (into the gap between two
+ * planters and out again, where the ways round them meet), if you fit through the short cut
+ */
+export function unspike(path: Point[]) {
+  const out = [...path]
+  for (let k = 1; k < out.length - 1;) {
+    const [a, b, c] = [out[k - 1]!, out[k]!, out[k + 1]!]
+    const [ux, uz, vx, vz] = [b.x - a.x, b.z - a.z, c.x - b.x, c.z - b.z]
+    const back = ux * vx + uz * vz < -0.5 * Math.hypot(ux, uz) * Math.hypot(vx, vz)
+    if (back && !bodyBlocked(a, c, world)) {
+      out.splice(k, 1)
+      k = Math.max(1, k - 1)
+    } else k++
+  }
+  return out
+}
+
+const walkRoute = (from: Point, to: Point) =>
+  unspike(route(campusGraph(), from, to, sees) ?? [from, to])
+
 export function navigateTo(label: string, point: Point, from: Point, auto = false) {
-  const path = route(campusGraph(), from, point, sees) ?? [from, point]
+  const path = walkRoute(from, point)
   useNav.setState({ goal: { label, point }, path, meters: routeLength(path), arrived: null, auto })
 }
 
 /** how far it is to walk from a to b along the paths */
 export function walkMeters(from: Point, to: Point) {
-  return routeLength(route(campusGraph(), from, to, sees) ?? [from, to])
+  return routeLength(walkRoute(from, to))
 }
 
 export function stopNavigating() {

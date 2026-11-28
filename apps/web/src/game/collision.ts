@@ -191,6 +191,19 @@ export function lineBlocked(a: Point, b: Point, world: World) {
   return false
 }
 
+// half a person's width, for checking both their sides
+const SIDE = 0.45
+
+/** does walking straight from a to b catch anything on either side of you */
+export function bodyBlocked(a: Point, b: Point, world: World) {
+  if (lineBlocked(a, b, world)) return true
+  const len = Math.hypot(b.x - a.x, b.z - a.z) || 1
+  const [nx, nz] = [(-(b.z - a.z) / len) * SIDE, ((b.x - a.x) / len) * SIDE]
+  return [1, -1].some((s) =>
+    lineBlocked({ x: a.x + nx * s, z: a.z + nz * s }, { x: b.x + nx * s, z: b.z + nz * s }, world),
+  )
+}
+
 export function resolveCollisions(p: Point, radius: number, world: World): Point {
   let out = p
   // twice, since getting pushed out of one building can push you into the one next to it
