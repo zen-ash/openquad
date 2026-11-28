@@ -1,7 +1,7 @@
 import { onMap } from '@quad/shared'
 import campus from '../campus/campus.json'
 import { centroid } from '../campus/geometry'
-import names from '../campus/places.json'
+import info from '../campus/places.json'
 import { pointInPolygon, polygon, resolveCollisions, type Point } from './collision'
 import { world } from './world'
 
@@ -23,9 +23,12 @@ function openSpotNear(p: Point) {
   return { x: 0, z: 0 }
 }
 
+// what we wrote about a building for its card: a line or two, what's in it, its official page
+export type Card = { about: string; inside: string[]; link: string }
+
 // label is the official name (what the hud says when you're there), also the short names
-// people use for it (campus/places.json)
-export type Place = { label: string; spot: Point; also: string[]; gsu: boolean }
+// people use for it. both and the cards are in campus/places.json
+export type Place = { label: string; spot: Point; also: string[]; gsu: boolean; card?: Card }
 
 // a couple of meters out from the front door
 function inFrontOfDoor(door: number[]) {
@@ -33,8 +36,13 @@ function inFrontOfDoor(door: number[]) {
   return { x: x + nx * 2.5, z: z + nz * 2.5 }
 }
 
-const shortNames = names as Record<string, string[]>
-const also = (label: string) => shortNames[label] ?? []
+type Info = { also?: string[]; about?: string; inside?: string[]; link?: string }
+const infos = info as Record<string, Info>
+const also = (label: string) => infos[label]?.also ?? []
+function cardOf(label: string): Card | undefined {
+  const { about, inside, link } = infos[label] ?? {}
+  return about && inside && link ? { about, inside, link } : undefined
+}
 
 // every gsu building you can walk into, and the parks and plazas with a name
 const buildings = new Map<string, Place>()
@@ -46,6 +54,7 @@ for (const b of campus.buildings) {
     spot: inFrontOfDoor(b.door),
     also: also(b.name),
     gsu: true,
+    card: cardOf(b.name),
   })
 }
 const areas = campus.areas.map((a) => ({
@@ -54,10 +63,13 @@ const areas = campus.areas.map((a) => ({
   spot: a.name === 'Hurt Park' ? { x: 0, z: 0 } : openSpotNear(centroid(a.points)),
   also: also(a.name),
   gsu: !!a.gsu,
+  card: cardOf(a.name),
 }))
 export const places: Place[] = [...buildings.values(), ...areas]
   .filter((p) => onMap(p.spot.x, p.spot.z))
   .sort((a, b) => a.label.localeCompare(b.label, 'en', { numeric: true }))
+
+export const placeNamed = (label: string) => places.find((p) => p.label === label)
 
 // lower case words, & as "and", no punctuation: "A&H", "a & h" and "a and h" are the same
 export const words = (s: string) =>

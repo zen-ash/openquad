@@ -63,6 +63,19 @@ button {
   letter-spacing: 0.1px;
 }
 
+.hud .about {
+  margin-left: 8px;
+  padding: 1px 8px;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
 .hud .sub {
   margin-top: 1px;
   color: var(--muted);
@@ -734,6 +747,122 @@ button {
 .places li .plain {
   background: rgb(255 255 255 / 0.12);
   backdrop-filter: none;
+}
+
+.places li .name {
+  padding: 0;
+  background: none;
+  font-size: 13.5px;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: underline dotted rgb(255 255 255 / 0.4);
+  text-underline-offset: 3px;
+}
+
+.place-card {
+  position: fixed;
+  top: 60px;
+  right: 16px;
+  width: min(380px, calc(100vw - 32px));
+  max-height: calc(100vh - 120px);
+  padding: 14px 16px;
+  overflow-y: auto;
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 8px 30px rgb(0 0 0 / 0.25);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.place-card header {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.place-card h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.place-card h3 {
+  margin: 10px 0 4px;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.place-card p {
+  margin: 6px 0 0;
+}
+
+.place-card .sub {
+  margin-top: 1px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.place-card ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.place-card .close {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.12);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.place-card .actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.place-card .actions button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.place-card .go {
+  background: var(--accent);
+}
+
+.place-card .plain {
+  background: rgb(255 255 255 / 0.12);
+}
+
+.place-card .actions a {
+  margin-left: auto;
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.place-card .note {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 11.5px;
 }
 
 .navbar {

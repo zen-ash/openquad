@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { localPlayer } from '../game/localPlayer'
 import { minutes, navigateTo, walkMeters } from '../game/nav'
 import { arrivalSpot, search, type Place } from '../game/places'
+import { showCard, useCard } from './PlaceCard'
 
 // the first few results get their walking time (each one is a route worked out)
 const TIMED = 5
@@ -25,6 +26,7 @@ export default function PlacesMenu() {
       e.preventDefault()
       setOpen((o) => !o)
       setQuery('')
+      useCard.setState({ open: null })
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -41,7 +43,14 @@ export default function PlacesMenu() {
 
   return (
     <div className="places">
-      <button className="places-toggle" onClick={() => (open ? close() : setOpen(true))}>
+      <button
+        className="places-toggle"
+        onClick={() => {
+          if (open) return close()
+          setOpen(true)
+          useCard.setState({ open: null })
+        }}
+      >
         {open ? 'Close' : 'Places (G)'}
       </button>
       {open && (
@@ -65,7 +74,20 @@ export default function PlacesMenu() {
             {results.map((p, i) => (
               <li key={p.label}>
                 <span>
-                  {p.label}
+                  {p.card ? (
+                    // the name opens what we know about it
+                    <button
+                      className="name"
+                      onClick={() => {
+                        close()
+                        showCard(p.label)
+                      }}
+                    >
+                      {p.label}
+                    </button>
+                  ) : (
+                    p.label
+                  )}
                   {walks[i] !== undefined && <small>{minutes(walks[i])} min walk</small>}
                 </span>
                 <button className="go" onClick={() => go(p, true)}>

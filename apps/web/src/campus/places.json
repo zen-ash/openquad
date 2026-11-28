@@ -1,38 +1,290 @@
 {
-  "Library North": ["library", "lib north"],
-  "Library South": ["lib south"],
-  "Student Center East": ["sce", "student center"],
-  "Student Center West": ["scw"],
-  "Arts & Humanities": ["a&h", "ah", "arts and humanities"],
-  "Urban Life Building": ["urban life", "ul"],
-  "Petit Science Center": ["psc"],
-  "Natural Science Center": ["nsc"],
-  "Research Science Center": ["rsc"],
-  "Science Annex": ["annex"],
-  "College of Education & Human Development": ["coe", "cehd", "education"],
-  "GSU Sports Arena": ["sports arena"],
-  "Student Recreation Center": ["rec", "rec center", "src", "gym"],
-  "Helen M. Aderhold Learning Center": ["alc"],
-  "J. Mack Robinson College of Business": ["rcb", "business school", "35 broad"],
-  "College of Law": ["law school"],
-  "Student Success Center": ["ssc", "bell building"],
-  "Piedmont North Dining Hall": ["dining", "food"],
-  "University Commons": ["housing", "dorm"],
-  "Piedmont Central": ["housing", "dorm"],
-  "Piedmont North A": ["housing", "dorm", "piedmont north"],
-  "Piedmont North B": ["housing", "dorm", "piedmont north"],
-  "Patton Hall": ["housing", "dorm"],
-  "University Lofts": ["housing", "dorm", "lofts"],
-  "Greek Housing": ["housing", "frat", "sorority"],
-  "One Park Place": ["1 park place"],
-  "G Deck": ["parking"],
-  "K Deck": ["parking"],
-  "M Deck": ["parking"],
-  "N Deck": ["parking"],
-  "S Deck": ["parking"],
-  "T Deck": ["parking"],
-  "J Deck": ["parking"],
-  "A Deck": ["parking"],
-  "University Lofts Parking": ["parking", "lofts parking"],
-  "Panther Quad": ["quad"]
+  "Library North": {
+    "also": ["library", "lib north"],
+    "about": "The main library building, with the glass lobby from 2022. Bring your PantherCard to get in.",
+    "inside": [
+      "Study Commons at street level: group rooms, a silent room, computers and printing",
+      "Library service desk, 1st floor",
+      "Saxbys cafe by the main entrance",
+      "Computers on floors 1 to 5",
+      "Media rooms and mindfulness rooms, 2nd floor"
+    ],
+    "link": "https://library.gsu.edu/visit-the-library/"
+  },
+  "Library South": {
+    "also": ["lib south"],
+    "about": "The library's taller building, across Decatur St from Library North and joined to it by a glass bridge.",
+    "inside": [
+      "CURVE, a lab for data visualization and research tech, 2nd floor",
+      "Special Collections and Archives, 8th floor",
+      "Computers on the 3rd floor"
+    ],
+    "link": "https://library.gsu.edu/visit-the-library/"
+  },
+  "Student Center East": {
+    "also": ["sce", "student center"],
+    "about": "The main student center, on Unity Plaza. Food, student offices and plenty of places to sit between classes.",
+    "inside": [
+      "Food court on the 1st floor: Panda Express, Courtyard Kitchen, Costa Coffee",
+      "Information desk with lost and found, 1st floor",
+      "Dean of Students, suite 300",
+      "Access and Accommodations Center (disability services)",
+      "New Student Orientation, suite 316",
+      "A ballroom, an auditorium and lounges on every floor"
+    ],
+    "link": "https://engagement.gsu.edu/student-center/"
+  },
+  "Student Center West": {
+    "also": ["scw"],
+    "about": "The older student center on Courtland St, across from Library North. Student government, clubs and the PantherCard office are here.",
+    "inside": [
+      "PantherCard and Parking & Transportation, suite 360",
+      "Student Government Association and student organizations",
+      "Cinefest, the student movie theater",
+      "Fraternity & Sorority Life, Leadership and Service and Student Wellness, 4th floor",
+      "Panther Place lounge and a prayer room, 3rd floor"
+    ],
+    "link": "https://engagement.gsu.edu/student-center/visitus/"
+  },
+  "Arts & Humanities": {
+    "also": ["a&h", "ah", "arts and humanities"]
+  },
+  "Urban Life Building": {
+    "also": ["urban life", "ul"],
+    "about": "On Decatur St, with a bridge to Student Center East. A lot of first-year classes meet here.",
+    "inside": [
+      "Lewis College of Nursing & Health Professions",
+      "School of Public Health",
+      "MILE math lab for College Algebra, room 301",
+      "Psychology Clinic, 10th floor, open to the public",
+      "Panther's Pantry lockers, 3rd floor"
+    ],
+    "link": "https://map.concept3d.com/?id=1108#!m/295229"
+  },
+  "Petit Science Center": {
+    "also": ["psc"],
+    "about": "The Parker H. Petit Science Center at Piedmont Ave and Decatur St: labs and classrooms for the sciences.",
+    "inside": [
+      "Biology department, 4th floor",
+      "Chemistry department office",
+      "Neuroscience Institute",
+      "Chick-fil-A, 1st floor",
+      "A bridge to the Research Science Center"
+    ],
+    "link": "https://map.concept3d.com/?id=1108#!m/295224"
+  },
+  "Natural Science Center": {
+    "also": ["nsc"]
+  },
+  "Research Science Center": {
+    "also": ["rsc"]
+  },
+  "Science Annex": {
+    "also": ["annex"]
+  },
+  "College of Education & Human Development": {
+    "also": ["coe", "cehd", "education"]
+  },
+  "GSU Sports Arena": {
+    "also": ["sports arena"]
+  },
+  "Student Recreation Center": {
+    "also": ["rec", "rec center", "src", "gym"],
+    "about": "The Rec, on Piedmont Ave. Students get in with their PantherCard.",
+    "inside": [
+      "Lap and leisure pools, a spa and a sauna",
+      "A 35-foot climbing wall and outdoor gear rental",
+      "Fitness center, gym courts and a running track",
+      "Racquetball courts, studios and a game room"
+    ],
+    "link": "https://recreation.gsu.edu/facilities/atlanta/"
+  },
+  "Helen M. Aderhold Learning Center": {
+    "also": ["alc"],
+    "about": "Aderhold, on Luckie St by Woodruff Park. Most students have at least one class here.",
+    "inside": [
+      "Classrooms and lecture halls, with a large auditorium",
+      "Study rooms on the ground floor",
+      "School of Music rehearsal rooms",
+      "Shops and places to eat along the street outside"
+    ],
+    "link": "https://map.concept3d.com/?id=1108#!m/295221"
+  },
+  "J. Mack Robinson College of Business": {
+    "also": ["rcb", "business school", "35 broad"]
+  },
+  "College of Law": {
+    "also": ["law school"]
+  },
+  "Student Success Center": {
+    "also": ["ssc", "bell building"],
+    "about": "Opened in October 2025 in the old Southern Bell telephone buildings on Auburn Ave. Go here to sort out money and registration.",
+    "inside": [
+      "Financial aid, billing and refunds, suite 200",
+      "Help with enrollment and registration, 2nd floor",
+      "International Student & Scholar Services, suite 100",
+      "Supplemental Instruction (study sessions for hard classes), 1st floor"
+    ],
+    "link": "https://map.concept3d.com/?id=1108#!m/1058924"
+  },
+  "Piedmont North Dining Hall": {
+    "also": ["dining", "food"],
+    "about": "An all-you-care-to-eat dining hall at Piedmont North, best known for its build-your-own Mongolian grill.",
+    "inside": [
+      "Open on weekdays, closed on weekends",
+      "Use a meal plan or pay at the door",
+      "Piedmont North residents have a meal plan"
+    ],
+    "link": "https://dining.gsu.edu/locations-and-hours/dining-halls/"
+  },
+  "University Commons": {
+    "also": ["housing", "dorm"],
+    "about": "Apartments for upperclass students on Piedmont Ave: four buildings with private bedrooms and full kitchens.",
+    "inside": [
+      "About 2,000 residents in buildings A to D",
+      "2- and 4-bedroom apartments with kitchens",
+      "A MILE math lab used for Elementary Statistics",
+      "A parking deck"
+    ],
+    "link": "https://myhousing.gsu.edu/university-commons/"
+  },
+  "Piedmont Central": {
+    "also": ["housing", "dorm"],
+    "about": "A residence hall on Piedmont Ave, mostly first-year students, about 1,100 of them in suites.",
+    "inside": [
+      "2-bedroom suites and semi-suites on 10 floors",
+      "A dining hall open nonstop from Monday morning to Friday night"
+    ],
+    "link": "https://myhousing.gsu.edu/piedmont-central/"
+  },
+  "Piedmont North A": {
+    "also": ["housing", "dorm", "piedmont north"],
+    "about": "One of the two Piedmont North halls up Piedmont Ave, mostly first-year students. A opened in 2011, next to the dining hall.",
+    "inside": [
+      "Mostly first-year students, some upperclass suites",
+      "24-hour front desk, an academic resource center and a package center",
+      "Piedmont North Dining Hall next door"
+    ],
+    "link": "https://myhousing.gsu.edu/piedmont-north/"
+  },
+  "Piedmont North B": {
+    "also": ["housing", "dorm", "piedmont north"],
+    "about": "The other Piedmont North hall, opened in 2010, mostly first-year students. Elevators from the parking deck go straight into it.",
+    "inside": [
+      "Mostly first-year students, some upperclass suites",
+      "24-hour front desk, an academic resource center and a package center",
+      "Elevators straight from the parking deck"
+    ],
+    "link": "https://myhousing.gsu.edu/piedmont-north/"
+  },
+  "Patton Hall": {
+    "also": ["housing", "dorm"],
+    "about": "A first-year residence hall on Edgewood Ave, about 325 students in suites.",
+    "inside": [
+      "Suites: a double and a single sharing a bathroom",
+      "Its dining hall is closed for Fall 2026",
+      "Residents get their mail and park at University Lofts"
+    ],
+    "link": "https://myhousing.gsu.edu/patton-hall/"
+  },
+  "University Lofts": {
+    "also": ["housing", "dorm", "lofts"]
+  },
+  "Greek Housing": {
+    "also": ["housing", "frat", "sorority"]
+  },
+  "One Park Place": {
+    "also": ["1 park place"]
+  },
+  "G Deck": {
+    "also": ["parking"]
+  },
+  "K Deck": {
+    "also": ["parking"]
+  },
+  "M Deck": {
+    "also": ["parking"]
+  },
+  "N Deck": {
+    "also": ["parking"]
+  },
+  "S Deck": {
+    "also": ["parking"]
+  },
+  "T Deck": {
+    "also": ["parking"]
+  },
+  "J Deck": {
+    "also": ["parking"]
+  },
+  "A Deck": {
+    "also": ["parking"]
+  },
+  "University Lofts Parking": {
+    "also": ["parking", "lofts parking"]
+  },
+  "Panther Quad": {
+    "also": ["quad"]
+  },
+  "Langdale Hall": {
+    "about": "A big classroom building on Peachtree Center Ave, once called the General Classroom Building. Lots of first-year classes meet here.",
+    "inside": [
+      "Classrooms on most floors",
+      "Political Science, Sociology and Geosciences offices",
+      "CIRCLE language tutoring, room 128",
+      "A Costa Coffee self-serve cafe"
+    ],
+    "link": "https://map.concept3d.com/?id=1108#!m/295227"
+  },
+  "Classroom South": {
+    "about": "A classroom building from 1966 with a newer glass lobby on Decatur St. Walkways join it to the buildings around it.",
+    "inside": [
+      "General classrooms for many departments",
+      "A Costa Coffee self-serve cafe, 2nd floor",
+      "Walkways to G Deck, Langdale Hall and Library South"
+    ],
+    "link": "https://map.concept3d.com/?id=1108#!m/295215"
+  },
+  "25 Park Place": {
+    "about": "A 26-floor tower on Woodruff Park, once the SunTrust Tower. First-year students come here for advising.",
+    "inside": [
+      "University Advisement Center (0 to 89 credit hours), floors 4 and 5",
+      "University Career Services, suite 111",
+      "Writing Studio, suite 2420",
+      "College of Arts & Sciences dean's office and senior advising, 3rd floor",
+      "English and World Languages & Cultures departments"
+    ],
+    "link": "https://advisement.gsu.edu/"
+  },
+  "75 Piedmont Avenue": {
+    "about": "An office building on Piedmont Ave with a lot of student support under one roof: health, counseling and housing.",
+    "inside": [
+      "Student Health Clinic, suite 200",
+      "Counseling Center and Testing Center, suite 200A",
+      "University Housing office, suite 110",
+      "The registrar's graduation office",
+      "Twisted Taco, 1st floor"
+    ],
+    "link": "https://map.concept3d.com/?id=1108#!m/295207"
+  },
+  "Centennial Hall": {
+    "about": "On Auburn Ave. Campus tours start at the Welcome Center here, and it's where admissions is.",
+    "inside": [
+      "Welcome Center, 1st floor: campus tours start here",
+      "Undergraduate Admissions",
+      "Honors College",
+      "The President's and Provost's offices"
+    ],
+    "link": "https://welcome.gsu.edu/"
+  },
+  "University Bookstore": {
+    "about": "Next to Student Center West: textbooks, supplies and GSU clothes.",
+    "inside": [
+      "Textbooks to rent or buy, used and digital",
+      "School supplies and tech",
+      "GSU clothing and gifts",
+      "A way in from Student Center West's 3rd floor"
+    ],
+    "link": "https://services.gsu.edu/university-bookstore/"
+  }
 }

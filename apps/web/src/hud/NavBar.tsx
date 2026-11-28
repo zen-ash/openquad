@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { followLinks } from '../game/links'
 import { localPlayer } from '../game/localPlayer'
 import { minutes, stopNavigating, updateNav, useNav } from '../game/nav'
+import { showCard } from './PlaceCard'
 
 export default function NavBar() {
   const goal = useNav((s) => s.goal)
@@ -16,9 +17,10 @@ export default function NavBar() {
     return () => clearInterval(timer)
   }, [])
 
-  // "you've arrived" hangs around for a few seconds
+  // "you've arrived" hangs around for a few seconds, and up comes what's there
   useEffect(() => {
     if (!arrived) return
+    showCard(arrived)
     const timer = setTimeout(() => useNav.setState({ arrived: null }), 4000)
     return () => clearTimeout(timer)
   }, [arrived])

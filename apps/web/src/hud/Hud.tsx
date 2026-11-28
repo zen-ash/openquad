@@ -4,6 +4,8 @@ import Clock from './Clock'
 import Compass from './Compass'
 import Fps from './Fps'
 import Help from './Help'
+import { placeNamed } from '../game/places'
+import { showCard } from './PlaceCard'
 import LocationTitle from './LocationTitle'
 import Quest from './Quest'
 import { usePlace } from './usePlace'
@@ -17,7 +19,14 @@ export default function Hud() {
     <>
       <div className="hud">
         <div className="place">{place.name}</div>
-        <div className="sub">{place.sub}</div>
+        <div className="sub">
+          {place.sub}
+          {placeNamed(place.name)?.card && (
+            <button className="about" onClick={() => showCard(place.name)}>
+              What's here
+            </button>
+          )}
+        </div>
         <div className="people">
           <span className="dot" />
           <span>{online} online</span>

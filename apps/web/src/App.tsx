@@ -14,6 +14,7 @@ import Hud from './hud/Hud'
 import PhotoMode from './hud/PhotoMode'
 import Minimap from './hud/Minimap'
 import NavBar from './hud/NavBar'
+import PlaceCard from './hud/PlaceCard'
 import PlacesMenu from './hud/PlacesMenu'
 import ResolutionPicker from './ResolutionPicker'
 import StylePicker from './StylePicker'
@@ -151,6 +152,7 @@ export default function App() {
               <EmoteBar />
               <MicButton />
               <PlacesMenu />
+              <PlaceCard />
               <NavBar />
               <div className="view-options">
                 <StylePicker />

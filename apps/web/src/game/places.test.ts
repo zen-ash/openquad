@@ -43,7 +43,10 @@ describe('search', () => {
   // a short name, or one of the name's own words, that has it in the first few results
   // ("courtland" is both courtland buildings)
   it.each(gsu)('finds %s by a short name', (name) => {
-    const tries = [...((names as Record<string, string[]>)[name] ?? []), ...words(name)]
+    const tries = [
+      ...((names as Record<string, { also?: string[] }>)[name]?.also ?? []),
+      ...words(name),
+    ]
     const top = (t: string) =>
       search(t)
         .slice(0, 3)
@@ -83,5 +86,35 @@ describe('search', () => {
   it('finds nothing for nonsense, and everything for nothing', () => {
     expect(search('zzqx')).toEqual([])
     expect(search('  ')).toHaveLength(places.length)
+  })
+})
+
+describe('cards', () => {
+  const cards = places.filter((p) => p.card).map((p) => [p.label, p.card!] as const)
+
+  it('has one for the buildings a new student needs most', () => {
+    expect(cards.length).toBeGreaterThanOrEqual(20)
+    for (const [label] of cards) expect(gsu).toContain(label)
+  })
+
+  it.each(cards)('keeps the %s card short', (_, card) => {
+    expect(card.about.length).toBeLessThanOrEqual(160)
+    expect(card.inside.length).toBeGreaterThanOrEqual(2)
+    expect(card.inside.length).toBeLessThanOrEqual(6)
+    for (const line of card.inside) expect(line.length).toBeLessThanOrEqual(90)
+  })
+
+  it.each(cards)("links the %s card to gsu's own pages or its campus map", (_, card) => {
+    const url = new URL(card.link)
+    expect(url.protocol).toBe('https:')
+    const campusMap = url.hostname === 'map.concept3d.com' && url.search === '?id=1108'
+    expect(url.hostname.endsWith('gsu.edu') || campusMap).toBe(true)
+  })
+
+  it('has no half written ones', () => {
+    for (const info of Object.values(names as Record<string, object>)) {
+      const parts = ['about', 'inside', 'link'].filter((k) => k in info)
+      expect([0, 3]).toContain(parts.length)
+    }
   })
 })
