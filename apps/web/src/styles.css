@@ -39,7 +39,7 @@ button {
 .card,
 .mic,
 .places button,
-.places ul {
+.places-panel {
   border: 1px solid var(--panel-border);
   background: var(--panel);
   backdrop-filter: blur(14px);
@@ -654,15 +654,38 @@ button {
   cursor: pointer;
 }
 
+.places-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: min(470px, calc(100vw - 32px));
+  max-height: calc(100vh - 120px);
+  padding: 8px;
+  border-radius: 14px;
+}
+
+.places-search {
+  padding: 9px 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  outline: none;
+  background: rgb(255 255 255 / 0.08);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.places-search:focus {
+  border-color: var(--accent);
+}
+
 .places ul {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  max-height: calc(100vh - 120px);
   margin: 0;
-  padding: 6px;
+  padding: 0;
   overflow-y: auto;
-  border-radius: 14px;
   list-style: none;
 }
 
@@ -679,10 +702,22 @@ button {
 }
 
 .places li span {
+  display: flex;
   flex: 1;
-  min-width: 150px;
+  flex-direction: column;
+  min-width: 0;
   font-size: 13.5px;
   font-weight: 500;
+}
+
+.places li small {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.places li.none {
+  padding: 8px 10px;
+  color: var(--muted);
 }
 
 .places li button {

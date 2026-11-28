@@ -61,6 +61,11 @@ export function navigateTo(label: string, point: Point, from: Point, auto = fals
   useNav.setState({ goal: { label, point }, path, meters: routeLength(path), arrived: null, auto })
 }
 
+/** how far it is to walk from a to b along the paths */
+export function walkMeters(from: Point, to: Point) {
+  return routeLength(route(campusGraph(), from, to, sees) ?? [from, to])
+}
+
 export function stopNavigating() {
   useNav.setState({ goal: null, path: [], meters: 0, auto: false })
 }

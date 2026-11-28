@@ -13,10 +13,10 @@ export default function ChatPanel() {
   const [text, setText] = useState('')
   const input = useRef<HTMLInputElement>(null)
 
-  // enter anywhere starts typing, like most games
+  // enter anywhere starts typing, like most games. not in another box (the places search)
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key !== 'Enter' || document.activeElement === input.current) return
+      if (e.key !== 'Enter' || e.target instanceof HTMLInputElement) return
       e.preventDefault()
       input.current?.focus()
     }
