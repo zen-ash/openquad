@@ -7,8 +7,9 @@ import { world } from './world'
 
 // walking speed for the "3 min" estimate, a normal pace rather than our brisk one
 const PACE = 1.3
-// close enough to count as there
+// close enough to count as there. walking by itself it goes right up to the spot
 const ARRIVED = 5
+const ARRIVED_AUTO = 1
 // wander further than this off the route and it works out a new one
 const OFF_ROUTE = 10
 
@@ -17,9 +18,17 @@ type Nav = {
   path: Point[]
   meters: number
   arrived: string | null
+  // "take me there": the character walks the route by itself (game/autowalk.ts)
+  auto: boolean
 }
 
-export const useNav = create<Nav>(() => ({ goal: null, path: [], meters: 0, arrived: null }))
+export const useNav = create<Nav>(() => ({
+  goal: null,
+  path: [],
+  meters: 0,
+  arrived: null,
+  auto: false,
+}))
 
 // directions keep at least this far inside the fence. the streets it runs down the middle
 // of get their near sidewalk instead
@@ -48,13 +57,13 @@ export function campusGraph() {
 // can you walk straight from a to b
 const sees = (a: Point, b: Point) => !lineBlocked(a, b, world)
 
-export function navigateTo(label: string, point: Point, from: Point) {
+export function navigateTo(label: string, point: Point, from: Point, auto = false) {
   const path = route(campusGraph(), from, point, sees) ?? [from, point]
-  useNav.setState({ goal: { label, point }, path, meters: routeLength(path), arrived: null })
+  useNav.setState({ goal: { label, point }, path, meters: routeLength(path), arrived: null, auto })
 }
 
 export function stopNavigating() {
-  useNav.setState({ goal: null, path: [], meters: 0 })
+  useNav.setState({ goal: null, path: [], meters: 0, auto: false })
 }
 
 export const minutes = (meters: number) => Math.max(1, Math.round(meters / PACE / 60))
@@ -74,11 +83,11 @@ function distToSegment(p: Point, a: Point, b: Point) {
  * you've already walked, reroutes if you've wandered off, and notices when you arrive.
  */
 export function updateNav(me: Point) {
-  const { goal, path } = useNav.getState()
+  const { goal, path, auto } = useNav.getState()
   if (!goal) return
 
-  if (Math.hypot(goal.point.x - me.x, goal.point.z - me.z) < ARRIVED) {
-    useNav.setState({ goal: null, path: [], meters: 0, arrived: goal.label })
+  if (Math.hypot(goal.point.x - me.x, goal.point.z - me.z) < (auto ? ARRIVED_AUTO : ARRIVED)) {
+    useNav.setState({ goal: null, path: [], meters: 0, arrived: goal.label, auto: false })
     return
   }
 
@@ -94,7 +103,7 @@ export function updateNav(me: Point) {
   }
 
   if (best > OFF_ROUTE) {
-    navigateTo(goal.label, goal.point, me)
+    navigateTo(goal.label, goal.point, me, auto)
     return
   }
   const rest = [me, ...path.slice(closest + 1)]

@@ -6,6 +6,7 @@ export default function NavBar() {
   const goal = useNav((s) => s.goal)
   const meters = useNav((s) => s.meters)
   const arrived = useNav((s) => s.arrived)
+  const auto = useNav((s) => s.auto)
 
   useEffect(() => {
     const timer = setInterval(() => updateNav({ x: localPlayer.x, z: localPlayer.z }), 400)
@@ -30,6 +31,13 @@ export default function NavBar() {
         {Math.round(meters)} m &middot; {minutes(meters)} min walk
       </span>
       <button
+        className="auto"
+        onClick={(e) => (useNav.setState({ auto: !auto }), e.currentTarget.blur())}
+      >
+        {auto ? 'Pause' : 'Take me there'}
+      </button>
+      <button
+        className="stop"
         aria-label="Stop directions"
         onClick={(e) => (stopNavigating(), e.currentTarget.blur())}
       >

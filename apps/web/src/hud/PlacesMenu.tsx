@@ -33,7 +33,16 @@ export default function PlacesMenu() {
             <li key={p.label}>
               <span>{p.label}</span>
               <button
-                className="directions"
+                className="go"
+                onClick={(e) => {
+                  navigateTo(p.label, p.spot, { x: localPlayer.x, z: localPlayer.z }, true)
+                  close(e)
+                }}
+              >
+                Take me there
+              </button>
+              <button
+                className="plain"
                 onClick={(e) => {
                   navigateTo(p.label, p.spot, { x: localPlayer.x, z: localPlayer.z })
                   close(e)
@@ -42,7 +51,7 @@ export default function PlacesMenu() {
                 Directions
               </button>
               <button
-                className="teleport"
+                className="plain"
                 onClick={(e) => {
                   localPlayer.teleport = arrivalSpot(p.spot)
                   close(e)

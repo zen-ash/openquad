@@ -7,7 +7,8 @@ import { cutout } from '../campus/cutout'
 import type { Controls } from '../game/controls'
 import { avatarById } from '../game/avatars'
 import { clampDistance, clampPitch, clearView, orbit } from '../game/camera'
-import { BIKE_SPEED, DASH_SPEED, glide, GLIDE_SPEED } from '../game/glide'
+import { steer, stuck } from '../game/autowalk'
+import { angleBetween, BIKE_SPEED, DASH_SPEED, glide, GLIDE_SPEED } from '../game/glide'
 import campus from '../campus/campus.json'
 import { interiorAt } from '../game/interiors'
 import { blocksView, cameraReach, outlineOf } from '../game/occlusion'
@@ -22,6 +23,7 @@ import {
   WALK_SPEED,
 } from '../game/movement'
 import { input } from '../game/input'
+import { useNav } from '../game/nav'
 import { floorOf, surfaceAt } from '../game/surface'
 import { heightAt } from '../game/terrain'
 import { hoppingWorldFor, tallFurniture, worldFor } from '../game/world'
@@ -48,6 +50,8 @@ const CAMERA_TURN_SPEED = 2 // radians/sec
 const CLOSEST = 2.2
 const PLAYER_RADIUS = 0.4
 const SEND_INTERVAL = 1 / TICK_RATE
+// after turning the camera yourself, walking by yourself leaves it alone this long (s)
+const LOOKED_AROUND = 2
 
 const NO_KEYS: Record<Controls, boolean> = {
   forward: false,
@@ -77,6 +81,7 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
   const [, getKeys] = useKeyboardControls<Controls>()
   const sendTimer = useRef(0)
   const snapCamera = useRef(true)
+  const lookedAround = useRef(0)
   const bike = useSettings((s) => s.bike)
 
   // B gets the bean on and off the bike
@@ -117,6 +122,8 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
     if (keys.turnLeft) cameraYaw.current += CAMERA_TURN_SPEED * dt
     if (keys.turnRight) cameraYaw.current -= CAMERA_TURN_SPEED * dt
     cameraYaw.current += input.turn
+    if (keys.turnLeft || keys.turnRight || input.turn) lookedAround.current = LOOKED_AROUND
+    lookedAround.current -= dt
     pitch.current = clampPitch(pitch.current + input.tilt)
     distance.current = clampDistance(distance.current + input.zoom)
     input.turn = input.tilt = input.zoom = 0
@@ -133,15 +140,33 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
 
     // up on a bridge's deck (well above the ground): its edges are walls
     const high = player.position.y > heightAt(player.position.x, player.position.z) + 1
+    const solid = walker
+      ? worldFor(localPlayer.inside, high)
+      : hoppingWorldFor(localPlayer.inside, high)
+
+    // "take me there": any key or the stick takes back over
+    const nav = useNav.getState()
+    if (dir && nav.auto) useNav.setState({ auto: false })
+    let auto = false
+    let autoSpeed = Infinity
+    if (!dir && nav.auto) {
+      dir = steer(player.position, nav.path, solid)
+      auto = dir !== null
+      // don't overshoot the end and come back
+      const end = nav.path[nav.path.length - 1]
+      if (end) autoSpeed = Math.hypot(end.x - player.position.x, end.z - player.position.z) / delta
+      if (auto && stuck(player.position, dt)) useNav.setState({ auto: false })
+    }
+
     if (!walker) {
       // full speed right away, stopped right away (game/glide.ts)
       const g = glide(
         { x: player.position.x, z: player.position.z, heading: player.rotation.y },
         dir,
-        bike ? BIKE_SPEED : running ? DASH_SPEED : GLIDE_SPEED,
+        Math.min(autoSpeed, bike ? BIKE_SPEED : running ? DASH_SPEED : GLIDE_SPEED),
         delta,
         PLAYER_RADIUS,
-        hoppingWorldFor(localPlayer.inside, high),
+        solid,
       )
       player.position.x = g.x
       player.position.z = g.z
@@ -149,19 +174,19 @@ export default function Player({ spawn }: { spawn: PlayerInfo }) {
       running ||= bike
       if (dir) next = running ? 'Run' : 'Walk'
     } else if (dir) {
-      const speed = running ? RUN_SPEED : WALK_SPEED
-      const pos = walk(
-        player.position,
-        dir,
-        speed,
-        delta,
-        PLAYER_RADIUS,
-        worldFor(localPlayer.inside, high),
-      )
+      const speed = Math.min(autoSpeed, running ? RUN_SPEED : WALK_SPEED)
+      const pos = walk(player.position, dir, speed, delta, PLAYER_RADIUS, solid)
       player.position.x = pos.x
       player.position.z = pos.z
       player.rotation.y = lerpAngle(player.rotation.y, headingFor(dir), 1 - Math.exp(-12 * dt))
       next = running ? 'Run' : 'Walk'
+    }
+
+    // walking by yourself the camera swings round behind you, unless you've just been
+    // looking around
+    if (auto && lookedAround.current <= 0) {
+      const behind = player.rotation.y + Math.PI
+      cameraYaw.current += angleBetween(cameraYaw.current, behind) * (1 - Math.exp(-1.5 * dt))
     }
 
     // only re-render when the animation actually changes, not every frame

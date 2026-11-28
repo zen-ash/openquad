@@ -1,0 +1,109 @@
+import { insideFence } from '@quad/shared'
+import { beforeEach, describe, expect, it } from 'vitest'
+import campus from '../campus/campus.json'
+import { steer, stuck } from './autowalk'
+import { glide, GLIDE_SPEED } from './glide'
+import { navigateTo, stopNavigating, updateNav, useNav } from './nav'
+import { routeLength } from './navgraph'
+import { world } from './world'
+
+describe('steer', () => {
+  const open = { buildings: [], walls: [], circles: [], halfSize: 1000 }
+  const path = [
+    { x: 0, z: 0 },
+    { x: 10, z: 0 },
+    { x: 10, z: 10 },
+  ]
+
+  it('walks along the route', () => {
+    const dir = steer({ x: 2, z: 0 }, path, open)!
+    expect(dir.x).toBeCloseTo(1)
+    expect(dir.z).toBeCloseTo(0)
+  })
+
+  it('starts turning before a corner', () => {
+    const dir = steer({ x: 9, z: 0 }, path, open)!
+    expect(dir.z).toBeGreaterThan(0.3)
+  })
+
+  it('heads back to the route if you are off to the side', () => {
+    const dir = steer({ x: 3, z: -4 }, path, open)!
+    expect(dir.z).toBeGreaterThan(0.5)
+  })
+
+  it('goes round a pole in the way', () => {
+    const pole = { ...open, circles: [{ x: 1.5, z: 0.05, radius: 0.15 }] }
+    const dir = steer({ x: 0, z: 0 }, path, pole)!
+    expect(dir.z).toBeLessThan(-0.2)
+  })
+
+  it("doesn't cut a corner through a wall", () => {
+    // a building's corner on the inside of the turn
+    const corner = { ...open, walls: [{ ax: 9.6, az: 0.4, bx: 9.6, bz: 3 }] }
+    const dir = steer({ x: 9, z: 0 }, path, corner)!
+    // aims closer, along the route, instead of across the corner
+    expect(dir.z).toBeLessThan(0.3)
+  })
+
+  it('stops at the end', () => {
+    expect(steer({ x: 10, z: 9.8 }, path, open)).toBeNull()
+    expect(steer({ x: 0, z: 0 }, [], open)).toBeNull()
+  })
+})
+
+describe('stuck', () => {
+  it('gives up after a few seconds without getting anywhere', () => {
+    const me = { x: 50, z: 50 }
+    // the first check measures from wherever it was before
+    for (let i = 0; i < 100; i++) stuck(me, 0.1)
+    let gave = false
+    for (let i = 0; i < 40 && !gave; i++) gave = stuck(me, 0.1)
+    expect(gave).toBe(true)
+  })
+
+  it('keeps going while you move', () => {
+    const me = { x: 0, z: 0 }
+    for (let i = 0; i < 100; i++) {
+      me.x += 0.7
+      expect(stuck(me, 0.1)).toBe(false)
+    }
+  })
+})
+
+describe('walking the real campus', () => {
+  // no traffic: it's on the real clock and would make the test different every run
+  const still = { ...world, moving: undefined }
+  const doors = campus.buildings
+    .filter((b) => b.gsu && b.door)
+    .map((b) => {
+      const [x, z, nx, nz] = b.door as [number, number, number, number]
+      return { name: b.name!, point: { x: x + nx * 2.5, z: z + nz * 2.5 } }
+    })
+    // the rest are outside the fence, you can't walk there yet
+    .filter((d) => insideFence(d.point.x, d.point.z))
+
+  beforeEach(() => stopNavigating())
+
+  it('has most of the doors to try', () => {
+    expect(doors.length).toBeGreaterThan(20)
+  })
+
+  it.each(doors.map((d) => [d.name, d]))('walks from hurt park to %s by itself', (_, door) => {
+    let me = { x: 0, z: 0, heading: 0 }
+    navigateTo(door.name, door.point, me, true)
+    const meters = useNav.getState().meters
+    const dt = 1 / 30
+    // twice as long as the route needs, and no more
+    const frames = Math.ceil(((meters * 2) / GLIDE_SPEED + 5) / dt)
+    for (let f = 0; f < frames; f++) {
+      // the nav bar updates the route a couple of times a second
+      if (f % 12 === 0) updateNav(me)
+      const dir = steer(me, useNav.getState().path, still)
+      if (!dir) break
+      me = glide(me, dir, GLIDE_SPEED, dt, 0.4, still)
+    }
+    const left = Math.hypot(door.point.x - me.x, door.point.z - me.z)
+    expect(left, `stuck at ${me.x.toFixed(1)}, ${me.z.toFixed(1)}`).toBeLessThan(1)
+    expect(routeLength([{ x: 0, z: 0 }, door.point])).toBeLessThan(meters + 1)
+  })
+})
