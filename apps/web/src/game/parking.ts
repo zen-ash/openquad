@@ -1,4 +1,4 @@
-import { fenceDistance } from '@quad/shared'
+import { coreDistance } from './core'
 import campus from '../campus/campus.json'
 import { CAR_KINDS, type Car } from './cars'
 import { closestOnSegment, pointInPolygon, type Point } from './collision'
@@ -230,7 +230,7 @@ export function curbCars(): Car[] {
 function curbClear(car: Car, road: Line, signals: { x: number; z: number }[]) {
   const box = corners(car)
   const { length } = CAR_KINDS[car.kind]!
-  if (fenceDistance(car.x, car.z) < -230) return false
+  if (coreDistance(car.x, car.z) < -230) return false
   // not where the streetcar goes by (where a street isn't its real width yet, or its platforms)
   if (trackNear(car.x, car.z, 2.8)) return false
   if (signals.some((s) => Math.hypot(s.x - car.x, s.z - car.z) < SIGNAL + 7 + length / 2))

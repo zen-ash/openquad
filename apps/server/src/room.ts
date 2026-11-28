@@ -1,5 +1,5 @@
 import {
-  insideFence,
+  onMap,
   VIEW_DISTANCE,
   type PlayerInfo,
   type PlayerUpdate,
@@ -55,7 +55,7 @@ export class Room {
 
   join(id: string, name: string, avatar: string, send: Send, position = spawnPoint()) {
     // back from a reconnect you keep your spot, unless it's somewhere you can't be
-    if (!insideFence(position.x, position.z)) position = spawnPoint()
+    if (!onMap(position.x, position.z)) position = spawnPoint()
     const info: PlayerInfo = { id, name, avatar, position, heading: 0 }
 
     send({ type: 'welcome', you: info, players: [...this.members.values()].map((m) => m.info) })
@@ -75,11 +75,11 @@ export class Room {
     this.broadcast({ type: 'player-left', id })
   }
 
-  // returns false if it got ignored. the client keeps you inside the fence, so anything
-  // past it is a modified client. everyone else keeps seeing you where you last were
+  // returns false if it got ignored. the client keeps you on the map, so anything off it
+  // is a modified client. everyone else keeps seeing you where you last were
   move(id: string, position: Vec3, heading: number) {
     const member = this.members.get(id)
-    if (!member || !insideFence(position.x, position.z)) return false
+    if (!member || !onMap(position.x, position.z)) return false
     member.info.position = position
     member.info.heading = heading
     member.moved = true

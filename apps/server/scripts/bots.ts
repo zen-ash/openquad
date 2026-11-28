@@ -5,7 +5,7 @@
 //
 // --spread is how far from hurt park they wander (meters). small = everyone crowded
 // together like a class demo, big = spread over campus
-import { AVATAR_IDS, insideFence, TICK_RATE, type ServerMessage } from '@quad/shared'
+import { AVATAR_IDS, TICK_RATE, type ServerMessage } from '@quad/shared'
 import { WebSocket } from 'ws'
 
 function arg(name: string, fallback: string) {
@@ -24,12 +24,9 @@ let measuring = false
 
 type Bot = { states: number; bytes: number; gaps: number[]; lastState: number; rtts: number[] }
 
-// somewhere random in the area, but inside the fence or the server ignores the moves
+// somewhere random in the area
 function randomSpot() {
-  for (;;) {
-    const spot = { x: (Math.random() - 0.5) * 2 * AREA, z: (Math.random() - 0.5) * 2 * AREA }
-    if (insideFence(spot.x, spot.z)) return spot
-  }
+  return { x: (Math.random() - 0.5) * 2 * AREA, z: (Math.random() - 0.5) * 2 * AREA }
 }
 
 function startBot(n: number, end: number): Promise<Bot> {

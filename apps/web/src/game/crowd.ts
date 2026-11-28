@@ -1,4 +1,4 @@
-import { fenceDistance } from '@quad/shared'
+import { coreDistance } from './core'
 import type { Point } from './collision'
 import { interiors } from './interiors'
 import { campusGraph } from './nav'
@@ -31,10 +31,10 @@ function seeded(seed: number) {
   }
 }
 
-// just outside every door you can walk into, on campus (inside the fence)
+// just outside every door you can walk into in the middle of campus
 const doors = interiors
   .map(({ door }) => ({ x: door.x + door.nx * 2, z: door.z + door.nz * 2 }))
-  .filter((p) => fenceDistance(p.x, p.z) > 2)
+  .filter((p) => coreDistance(p.x, p.z) > 2)
 
 let made: Walker[] | null = null
 export function walkers() {

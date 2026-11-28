@@ -1,4 +1,4 @@
-import { fenceDistance } from '@quad/shared'
+import { onMap } from '@quad/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import campus from '../campus/campus.json'
 import { collect, loadStars, pickUp, REACH, STARS, useStars } from './collectibles'
@@ -25,8 +25,8 @@ describe('stars', () => {
     expect(STARS).toHaveLength(20)
   })
 
-  it.each(STARS.map((s, i) => [i, s]))('star %i is inside the fence', (_, s) => {
-    expect(fenceDistance(s.x, s.z)).toBeGreaterThan(3)
+  it.each(STARS.map((s, i) => [i, s]))('star %i is on the map', (_, s) => {
+    expect(onMap(s.x, s.z, 3)).toBe(true)
   })
 
   it.each(STARS.map((s, i) => [i, s]))('star %i is not in a building', (_, s) => {

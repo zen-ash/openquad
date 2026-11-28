@@ -44,7 +44,7 @@ Reference only: nothing from the images is in the repo, the positions are my own
 
 ## Traffic
 
-- **Lanes** (lanes.ts): the streets 7m and wider within 120m of the fence and
+- **Lanes** (lanes.ts): the streets 7m and wider within 120m of the middle of campus (core.ts) and
   25m more, cut where they leave that area: cars come in and leave there. Lanes from `lanes`,
   `oneway` and `lanes:forward` (build-campus.mjs keeps them on the roads now), squeezed to fit
   the drawn road (2.4m at least). Pieces of osm way that just carry on are one stretch;
@@ -86,7 +86,7 @@ about 17m at (-88, 185)-(-104, 204) (an old terrain.json bug), cars on it nosedi
 
 ## What's still off
 
-- Cars pop in and out where the streets leave the area (~145m from the fence, 25m past it).
+- Cars pop in and out where the streets leave the area (~145m from the middle of campus, 25m past it).
 - Five Points and the two big merged junctions (Courtland St/Edgewood Ave/Auditorium Pl and
   Edgewood Ave/Peachtree Center Ave) are crossed on long curves; cars there follow one curve
   rather than the real lane markings.

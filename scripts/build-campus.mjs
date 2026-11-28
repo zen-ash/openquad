@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url'
 const CENTER = { lat: 33.75419, lon: -84.3854 }
 // meters from the center (hurt park) to each edge of the map. just big enough for the whole
 // downtown campus, which goes further north (piedmont north) than it does south
+// MAP in packages/shared/src/map.ts says the same (it's where you can walk to)
 const EDGES = { north: 660, south: 480, west: 540, east: 540 }
 // 1 unit = 1 meter. tried half size at first to make walking across faster, but then
 // people were as tall as a whole floor of a building

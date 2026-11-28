@@ -556,7 +556,7 @@ const inside = (x: number, z: number) =>
   )
 
 let poles: { x: number; z: number; stretch: number; s: number }[] | null = null
-/** where the overhead's poles stand (game/world.ts makes the ones inside the fence solid) */
+/** where the overhead's poles stand (game/world.ts makes them solid) */
 export function streetcarPoles() {
   if (poles) return poles
   poles = []

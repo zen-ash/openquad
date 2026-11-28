@@ -1,4 +1,3 @@
-import { insideFence } from '@quad/shared'
 import { useFrame } from '@react-three/fiber'
 import { useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
@@ -25,12 +24,11 @@ import { surfaceAt } from '../game/surface'
 // the ground, a column of light and a gold gem bobbing over it, so you can spot a way in
 // from down the street. they fade away as you get close
 
-// gsu's buildings with a door inside the fence, not the parking decks
+// gsu's buildings with a door, not the parking decks
 export const entrances = campus.buildings.flatMap((b) => {
   if (!b.gsu || !b.name || !b.door || 'part' in b) return []
   if (/deck|parking/i.test(b.name)) return []
   const [x, z, nx, nz] = b.door as [number, number, number, number]
-  if (!insideFence(x, z)) return []
   return [{ name: b.name, x: x + nx * 1.6, z: z + nz * 1.6 }]
 })
 

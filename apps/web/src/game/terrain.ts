@@ -1,4 +1,4 @@
-import { FENCE } from '@quad/shared'
+import { CORE } from './core'
 import data from '../campus/terrain.json'
 import { raisedAt, type Raised } from './raised'
 
@@ -60,17 +60,18 @@ function gridOf(step: number) {
 }
 export const COARSE = gridOf(4)
 
-// only the part of the map people get close to (the fence and 100m round it, out to the
-// coarse grid's lines) is drawn on every sample, the rest on the coarse grid: from inside the
-// fence it's all far away in the haze. the last FADE meters before that edge ease into the
-// coarse ground's shape so the two meet without a step, and heightAt stays what's drawn
+// only the part of the map people are in most (the middle of campus, core.ts, and 100m
+// round it, out to the coarse grid's lines) is drawn on every sample, the rest on the coarse
+// grid: from the middle of campus it's all far away in the haze. the last FADE meters before
+// that edge ease into the coarse ground's shape so the two meet without a step, and heightAt
+// stays what's drawn
 const FADE = 48
 const span = (vs: number[]) => [
   COARSE.x(COARSE.column(Math.min(...vs) - 100)),
   COARSE.x(COARSE.column(Math.max(...vs) + 100) + 1),
 ]
-const [x0, x1] = span(FENCE.map(([x]) => x))
-const [z0, z1] = span(FENCE.map(([, z]) => z))
+const [x0, x1] = span(CORE.map(([x]) => x))
+const [z0, z1] = span(CORE.map(([, z]) => z))
 export const isNear = (x: number, z: number) => x > x0! && x < x1! && z > z0! && z < z1!
 for (let r = 0; r < size; r++)
   for (let c = 0; c < size; c++) {

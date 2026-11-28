@@ -1,4 +1,4 @@
-import { fenceDistance, lineInsideFence } from '@quad/shared'
+import { onMap } from '@quad/shared'
 import { create } from 'zustand'
 import campus from '../campus/campus.json'
 import { lineBlocked, type Point } from './collision'
@@ -30,9 +30,8 @@ export const useNav = create<Nav>(() => ({
   auto: false,
 }))
 
-// directions keep at least this far inside the fence. the streets it runs down the middle
-// of get their near sidewalk instead
-const FENCE_MARGIN = 1.5
+// directions keep at least this far in from the edge of the map
+const EDGE_MARGIN = 1.5
 
 // built the first time someone asks for directions, not on page load
 let graph: Graph | null = null
@@ -45,10 +44,10 @@ export function campusGraph() {
         // you can walk on roads, but sidewalks and crosswalks are preferred
         ...campus.roads.map((r) => ({ ...r, cost: 2.5 })),
       ]),
-      (p) => fenceDistance(p.x, p.z) >= FENCE_MARGIN,
+      (p) => onMap(p.x, p.z, EDGE_MARGIN),
       // and not through anything solid. some osm footways cut through a planter or the
       // arena's steps, and walking there by yourself would get stuck on it
-      (a, b) => lineInsideFence(a.x, a.z, b.x, b.z, FENCE_MARGIN) && !lineBlocked(a, b, world),
+      (a, b) => !lineBlocked(a, b, world),
     ),
   )
   return graph

@@ -1,8 +1,8 @@
-import { insideFence, type ServerMessage } from '@quad/shared'
+import { onMap, type ServerMessage } from '@quad/shared'
 import { describe, expect, it } from 'vitest'
 import { Room } from './room'
 
-// the other end of campus from hurt park, further than VIEW_DISTANCE but inside the fence
+// the other end of campus from hurt park, further than VIEW_DISTANCE
 const FAR = { x: -300, y: 0, z: 10 }
 
 function fakeClient() {
@@ -58,7 +58,7 @@ describe('Room', () => {
     room.join('b', 'Bob', 'male_09', () => {})
     a.inbox.length = 0
 
-    // there's no speed limit, only the fence. every tick's move gets through
+    // there's no speed limit, only the edge of the map. every tick's move gets through
     for (let i = 1; i <= 3; i++) {
       expect(room.move('b', { x: 1.2 * i, y: 0, z: 0 }, 0)).toBe(true)
       room.tick()
@@ -185,7 +185,7 @@ describe('Room', () => {
     expect(a.inbox).toContainEqual({ type: 'out-of-view', ids: ['far'] })
   })
 
-  it('ignores moves past the fence', () => {
+  it('ignores moves off the map', () => {
     const room = new Room()
     const a = fakeClient()
     room.join('a', 'Alice', 'male_09', a.send, { x: 0, y: 0, z: 0 })
@@ -194,8 +194,8 @@ describe('Room', () => {
     room.tick()
     a.inbox.length = 0
 
-    // across edgewood ave, then way off the map
-    expect(room.move('b', { x: 0, y: 0, z: -45 }, 0)).toBe(false)
+    // past the edge of the city, then way off
+    expect(room.move('b', { x: 0, y: 0, z: 520 }, 0)).toBe(false)
     expect(room.move('b', { x: 5000, y: 0, z: 5000 }, 0)).toBe(false)
     room.tick()
     expect(a.inbox).toEqual([])
@@ -206,18 +206,31 @@ describe('Room', () => {
     expect(a.inbox).toEqual([{ type: 'state', players: [['b', 2, -20, 0]] }])
   })
 
-  it('puts you back at spawn if you reconnect from past the fence', () => {
+  it('lets you walk anywhere on the map, across edgewood ave too', () => {
+    const room = new Room()
+    room.join('b', 'Bob', 'male_09', () => {}, { x: 0, y: 0, z: 0 })
+    expect(room.move('b', { x: 0, y: 0, z: -45 }, 0)).toBe(true)
+    expect(room.move('b', { x: 470, y: 0, z: -540 }, 0)).toBe(true)
+  })
+
+  it('keeps your spot when you reconnect, anywhere on the map', () => {
     const room = new Room()
     const info = room.join('a', 'Alice', 'male_09', () => {}, { x: 0, y: 0, z: -100 })
-    expect(insideFence(info.position.x, info.position.z)).toBe(true)
+    expect(info.position).toEqual({ x: 0, y: 0, z: -100 })
+  })
+
+  it('puts you back at spawn if you reconnect from off the map', () => {
+    const room = new Room()
+    const info = room.join('a', 'Alice', 'male_09', () => {}, { x: 0, y: 0, z: 900 })
+    expect(onMap(info.position.x, info.position.z)).toBe(true)
     expect(Math.hypot(info.position.x, info.position.z)).toBeLessThan(5)
   })
 
-  it('always spawns you inside the fence', () => {
+  it('always spawns you on the map', () => {
     const room = new Room()
     for (let i = 0; i < 200; i++) {
       const { position } = room.join(`p${i}`, 'P', 'male_09', () => {})
-      expect(insideFence(position.x, position.z)).toBe(true)
+      expect(onMap(position.x, position.z)).toBe(true)
     }
   })
 

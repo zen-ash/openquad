@@ -113,7 +113,6 @@ export const useSettings = create<{
   toneMapping: 'neutral' | 'aces' | 'agx' | 'none'
   time: string
   photo: boolean
-  fenceLine: boolean
   // on the bike (a bean's, B)
   bike: boolean
 }>(() => ({
@@ -129,7 +128,5 @@ export const useSettings = create<{
   time: startingTime(),
   // everything on screen hidden, for screenshots
   photo: false,
-  // where the fence is, as a yellow curtain
-  fenceLine: params.has('fence'),
   bike: false,
 }))

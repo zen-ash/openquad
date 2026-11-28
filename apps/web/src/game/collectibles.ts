@@ -3,7 +3,7 @@ import type { Point } from './collision'
 
 // the game look's stars: floating around campus, picked up by gliding through them. where
 // they are was picked by hand on the paths near the landmarks (the test checks they're
-// inside the fence and not in anything)
+// in the middle of campus and not in anything)
 export const STARS: Point[] = [
   { x: 4, z: 43 }, // hurt park, south of the fountain
   { x: -5, z: -18 }, // hurt park, by edgewood

@@ -1,4 +1,4 @@
-import { FENCE } from '@quad/shared'
+import { MAP } from '@quad/shared'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import {
@@ -22,13 +22,19 @@ const NIGHT = new THREE.Color('#2a3448')
 
 const LINE_WIDTH = 0.35
 
-// a see-through band standing along the fence, thickest at the ground, and a thin line
+// a see-through band standing along the edge of the map, thickest at the ground, and a thin line
 // on the ground just inside it. aUp goes 0 at the bottom to 1 at the top
 function band() {
   const pos: number[] = []
   const up: number[] = []
   // in 4m pieces, each on the ground under it
-  const ring = FENCE.map(([x, z]) => ({ x: x!, z: z! }))
+  const { west, east, north, south } = MAP
+  const ring = [
+    { x: west, z: north },
+    { x: east, z: north },
+    { x: east, z: south },
+    { x: west, z: south },
+  ]
   const points = alongGround([...ring, ring[0]!], 4)
   points.slice(1).forEach(([bx, bz, by], i) => {
     const [ax, az, ay] = points[i]!
@@ -64,9 +70,10 @@ material.colorNode = vec4(
 )
 const geometry = band()
 
-// where you can't walk any further (packages/shared/src/fence.ts). no wall, just a bit of
-// haze and a faint line when you get close, so running into it doesn't feel like a bug
-export default function FenceHaze() {
+// where you can't walk any further, the edge of the map (packages/shared/src/map.ts). no
+// wall, just a bit of haze and a faint line when you get close, so running into it doesn't
+// feel like a bug
+export default function EdgeHaze() {
   useFrame(() => {
     player.value.set(localPlayer.x, localPlayer.z)
     color.value.copy(DAY).lerp(NIGHT, night.value)

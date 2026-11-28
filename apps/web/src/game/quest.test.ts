@@ -1,4 +1,3 @@
-import { insideFence } from '@quad/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { whereIs } from './location'
 import { progress, QUEST, setStep, useQuest } from './quest'
@@ -35,10 +34,9 @@ describe('quest', () => {
   })
 
   it.each(QUEST.filter((s) => s.place).map((s) => [s.place!, s]))(
-    'can get to %s inside the fence',
+    'can get to %s',
     (place, step) => {
       expect(step.spot).toBeDefined()
-      expect(insideFence(step.spot!.x, step.spot!.z)).toBe(true)
       // the spot the directions go to counts as being there
       expect(whereIs(step.spot!.x, step.spot!.z).name).toBe(place)
     },

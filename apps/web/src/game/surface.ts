@@ -202,7 +202,7 @@ export function floorAt(x: number, z: number) {
   return room ? floorOf(campus.buildings[room.index]!) : surfaceAt(x, z)
 }
 
-// a line on the ground (a route, the fence) every step meters, each point with the height of
+// a line on the ground (a route, the map's edge) every step meters, each point with the height of
 // what's under it, carrying on from from (so a route along the viaduct stays up on it)
 export function alongGround(points: { x: number; z: number }[], step: number, from = Infinity) {
   const out: [x: number, z: number, y: number][] = []

@@ -1,4 +1,3 @@
-import { insideFence } from '@quad/shared'
 import { beforeEach, describe, expect, it } from 'vitest'
 import campus from '../campus/campus.json'
 import { steer, stuck } from './autowalk'
@@ -86,13 +85,11 @@ describe('walking the real campus', () => {
       const [x, z, nx, nz] = b.door as [number, number, number, number]
       return { name: b.name!, point: { x: x + nx * 2.5, z: z + nz * 2.5 } }
     })
-    // the rest are outside the fence, you can't walk there yet
-    .filter((d) => insideFence(d.point.x, d.point.z))
 
   beforeEach(() => stopNavigating())
 
-  it('has most of the doors to try', () => {
-    expect(doors.length).toBeGreaterThan(20)
+  it('has every gsu door to try', () => {
+    expect(doors.length).toBeGreaterThan(50)
   })
 
   it.each(doors.map((d) => [d.name, d]))('walks from hurt park to %s by itself', (_, door) => {

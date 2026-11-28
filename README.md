@@ -5,9 +5,9 @@ A multiplayer 3D campus in the browser with proximity voice chat. Walk up to som
 It's the real Georgia State campus, built from OpenStreetMap. You can walk into any of the 56
 GSU buildings, get walking directions to one, and people inside sound muffled from the street.
 Library North, Dahlberg Hall, Arts & Humanities, the new Research Tower and Hurt Park's
-fountain are rebuilt by hand from photos of the real ones. You can walk anywhere in the
-middle of campus (the fence is in `packages/shared/src/fence.ts`, the server checks it
-too), and past that you can see the rest of downtown, built from the same map.
+fountain are rebuilt by hand from photos of the real ones. You can walk anywhere on the
+map, out to where the city stops being drawn (`packages/shared/src/map.ts`, the server
+checks it too).
 
 Final project for CSC 4370 (Web Programming) at Georgia State.
 

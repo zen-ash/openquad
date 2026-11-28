@@ -313,6 +313,11 @@ The last version with them is the git tag `tiles-final`.
 
 ## Part 13 - a fence round the middle of campus
 
+(Removed Nov 27 2026: you can walk anywhere on the map now, out to its edges in
+`packages/shared/src/map.ts`, with the same walls, haze and server check there. The fence's
+outline is `apps/web/src/game/core.ts`, still used for where the ground is detailed and
+where the traffic and the crowd go.)
+
 The whole map was walkable, but only the middle is really built. So there's a fence round
 the main downtown campus: Hurt Park, the library, Langdale, Classroom South, the Student
 Centers, the Sports Arena and the Research Tower.
@@ -407,7 +412,8 @@ malformed.
     real trees, benches and lights, per-building facades
 11. **Google's 3D tiles** - the real buildings of downtown, lined up with our map (removed
     later, tag `tiles-final`)
-12. **The fence** - a playable area round the middle of campus
+12. **The fence** - a playable area round the middle of campus (removed later, the whole
+    map is walkable)
 13. **Beans** - everyone plays as a bean with arcade movement (full speed right away, a
     dash and a bike), a cartoon look as a second style
 14. **Game look** - the default style: the real buildings in a bright, stylized world, with
@@ -426,8 +432,8 @@ malformed.
   the cpu made every test time out), but the map is still loaded for collisions. A separate
   test (`e2e/city.spec.ts`) loads the full city and fails on any page or shader error. It
   also walks into Library North, since the furniture and the inside only load near a door
-- `e2e/fence.spec.ts` runs a player into the fence and checks they stop there, never go
-  back, and the other player sees them inside
+- `e2e/edge.spec.ts` runs a player into the edge of the map and checks they stop there,
+  never go back, and the other player sees them on the map
 - walking takes small steps on long frames (`walk()` in movement.ts) instead of capping the
   frame time, otherwise slow laptops (and ci) walk in slow motion
 - to reproduce ci locally: run the e2e tests in the `mcr.microsoft.com/playwright` docker image

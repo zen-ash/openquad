@@ -43,8 +43,7 @@ import Cars from './Cars'
 import Collectibles from './Collectibles'
 import Doors from './Doors'
 import EntranceMarkers from './EntranceMarkers'
-import FenceHaze from './FenceHaze'
-import FenceLine from './FenceLine'
+import EdgeHaze from './EdgeHaze'
 import Fountain from './Fountain'
 import Furniture from './Furniture'
 import GameSky, { HORIZON as GAME_HORIZON } from './GameSky'
@@ -320,7 +319,6 @@ export default function Campus() {
   // the real atmosphere when the visit started on high quality with webgpu (it stays if it
   // drops to low), otherwise the old sky (it's cheaper and runs on webgl2)
   const high = useSettings((s) => s.atmosphere)
-  const fenceLine = useSettings((s) => s.fenceLine)
   const sunAt = sky.dir.map((v) => v * 100) as [number, number, number]
   // not too much light from the sky, or shade looks nearly as bright as sun and the
   // whole city goes flat and hazy
@@ -382,8 +380,7 @@ export default function Campus() {
           <EntranceMarkers />
         </>
       )}
-      <FenceHaze />
-      {fenceLine && <FenceLine />}
+      <EdgeHaze />
     </>
   )
 }

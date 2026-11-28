@@ -1,4 +1,4 @@
-import { fenceDistance } from '@quad/shared'
+import { coreDistance } from './core'
 import campus from '../campus/campus.json'
 import { curbCars } from './parking'
 import { signalJunctions } from './signals'
@@ -10,7 +10,7 @@ import { fromElevation, heightAt } from './terrain'
 // hypot and friends can come out a hair different in another browser, and then the traffic
 // would too
 
-// it drives this far out past the fence, about as far as you see down the streets from campus
+// it drives this far out past the middle of campus (core.ts), about as far as you see down the streets from campus
 export const AREA = 120
 // lanes are this wide at most and squeeze down to this before one is dropped
 const LANE = 3.4
@@ -29,7 +29,7 @@ const CROSSWALK = 2.5
 const CARRY_ON = 4
 // a street that stops short of another one (osm drew a gap, or build-campus cut it) is joined
 // on if it's this close and level with it. one that just stops is where the map's data ends
-// if it's this far out of the fence (cars come and go there), else a dead end they keep out of
+// if it's this far out of the middle of campus (cars come and go there), else a dead end they keep out of
 const JOIN = 12
 // m: a car that's merged into a lane is this far on before the next can follow it in
 const CLEAR = 2.5
@@ -183,9 +183,9 @@ type Edge = {
   b: number
 }
 
-// the area the traffic is in: inside the fence or not far out of it, and on the map
+// the area the traffic is in: the middle of campus or not far out of it, and on the map
 const inArea = (x: number, z: number) =>
-  fenceDistance(x, z) >= -AREA &&
+  coreDistance(x, z) >= -AREA &&
   Math.abs(x) < campus.halfSize - 2 &&
   Math.abs(z) < campus.halfSize - 2
 
@@ -469,7 +469,7 @@ function build(): Network {
         }
       }
       if (best) pieces.push({ road: piece.road, points: first ? [best, p] : [p, best] })
-      else if (fenceDistance(p[0]!, p[1]!) < -DATA_EDGE) ends.add(key(p))
+      else if (coreDistance(p[0]!, p[1]!) < -DATA_EDGE) ends.add(key(p))
     }
   const seen = count()
   const nodes: Node[] = []

@@ -90,7 +90,7 @@ its own, they're far apart most of the time).
 - The wire: a pole every 30 m on the curb side, 2.3 m from the track, with an arm out over it at
   6.7 m and the contact wire at 5.6 m over the rails (one wire, no catenary, like the photos).
   Where there's a parking lane they stand behind it, on the sidewalk. Poles that would stand in a
-  street or a building are left out, and they're moved to the end of a platform. The ones inside the fence are solid. Poles, arms, wire and the shelters' steel are
+  street or a building are left out, and they're moved to the end of a platform. They're all solid. Poles, arms, wire and the shelters' steel are
   one mesh.
 - Rails: the concrete slab they're set in (2.5 m, the whole lane where the street has a parking
   lane next to it) and the two rails' heads, ground layers like

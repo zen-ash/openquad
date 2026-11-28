@@ -2,10 +2,6 @@ import { useState } from 'react'
 import { fx, TONE_MAPPINGS } from '../scene/fx'
 import { useSettings } from '../settings'
 
-type Layer = 'fenceLine'
-
-const LAYERS: [Layer, string][] = [['fenceLine', 'Fence line']]
-
 const EFFECTS: [keyof typeof fx, string][] = [
   ['ao', 'Ambient occlusion'],
   ['contact', 'Contact shadows'],
@@ -19,36 +15,14 @@ const EFFECTS: [keyof typeof fx, string][] = [
   ['reflections', 'City in glass'],
 ]
 
-// dev (or ?debug): where the fence is, and each of the effects on and off to see what it does
+// dev (or ?debug): each of the effects on and off to see what it does
 export default function DebugLayers() {
   const atmosphere = useSettings((s) => s.atmosphere)
+  if (!atmosphere) return null
   return (
     <div className="debug-panel">
-      <Layers />
-      {atmosphere && <Effects />}
+      <Effects />
     </div>
-  )
-}
-
-function Layers() {
-  const settings = useSettings()
-  return (
-    <fieldset className="debug-layers">
-      <legend>Layers</legend>
-      {LAYERS.map(([layer, label]) => (
-        <label key={layer}>
-          <input
-            type="checkbox"
-            checked={settings[layer]}
-            onChange={(e) => {
-              useSettings.setState({ [layer]: e.target.checked })
-              e.currentTarget.blur() // so walking keys don't flip it
-            }}
-          />
-          {label}
-        </label>
-      ))}
-    </fieldset>
   )
 }
 

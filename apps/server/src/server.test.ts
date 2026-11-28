@@ -60,8 +60,8 @@ describe('server', () => {
     bob.socket.close()
   })
 
-  // what a modified client could do: send positions past the fence. nobody else sees them
-  it('ignores positions past the fence', async () => {
+  // what a modified client could do: send positions off the map. nobody else sees them
+  it('ignores positions off the map', async () => {
     const alice = await connect('Alice')
     const aliceId = (await alice.waitFor('welcome')).you.id
     const bob = await connect('Bob')
@@ -72,8 +72,7 @@ describe('server', () => {
       alice.socket.send(JSON.stringify({ type: 'move', position: { x, y: 0, z }, heading: 0 }))
       await new Promise((r) => setTimeout(r, 150))
     }
-    // across edgewood ave, then way off the map, then back inside
-    await move(0, -60)
+    // way off the map, then back on it
     await move(900, 900)
     await move(3, 4)
     const state = await bob.waitFor('state')

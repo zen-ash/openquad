@@ -1,4 +1,4 @@
-import { FENCE, insideFence } from '@quad/shared'
+import { MAP } from '@quad/shared'
 import campus from '../campus/campus.json'
 import { coeObstacles, type CollegeOfEducationData } from '../campus/collegeOfEducation'
 import { parkingObstacles, type ParkingData } from '../campus/loftsParking'
@@ -38,12 +38,15 @@ import { drivingBoxes } from './traffic'
 const TREE_RADIUS = 0.8
 const quadObstacles = pantherQuadObstacles()
 
-// the edge of the part of campus you can walk around in (packages/shared/src/fence.ts).
-// it's just walls, so you slide along it like any other wall
-export const fenceWalls: Segment[] = FENCE.map(([ax, az], i) => {
-  const [bx, bz] = FENCE[(i + 1) % FENCE.length]!
-  return { ax, az, bx, bz }
-})
+// the edge of the map (packages/shared/src/map.ts): past it there's no city. it's just
+// walls, so you slide along it like any other wall
+const { west, east, north, south } = MAP
+export const mapWalls: Segment[] = [
+  { ax: west, az: north, bx: east, bz: north },
+  { ax: east, az: north, bx: east, bz: south },
+  { ax: east, az: south, bx: west, bz: south },
+  { ax: west, az: south, bx: west, bz: north },
+]
 
 // the planter along the practice facility on decatur st and the floodlight pole by its wing
 const gym = practiceObstacles(
@@ -144,7 +147,7 @@ export const world: World = {
   walls: [
     ...interiors.flatMap((i) => i.walls),
     ...memorialWall({ x: campus.fountain[0]!, z: campus.fountain[1]! }),
-    ...fenceWalls,
+    ...mapWalls,
     ...coe.walls,
     ...arena.walls,
     ...rec.walls,
@@ -185,10 +188,8 @@ export const world: World = {
     ...urbanLife.tables,
     // the traffic lights' poles
     ...signalPoles().map((p) => ({ x: p.x, z: p.z, radius: 0.2 })),
-    // the streetcar's wire poles on the sidewalks you walk
-    ...streetcarPoles()
-      .filter((p) => insideFence(p.x, p.z))
-      .map((p) => ({ x: p.x, z: p.z, radius: 0.15 })),
+    // the streetcar's wire poles on the sidewalks
+    ...streetcarPoles().map((p) => ({ x: p.x, z: p.z, radius: 0.15 })),
   ],
   halfSize: campus.halfSize,
   // the cars driving by nudge you aside (they can't wait for anyone, everyone sees the same

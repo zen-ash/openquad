@@ -1,6 +1,6 @@
-import { insideFence } from '@quad/shared'
 import { describe, expect, it } from 'vitest'
 import campus from '../campus/campus.json'
+import { inCore } from './core'
 import { fromElevation, heightAt, normalAt, ORIGIN } from './terrain'
 
 describe('terrain', () => {
@@ -32,7 +32,7 @@ describe('terrain', () => {
         for (let t = 0; t + 1 < len; t++) {
           const [x, z] = [ax! + ((bx! - ax!) * t) / len, az! + ((bz! - az!) * t) / len]
           const [nx, nz] = [x + (bx! - ax!) / len, z + (bz! - az!) / len]
-          if (!insideFence(x, z)) continue
+          if (!inCore(x, z)) continue
           const step = Math.abs(heightAt(nx, nz) - heightAt(x, z))
           expect(
             step,
