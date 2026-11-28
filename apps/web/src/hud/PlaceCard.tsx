@@ -3,12 +3,15 @@ import { create } from 'zustand'
 import { localPlayer } from '../game/localPlayer'
 import { minutes, navigateTo, walkMeters } from '../game/nav'
 import { placeNamed } from '../game/places'
+import { usePanel } from './panels'
 
 // which place's card is up (the places search, arriving somewhere, the hud's About)
 export const useCard = create<{ open: string | null }>(() => ({ open: null }))
 
 export const showCard = (label: string) => {
-  if (placeNamed(label)?.card) useCard.setState({ open: label })
+  if (!placeNamed(label)?.card) return
+  usePanel.setState({ open: null })
+  useCard.setState({ open: label })
 }
 const close = () => useCard.setState({ open: null })
 

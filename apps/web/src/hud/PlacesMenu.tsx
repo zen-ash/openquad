@@ -3,14 +3,18 @@ import { localPlayer } from '../game/localPlayer'
 import { minutes, navigateTo, walkMeters } from '../game/nav'
 import { arrivalSpot, search, type Place } from '../game/places'
 import { showCard, useCard } from './PlaceCard'
+import { togglePanel, usePanel } from './panels'
+import Schedule from './Schedule'
 
 // the first few results get their walking time (each one is a route worked out)
 const TIMED = 5
 
 const here = () => ({ x: localPlayer.x, z: localPlayer.z })
 
+// the buttons at the top right and the panel under them: the places search, my day
 export default function PlacesMenu() {
-  const [open, setOpen] = useState(false)
+  const panel = usePanel((s) => s.open)
+  const open = panel === 'places'
   const [query, setQuery] = useState('')
   const results = useMemo(() => search(query), [query])
   const walks = useMemo(
@@ -24,18 +28,21 @@ export default function PlacesMenu() {
       if (e.code !== 'KeyG' || e.target instanceof HTMLInputElement) return
       // or the g lands in the search box it just opened
       e.preventDefault()
-      setOpen((o) => !o)
+      togglePanel('places')
       setQuery('')
-      useCard.setState({ open: null })
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
   const close = () => {
-    setOpen(false)
+    usePanel.setState({ open: null })
     setQuery('')
   }
+  // a panel and a card share the spot
+  useEffect(() => {
+    if (panel) useCard.setState({ open: null })
+  }, [panel])
   const go = (p: Place, auto: boolean) => {
     navigateTo(p.label, p.spot, here(), auto)
     close()
@@ -43,16 +50,25 @@ export default function PlacesMenu() {
 
   return (
     <div className="places">
-      <button
-        className="places-toggle"
-        onClick={() => {
-          if (open) return close()
-          setOpen(true)
-          useCard.setState({ open: null })
-        }}
-      >
-        {open ? 'Close' : 'Places (G)'}
-      </button>
+      <div className="top-buttons">
+        <button className="places-toggle" onClick={() => togglePanel('day')}>
+          {panel === 'day' ? 'Close' : 'My day'}
+        </button>
+        <button
+          className="places-toggle"
+          onClick={() => {
+            setQuery('')
+            togglePanel('places')
+          }}
+        >
+          {open ? 'Close' : 'Places (G)'}
+        </button>
+      </div>
+      {panel === 'day' && (
+        <div className="places-panel">
+          <Schedule />
+        </div>
+      )}
       {open && (
         <div className="places-panel">
           <input
