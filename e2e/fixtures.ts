@@ -3,8 +3,9 @@ import { test as base, expect, type BrowserContext, type Page } from '@playwrigh
 
 type Fixtures = {
   // joins the game as a new person (own browser context, so no shared storage)
-  // avatar is the name on the picker, like 'yellow bean'
-  join: (name: string, avatar?: string) => Promise<Page>
+  // avatar is the name on the picker, like 'yellow bean'. link is more of the address, like
+  // '&to=langdale-hall'
+  join: (name: string, avatar?: string, link?: string) => Promise<Page>
 }
 
 // closes everyone at the end of each test. this has to be a fixture, a plain
@@ -13,12 +14,12 @@ export const test = base.extend<Fixtures>({
   join: async ({ browser }, use) => {
     const contexts: BrowserContext[] = []
 
-    await use(async (name, avatar) => {
+    await use(async (name, avatar, link = '') => {
       const context = await browser.newContext()
       contexts.push(context)
       const page = await context.newPage()
       // no gpu in ci, so skip drawing the city. these tests are about networking and voice
-      await page.goto('/?quality=low&nocity')
+      await page.goto(`/?quality=low&nocity${link}`)
       await page.getByLabel("What's your name?").fill(name)
       if (avatar) await page.getByRole('radio', { name: avatar }).click()
       await page.getByRole('button', { name: 'Join' }).click()

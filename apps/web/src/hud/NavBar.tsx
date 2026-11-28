@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { followLinks } from '../game/links'
 import { localPlayer } from '../game/localPlayer'
 import { minutes, stopNavigating, updateNav, useNav } from '../game/nav'
 
@@ -9,6 +10,8 @@ export default function NavBar() {
   const auto = useNav((s) => s.auto)
 
   useEffect(() => {
+    // a ?to= or ?at= link from an email or a qr code
+    followLinks()
     const timer = setInterval(() => updateNav({ x: localPlayer.x, z: localPlayer.z }), 400)
     return () => clearInterval(timer)
   }, [])
