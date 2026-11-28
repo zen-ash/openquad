@@ -4,6 +4,8 @@ import { steer, stuck } from './autowalk'
 import { glide, GLIDE_SPEED } from './glide'
 import { navigateTo, stopNavigating, updateNav, useNav } from './nav'
 import { routeLength } from './navgraph'
+import { placeNamed } from './places'
+import { TOURS } from './tours'
 import { world } from './world'
 
 describe('steer', () => {
@@ -109,5 +111,29 @@ describe('walking the real campus', () => {
     const left = Math.hypot(door.point.x - me.x, door.point.z - me.z)
     expect(left, `stuck at ${me.x.toFixed(1)}, ${me.z.toFixed(1)}`).toBeLessThan(1)
     expect(routeLength([{ x: 0, z: 0 }, door.point])).toBeLessThan(meters + 1)
+  })
+})
+
+describe('the first week tour', () => {
+  const still = { ...world, moving: undefined }
+  beforeEach(() => stopNavigating())
+
+  // start to end without touching the stick: from hurt park, each stop walked to by itself
+  it('can be walked stop to stop by itself', () => {
+    const stops = TOURS.find((t) => t.id === 'essentials')!.stops
+    let me = { x: 0, z: 0, heading: 0 }
+    for (const stop of stops) {
+      const goal = placeNamed(stop.place)!.spot
+      navigateTo(stop.place, goal, me, true)
+      const frames = Math.ceil(((useNav.getState().meters * 2) / GLIDE_SPEED + 5) * 30)
+      for (let f = 0; f < frames; f++) {
+        if (f % 12 === 0) updateNav(me)
+        const dir = steer(me, useNav.getState().path, still)
+        if (!dir) break
+        me = glide(me, dir, GLIDE_SPEED, 1 / 30, 0.4, still)
+      }
+      const left = Math.hypot(goal.x - me.x, goal.z - me.z)
+      expect(left, `${stop.place}: stuck at ${me.x.toFixed(1)}, ${me.z.toFixed(1)}`).toBeLessThan(1)
+    }
   })
 })

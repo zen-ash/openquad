@@ -6,6 +6,8 @@ import Fps from './Fps'
 import Help from './Help'
 import { placeNamed } from '../game/places'
 import { showCard } from './PlaceCard'
+import Tour from './Tour'
+import { useTour } from '../game/tours'
 import LocationTitle from './LocationTitle'
 import Quest from './Quest'
 import { usePlace } from './usePlace'
@@ -14,6 +16,7 @@ export default function Hud() {
   const online = useGame((s) => Object.keys(s.players).length + 1)
   const { place, nearby } = usePlace()
   const bike = useSettings((s) => s.bike)
+  const touring = useTour((s) => s.id !== null)
 
   return (
     <>
@@ -37,9 +40,11 @@ export default function Hud() {
       </div>
       <Compass />
       <Clock />
-      {game && <Quest place={place} />}
+      {/* a tour has the spot the game look's own little tour would be in */}
+      {touring ? <Tour /> : game && <Quest place={place} />}
       <LocationTitle place={place} />
-      <Help />
+      {/* the tour has its spot */}
+      {!touring && <Help />}
     </>
   )
 }

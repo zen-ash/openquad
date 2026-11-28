@@ -5,13 +5,14 @@ import { arrivalSpot, search, type Place } from '../game/places'
 import { showCard, useCard } from './PlaceCard'
 import { togglePanel, usePanel } from './panels'
 import Schedule from './Schedule'
+import { ToursList } from './Tour'
 
 // the first few results get their walking time (each one is a route worked out)
 const TIMED = 5
 
 const here = () => ({ x: localPlayer.x, z: localPlayer.z })
 
-// the buttons at the top right and the panel under them: the places search, my day
+// the buttons at the top right and the panel under them: tours, my day, the places search
 export default function PlacesMenu() {
   const panel = usePanel((s) => s.open)
   const open = panel === 'places'
@@ -51,6 +52,9 @@ export default function PlacesMenu() {
   return (
     <div className="places">
       <div className="top-buttons">
+        <button className="places-toggle" onClick={() => togglePanel('tours')}>
+          {panel === 'tours' ? 'Close' : 'Tours'}
+        </button>
         <button className="places-toggle" onClick={() => togglePanel('day')}>
           {panel === 'day' ? 'Close' : 'My day'}
         </button>
@@ -67,6 +71,11 @@ export default function PlacesMenu() {
       {panel === 'day' && (
         <div className="places-panel">
           <Schedule />
+        </div>
+      )}
+      {panel === 'tours' && (
+        <div className="places-panel">
+          <ToursList />
         </div>
       )}
       {open && (

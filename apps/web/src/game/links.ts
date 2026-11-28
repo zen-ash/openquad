@@ -1,9 +1,11 @@
 import { localPlayer } from './localPlayer'
 import { navigateTo } from './nav'
 import { arrivalSpot, search, words, type Place } from './places'
+import { startTour, tourNamed } from './tours'
 
 // "meet here" links: ?to=langdale-hall puts up directions there, ?at=sce starts you there.
-// anything that finds the place in the search box works (?to=rec, ?at=a%26h)
+// anything that finds the place in the search box works (?to=rec, ?at=a%26h). ?tour=essentials
+// starts a tour
 export function placeFromLink(value: string | null): Place | undefined {
   return value && words(value).length ? search(value)[0] : undefined
 }
@@ -26,5 +28,7 @@ export function followLinks(query = location.search) {
     localPlayer.x = spot.x
     localPlayer.z = spot.z
   }
-  if (to) navigateTo(to.label, to.spot, { x: localPlayer.x, z: localPlayer.z })
+  const tour = new URLSearchParams(query).get('tour')
+  if (tour && tourNamed(tour)) startTour(tour)
+  else if (to) navigateTo(to.label, to.spot, { x: localPlayer.x, z: localPlayer.z })
 }

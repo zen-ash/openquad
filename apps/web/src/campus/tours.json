@@ -1,0 +1,40 @@
+{
+  "essentials": {
+    "name": "First week essentials",
+    "about": "The eight places you'll need in your first week, about half an hour on foot.",
+    "stops": [
+      {
+        "place": "Library North",
+        "say": "Start at the library: study rooms, computers and printing, and Saxbys by the door. Bring your PantherCard."
+      },
+      {
+        "place": "Student Center East",
+        "say": "The main student center. Food is downstairs, the Dean of Students and Orientation are upstairs."
+      },
+      {
+        "place": "Student Recreation Center",
+        "say": "The Rec: pools, a climbing wall and a gym. Students get in with their PantherCard."
+      },
+      {
+        "place": "University Bookstore",
+        "say": "Textbooks and GSU gear. The PantherCard office is next door in Student Center West."
+      },
+      {
+        "place": "Panther Quad",
+        "say": "The Panther Quad, campus's newest green space, built where Gilmer St used to run."
+      },
+      {
+        "place": "25 Park Place",
+        "say": "First-year advising is on floors 4 and 5 here, and Career Services is on the first floor."
+      },
+      {
+        "place": "Student Success Center",
+        "say": "Financial aid, billing and help with registration, all in one place since 2025."
+      },
+      {
+        "place": "Piedmont Central",
+        "say": "A first-year residence hall, with a dining hall that stays open around the clock on weekdays."
+      }
+    ]
+  }
+}
