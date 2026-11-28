@@ -21,8 +21,11 @@ export const test = base.extend<Fixtures>({
       // no gpu in ci, so skip drawing the city. these tests are about networking and voice
       await page.goto(`/?quality=low&nocity${link}`)
       await page.getByLabel("What's your name?").fill(name)
-      if (avatar) await page.getByRole('radio', { name: avatar }).click()
-      await page.getByRole('button', { name: 'Join' }).click()
+      if (avatar) {
+        await page.getByText('Pick your look', { exact: true }).first().click()
+        await page.getByRole('radio', { name: avatar }).click()
+      }
+      await page.getByRole('button', { name: 'Explore' }).click()
       // the player count only shows once you're actually in (just /online/ also matches
       // the join screen's tagline)
       // loading the city on a machine with no gpu (ci) can take a while

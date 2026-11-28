@@ -38,8 +38,9 @@ for (const time of ['noon', 'night']) {
 test('picking an avatar works even while the city is still loading', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel("What's your name?").fill('Quick')
+  await page.getByText('Pick your look', { exact: true }).first().click()
   await page.getByRole('radio', { name: 'yellow bean' }).click()
-  await page.getByRole('button', { name: 'Join' }).click()
+  await page.getByRole('button', { name: 'Explore' }).click()
 
   await expect(page.getByText(/^\d+ online$/)).toBeVisible({ timeout: 30_000 })
   expect(await page.evaluate(() => window.quad!.myAvatar())).toBe('female_17')
@@ -56,7 +57,7 @@ test('the inside of a building renders without errors', async ({ page }) => {
 
   await page.goto('/')
   await page.getByLabel("What's your name?").fill('Reader')
-  await page.getByRole('button', { name: 'Join' }).click()
+  await page.getByRole('button', { name: 'Explore' }).click()
   await expect(page.getByText(/^\d+ online$/)).toBeVisible({ timeout: 30_000 })
 
   const [x, z, nx, nz] = doorOf('Library North')
