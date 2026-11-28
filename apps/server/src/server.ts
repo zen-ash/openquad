@@ -5,6 +5,7 @@ import sirv from 'sirv'
 import { WebSocketServer, WebSocket } from 'ws'
 import { getIceServers } from './ice'
 import { parseMessage } from './messages'
+import { MAX_BYTES, Reports } from './reports'
 import { Room } from './room'
 import { Stats } from './stats'
 
@@ -35,6 +36,7 @@ function setHeaders(res: ServerResponse, pathname: string) {
 export function startServer(port: number, { webDir, heartbeatMs = 30_000 }: Options = {}) {
   const room = new Room()
   const stats = new Stats()
+  const reports = new Reports()
   const serveWeb =
     webDir && existsSync(webDir) ? sirv(webDir, { single: true, etag: true, setHeaders }) : null
 
@@ -47,6 +49,21 @@ export function startServer(port: number, { webDir, heartbeatMs = 30_000 }: Opti
     if (req.url === '/stats') {
       res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' })
       res.end(JSON.stringify(stats.report(room.size)))
+      return
+    }
+    if (req.url === '/measure') {
+      if (req.method !== 'POST') {
+        res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' })
+        res.end(JSON.stringify(reports.list()))
+        return
+      }
+      let body = ''
+      req.setEncoding('utf8')
+      req.on('data', (chunk: string) => {
+        body += chunk
+        if (body.length > MAX_BYTES) req.destroy()
+      })
+      req.on('end', () => res.writeHead(reports.add(body) ? 204 : 400).end())
       return
     }
     if (req.url === '/ice') {

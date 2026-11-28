@@ -44,6 +44,16 @@ describe('server', () => {
     expect(await res.json()).toEqual({ ok: true, players: 0 })
   })
 
+  it('keeps what phones measured', async () => {
+    const measure = url.replace('ws', 'http').replace('/ws', '/measure')
+    const post = (body: string) => fetch(measure, { method: 'POST', body })
+    expect((await post(JSON.stringify({ id: 'abc1', step: 'Joining' }))).status).toBe(204)
+    expect((await post('not json')).status).toBe(400)
+    const list = await (await fetch(measure)).json()
+    expect(list).toHaveLength(1)
+    expect(list[0]).toMatchObject({ id: 'abc1', step: 'Joining' })
+  })
+
   it('syncs movement between two players', async () => {
     const alice = await connect('Alice')
     const aliceId = (await alice.waitFor('welcome')).you.id
